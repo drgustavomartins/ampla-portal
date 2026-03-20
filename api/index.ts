@@ -317,18 +317,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return json(res, { message: "Banco populado com sucesso!" });
     }
 
-    // ── Debug (temporary) ──
-    if (path === "/api/debug") {
-      return json(res, {
-        hasDbUrl: !!process.env.DATABASE_URL,
-        dbUrlLength: (process.env.DATABASE_URL || "").length,
-        dbUrlStart: (process.env.DATABASE_URL || "").substring(0, 30),
-        method,
-        path,
-        nodeEnv: process.env.NODE_ENV,
-      });
-    }
-
     // ── Not found ──
     return json(res, { message: "Rota não encontrada" }, 404);
 
