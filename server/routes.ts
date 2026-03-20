@@ -202,7 +202,7 @@ export function registerRoutes(server: Server, app: Express) {
   });
 
   // ==================== SEED (only if empty) ====================
-  app.post("/api/admin/seed", async (_req, res) => {
+  app.all("/api/admin/seed", async (_req, res) => {
     const existingPlans = await storage.getPlans();
     if (existingPlans.length > 0) {
       return res.json({ message: "Banco já possui dados" });
