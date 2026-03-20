@@ -81,7 +81,7 @@ export default function LoginPage() {
             </h1>
             <div className="w-12 h-px bg-gold mx-auto mt-3 mb-2 opacity-60" />
             <p className="text-xs tracking-brand uppercase text-muted-foreground">
-              Portal de Aulas — Método NaturalUp®
+              Portal de Aulas — Dr. Gustavo Martins
             </p>
           </div>
         </div>
