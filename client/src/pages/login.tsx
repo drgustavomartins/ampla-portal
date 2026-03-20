@@ -8,10 +8,9 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, BookOpen, GraduationCap } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import type { Plan } from "@shared/schema";
 import type { z } from "zod";
 
@@ -63,161 +62,176 @@ export default function LoginPage() {
   });
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-6">
-        {/* Logo / Brand */}
-        <div className="text-center space-y-3">
+    <div className="min-h-screen flex items-center justify-center p-4"
+      style={{
+        background: "radial-gradient(ellipse at 30% 20%, hsl(200 55% 12%) 0%, hsl(200 55% 7%) 70%)",
+      }}
+    >
+      <div className="w-full max-w-sm space-y-8">
+        {/* Brand */}
+        <div className="text-center space-y-4">
           <img
-            src="/logo-transparent.png"
+            src="/logo-icon.png"
             alt="Ampla Facial"
-            className="mx-auto h-24 w-auto rounded-xl"
+            className="mx-auto h-16 w-16 object-contain"
           />
-          <p className="text-sm text-muted-foreground">Portal de Aulas — Método NaturalUp®</p>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-brand text-gold uppercase">
+              Ampla Facial
+            </h1>
+            <div className="w-12 h-px bg-gold mx-auto mt-3 mb-2 opacity-60" />
+            <p className="text-xs tracking-brand uppercase text-muted-foreground">
+              Portal de Aulas — Método NaturalUp®
+            </p>
+          </div>
         </div>
 
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">
+        {/* Form Card */}
+        <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-6 space-y-5">
+          <div className="space-y-1">
+            <h2 className="text-lg font-medium text-foreground">
               {mode === "login" ? "Entrar" : "Criar Conta"}
-            </CardTitle>
-            <CardDescription>
+            </h2>
+            <p className="text-sm text-muted-foreground">
               {mode === "login"
                 ? "Acesse suas aulas da mentoria"
                 : "Cadastre-se para solicitar acesso"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {mode === "login" ? (
-              <form
-                onSubmit={loginForm.handleSubmit((data) => loginMutation.mutate(data))}
-                className="space-y-4"
+            </p>
+          </div>
+
+          {mode === "login" ? (
+            <form
+              onSubmit={loginForm.handleSubmit((data) => loginMutation.mutate(data))}
+              className="space-y-4"
+            >
+              <div className="space-y-2">
+                <Label htmlFor="login-email" className="text-xs uppercase tracking-wider text-muted-foreground">Email</Label>
+                <Input
+                  id="login-email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  className="bg-background/50 border-border/50 focus:border-primary"
+                  data-testid="input-login-email"
+                  {...loginForm.register("email")}
+                />
+                {loginForm.formState.errors.email && (
+                  <p className="text-sm text-destructive">{loginForm.formState.errors.email.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="login-password" className="text-xs uppercase tracking-wider text-muted-foreground">Senha</Label>
+                <Input
+                  id="login-password"
+                  type="password"
+                  placeholder="••••••"
+                  className="bg-background/50 border-border/50 focus:border-primary"
+                  data-testid="input-login-password"
+                  {...loginForm.register("password")}
+                />
+                {loginForm.formState.errors.password && (
+                  <p className="text-sm text-destructive">{loginForm.formState.errors.password.message}</p>
+                )}
+              </div>
+              <Button
+                type="submit"
+                className="w-full bg-gold text-background hover:bg-gold/90 font-medium tracking-wide"
+                disabled={loginMutation.isPending}
+                data-testid="button-login"
               >
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <Input
-                    id="login-email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    data-testid="input-login-email"
-                    {...loginForm.register("email")}
-                  />
-                  {loginForm.formState.errors.email && (
-                    <p className="text-sm text-destructive">{loginForm.formState.errors.email.message}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Senha</Label>
-                  <Input
-                    id="login-password"
-                    type="password"
-                    placeholder="••••••"
-                    data-testid="input-login-password"
-                    {...loginForm.register("password")}
-                  />
-                  {loginForm.formState.errors.password && (
-                    <p className="text-sm text-destructive">{loginForm.formState.errors.password.message}</p>
-                  )}
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={loginMutation.isPending}
-                  data-testid="button-login"
+                {loginMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Entrar
+              </Button>
+            </form>
+          ) : (
+            <form
+              onSubmit={registerForm.handleSubmit((data) => registerMutation.mutate(data))}
+              className="space-y-4"
+            >
+              <div className="space-y-2">
+                <Label htmlFor="reg-name" className="text-xs uppercase tracking-wider text-muted-foreground">Nome completo</Label>
+                <Input
+                  id="reg-name"
+                  placeholder="Dr. João Silva"
+                  className="bg-background/50 border-border/50 focus:border-primary"
+                  data-testid="input-register-name"
+                  {...registerForm.register("name")}
+                />
+                {registerForm.formState.errors.name && (
+                  <p className="text-sm text-destructive">{registerForm.formState.errors.name.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reg-email" className="text-xs uppercase tracking-wider text-muted-foreground">Email</Label>
+                <Input
+                  id="reg-email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  className="bg-background/50 border-border/50 focus:border-primary"
+                  data-testid="input-register-email"
+                  {...registerForm.register("email")}
+                />
+                {registerForm.formState.errors.email && (
+                  <p className="text-sm text-destructive">{registerForm.formState.errors.email.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reg-password" className="text-xs uppercase tracking-wider text-muted-foreground">Senha</Label>
+                <Input
+                  id="reg-password"
+                  type="password"
+                  placeholder="Mínimo 6 caracteres"
+                  className="bg-background/50 border-border/50 focus:border-primary"
+                  data-testid="input-register-password"
+                  {...registerForm.register("password")}
+                />
+                {registerForm.formState.errors.password && (
+                  <p className="text-sm text-destructive">{registerForm.formState.errors.password.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Plano de mentoria</Label>
+                <Select
+                  onValueChange={(v) => registerForm.setValue("planId", parseInt(v))}
+                  data-testid="select-register-plan"
                 >
-                  {loginMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Entrar
-                </Button>
-              </form>
-            ) : (
-              <form
-                onSubmit={registerForm.handleSubmit((data) => registerMutation.mutate(data))}
-                className="space-y-4"
+                  <SelectTrigger className="bg-background/50 border-border/50">
+                    <SelectValue placeholder="Selecione seu plano" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {plans.map((plan) => (
+                      <SelectItem key={plan.id} value={String(plan.id)}>
+                        {plan.name} — {plan.price}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {registerForm.formState.errors.planId && (
+                  <p className="text-sm text-destructive">{registerForm.formState.errors.planId.message}</p>
+                )}
+              </div>
+              <Button
+                type="submit"
+                className="w-full bg-gold text-background hover:bg-gold/90 font-medium tracking-wide"
+                disabled={registerMutation.isPending}
+                data-testid="button-register"
               >
-                <div className="space-y-2">
-                  <Label htmlFor="reg-name">Nome completo</Label>
-                  <Input
-                    id="reg-name"
-                    placeholder="Dr. João Silva"
-                    data-testid="input-register-name"
-                    {...registerForm.register("name")}
-                  />
-                  {registerForm.formState.errors.name && (
-                    <p className="text-sm text-destructive">{registerForm.formState.errors.name.message}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reg-email">Email</Label>
-                  <Input
-                    id="reg-email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    data-testid="input-register-email"
-                    {...registerForm.register("email")}
-                  />
-                  {registerForm.formState.errors.email && (
-                    <p className="text-sm text-destructive">{registerForm.formState.errors.email.message}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reg-password">Senha</Label>
-                  <Input
-                    id="reg-password"
-                    type="password"
-                    placeholder="Mínimo 6 caracteres"
-                    data-testid="input-register-password"
-                    {...registerForm.register("password")}
-                  />
-                  {registerForm.formState.errors.password && (
-                    <p className="text-sm text-destructive">{registerForm.formState.errors.password.message}</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Plano de mentoria</Label>
-                  <Select
-                    onValueChange={(v) => registerForm.setValue("planId", parseInt(v))}
-                    data-testid="select-register-plan"
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione seu plano" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {plans.map((plan) => (
-                        <SelectItem key={plan.id} value={String(plan.id)}>
-                          {plan.name} — {plan.price}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {registerForm.formState.errors.planId && (
-                    <p className="text-sm text-destructive">{registerForm.formState.errors.planId.message}</p>
-                  )}
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={registerMutation.isPending}
-                  data-testid="button-register"
-                >
-                  {registerMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Cadastrar
-                </Button>
-              </form>
-            )}
+                {registerMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Cadastrar
+              </Button>
+            </form>
+          )}
 
-            <div className="mt-4 text-center">
-              <button
-                type="button"
-                className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                onClick={() => setMode(mode === "login" ? "register" : "login")}
-                data-testid="button-toggle-mode"
-              >
-                {mode === "login" ? "Não tem conta? Cadastre-se" : "Já tem conta? Entre aqui"}
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-
-
+          <div className="text-center pt-1">
+            <button
+              type="button"
+              className="text-sm text-gold-muted hover:text-gold transition-colors"
+              onClick={() => setMode(mode === "login" ? "register" : "login")}
+              data-testid="button-toggle-mode"
+            >
+              {mode === "login" ? "Não tem conta? Cadastre-se" : "Já tem conta? Entre aqui"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

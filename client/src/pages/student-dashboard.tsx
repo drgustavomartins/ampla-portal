@@ -3,13 +3,12 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
-  ChevronRight, GraduationCap, Calendar, Layers
+  ChevronRight, Calendar, Layers
 } from "lucide-react";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
@@ -66,18 +65,16 @@ export default function StudentDashboard() {
   // Video embed logic
   const getEmbedUrl = (url: string) => {
     if (!url) return null;
-    // YouTube
     const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
     if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
-    // Vimeo
     const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
     if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-    // Google Drive
     const driveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
     if (driveMatch) return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
     return url;
   };
 
+  // ========== LESSON VIEW ==========
   if (selectedLesson) {
     const embedUrl = getEmbedUrl(selectedLesson.videoUrl || "");
     const isCompleted = completedIds.has(selectedLesson.id);
@@ -90,17 +87,17 @@ export default function StudentDashboard() {
     return (
       <div className="min-h-screen bg-background">
         {/* Top bar */}
-        <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-10">
+        <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm sticky top-0 z-10">
           <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
             <button
               onClick={() => setSelectedLesson(null)}
-              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+              className="text-sm text-muted-foreground hover:text-gold flex items-center gap-1 transition-colors"
               data-testid="button-back-to-modules"
             >
               <ChevronRight className="w-4 h-4 rotate-180" />
               Voltar
             </button>
-            <span className="text-sm font-medium text-muted-foreground">{currentModule?.title}</span>
+            <span className="text-xs font-medium text-gold-muted uppercase tracking-wider">{currentModule?.title}</span>
           </div>
         </header>
 
@@ -109,7 +106,7 @@ export default function StudentDashboard() {
             {/* Video Area */}
             <div className="space-y-4">
               {embedUrl ? (
-                <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border/30">
                   <iframe
                     src={embedUrl}
                     className="w-full h-full"
@@ -119,9 +116,9 @@ export default function StudentDashboard() {
                   />
                 </div>
               ) : (
-                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
+                <div className="aspect-video bg-card rounded-lg flex items-center justify-center ring-1 ring-border/30">
                   <div className="text-center space-y-2 text-muted-foreground">
-                    <Play className="w-12 h-12 mx-auto opacity-40" />
+                    <Play className="w-12 h-12 mx-auto opacity-30" />
                     <p className="text-sm">Vídeo será adicionado em breve</p>
                   </div>
                 </div>
@@ -130,13 +127,13 @@ export default function StudentDashboard() {
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h2 className="text-lg font-semibold">{selectedLesson.title}</h2>
+                    <h2 className="text-lg font-semibold text-foreground">{selectedLesson.title}</h2>
                     {selectedLesson.description && (
                       <p className="text-sm text-muted-foreground mt-1">{selectedLesson.description}</p>
                     )}
                   </div>
                   {selectedLesson.duration && (
-                    <Badge variant="secondary" className="shrink-0">
+                    <Badge variant="secondary" className="shrink-0 text-xs">
                       <Clock className="w-3 h-3 mr-1" />
                       {selectedLesson.duration}
                     </Badge>
@@ -147,6 +144,7 @@ export default function StudentDashboard() {
                   <Button
                     variant={isCompleted ? "secondary" : "default"}
                     size="sm"
+                    className={isCompleted ? "" : "bg-gold text-background hover:bg-gold/90"}
                     onClick={() => completeMutation.mutate({ lessonId: selectedLesson.id, complete: !isCompleted })}
                     data-testid="button-toggle-complete"
                   >
@@ -160,12 +158,12 @@ export default function StudentDashboard() {
                   <div className="flex-1" />
 
                   {prevLesson && (
-                    <Button variant="outline" size="sm" onClick={() => setSelectedLesson(prevLesson)}>
+                    <Button variant="outline" size="sm" className="border-border/50" onClick={() => setSelectedLesson(prevLesson)}>
                       Anterior
                     </Button>
                   )}
                   {nextLesson && (
-                    <Button size="sm" onClick={() => setSelectedLesson(nextLesson)}>
+                    <Button size="sm" className="bg-gold text-background hover:bg-gold/90" onClick={() => setSelectedLesson(nextLesson)}>
                       Próxima
                     </Button>
                   )}
@@ -175,7 +173,7 @@ export default function StudentDashboard() {
 
             {/* Lesson list sidebar */}
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              <h3 className="text-xs font-semibold text-gold-muted uppercase tracking-brand mb-3">
                 Aulas do módulo
               </h3>
               {moduleLessons.map((lesson, i) => {
@@ -187,14 +185,14 @@ export default function StudentDashboard() {
                     onClick={() => setSelectedLesson(lesson)}
                     className={`w-full text-left p-3 rounded-lg transition-colors flex items-start gap-3 ${
                       isActive
-                        ? "bg-primary/10 border border-primary/20"
-                        : "hover:bg-muted/50"
+                        ? "bg-primary/10 border border-gold/20"
+                        : "hover:bg-card/80"
                     }`}
                     data-testid={`button-lesson-${lesson.id}`}
                   >
                     <div className="mt-0.5 shrink-0">
                       {done ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        <CheckCircle2 className="w-4 h-4 text-gold" />
                       ) : (
                         <span className="w-4 h-4 flex items-center justify-center text-xs text-muted-foreground font-medium">
                           {i + 1}
@@ -202,7 +200,7 @@ export default function StudentDashboard() {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className={`text-sm font-medium truncate ${isActive ? "text-primary" : ""}`}>
+                      <p className={`text-sm font-medium truncate ${isActive ? "text-gold" : ""}`}>
                         {lesson.title}
                       </p>
                       {lesson.duration && (
@@ -219,20 +217,21 @@ export default function StudentDashboard() {
     );
   }
 
+  // ========== MAIN DASHBOARD ==========
   return (
     <div className="min-h-screen bg-background">
       {/* Top bar */}
-      <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <img src="/logo-icon.png" alt="Ampla Facial" className="w-8 h-8 object-contain" />
-            <span className="font-semibold text-sm">Ampla Facial</span>
+          <div className="flex items-center gap-3">
+            <img src="/logo-icon.png" alt="Ampla Facial" className="w-7 h-7 object-contain" />
+            <span className="text-sm font-medium text-gold tracking-wide">AMPLA FACIAL</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground hidden sm:block">
               Olá, {user?.name?.split(" ")[0]}
             </span>
-            <Button variant="ghost" size="sm" onClick={logout} data-testid="button-logout">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-gold" onClick={logout} data-testid="button-logout">
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
@@ -242,55 +241,55 @@ export default function StudentDashboard() {
       <div className="max-w-5xl mx-auto p-4 lg:p-6 space-y-6">
         {/* Stats row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Card>
+          <Card className="border-border/40 bg-card/60">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Layers className="w-5 h-5 text-primary" />
+              <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                <Layers className="w-5 h-5 text-gold" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Progresso geral</p>
-                <p className="text-lg font-semibold">{progressPercent}%</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Progresso</p>
+                <p className="text-lg font-semibold text-foreground">{progressPercent}%</p>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-border/40 bg-card/60">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-primary" />
+              <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-gold" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Plano</p>
-                <p className="text-lg font-semibold">{userPlan?.name || "—"}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Plano</p>
+                <p className="text-lg font-semibold text-foreground">{userPlan?.name || "—"}</p>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-border/40 bg-card/60">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-primary" />
+              <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-gold" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Dias restantes</p>
-                <p className="text-lg font-semibold">{daysLeft}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Dias restantes</p>
+                <p className="text-lg font-semibold text-foreground">{daysLeft}</p>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Overall progress bar */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Progresso total</span>
-            <span className="font-medium">{completedCount}/{totalLessons} aulas</span>
+            <span className="font-medium text-gold">{completedCount}/{totalLessons} aulas</span>
           </div>
-          <Progress value={progressPercent} className="h-2" />
+          <Progress value={progressPercent} className="h-1.5 bg-border/30" />
         </div>
 
-        <Separator />
+        <div className="w-full h-px bg-border/30" />
 
         {/* Modules */}
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold">Módulos</h2>
+          <h2 className="text-xs font-semibold text-gold-muted uppercase tracking-brand">Módulos</h2>
           <div className="grid gap-3">
             {modules.map((mod) => {
               const modLessons = getLessonsForModule(mod.id);
@@ -298,32 +297,32 @@ export default function StudentDashboard() {
               const isOpen = selectedModule === mod.id;
 
               return (
-                <Card key={mod.id} className="overflow-hidden">
+                <Card key={mod.id} className="overflow-hidden border-border/40 bg-card/60">
                   <button
-                    className="w-full text-left p-4 flex items-center gap-4 hover:bg-muted/30 transition-colors"
+                    className="w-full text-left p-4 flex items-center gap-4 hover:bg-muted/20 transition-colors"
                     onClick={() => setSelectedModule(isOpen ? null : mod.id)}
                     data-testid={`button-module-${mod.id}`}
                   >
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <BookOpen className="w-5 h-5 text-primary" />
+                    <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center shrink-0">
+                      <BookOpen className="w-5 h-5 text-gold" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <h3 className="font-medium truncate">{mod.title}</h3>
-                        <Badge variant="secondary" className="shrink-0 text-xs">
+                        <h3 className="font-medium truncate text-foreground">{mod.title}</h3>
+                        <Badge variant="secondary" className="shrink-0 text-xs bg-gold/10 text-gold border-0">
                           {modLessons.filter(l => completedIds.has(l.id)).length}/{modLessons.length}
                         </Badge>
                       </div>
                       {mod.description && (
                         <p className="text-sm text-muted-foreground mt-0.5 truncate">{mod.description}</p>
                       )}
-                      <Progress value={modProgress} className="h-1.5 mt-2" />
+                      <Progress value={modProgress} className="h-1 mt-2 bg-border/30" />
                     </div>
                     <ChevronRight className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`} />
                   </button>
 
                   {isOpen && (
-                    <div className="border-t">
+                    <div className="border-t border-border/30">
                       {modLessons.length === 0 ? (
                         <p className="p-4 text-sm text-muted-foreground">Nenhuma aula neste módulo ainda.</p>
                       ) : (
@@ -333,12 +332,12 @@ export default function StudentDashboard() {
                             <button
                               key={lesson.id}
                               onClick={() => setSelectedLesson(lesson)}
-                              className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors border-b last:border-b-0"
+                              className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors border-b border-border/20 last:border-b-0"
                               data-testid={`button-lesson-item-${lesson.id}`}
                             >
                               <div className="shrink-0">
                                 {done ? (
-                                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                  <CheckCircle2 className="w-4 h-4 text-gold" />
                                 ) : (
                                   <Play className="w-4 h-4 text-muted-foreground" />
                                 )}
@@ -365,7 +364,7 @@ export default function StudentDashboard() {
         </div>
       </div>
 
-      <footer className="border-t mt-8 py-4">
+      <footer className="border-t border-border/30 mt-8 py-4">
         <div className="max-w-5xl mx-auto px-4">
           <PerplexityAttribution />
         </div>
