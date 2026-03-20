@@ -138,9 +138,7 @@ export default function AdminDashboard() {
       <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
-              <Shield className="w-4 h-4" />
-            </div>
+            <img src="/logo-icon.png" alt="Ampla Facial" className="w-8 h-8 object-contain" />
             <span className="font-semibold text-sm">Ampla Facial — Admin</span>
           </div>
           <div className="flex items-center gap-3">
