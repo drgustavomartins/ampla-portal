@@ -13,15 +13,17 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
   Users, BookOpen, Layers, LogOut, Plus, Trash2, Check, X,
-  Clock, Video, Shield, GraduationCap, BarChart3
+  Clock, Video, Shield, GraduationCap, ChevronUp, ChevronDown, Eye
 } from "lucide-react";
 import type { Module, Lesson, Plan, User } from "@shared/schema";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 
 type SafeUser = Omit<User, "password">;
+type LessonProgress = { id: number; userId: number; lessonId: number; completed: boolean; completedAt: string | null };
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -32,6 +34,10 @@ export default function AdminDashboard() {
   const { data: modules = [] } = useQuery<Module[]>({ queryKey: ["/api/modules"] });
   const { data: lessons = [] } = useQuery<Lesson[]>({ queryKey: ["/api/lessons"] });
   const { data: plans = [] } = useQuery<Plan[]>({ queryKey: ["/api/plans"] });
+  const { data: allProgress = [] } = useQuery<LessonProgress[]>({ queryKey: ["/api/admin/students/progress"] });
+
+  // Student detail view
+  const [selectedStudent, setSelectedStudent] = useState<SafeUser | null>(null);
 
   // Approve / Revoke
   const approveMutation = useMutation({
@@ -98,6 +104,28 @@ export default function AdminDashboard() {
     },
   });
 
+  // Reorder modules
+  const reorderMutation = useMutation({
+    mutationFn: async (orderedIds: number[]) => {
+      await apiRequest("POST", "/api/admin/modules/reorder", { orderedIds });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/modules"] });
+      toast({ title: "Ordem atualizada" });
+    },
+  });
+
+  const moveModule = (moduleId: number, direction: "up" | "down") => {
+    const sorted = [...modules].sort((a, b) => a.order - b.order);
+    const idx = sorted.findIndex(m => m.id === moduleId);
+    if (direction === "up" && idx > 0) {
+      [sorted[idx], sorted[idx - 1]] = [sorted[idx - 1], sorted[idx]];
+    } else if (direction === "down" && idx < sorted.length - 1) {
+      [sorted[idx], sorted[idx + 1]] = [sorted[idx + 1], sorted[idx]];
+    }
+    reorderMutation.mutate(sorted.map(m => m.id));
+  };
+
   // Lesson CRUD
   const [lessonForm, setLessonForm] = useState({
     moduleId: 0, title: "", description: "", videoUrl: "", duration: "",
@@ -131,6 +159,17 @@ export default function AdminDashboard() {
   });
 
   const approvedStudents = students.filter(s => s.approved);
+
+  // Progress helpers
+  const getStudentProgress = (studentId: number) => {
+    const completed = allProgress.filter(p => p.userId === studentId && p.completed);
+    const total = lessons.length;
+    return { completed: completed.length, total, percent: total > 0 ? Math.round((completed.length / total) * 100) : 0 };
+  };
+
+  const getStudentLessonCompleted = (studentId: number, lessonId: number) => {
+    return allProgress.some(p => p.userId === studentId && p.lessonId === lessonId && p.completed);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -336,6 +375,7 @@ export default function AdminDashboard() {
                     const daysLeft = s.accessExpiresAt
                       ? Math.max(0, Math.ceil((new Date(s.accessExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
                       : 0;
+                    const progress = getStudentProgress(s.id);
                     return (
                       <Card key={s.id} className="border-border/30 bg-card/50 hover:bg-card/70 transition-colors">
                         <CardContent className="p-4 flex items-center justify-between gap-4">
@@ -357,13 +397,39 @@ export default function AdminDashboard() {
                               {plan && <span>{plan.name}</span>}
                               {s.approved && daysLeft > 0 && (
                                 <>
-                                  <span className="text-border">•</span>
+                                  <span className="text-border">·</span>
                                   <span>{daysLeft} dias restantes</span>
                                 </>
                               )}
+                              {s.approved && (
+                                <>
+                                  <span className="text-border">·</span>
+                                  <span className={progress.percent === 100 ? "text-emerald-400" : ""}>
+                                    {progress.completed}/{progress.total} aulas
+                                  </span>
+                                </>
+                              )}
                             </div>
+                            {/* Progress bar */}
+                            {s.approved && lessons.length > 0 && (
+                              <div className="mt-2.5 flex items-center gap-3">
+                                <Progress value={progress.percent} className="h-1.5 flex-1" />
+                                <span className="text-xs text-muted-foreground w-8 text-right">{progress.percent}%</span>
+                              </div>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
+                            {s.approved && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-muted-foreground hover:text-gold"
+                                onClick={() => setSelectedStudent(s)}
+                                title="Ver progresso"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
                             {s.approved ? (
                               <Button
                                 size="sm"
@@ -402,6 +468,70 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
+
+            {/* Student Progress Detail Dialog */}
+            <Dialog open={!!selectedStudent} onOpenChange={(open) => !open && setSelectedStudent(null)}>
+              <DialogContent className="bg-card border-border/40 max-w-lg">
+                <DialogHeader>
+                  <DialogTitle className="text-lg">Progresso do Aluno</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">
+                    {selectedStudent?.name} — {selectedStudent?.email}
+                  </DialogDescription>
+                </DialogHeader>
+                {selectedStudent && (
+                  <div className="space-y-4 pt-2">
+                    {/* Overall progress */}
+                    {(() => {
+                      const prog = getStudentProgress(selectedStudent.id);
+                      return (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Progresso geral</span>
+                            <span className="font-medium text-foreground">{prog.completed}/{prog.total} aulas ({prog.percent}%)</span>
+                          </div>
+                          <Progress value={prog.percent} className="h-2" />
+                        </div>
+                      );
+                    })()}
+
+                    {/* Per-module breakdown */}
+                    <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                      {modules.sort((a, b) => a.order - b.order).map((mod) => {
+                        const modLessons = lessons.filter(l => l.moduleId === mod.id).sort((a, b) => a.order - b.order);
+                        if (modLessons.length === 0) return null;
+                        const completedCount = modLessons.filter(l => getStudentLessonCompleted(selectedStudent.id, l.id)).length;
+                        return (
+                          <div key={mod.id} className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-xs font-semibold text-gold uppercase tracking-brand">{mod.title}</h4>
+                              <span className="text-xs text-muted-foreground">{completedCount}/{modLessons.length}</span>
+                            </div>
+                            {modLessons.map((lesson) => {
+                              const done = getStudentLessonCompleted(selectedStudent.id, lesson.id);
+                              return (
+                                <div key={lesson.id} className="flex items-center gap-2.5 pl-2">
+                                  <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
+                                    done ? "bg-emerald-500/20" : "bg-card/80 border border-border/40"
+                                  }`}>
+                                    {done && <Check className="w-2.5 h-2.5 text-emerald-400" />}
+                                  </div>
+                                  <span className={`text-sm truncate ${done ? "text-foreground" : "text-muted-foreground"}`}>
+                                    {lesson.title}
+                                  </span>
+                                  {lesson.duration && (
+                                    <span className="text-xs text-muted-foreground shrink-0 ml-auto">{lesson.duration}</span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           {/* ========== MODULES TAB ========== */}
@@ -467,17 +597,44 @@ export default function AdminDashboard() {
               </Card>
             ) : (
               <div className="space-y-3">
-                {modules.map((mod, idx) => {
+                {[...modules].sort((a, b) => a.order - b.order).map((mod, idx) => {
                   const modLessons = lessons.filter(l => l.moduleId === mod.id);
+                  const sortedModules = [...modules].sort((a, b) => a.order - b.order);
+                  const isFirst = idx === 0;
+                  const isLast = idx === sortedModules.length - 1;
                   return (
                     <Card key={mod.id} className="border-border/30 bg-card/50 hover:bg-card/70 transition-colors">
                       <CardContent className="p-5 flex items-start justify-between gap-4">
                         <div className="flex items-start gap-4 min-w-0 flex-1">
+                          {/* Reorder arrows */}
+                          <div className="flex flex-col gap-0.5 shrink-0 mt-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className={`h-6 w-6 p-0 ${isFirst ? "text-muted-foreground/20 cursor-default" : "text-muted-foreground hover:text-gold"}`}
+                              onClick={() => !isFirst && moveModule(mod.id, "up")}
+                              disabled={isFirst || reorderMutation.isPending}
+                            >
+                              <ChevronUp className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className={`h-6 w-6 p-0 ${isLast ? "text-muted-foreground/20 cursor-default" : "text-muted-foreground hover:text-gold"}`}
+                              onClick={() => !isLast && moveModule(mod.id, "down")}
+                              disabled={isLast || reorderMutation.isPending}
+                            >
+                              <ChevronDown className="w-4 h-4" />
+                            </Button>
+                          </div>
                           <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center shrink-0 mt-0.5">
                             <BookOpen className="w-5 h-5 text-gold" />
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-foreground text-[15px]">{mod.title}</p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground font-mono">{String(idx + 1).padStart(2, "0")}</span>
+                              <p className="font-medium text-foreground text-[15px]">{mod.title}</p>
+                            </div>
                             {mod.description && (
                               <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{mod.description}</p>
                             )}
@@ -604,7 +761,7 @@ export default function AdminDashboard() {
               </Card>
             ) : (
               <div className="space-y-6">
-                {modules.map((mod) => {
+                {[...modules].sort((a, b) => a.order - b.order).map((mod) => {
                   const modLessons = lessons.filter(l => l.moduleId === mod.id).sort((a, b) => a.order - b.order);
                   if (modLessons.length === 0) return null;
                   return (

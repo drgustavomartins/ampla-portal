@@ -230,6 +230,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return json(res, safe);
     }
 
+    // ── ADMIN: Student Progress (all students) ──
+    if (path === "/api/admin/students/progress" && method === "GET") {
+      const allProgress = await getDb().select().from(lessonProgress);
+      return json(res, allProgress);
+    }
+
+    // ── ADMIN: Reorder Modules ──
+    if (path === "/api/admin/modules/reorder" && method === "POST") {
+      const { orderedIds } = req.body;
+      if (!orderedIds || !Array.isArray(orderedIds)) {
+        return json(res, { message: "orderedIds array obrigatório" }, 400);
+      }
+      for (let i = 0; i < orderedIds.length; i++) {
+        await getDb().update(modules).set({ order: i + 1 }).where(eq(modules.id, orderedIds[i]));
+      }
+      const updated = await getDb().select().from(modules).orderBy(modules.order);
+      return json(res, updated);
+    }
+
     // ── ADMIN: Modules ──
     if (path === "/api/admin/modules" && method === "POST") {
       const [mod] = await getDb().insert(modules).values(req.body).returning();
