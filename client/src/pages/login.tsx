@@ -70,7 +70,7 @@ export default function LoginPage() {
           <img
             src="/logo-transparent.png"
             alt="Ampla Facial"
-            className="mx-auto h-28 w-auto"
+            className="mx-auto h-24 w-auto rounded-xl"
           />
           <p className="text-sm text-muted-foreground">Portal de Aulas — Método NaturalUp®</p>
         </div>
