@@ -61,10 +61,43 @@ export function registerRoutes(server: Server, app: Express) {
       if (!user) {
         return res.status(401).json({ message: "Email ou senha incorretos" });
       }
+
+      // Rate limiting: check if account is locked
+      if (user.lockedUntil) {
+        const lockExpiry = new Date(user.lockedUntil);
+        if (new Date() < lockExpiry) {
+          const minutesLeft = Math.ceil((lockExpiry.getTime() - Date.now()) / 60000);
+          return res.status(429).json({ message: `Conta bloqueada temporariamente. Tente novamente em ${minutesLeft} minuto(s).` });
+        }
+        // Lock expired — reset
+        await storage.updateUser(user.id, { loginAttempts: 0, lockedUntil: null });
+        user.loginAttempts = 0;
+        user.lockedUntil = null;
+      }
+
+      // Check if attempts exceeded
+      if ((user.loginAttempts || 0) >= 5) {
+        const lockUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+        await storage.updateUser(user.id, { lockedUntil: lockUntil });
+        return res.status(429).json({ message: "Conta bloqueada temporariamente. Tente novamente em 15 minuto(s)." });
+      }
+
       const validPassword = await bcrypt.compare(data.password, user.password);
       if (!validPassword) {
+        const newAttempts = (user.loginAttempts || 0) + 1;
+        const updateData: any = { loginAttempts: newAttempts };
+        if (newAttempts >= 5) {
+          updateData.lockedUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+        }
+        await storage.updateUser(user.id, updateData);
         return res.status(401).json({ message: "Email ou senha incorretos" });
       }
+
+      // Successful login — reset attempts
+      if ((user.loginAttempts || 0) > 0) {
+        await storage.updateUser(user.id, { loginAttempts: 0, lockedUntil: null });
+      }
+
       if (user.role === "student" && !user.approved) {
         return res.status(403).json({ message: "Sua conta ainda não foi aprovada. Aguarde o administrador." });
       }
@@ -75,7 +108,7 @@ export function registerRoutes(server: Server, app: Express) {
           return res.status(403).json({ message: "Seu acesso expirou. Entre em contato com o administrador." });
         }
       }
-      const { password, ...safeUser } = user;
+      const { password, lockedUntil: _l, loginAttempts: _a, ...safeUser } = user;
       const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
       return res.json({ user: safeUser, token });
     } catch (e: any) {
@@ -158,17 +191,35 @@ export function registerRoutes(server: Server, app: Express) {
 
   // ==================== PROGRESS ====================
   app.get("/api/progress/:userId", async (req, res) => {
-    const progress = await storage.getProgress(parseInt(req.params.userId));
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    const targetUserId = parseInt(req.params.userId);
+    if (auth.role !== "admin" && auth.userId !== targetUserId) {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const progress = await storage.getProgress(targetUserId);
     res.json(progress);
   });
 
   app.post("/api/progress/:userId/lesson/:lessonId/complete", async (req, res) => {
-    const p = await storage.markLessonComplete(parseInt(req.params.userId), parseInt(req.params.lessonId));
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    const targetUserId = parseInt(req.params.userId);
+    if (auth.role !== "admin" && auth.userId !== targetUserId) {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const p = await storage.markLessonComplete(targetUserId, parseInt(req.params.lessonId));
     res.json(p);
   });
 
   app.post("/api/progress/:userId/lesson/:lessonId/incomplete", async (req, res) => {
-    await storage.markLessonIncomplete(parseInt(req.params.userId), parseInt(req.params.lessonId));
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    const targetUserId = parseInt(req.params.userId);
+    if (auth.role !== "admin" && auth.userId !== targetUserId) {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    await storage.markLessonIncomplete(targetUserId, parseInt(req.params.lessonId));
     res.json({ success: true });
   });
 
@@ -297,7 +348,12 @@ export function registerRoutes(server: Server, app: Express) {
 
   app.patch("/api/admin/students/:id", async (req, res) => {
     if (!requireAdmin(req, res)) return;
-    const updated = await storage.updateUser(parseInt(req.params.id), req.body);
+    const allowedFields = ['name', 'email', 'phone', 'planId', 'approved', 'accessExpiresAt'];
+    const updateData: any = {};
+    for (const key of allowedFields) {
+      if (req.body[key] !== undefined) updateData[key] = req.body[key];
+    }
+    const updated = await storage.updateUser(parseInt(req.params.id), updateData);
     if (!updated) return res.status(404).json({ message: "Aluno não encontrado" });
     const { password, ...safe } = updated;
     res.json(safe);
@@ -393,7 +449,8 @@ export function registerRoutes(server: Server, app: Express) {
   });
 
   // ==================== SEED (only if empty) ====================
-  app.all("/api/admin/seed", async (_req, res) => {
+  app.all("/api/admin/seed", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     const existingPlans = await storage.getPlans();
     if (existingPlans.length > 0) {
       return res.json({ message: "Banco já possui dados" });

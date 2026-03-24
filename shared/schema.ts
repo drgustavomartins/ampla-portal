@@ -23,6 +23,8 @@ export const users = pgTable("users", {
   approved: boolean("approved").notNull().default(false),
   accessExpiresAt: text("access_expires_at"),
   createdAt: text("created_at").notNull(),
+  loginAttempts: integer("login_attempts").notNull().default(0),
+  lockedUntil: text("locked_until"),
 });
 
 // Modules

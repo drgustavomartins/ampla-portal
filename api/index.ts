@@ -44,6 +44,8 @@ const users = pgTable("users", {
   approved: boolean("approved").notNull().default(false),
   accessExpiresAt: text("access_expires_at"),
   createdAt: text("created_at").notNull(),
+  loginAttempts: integer("login_attempts").notNull().default(0),
+  lockedUntil: text("locked_until"),
 });
 
 const modules = pgTable("modules", {
@@ -137,8 +139,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!email || !password) return json(res, { message: "Email e senha obrigatórios" }, 400);
       const [user] = await getDb().select().from(users).where(eq(users.email, email));
       if (!user) return json(res, { message: "Email ou senha incorretos" }, 401);
+
+      // Rate limiting: check if account is locked
+      if (user.lockedUntil) {
+        const lockExpiry = new Date(user.lockedUntil);
+        if (new Date() < lockExpiry) {
+          const minutesLeft = Math.ceil((lockExpiry.getTime() - Date.now()) / 60000);
+          return json(res, { message: `Conta bloqueada temporariamente. Tente novamente em ${minutesLeft} minuto(s).` }, 429);
+        }
+        // Lock expired — reset
+        await getDb().update(users).set({ loginAttempts: 0, lockedUntil: null }).where(eq(users.id, user.id));
+        user.loginAttempts = 0;
+        user.lockedUntil = null;
+      }
+
+      // Check if attempts exceeded (in case lockedUntil wasn't set yet)
+      if ((user.loginAttempts || 0) >= 5) {
+        const lockUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+        await getDb().update(users).set({ lockedUntil: lockUntil }).where(eq(users.id, user.id));
+        return json(res, { message: "Conta bloqueada temporariamente. Tente novamente em 15 minuto(s)." }, 429);
+      }
+
       const valid = await bcrypt.compare(password, user.password);
-      if (!valid) return json(res, { message: "Email ou senha incorretos" }, 401);
+      if (!valid) {
+        const newAttempts = (user.loginAttempts || 0) + 1;
+        const updateData: any = { loginAttempts: newAttempts };
+        if (newAttempts >= 5) {
+          updateData.lockedUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+        }
+        await getDb().update(users).set(updateData).where(eq(users.id, user.id));
+        return json(res, { message: "Email ou senha incorretos" }, 401);
+      }
+
+      // Successful login — reset attempts
+      if ((user.loginAttempts || 0) > 0) {
+        await getDb().update(users).set({ loginAttempts: 0, lockedUntil: null }).where(eq(users.id, user.id));
+      }
+
       if (user.role === "student" && !user.approved) {
         return json(res, { message: "Sua conta ainda não foi aprovada. Aguarde o administrador." }, 403);
       }
@@ -147,7 +184,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return json(res, { message: "Seu acesso expirou. Entre em contato com o administrador." }, 403);
         }
       }
-      const { password: _, ...safeUser } = user;
+      const { password: _, lockedUntil: _l, loginAttempts: _a, ...safeUser } = user;
       const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
       return json(res, { user: safeUser, token });
     }
@@ -229,13 +266,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ── PROGRESS ──
     const progressMatch = path.match(/^\/api\/progress\/(\d+)$/);
     if (progressMatch && method === "GET") {
-      const progress = await getDb().select().from(lessonProgress).where(eq(lessonProgress.userId, parseInt(progressMatch[1])));
+      const auth = authenticateRequest(req);
+      if (!auth) return json(res, { message: "Não autorizado" }, 401);
+      const targetUserId = parseInt(progressMatch[1]);
+      if (auth.role !== "admin" && auth.userId !== targetUserId) {
+        return json(res, { message: "Acesso negado" }, 403);
+      }
+      const progress = await getDb().select().from(lessonProgress).where(eq(lessonProgress.userId, targetUserId));
       return json(res, progress);
     }
 
     const completeMatch = path.match(/^\/api\/progress\/(\d+)\/lesson\/(\d+)\/complete$/);
     if (completeMatch && method === "POST") {
+      const auth = authenticateRequest(req);
+      if (!auth) return json(res, { message: "Não autorizado" }, 401);
       const userId = parseInt(completeMatch[1]);
+      if (auth.role !== "admin" && auth.userId !== userId) {
+        return json(res, { message: "Acesso negado" }, 403);
+      }
       const lessonId = parseInt(completeMatch[2]);
       const [existing] = await getDb().select().from(lessonProgress).where(and(eq(lessonProgress.userId, userId), eq(lessonProgress.lessonId, lessonId)));
       if (existing) {
@@ -248,7 +296,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const incompleteMatch = path.match(/^\/api\/progress\/(\d+)\/lesson\/(\d+)\/incomplete$/);
     if (incompleteMatch && method === "POST") {
-      await getDb().delete(lessonProgress).where(and(eq(lessonProgress.userId, parseInt(incompleteMatch[1])), eq(lessonProgress.lessonId, parseInt(incompleteMatch[2]))));
+      const auth = authenticateRequest(req);
+      if (!auth) return json(res, { message: "Não autorizado" }, 401);
+      const targetUserId = parseInt(incompleteMatch[1]);
+      if (auth.role !== "admin" && auth.userId !== targetUserId) {
+        return json(res, { message: "Acesso negado" }, 403);
+      }
+      await getDb().delete(lessonProgress).where(and(eq(lessonProgress.userId, targetUserId), eq(lessonProgress.lessonId, parseInt(incompleteMatch[2]))));
       return json(res, { success: true });
     }
 
@@ -305,7 +359,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const patchStudentMatch = path.match(/^\/api\/admin\/students\/(\d+)$/);
     if (patchStudentMatch && method === "PATCH") {
       if (!requireAdmin(req, res)) return;
-      const [updated] = await getDb().update(users).set(req.body).where(eq(users.id, parseInt(patchStudentMatch[1]))).returning();
+      const allowedFields = ['name', 'email', 'phone', 'planId', 'approved', 'accessExpiresAt'];
+      const updateData: any = {};
+      for (const key of allowedFields) {
+        if (req.body[key] !== undefined) updateData[key] = req.body[key];
+      }
+      const [updated] = await getDb().update(users).set(updateData).where(eq(users.id, parseInt(patchStudentMatch[1]))).returning();
       if (!updated) return json(res, { message: "Aluno não encontrado" }, 404);
       const { password, ...safe } = updated;
       return json(res, safe);
@@ -471,6 +530,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── SEED ──
     if (path === "/api/admin/seed") {
+      if (!requireAdmin(req, res)) return;
       const existingPlans = await getDb().select().from(plans);
       if (existingPlans.length > 0) {
         return json(res, { message: "Banco já possui dados" });
@@ -538,6 +598,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await getDb().execute(`CREATE TABLE IF NOT EXISTS password_resets (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, token TEXT NOT NULL UNIQUE, expires_at TEXT NOT NULL, used BOOLEAN NOT NULL DEFAULT false, created_at TEXT NOT NULL)`);
         results.push("password_resets table created");
       } catch (e: any) { results.push(`password_resets: ${e.message}`); }
+      try {
+        await getDb().execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS login_attempts INTEGER DEFAULT 0`);
+        results.push("login_attempts column added to users");
+      } catch (e: any) { results.push(`login_attempts: ${e.message}`); }
+      try {
+        await getDb().execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TEXT`);
+        results.push("locked_until column added to users");
+      } catch (e: any) { results.push(`locked_until: ${e.message}`); }
       return json(res, { message: "Migração concluída", results });
     }
 
