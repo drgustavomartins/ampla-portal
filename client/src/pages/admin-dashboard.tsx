@@ -406,10 +406,10 @@ export default function AdminDashboard() {
               key={stat.label}
               className={`${stat.border} bg-card/50 hover:bg-card/70 transition-colors`}
             >
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`w-10 h-10 rounded-lg ${stat.bg} flex items-center justify-center`}>
-                    <stat.icon className={`w-5 h-5 ${stat.color}`} />
+              <CardContent className="p-3 sm:p-5">
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg ${stat.bg} flex items-center justify-center`}>
+                    <stat.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${stat.color}`} />
                   </div>
                   {stat.label === "Pendentes" && pendingStudents.length > 0 && (
                     <span className="relative flex h-2.5 w-2.5">
@@ -418,7 +418,7 @@ export default function AdminDashboard() {
                     </span>
                   )}
                 </div>
-                <p className="text-2xl font-semibold text-foreground">{stat.value}</p>
+                <p className="text-xl sm:text-2xl font-semibold text-foreground">{stat.value}</p>
                 <p className="text-xs text-muted-foreground uppercase tracking-brand mt-1">
                   {stat.label}
                 </p>
@@ -429,38 +429,38 @@ export default function AdminDashboard() {
 
         {/* ─── Main Content Tabs ─── */}
         <Tabs defaultValue="lessons" className="space-y-6">
-          <TabsList className="w-full grid grid-cols-4 bg-card/60 border border-border/30 p-1 h-12">
+          <TabsList className="w-full grid grid-cols-4 bg-card/60 border border-border/30 p-1 h-11 sm:h-12">
             <TabsTrigger
               value="students"
               data-testid="tab-students"
-              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-sm font-medium transition-all"
+              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
             >
-              <Users className="w-4 h-4 mr-2" />
-              Alunos
+              <Users className="w-4 h-4 sm:mr-2 shrink-0" />
+              <span className="hidden sm:inline">Alunos</span>
             </TabsTrigger>
             <TabsTrigger
               value="plans"
               data-testid="tab-plans"
-              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-sm font-medium transition-all"
+              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
             >
-              <CreditCard className="w-4 h-4 mr-2" />
-              Planos
+              <CreditCard className="w-4 h-4 sm:mr-2 shrink-0" />
+              <span className="hidden sm:inline">Planos</span>
             </TabsTrigger>
             <TabsTrigger
               value="modules"
               data-testid="tab-modules"
-              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-sm font-medium transition-all"
+              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
             >
-              <Layers className="w-4 h-4 mr-2" />
-              Módulos
+              <Layers className="w-4 h-4 sm:mr-2 shrink-0" />
+              <span className="hidden sm:inline">Módulos</span>
             </TabsTrigger>
             <TabsTrigger
               value="lessons"
               data-testid="tab-lessons"
-              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-sm font-medium transition-all"
+              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
             >
-              <Video className="w-4 h-4 mr-2" />
-              Aulas
+              <Video className="w-4 h-4 sm:mr-2 shrink-0" />
+              <span className="hidden sm:inline">Aulas</span>
             </TabsTrigger>
           </TabsList>
 
@@ -478,16 +478,16 @@ export default function AdminDashboard() {
                   {pendingStudents.map((s) => {
                     return (
                       <Card key={s.id} className="border-amber-500/20 bg-card/50">
-                        <CardContent className="p-4 flex items-center justify-between gap-4">
-                          <div className="min-w-0 flex-1">
+                        <CardContent className="p-4 space-y-3">
+                          <div className="min-w-0">
                             <p className="font-medium text-foreground truncate">{s.name}</p>
                             <p className="text-sm text-muted-foreground truncate mt-0.5">{s.email}</p>
                             {(s as any).phone && <p className="text-xs text-muted-foreground truncate mt-0.5">{(s as any).phone}</p>}
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-2">
                             <Button
                               size="sm"
-                              className="bg-gold text-background hover:bg-gold/90 font-medium"
+                              className="bg-gold text-background hover:bg-gold/90 font-medium flex-1 sm:flex-none"
                               onClick={() => { setApprovingStudent(s); setApprovePlanId(""); }}
                               data-testid={`button-approve-${s.id}`}
                             >
@@ -555,113 +555,162 @@ export default function AdminDashboard() {
                     const progress = getStudentProgress(s.id);
                     return (
                       <Card key={s.id} className="border-border/30 bg-card/50 hover:bg-card/70 transition-colors">
-                        <CardContent className="p-4 flex items-center justify-between gap-4">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2.5">
-                              <p className="font-medium truncate text-foreground">{s.name}</p>
-                              {s.approved ? (
-                                <Badge variant="secondary" className="text-[11px] bg-emerald-500/10 text-emerald-400 border-0 shrink-0">
-                                  Ativo
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary" className="text-[11px] bg-amber-500/10 text-amber-400 border-0 shrink-0">
-                                  Pendente
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground truncate mt-0.5">{s.email}</p>
-                            {(s as any).phone && <p className="text-xs text-muted-foreground truncate mt-0.5">{(s as any).phone}</p>}
-                            <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
-                              {plan && <span>{plan.name}</span>}
-                              {s.approved && daysLeft > 0 && (
-                                <>
-                                  <span className="text-border">·</span>
-                                  <span>{daysLeft} dias restantes</span>
-                                </>
-                              )}
-                              {s.approved && (
-                                <>
-                                  <span className="text-border">·</span>
-                                  <span className={progress.percent === 100 ? "text-emerald-400" : ""}>
-                                    {progress.completed}/{progress.total} aulas
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                            {/* Progress bar */}
-                            {s.approved && lessons.length > 0 && (
-                              <div className="mt-2.5 flex items-center gap-3">
-                                <Progress value={progress.percent} className="h-1.5 flex-1" />
-                                <span className="text-xs text-muted-foreground w-8 text-right">{progress.percent}%</span>
+                        <CardContent className="p-4 space-y-3">
+                          {/* Row 1: Name + badge + icon buttons */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium truncate text-foreground">{s.name}</p>
+                                {s.approved ? (
+                                  <Badge variant="secondary" className="text-[11px] bg-emerald-500/10 text-emerald-400 border-0 shrink-0">
+                                    Ativo
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-[11px] bg-amber-500/10 text-amber-400 border-0 shrink-0">
+                                    Pendente
+                                  </Badge>
+                                )}
                               </div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {s.approved && (
+                              <p className="text-sm text-muted-foreground truncate mt-0.5">{s.email}</p>
+                              {(s as any).phone && <p className="text-xs text-muted-foreground truncate mt-0.5">{(s as any).phone}</p>}
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {s.approved && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
+                                  onClick={() => setSelectedStudent(s)}
+                                  title="Ver progresso"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="text-muted-foreground hover:text-gold"
-                                onClick={() => setSelectedStudent(s)}
-                                title="Ver progresso"
+                                className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
+                                onClick={() => {
+                                  setEditingStudent(s);
+                                  setEditStudentForm({
+                                    name: s.name,
+                                    phone: (s as any).phone || "",
+                                    planId: s.planId || 0,
+                                    accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
+                                    approved: s.approved,
+                                  });
+                                }}
+                                title="Editar aluno"
                               >
-                                <Eye className="w-3.5 h-3.5" />
+                                <Pencil className="w-3.5 h-3.5" />
                               </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-muted-foreground hover:text-gold"
-                              onClick={() => {
-                                setEditingStudent(s);
-                                setEditStudentForm({
-                                  name: s.name,
-                                  phone: (s as any).phone || "",
-                                  planId: s.planId || 0,
-                                  accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
-                                  approved: s.approved,
-                                });
-                              }}
-                              title="Editar aluno"
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-muted-foreground hover:text-gold"
-                              onClick={() => resetPasswordMutation.mutate(s.id)}
-                              title="Resetar senha"
-                              disabled={resetPasswordMutation.isPending}
-                            >
-                              <KeyRound className="w-3.5 h-3.5" />
-                            </Button>
-                            {s.approved && (
                               <Button
                                 size="sm"
-                                variant="outline"
-                                className="border-gold/30 text-gold hover:bg-gold/10 text-xs"
-                                onClick={() => { setRenewingStudent(s); setRenewDays(30); }}
-                                title="Renovar acesso"
+                                variant="ghost"
+                                className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
+                                onClick={() => resetPasswordMutation.mutate(s.id)}
+                                title="Resetar senha"
+                                disabled={resetPasswordMutation.isPending}
                               >
-                                <RefreshCw className="w-3 h-3 mr-1" />
-                                Renovar
+                                <KeyRound className="w-3.5 h-3.5" />
                               </Button>
-                            )}
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
+                                    data-testid={`button-delete-student-${s.id}`}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="bg-card border-border/40">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Tem certeza que deseja excluir {s.name}? Esta ação não pode ser desfeita.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      onClick={() => deleteStudentMutation.mutate(s.id)}
+                                    >
+                                      Excluir
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </div>
+
+                          {/* Row 2: Plan + stats in grid */}
+                          {s.approved && (
+                            <div className="grid grid-cols-3 gap-2 text-xs">
+                              {plan && (
+                                <div className="bg-background/30 rounded-md px-2.5 py-1.5">
+                                  <span className="text-muted-foreground block text-[10px] uppercase tracking-wider">Plano</span>
+                                  <span className="text-foreground font-medium">{plan.name}</span>
+                                </div>
+                              )}
+                              {daysLeft > 0 && (
+                                <div className="bg-background/30 rounded-md px-2.5 py-1.5">
+                                  <span className="text-muted-foreground block text-[10px] uppercase tracking-wider">Restante</span>
+                                  <span className="text-foreground font-medium">{daysLeft} dias</span>
+                                </div>
+                              )}
+                              <div className="bg-background/30 rounded-md px-2.5 py-1.5">
+                                <span className="text-muted-foreground block text-[10px] uppercase tracking-wider">Aulas</span>
+                                <span className={`font-medium ${progress.percent === 100 ? "text-emerald-400" : "text-foreground"}`}>
+                                  {progress.completed}/{progress.total}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          {!s.approved && plan && (
+                            <div className="text-xs text-muted-foreground">
+                              Plano: {plan.name}
+                            </div>
+                          )}
+
+                          {/* Progress bar */}
+                          {s.approved && lessons.length > 0 && (
+                            <div className="flex items-center gap-3">
+                              <Progress value={progress.percent} className="h-1.5 flex-1" />
+                              <span className="text-xs text-muted-foreground w-8 text-right">{progress.percent}%</span>
+                            </div>
+                          )}
+
+                          {/* Row 3: Action buttons */}
+                          <div className="flex items-center gap-2 pt-1">
                             {s.approved ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-border/40 text-xs"
-                                onClick={() => revokeMutation.mutate(s.id)}
-                                data-testid={`button-revoke-${s.id}`}
-                              >
-                                Revogar
-                              </Button>
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-gold/30 text-gold hover:bg-gold/10 text-xs flex-1 sm:flex-none"
+                                  onClick={() => { setRenewingStudent(s); setRenewDays(30); }}
+                                  title="Renovar acesso"
+                                >
+                                  <RefreshCw className="w-3 h-3 mr-1.5" />
+                                  Renovar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-border/40 text-xs flex-1 sm:flex-none"
+                                  onClick={() => revokeMutation.mutate(s.id)}
+                                  data-testid={`button-revoke-${s.id}`}
+                                >
+                                  Revogar
+                                </Button>
+                              </>
                             ) : (
                               <Button
                                 size="sm"
-                                className="bg-gold text-background hover:bg-gold/90 text-xs"
+                                className="bg-gold text-background hover:bg-gold/90 text-xs flex-1 sm:flex-none"
                                 onClick={() => { setApprovingStudent(s); setApprovePlanId(""); }}
                                 data-testid={`button-approve-list-${s.id}`}
                               >
@@ -669,35 +718,6 @@ export default function AdminDashboard() {
                                 Aprovar
                               </Button>
                             )}
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-muted-foreground hover:text-destructive"
-                                  data-testid={`button-delete-student-${s.id}`}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="bg-card border-border/40">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Tem certeza que deseja excluir {s.name}? Esta ação não pode ser desfeita.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    onClick={() => deleteStudentMutation.mutate(s.id)}
-                                  >
-                                    Excluir
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
                           </div>
                         </CardContent>
                       </Card>
@@ -1014,18 +1034,18 @@ export default function AdminDashboard() {
                   const planStudents = students.filter(s => s.planId === plan.id);
                   return (
                     <Card key={plan.id} className="border-border/30 bg-card/50 hover:bg-card/70 transition-colors">
-                      <CardContent className="p-5 space-y-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
+                      <CardContent className="p-4 sm:p-5 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
                             <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center shrink-0">
                               <CreditCard className="w-5 h-5 text-gold" />
                             </div>
-                            <div>
-                              <p className="font-medium text-foreground">{plan.name}</p>
+                            <div className="min-w-0">
+                              <p className="font-medium text-foreground truncate">{plan.name}</p>
                               {plan.price && <p className="text-sm text-gold font-medium">{plan.price}</p>}
                             </div>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0">
                             <Button
                               size="sm"
                               variant="ghost"
@@ -1216,8 +1236,8 @@ export default function AdminDashboard() {
                   const isLast = idx === sortedModules.length - 1;
                   return (
                     <Card key={mod.id} className="border-border/30 bg-card/50 hover:bg-card/70 transition-colors">
-                      <CardContent className="p-5 flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-4 min-w-0 flex-1">
+                      <CardContent className="p-4 sm:p-5">
+                        <div className="flex items-start gap-3 sm:gap-4">
                           {/* Reorder arrows */}
                           <div className="flex flex-col gap-0.5 shrink-0 mt-1">
                             <Button
@@ -1239,64 +1259,68 @@ export default function AdminDashboard() {
                               <ChevronDown className="w-4 h-4" />
                             </Button>
                           </div>
-                          <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center shrink-0 mt-0.5">
+                          <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center shrink-0 mt-0.5 hidden sm:flex">
                             <BookOpen className="w-5 h-5 text-gold" />
                           </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground font-mono">{String(idx + 1).padStart(2, "0")}</span>
-                              <p className="font-medium text-foreground text-[15px]">{mod.title}</p>
-                            </div>
-                            {mod.description && (
-                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{mod.description}</p>
-                            )}
-                            <p className="text-xs text-muted-foreground mt-2">
-                              {modLessons.length} {modLessons.length === 1 ? "aula" : "aulas"}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-muted-foreground hover:text-gold"
-                            onClick={() => {
-                              setEditingModule(mod);
-                              setEditModuleForm({ title: mod.title, description: mod.description || "" });
-                            }}
-                            data-testid={`button-edit-module-${mod.id}`}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-muted-foreground hover:text-destructive"
-                                data-testid={`button-delete-module-${mod.id}`}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-card border-border/40">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Tem certeza que deseja excluir o módulo "{mod.title}"? Todas as aulas deste módulo também serão removidas. Esta ação não pode ser desfeita.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  onClick={() => deleteModuleMutation.mutate(mod.id)}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-muted-foreground font-mono">{String(idx + 1).padStart(2, "0")}</span>
+                                  <p className="font-medium text-foreground text-sm sm:text-[15px] truncate">{mod.title}</p>
+                                </div>
+                                {mod.description && (
+                                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{mod.description}</p>
+                                )}
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  {modLessons.length} {modLessons.length === 1 ? "aula" : "aulas"}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
+                                  onClick={() => {
+                                    setEditingModule(mod);
+                                    setEditModuleForm({ title: mod.title, description: mod.description || "" });
+                                  }}
+                                  data-testid={`button-edit-module-${mod.id}`}
                                 >
-                                  Excluir
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
+                                      data-testid={`button-delete-module-${mod.id}`}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent className="bg-card border-border/40">
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Tem certeza que deseja excluir o módulo "{mod.title}"? Todas as aulas deste módulo também serão removidas. Esta ação não pode ser desfeita.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                        onClick={() => deleteModuleMutation.mutate(mod.id)}
+                                      >
+                                        Excluir
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -1462,14 +1486,14 @@ export default function AdminDashboard() {
                       </div>
 
                       {/* Lessons list */}
-                      <div className="space-y-2 pl-2">
+                      <div className="space-y-2 pl-0 sm:pl-2">
                         {modLessons.map((lesson, idx) => {
                           const isFirstLesson = idx === 0;
                           const isLastLesson = idx === modLessons.length - 1;
                           return (
                           <Card key={lesson.id} className="border-border/25 bg-card/40 hover:bg-card/60 transition-colors">
-                            <CardContent className="p-4 flex items-center justify-between gap-4">
-                              <div className="flex items-center gap-4 min-w-0 flex-1">
+                            <CardContent className="p-3 sm:p-4">
+                              <div className="flex items-start gap-2 sm:gap-4">
                                 {/* Reorder arrows */}
                                 <div className="flex flex-col gap-0.5 shrink-0">
                                   <Button
@@ -1491,80 +1515,84 @@ export default function AdminDashboard() {
                                     <ChevronDown className="w-3.5 h-3.5" />
                                   </Button>
                                 </div>
-                                <div className="w-8 h-8 rounded-md bg-background/60 flex items-center justify-center shrink-0 text-sm font-medium text-muted-foreground">
+                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-background/60 flex items-center justify-center shrink-0 text-xs sm:text-sm font-medium text-muted-foreground">
                                   {idx + 1}
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-medium text-foreground truncate">
-                                    {lesson.title}
-                                  </p>
-                                  <div className="flex items-center gap-2.5 mt-1">
-                                    {lesson.duration && (
-                                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                        <Clock className="w-3 h-3" />
-                                        {lesson.duration}
-                                      </span>
-                                    )}
-                                    {lesson.videoUrl ? (
-                                      <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-0 px-1.5">
-                                        Com vídeo
-                                      </Badge>
-                                    ) : (
-                                      <Badge variant="outline" className="text-[10px] border-border/30 text-muted-foreground px-1.5">
-                                        Sem vídeo
-                                      </Badge>
-                                    )}
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-sm font-medium text-foreground truncate">
+                                        {lesson.title}
+                                      </p>
+                                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                        {lesson.duration && (
+                                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                            <Clock className="w-3 h-3" />
+                                            {lesson.duration}
+                                          </span>
+                                        )}
+                                        {lesson.videoUrl ? (
+                                          <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-0 px-1.5">
+                                            Com vídeo
+                                          </Badge>
+                                        ) : (
+                                          <Badge variant="outline" className="text-[10px] border-border/30 text-muted-foreground px-1.5">
+                                            Sem vídeo
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
+                                        onClick={() => {
+                                          setEditingLesson(lesson);
+                                          setEditLessonForm({
+                                            title: lesson.title,
+                                            description: lesson.description || "",
+                                            videoUrl: lesson.videoUrl || "",
+                                            duration: lesson.duration || "",
+                                            moduleId: lesson.moduleId,
+                                          });
+                                        }}
+                                        data-testid={`button-edit-lesson-${lesson.id}`}
+                                      >
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      </Button>
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
+                                            data-testid={`button-delete-lesson-${lesson.id}`}
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent className="bg-card border-border/40">
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              Tem certeza que deseja excluir a aula "{lesson.title}"? Esta ação não pode ser desfeita.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction
+                                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                              onClick={() => deleteLessonMutation.mutate(lesson.id)}
+                                            >
+                                              Excluir
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-muted-foreground hover:text-gold"
-                                  onClick={() => {
-                                    setEditingLesson(lesson);
-                                    setEditLessonForm({
-                                      title: lesson.title,
-                                      description: lesson.description || "",
-                                      videoUrl: lesson.videoUrl || "",
-                                      duration: lesson.duration || "",
-                                      moduleId: lesson.moduleId,
-                                    });
-                                  }}
-                                  data-testid={`button-edit-lesson-${lesson.id}`}
-                                >
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </Button>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="text-muted-foreground hover:text-destructive"
-                                      data-testid={`button-delete-lesson-${lesson.id}`}
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent className="bg-card border-border/40">
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Tem certeza que deseja excluir a aula "{lesson.title}"? Esta ação não pode ser desfeita.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                        onClick={() => deleteLessonMutation.mutate(lesson.id)}
-                                      >
-                                        Excluir
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
                               </div>
                             </CardContent>
                           </Card>
