@@ -518,6 +518,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return json(res, { message: "Banco populado com sucesso!" });
     }
 
+    // ── MIGRATE (adds new columns/tables to existing DB) ──
+    if (path === "/api/admin/migrate" && method === "POST") {
+      if (!requireAdmin(req, res)) return;
+      const results: string[] = [];
+      try {
+        await getDb().execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT`);
+        results.push("phone column added to users");
+      } catch (e: any) { results.push(`phone: ${e.message}`); }
+      try {
+        await getDb().execute(`CREATE TABLE IF NOT EXISTS password_resets (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, token TEXT NOT NULL UNIQUE, expires_at TEXT NOT NULL, used BOOLEAN NOT NULL DEFAULT false, created_at TEXT NOT NULL)`);
+        results.push("password_resets table created");
+      } catch (e: any) { results.push(`password_resets: ${e.message}`); }
+      return json(res, { message: "Migração concluída", results });
+    }
+
     // ── Not found ──
     return json(res, { message: "Rota não encontrada" }, 404);
 
