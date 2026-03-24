@@ -5,7 +5,10 @@ import { pgTable, text, serial, integer, boolean } from "drizzle-orm/pg-core";
 import { eq, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 import ws from "ws";
+
+const JWT_SECRET = process.env.JWT_SECRET || "ampla-facial-dev-secret-2026";
 
 // ─── Neon DB (lazy init) ───
 neonConfig.webSocketConstructor = ws;
@@ -82,6 +85,28 @@ function json(res: VercelResponse, data: any, status = 200) {
   return res.status(status).json(data);
 }
 
+// ─── JWT Auth Helpers ───
+function authenticateRequest(req: VercelRequest): { userId: number; role: string } | null {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+  const token = authHeader.slice(7);
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: number; role: string };
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function requireAdmin(req: VercelRequest, res: VercelResponse): boolean {
+  const auth = authenticateRequest(req);
+  if (!auth || auth.role !== "admin") {
+    json(res, { message: "Não autorizado" }, 401);
+    return false;
+  }
+  return true;
+}
+
 // ─── Handler ───
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { method } = req;
@@ -124,6 +149,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
       const { password: _, ...safeUser } = user;
+      const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
+      return json(res, { user: safeUser, token });
+    }
+
+    // ── AUTH: Me ──
+    if (path === "/api/auth/me" && method === "GET") {
+      const auth = authenticateRequest(req);
+      if (!auth) return json(res, { message: "Não autorizado" }, 401);
+      const [user] = await getDb().select().from(users).where(eq(users.id, auth.userId));
+      if (!user) return json(res, { message: "Usuário não encontrado" }, 404);
+      const { password: _, ...safeUser } = user;
       return json(res, { user: safeUser });
     }
 
@@ -135,6 +171,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── ADMIN: Plans CRUD ──
     if (path === "/api/admin/plans" && method === "POST") {
+      if (!requireAdmin(req, res)) return;
       const { name, description, durationDays, price } = req.body;
       if (!name || !durationDays) {
         return json(res, { message: "Nome e duração são obrigatórios" }, 400);
@@ -145,6 +182,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const patchPlanMatch = path.match(/^\/api\/admin\/plans\/(\d+)$/);
     if (patchPlanMatch && method === "PATCH") {
+      if (!requireAdmin(req, res)) return;
       const [updated] = await getDb().update(plans).set(req.body).where(eq(plans.id, parseInt(patchPlanMatch[1]))).returning();
       if (!updated) return json(res, { message: "Plano não encontrado" }, 404);
       return json(res, updated);
@@ -152,6 +190,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const deletePlanMatch = path.match(/^\/api\/admin\/plans\/(\d+)$/);
     if (deletePlanMatch && method === "DELETE") {
+      if (!requireAdmin(req, res)) return;
       await getDb().delete(plans).where(eq(plans.id, parseInt(deletePlanMatch[1])));
       return json(res, { success: true });
     }
@@ -216,12 +255,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── ADMIN: Students ──
     if (path === "/api/admin/students" && method === "GET") {
+      if (!requireAdmin(req, res)) return;
       const students = await getDb().select().from(users).where(eq(users.role, "student"));
       const safe = students.map(({ password, ...s }) => s);
       return json(res, safe);
     }
 
     if (path === "/api/admin/students/pending" && method === "GET") {
+      if (!requireAdmin(req, res)) return;
       const pending = await getDb().select().from(users).where(and(eq(users.role, "student"), eq(users.approved, false)));
       const safe = pending.map(({ password, ...s }) => s);
       return json(res, safe);
@@ -229,6 +270,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const approveMatch = path.match(/^\/api\/admin\/students\/(\d+)\/approve$/);
     if (approveMatch && method === "POST") {
+      if (!requireAdmin(req, res)) return;
       const id = parseInt(approveMatch[1]);
       const [user] = await getDb().select().from(users).where(eq(users.id, id));
       if (!user) return json(res, { message: "Aluno não encontrado" }, 404);
@@ -243,6 +285,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const revokeMatch = path.match(/^\/api\/admin\/students\/(\d+)\/revoke$/);
     if (revokeMatch && method === "POST") {
+      if (!requireAdmin(req, res)) return;
       const [updated] = await getDb().update(users).set({ approved: false, accessExpiresAt: null }).where(eq(users.id, parseInt(revokeMatch[1]))).returning();
       if (!updated) return json(res, { message: "Aluno não encontrado" }, 404);
       const { password, ...safe } = updated;
@@ -251,12 +294,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const deleteStudentMatch = path.match(/^\/api\/admin\/students\/(\d+)$/);
     if (deleteStudentMatch && method === "DELETE") {
+      if (!requireAdmin(req, res)) return;
       await getDb().delete(users).where(eq(users.id, parseInt(deleteStudentMatch[1])));
       return json(res, { success: true });
     }
 
     const patchStudentMatch = path.match(/^\/api\/admin\/students\/(\d+)$/);
     if (patchStudentMatch && method === "PATCH") {
+      if (!requireAdmin(req, res)) return;
       const [updated] = await getDb().update(users).set(req.body).where(eq(users.id, parseInt(patchStudentMatch[1]))).returning();
       if (!updated) return json(res, { message: "Aluno não encontrado" }, 404);
       const { password, ...safe } = updated;
@@ -266,6 +311,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ── ADMIN: Reset Password ──
     const resetPasswordMatch = path.match(/^\/api\/admin\/students\/(\d+)\/reset-password$/);
     if (resetPasswordMatch && method === "POST") {
+      if (!requireAdmin(req, res)) return;
       const id = parseInt(resetPasswordMatch[1]);
       const [user] = await getDb().select().from(users).where(eq(users.id, id));
       if (!user) return json(res, { message: "Aluno não encontrado" }, 404);
@@ -341,12 +387,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── ADMIN: Student Progress (all students) ──
     if (path === "/api/admin/students/progress" && method === "GET") {
+      if (!requireAdmin(req, res)) return;
       const allProgress = await getDb().select().from(lessonProgress);
       return json(res, allProgress);
     }
 
     // ── ADMIN: Reorder Modules ──
     if (path === "/api/admin/modules/reorder" && method === "POST") {
+      if (!requireAdmin(req, res)) return;
       const { orderedIds } = req.body;
       if (!orderedIds || !Array.isArray(orderedIds)) {
         return json(res, { message: "orderedIds array obrigatório" }, 400);
@@ -360,6 +408,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── ADMIN: Reorder Lessons ──
     if (path === "/api/admin/lessons/reorder" && method === "POST") {
+      if (!requireAdmin(req, res)) return;
       const { orderedIds } = req.body;
       if (!orderedIds || !Array.isArray(orderedIds)) {
         return json(res, { message: "orderedIds array obrigatório" }, 400);
@@ -373,12 +422,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── ADMIN: Modules ──
     if (path === "/api/admin/modules" && method === "POST") {
+      if (!requireAdmin(req, res)) return;
       const [mod] = await getDb().insert(modules).values(req.body).returning();
       return json(res, mod);
     }
 
     const patchModuleMatch = path.match(/^\/api\/admin\/modules\/(\d+)$/);
     if (patchModuleMatch && method === "PATCH") {
+      if (!requireAdmin(req, res)) return;
       const [updated] = await getDb().update(modules).set(req.body).where(eq(modules.id, parseInt(patchModuleMatch[1]))).returning();
       if (!updated) return json(res, { message: "Módulo não encontrado" }, 404);
       return json(res, updated);
@@ -386,6 +437,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const deleteModuleMatch = path.match(/^\/api\/admin\/modules\/(\d+)$/);
     if (deleteModuleMatch && method === "DELETE") {
+      if (!requireAdmin(req, res)) return;
       await getDb().delete(lessons).where(eq(lessons.moduleId, parseInt(deleteModuleMatch[1])));
       await getDb().delete(modules).where(eq(modules.id, parseInt(deleteModuleMatch[1])));
       return json(res, { success: true });
@@ -393,12 +445,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── ADMIN: Lessons ──
     if (path === "/api/admin/lessons" && method === "POST") {
+      if (!requireAdmin(req, res)) return;
       const [lesson] = await getDb().insert(lessons).values(req.body).returning();
       return json(res, lesson);
     }
 
     const patchLessonMatch = path.match(/^\/api\/admin\/lessons\/(\d+)$/);
     if (patchLessonMatch && method === "PATCH") {
+      if (!requireAdmin(req, res)) return;
       const [updated] = await getDb().update(lessons).set(req.body).where(eq(lessons.id, parseInt(patchLessonMatch[1]))).returning();
       if (!updated) return json(res, { message: "Aula não encontrada" }, 404);
       return json(res, updated);
@@ -406,6 +460,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const deleteLessonMatch = path.match(/^\/api\/admin\/lessons\/(\d+)$/);
     if (deleteLessonMatch && method === "DELETE") {
+      if (!requireAdmin(req, res)) return;
       await getDb().delete(lessons).where(eq(lessons.id, parseInt(deleteLessonMatch[1])));
       return json(res, { success: true });
     }
@@ -423,7 +478,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         { name: "Completo", description: "Mentoria completa: online + presencial + acesso total", durationDays: 365, price: "R$ 17.350" },
       ]);
 
-      const hashed = await bcrypt.hash("admin123", 10);
+      // IMPORTANTE: troque ADMIN_PASSWORD em produção!
+      const hashed = await bcrypt.hash(process.env.ADMIN_PASSWORD || "admin123", 10);
       const [admin] = await getDb().insert(users).values({
         name: "Dr. Gustavo Martins",
         email: "admin@amplafacial.com",

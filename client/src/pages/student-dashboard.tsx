@@ -14,7 +14,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
-  ChevronRight, Calendar, Layers, Settings, Loader2
+  ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle
 } from "lucide-react";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
@@ -97,9 +97,12 @@ export default function StudentDashboard() {
   const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
   const userPlan = plans.find(p => p.id === user?.planId);
-  const daysLeft = user?.accessExpiresAt
-    ? Math.max(0, Math.ceil((new Date(user.accessExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-    : 0;
+  const rawDaysLeft = user?.accessExpiresAt
+    ? Math.ceil((new Date(user.accessExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+  const daysLeft = rawDaysLeft !== null ? Math.max(0, rawDaysLeft) : 0;
+  const isExpired = rawDaysLeft !== null && rawDaysLeft <= 0 && user?.approved;
+  const isExpiringSoon = rawDaysLeft !== null && rawDaysLeft > 0 && rawDaysLeft <= 3;
 
   const getLessonsForModule = (moduleId: number) =>
     lessons.filter(l => l.moduleId === moduleId).sort((a, b) => a.order - b.order);
@@ -307,6 +310,32 @@ export default function StudentDashboard() {
       </header>
 
       <div className="max-w-5xl mx-auto p-4 lg:p-6 space-y-6">
+        {/* Access expiry banners */}
+        {isExpired && (
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-destructive">Seu acesso expirou</p>
+              <p className="text-sm text-destructive/80 mt-1">
+                Entre em contato com o administrador para renovar seu plano.
+              </p>
+            </div>
+          </div>
+        )}
+        {isExpiringSoon && (
+          <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-500">
+                Seu acesso expira em {rawDaysLeft} {rawDaysLeft === 1 ? "dia" : "dias"}
+              </p>
+              <p className="text-sm text-amber-500/80 mt-1">
+                Entre em contato para renovação.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Stats row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Card className="border-border/40 bg-card/60">

@@ -1,9 +1,33 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import type { Server } from "http";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 import { storage } from "./storage";
 import { registerSchema, loginSchema, insertModuleSchema, insertLessonSchema } from "@shared/schema";
+
+const JWT_SECRET = process.env.JWT_SECRET || "ampla-facial-dev-secret-2026";
+
+function authenticateRequest(req: Request): { userId: number; role: string } | null {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+  const token = authHeader.slice(7);
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: number; role: string };
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function requireAdmin(req: Request, res: Response): boolean {
+  const auth = authenticateRequest(req);
+  if (!auth || auth.role !== "admin") {
+    res.status(401).json({ message: "Não autorizado" });
+    return false;
+  }
+  return true;
+}
 
 export function registerRoutes(server: Server, app: Express) {
   // ==================== AUTH ====================
@@ -55,10 +79,21 @@ export function registerRoutes(server: Server, app: Express) {
         }
       }
       const { password, ...safeUser } = user;
-      return res.json({ user: safeUser });
+      const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
+      return res.json({ user: safeUser, token });
     } catch (e: any) {
       return res.status(400).json({ message: e.message || "Erro no login" });
     }
+  });
+
+  // ==================== AUTH: Me ====================
+  app.get("/api/auth/me", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    const user = await storage.getUser(auth.userId);
+    if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
+    const { password, ...safeUser } = user;
+    res.json({ user: safeUser });
   });
 
   // ==================== PLANS ====================
@@ -69,6 +104,7 @@ export function registerRoutes(server: Server, app: Express) {
 
   // ==================== ADMIN: Plans CRUD ====================
   app.post("/api/admin/plans", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     try {
       const { name, description, durationDays, price } = req.body;
       if (!name || !durationDays) {
@@ -82,12 +118,14 @@ export function registerRoutes(server: Server, app: Express) {
   });
 
   app.patch("/api/admin/plans/:id", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     const updated = await storage.updatePlan(parseInt(req.params.id), req.body);
     if (!updated) return res.status(404).json({ message: "Plano não encontrado" });
     res.json(updated);
   });
 
   app.delete("/api/admin/plans/:id", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     const ok = await storage.deletePlan(parseInt(req.params.id));
     res.json({ success: ok });
   });
@@ -138,19 +176,22 @@ export function registerRoutes(server: Server, app: Express) {
   });
 
   // ==================== ADMIN ====================
-  app.get("/api/admin/students", async (_req, res) => {
+  app.get("/api/admin/students", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     const students = await storage.getStudents();
     const safe = students.map(({ password, ...s }) => s);
     res.json(safe);
   });
 
-  app.get("/api/admin/students/pending", async (_req, res) => {
+  app.get("/api/admin/students/pending", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     const pending = await storage.getPendingStudents();
     const safe = pending.map(({ password, ...s }) => s);
     res.json(safe);
   });
 
   app.post("/api/admin/students/:id/approve", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     const user = await storage.getUser(parseInt(req.params.id));
     if (!user) return res.status(404).json({ message: "Aluno não encontrado" });
     const plan = user.planId ? await storage.getPlan(user.planId) : null;
@@ -167,6 +208,7 @@ export function registerRoutes(server: Server, app: Express) {
   });
 
   app.post("/api/admin/students/:id/revoke", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     const updated = await storage.updateUser(parseInt(req.params.id), { approved: false, accessExpiresAt: null });
     if (!updated) return res.status(404).json({ message: "Aluno não encontrado" });
     const { password, ...safe } = updated;
@@ -174,12 +216,14 @@ export function registerRoutes(server: Server, app: Express) {
   });
 
   app.delete("/api/admin/students/:id", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     const ok = await storage.deleteUser(parseInt(req.params.id));
     res.json({ success: ok });
   });
 
   // Reorder modules
   app.post("/api/admin/modules/reorder", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     const { orderedIds } = req.body;
     if (!orderedIds || !Array.isArray(orderedIds)) {
       return res.status(400).json({ message: "orderedIds array obrigatório" });
@@ -193,6 +237,7 @@ export function registerRoutes(server: Server, app: Express) {
 
   // Reorder lessons
   app.post("/api/admin/lessons/reorder", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     const { orderedIds } = req.body;
     if (!orderedIds || !Array.isArray(orderedIds)) {
       return res.status(400).json({ message: "orderedIds array obrigatório" });
@@ -205,6 +250,7 @@ export function registerRoutes(server: Server, app: Express) {
   });
 
   app.post("/api/admin/modules", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     try {
       const data = insertModuleSchema.parse(req.body);
       const mod = await storage.createModule(data);
@@ -215,17 +261,20 @@ export function registerRoutes(server: Server, app: Express) {
   });
 
   app.patch("/api/admin/modules/:id", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     const updated = await storage.updateModule(parseInt(req.params.id), req.body);
     if (!updated) return res.status(404).json({ message: "Módulo não encontrado" });
     res.json(updated);
   });
 
   app.delete("/api/admin/modules/:id", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     const ok = await storage.deleteModule(parseInt(req.params.id));
     res.json({ success: ok });
   });
 
   app.post("/api/admin/lessons", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     try {
       const data = insertLessonSchema.parse(req.body);
       const lesson = await storage.createLesson(data);
@@ -236,17 +285,20 @@ export function registerRoutes(server: Server, app: Express) {
   });
 
   app.patch("/api/admin/lessons/:id", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     const updated = await storage.updateLesson(parseInt(req.params.id), req.body);
     if (!updated) return res.status(404).json({ message: "Aula não encontrada" });
     res.json(updated);
   });
 
   app.delete("/api/admin/lessons/:id", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     const ok = await storage.deleteLesson(parseInt(req.params.id));
     res.json({ success: ok });
   });
 
   app.patch("/api/admin/students/:id", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     const updated = await storage.updateUser(parseInt(req.params.id), req.body);
     if (!updated) return res.status(404).json({ message: "Aluno não encontrado" });
     const { password, ...safe } = updated;
@@ -255,6 +307,7 @@ export function registerRoutes(server: Server, app: Express) {
 
   // ==================== ADMIN: Password Reset ====================
   app.post("/api/admin/students/:id/reset-password", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     try {
       const user = await storage.getUser(parseInt(req.params.id));
       if (!user) return res.status(404).json({ message: "Aluno não encontrado" });
@@ -352,8 +405,8 @@ export function registerRoutes(server: Server, app: Express) {
     await storage.createPlan({ name: "Presencial", description: "Mentoria presencial + acesso às aulas gravadas", durationDays: 180, price: "R$ 12.390" });
     await storage.createPlan({ name: "Completo", description: "Mentoria completa: online + presencial + acesso total", durationDays: 365, price: "R$ 17.350" });
 
-    // Create admin user
-    const hashedPassword = await bcrypt.hash("admin123", 10);
+    // Create admin user — IMPORTANTE: troque ADMIN_PASSWORD em produção!
+    const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || "admin123", 10);
     const admin = await storage.createUser({
       name: "Dr. Gustavo Martins",
       email: "admin@amplafacial.com",
