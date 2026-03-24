@@ -66,6 +66,31 @@ export function registerRoutes(server: Server, app: Express) {
     res.json(p);
   });
 
+  // ==================== ADMIN: Plans CRUD ====================
+  app.post("/api/admin/plans", async (req, res) => {
+    try {
+      const { name, description, durationDays, price } = req.body;
+      if (!name || !durationDays) {
+        return res.status(400).json({ message: "Nome e duração são obrigatórios" });
+      }
+      const plan = await storage.createPlan({ name, description: description || null, durationDays, price: price || null });
+      res.json(plan);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/admin/plans/:id", async (req, res) => {
+    const updated = await storage.updatePlan(parseInt(req.params.id), req.body);
+    if (!updated) return res.status(404).json({ message: "Plano não encontrado" });
+    res.json(updated);
+  });
+
+  app.delete("/api/admin/plans/:id", async (req, res) => {
+    const ok = await storage.deletePlan(parseInt(req.params.id));
+    res.json({ success: ok });
+  });
+
   // ==================== MODULES ====================
   app.get("/api/modules", async (_req, res) => {
     const m = await storage.getModules();

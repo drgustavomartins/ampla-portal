@@ -123,6 +123,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return json(res, p);
     }
 
+    // ── ADMIN: Plans CRUD ──
+    if (path === "/api/admin/plans" && method === "POST") {
+      const { name, description, durationDays, price } = req.body;
+      if (!name || !durationDays) {
+        return json(res, { message: "Nome e duração são obrigatórios" }, 400);
+      }
+      const [plan] = await getDb().insert(plans).values({ name, description: description || null, durationDays, price: price || null }).returning();
+      return json(res, plan);
+    }
+
+    const patchPlanMatch = path.match(/^\/api\/admin\/plans\/(\d+)$/);
+    if (patchPlanMatch && method === "PATCH") {
+      const [updated] = await getDb().update(plans).set(req.body).where(eq(plans.id, parseInt(patchPlanMatch[1]))).returning();
+      if (!updated) return json(res, { message: "Plano não encontrado" }, 404);
+      return json(res, updated);
+    }
+
+    const deletePlanMatch = path.match(/^\/api\/admin\/plans\/(\d+)$/);
+    if (deletePlanMatch && method === "DELETE") {
+      await getDb().delete(plans).where(eq(plans.id, parseInt(deletePlanMatch[1])));
+      return json(res, { success: true });
+    }
+
     // ── MODULES ──
     if (path === "/api/modules" && method === "GET") {
       const m = await getDb().select().from(modules).orderBy(modules.order);

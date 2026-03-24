@@ -17,7 +17,8 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
   Users, BookOpen, Layers, LogOut, Plus, Trash2, Check, X,
-  Clock, Video, Shield, GraduationCap, ChevronUp, ChevronDown, Eye, Pencil
+  Clock, Video, Shield, GraduationCap, ChevronUp, ChevronDown, Eye, Pencil,
+  CreditCard, RefreshCw
 } from "lucide-react";
 import type { Module, Lesson, Plan, User } from "@shared/schema";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
@@ -180,6 +181,79 @@ export default function AdminDashboard() {
     reorderLessonsMutation.mutate(moduleLessons.map(l => l.id));
   };
 
+  // ── Plan CRUD ──
+  const [planForm, setPlanForm] = useState({ name: "", description: "", durationDays: 0, price: "" });
+  const [planDialogOpen, setPlanDialogOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [editPlanForm, setEditPlanForm] = useState({ name: "", description: "", durationDays: 0, price: "" });
+
+  const createPlanMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/admin/plans", planForm);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/plans"] });
+      setPlanForm({ name: "", description: "", durationDays: 0, price: "" });
+      setPlanDialogOpen(false);
+      toast({ title: "Plano criado" });
+    },
+  });
+
+  const updatePlanMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: typeof editPlanForm }) => {
+      await apiRequest("PATCH", `/api/admin/plans/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/plans"] });
+      setEditingPlan(null);
+      toast({ title: "Plano atualizado" });
+    },
+  });
+
+  const deletePlanMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/admin/plans/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/plans"] });
+      toast({ title: "Plano removido" });
+    },
+  });
+
+  // ── Student Edit ──
+  const [editingStudent, setEditingStudent] = useState<SafeUser | null>(null);
+  const [editStudentForm, setEditStudentForm] = useState({ planId: 0, accessExpiresAt: "", approved: false });
+
+  const updateStudentMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: { planId?: number; accessExpiresAt?: string; approved?: boolean } }) => {
+      await apiRequest("PATCH", `/api/admin/students/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/students/pending"] });
+      setEditingStudent(null);
+      toast({ title: "Aluno atualizado" });
+    },
+  });
+
+  // ── Renew Access ──
+  const [renewingStudent, setRenewingStudent] = useState<SafeUser | null>(null);
+  const [renewDays, setRenewDays] = useState(30);
+
+  const renewAccessMutation = useMutation({
+    mutationFn: async ({ id, days }: { id: number; days: number }) => {
+      const newExpiry = new Date();
+      newExpiry.setDate(newExpiry.getDate() + days);
+      await apiRequest("PATCH", `/api/admin/students/${id}`, { accessExpiresAt: newExpiry.toISOString() });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
+      setRenewingStudent(null);
+      setRenewDays(30);
+      toast({ title: "Acesso renovado" });
+    },
+  });
+
   // Edit module
   const [editingModule, setEditingModule] = useState<Module | null>(null);
   const [editModuleForm, setEditModuleForm] = useState({ title: "", description: "" });
@@ -326,7 +400,7 @@ export default function AdminDashboard() {
 
         {/* ─── Main Content Tabs ─── */}
         <Tabs defaultValue="lessons" className="space-y-6">
-          <TabsList className="w-full grid grid-cols-3 bg-card/60 border border-border/30 p-1 h-12">
+          <TabsList className="w-full grid grid-cols-4 bg-card/60 border border-border/30 p-1 h-12">
             <TabsTrigger
               value="students"
               data-testid="tab-students"
@@ -334,6 +408,14 @@ export default function AdminDashboard() {
             >
               <Users className="w-4 h-4 mr-2" />
               Alunos
+            </TabsTrigger>
+            <TabsTrigger
+              value="plans"
+              data-testid="tab-plans"
+              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-sm font-medium transition-all"
+            >
+              <CreditCard className="w-4 h-4 mr-2" />
+              Planos
             </TabsTrigger>
             <TabsTrigger
               value="modules"
@@ -482,6 +564,34 @@ export default function AdminDashboard() {
                                 <Eye className="w-3.5 h-3.5" />
                               </Button>
                             )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-muted-foreground hover:text-gold"
+                              onClick={() => {
+                                setEditingStudent(s);
+                                setEditStudentForm({
+                                  planId: s.planId || 0,
+                                  accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
+                                  approved: s.approved,
+                                });
+                              }}
+                              title="Editar aluno"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            {s.approved && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-gold/30 text-gold hover:bg-gold/10 text-xs"
+                                onClick={() => { setRenewingStudent(s); setRenewDays(30); }}
+                                title="Renovar acesso"
+                              >
+                                <RefreshCw className="w-3 h-3 mr-1" />
+                                Renovar
+                              </Button>
+                            )}
                             {s.approved ? (
                               <Button
                                 size="sm"
@@ -582,6 +692,302 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 )}
+              </DialogContent>
+            </Dialog>
+
+            {/* Student Edit Dialog */}
+            <Dialog open={!!editingStudent} onOpenChange={(open) => !open && setEditingStudent(null)}>
+              <DialogContent className="bg-card border-border/40 max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-lg">Editar Aluno</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">
+                    {editingStudent?.name} — {editingStudent?.email}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Plano</Label>
+                    <Select
+                      value={editStudentForm.planId ? String(editStudentForm.planId) : ""}
+                      onValueChange={(v) => setEditStudentForm(f => ({ ...f, planId: parseInt(v) }))}
+                    >
+                      <SelectTrigger className="bg-background/50 border-border/40">
+                        <SelectValue placeholder="Selecione o plano" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {plans.map((p) => (
+                          <SelectItem key={p.id} value={String(p.id)}>
+                            {p.name} ({p.durationDays} dias)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Data de expiração</Label>
+                    <Input
+                      type="datetime-local"
+                      value={editStudentForm.accessExpiresAt}
+                      onChange={e => setEditStudentForm(f => ({ ...f, accessExpiresAt: e.target.value }))}
+                      className="bg-background/50 border-border/40"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Status</Label>
+                    <Button
+                      size="sm"
+                      variant={editStudentForm.approved ? "default" : "outline"}
+                      className={editStudentForm.approved ? "bg-emerald-600 hover:bg-emerald-700 text-white text-xs" : "border-border/40 text-xs"}
+                      onClick={() => setEditStudentForm(f => ({ ...f, approved: !f.approved }))}
+                    >
+                      {editStudentForm.approved ? "Aprovado" : "Pendente"}
+                    </Button>
+                  </div>
+                  <Button
+                    className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
+                    onClick={() => {
+                      if (!editingStudent) return;
+                      const data: any = {};
+                      if (editStudentForm.planId) data.planId = editStudentForm.planId;
+                      if (editStudentForm.accessExpiresAt) data.accessExpiresAt = new Date(editStudentForm.accessExpiresAt).toISOString();
+                      data.approved = editStudentForm.approved;
+                      updateStudentMutation.mutate({ id: editingStudent.id, data });
+                    }}
+                    disabled={updateStudentMutation.isPending}
+                  >
+                    Salvar alterações
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Renew Access Dialog */}
+            <Dialog open={!!renewingStudent} onOpenChange={(open) => !open && setRenewingStudent(null)}>
+              <DialogContent className="bg-card border-border/40 max-w-sm">
+                <DialogHeader>
+                  <DialogTitle className="text-lg">Renovar Acesso</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">
+                    {renewingStudent?.name}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Dias a adicionar (a partir de agora)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={renewDays}
+                      onChange={e => setRenewDays(parseInt(e.target.value) || 0)}
+                      className="bg-background/50 border-border/40"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Nova expiração: {renewDays > 0 ? new Date(Date.now() + renewDays * 86400000).toLocaleDateString("pt-BR") : "—"}
+                    </p>
+                  </div>
+                  <Button
+                    className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
+                    onClick={() => renewingStudent && renewAccessMutation.mutate({ id: renewingStudent.id, days: renewDays })}
+                    disabled={renewDays <= 0 || renewAccessMutation.isPending}
+                  >
+                    Renovar acesso
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
+
+          {/* ========== PLANS TAB ========== */}
+          <TabsContent value="plans" className="space-y-6 mt-0">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">
+                Planos ({plans.length})
+              </h3>
+              <Dialog open={planDialogOpen} onOpenChange={setPlanDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="bg-gold text-background hover:bg-gold/90 font-medium" data-testid="button-add-plan">
+                    <Plus className="w-4 h-4 mr-1.5" />
+                    Novo plano
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-card border-border/40">
+                  <DialogHeader>
+                    <DialogTitle className="text-lg">Novo plano</DialogTitle>
+                    <DialogDescription className="text-muted-foreground">Crie um novo plano de acesso</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label>
+                      <Input
+                        value={planForm.name}
+                        onChange={e => setPlanForm(f => ({ ...f, name: e.target.value }))}
+                        placeholder="Ex: Experiência 48h"
+                        className="bg-background/50 border-border/40"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label>
+                      <Textarea
+                        value={planForm.description}
+                        onChange={e => setPlanForm(f => ({ ...f, description: e.target.value }))}
+                        placeholder="Descrição do plano..."
+                        className="bg-background/50 border-border/40"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração (dias)</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        value={planForm.durationDays || ""}
+                        onChange={e => setPlanForm(f => ({ ...f, durationDays: parseInt(e.target.value) || 0 }))}
+                        placeholder="Ex: 2 (para 48 horas)"
+                        className="bg-background/50 border-border/40"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Preço</Label>
+                      <Input
+                        value={planForm.price}
+                        onChange={e => setPlanForm(f => ({ ...f, price: e.target.value }))}
+                        placeholder="Ex: R$ 497"
+                        className="bg-background/50 border-border/40"
+                      />
+                    </div>
+                    <Button
+                      className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
+                      onClick={() => createPlanMutation.mutate()}
+                      disabled={!planForm.name || !planForm.durationDays || createPlanMutation.isPending}
+                    >
+                      Criar plano
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {plans.length === 0 ? (
+              <Card className="border-border/30 bg-card/40">
+                <CardContent className="p-12 text-center">
+                  <div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4">
+                    <CreditCard className="w-7 h-7 text-muted-foreground/40" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">Nenhum plano criado ainda</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {plans.map((plan) => {
+                  const planStudents = students.filter(s => s.planId === plan.id);
+                  return (
+                    <Card key={plan.id} className="border-border/30 bg-card/50 hover:bg-card/70 transition-colors">
+                      <CardContent className="p-5 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center shrink-0">
+                              <CreditCard className="w-5 h-5 text-gold" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">{plan.name}</p>
+                              {plan.price && <p className="text-sm text-gold font-medium">{plan.price}</p>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-muted-foreground hover:text-gold"
+                              onClick={() => {
+                                setEditingPlan(plan);
+                                setEditPlanForm({
+                                  name: plan.name,
+                                  description: plan.description || "",
+                                  durationDays: plan.durationDays,
+                                  price: plan.price || "",
+                                });
+                              }}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => deletePlanMutation.mutate(plan.id)}
+                              className="text-muted-foreground hover:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        {plan.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">{plan.description}</p>
+                        )}
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            {plan.durationDays} dias
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3.5 h-3.5" />
+                            {planStudents.length} {planStudents.length === 1 ? "aluno" : "alunos"}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Edit Plan Dialog */}
+            <Dialog open={!!editingPlan} onOpenChange={(open) => !open && setEditingPlan(null)}>
+              <DialogContent className="bg-card border-border/40">
+                <DialogHeader>
+                  <DialogTitle className="text-lg">Editar plano</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">Altere os dados do plano</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label>
+                    <Input
+                      value={editPlanForm.name}
+                      onChange={e => setEditPlanForm(f => ({ ...f, name: e.target.value }))}
+                      className="bg-background/50 border-border/40"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label>
+                    <Textarea
+                      value={editPlanForm.description}
+                      onChange={e => setEditPlanForm(f => ({ ...f, description: e.target.value }))}
+                      className="bg-background/50 border-border/40"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração (dias)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={editPlanForm.durationDays || ""}
+                      onChange={e => setEditPlanForm(f => ({ ...f, durationDays: parseInt(e.target.value) || 0 }))}
+                      className="bg-background/50 border-border/40"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Preço</Label>
+                    <Input
+                      value={editPlanForm.price}
+                      onChange={e => setEditPlanForm(f => ({ ...f, price: e.target.value }))}
+                      className="bg-background/50 border-border/40"
+                    />
+                  </div>
+                  <Button
+                    className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
+                    onClick={() => editingPlan && updatePlanMutation.mutate({ id: editingPlan.id, data: editPlanForm })}
+                    disabled={!editPlanForm.name || !editPlanForm.durationDays || updatePlanMutation.isPending}
+                  >
+                    Salvar alterações
+                  </Button>
+                </div>
               </DialogContent>
             </Dialog>
           </TabsContent>
