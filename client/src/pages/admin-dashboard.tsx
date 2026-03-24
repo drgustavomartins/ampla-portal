@@ -17,7 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
   Users, BookOpen, Layers, LogOut, Plus, Trash2, Check, X,
-  Clock, Video, Shield, GraduationCap, ChevronUp, ChevronDown, Eye
+  Clock, Video, Shield, GraduationCap, ChevronUp, ChevronDown, Eye, Pencil
 } from "lucide-react";
 import type { Module, Lesson, Plan, User } from "@shared/schema";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
@@ -155,6 +155,58 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/lessons"] });
       toast({ title: "Aula removida" });
+    },
+  });
+
+  // Reorder lessons
+  const reorderLessonsMutation = useMutation({
+    mutationFn: async (orderedIds: number[]) => {
+      await apiRequest("POST", "/api/admin/lessons/reorder", { orderedIds });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lessons"] });
+      toast({ title: "Ordem das aulas atualizada" });
+    },
+  });
+
+  const moveLesson = (lessonId: number, direction: "up" | "down", moduleId: number) => {
+    const moduleLessons = lessons.filter(l => l.moduleId === moduleId).sort((a, b) => a.order - b.order);
+    const idx = moduleLessons.findIndex(l => l.id === lessonId);
+    if (direction === "up" && idx > 0) {
+      [moduleLessons[idx], moduleLessons[idx - 1]] = [moduleLessons[idx - 1], moduleLessons[idx]];
+    } else if (direction === "down" && idx < moduleLessons.length - 1) {
+      [moduleLessons[idx], moduleLessons[idx + 1]] = [moduleLessons[idx + 1], moduleLessons[idx]];
+    }
+    reorderLessonsMutation.mutate(moduleLessons.map(l => l.id));
+  };
+
+  // Edit module
+  const [editingModule, setEditingModule] = useState<Module | null>(null);
+  const [editModuleForm, setEditModuleForm] = useState({ title: "", description: "" });
+
+  const updateModuleMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: { title: string; description: string } }) => {
+      await apiRequest("PATCH", `/api/admin/modules/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/modules"] });
+      setEditingModule(null);
+      toast({ title: "Módulo atualizado" });
+    },
+  });
+
+  // Edit lesson
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
+  const [editLessonForm, setEditLessonForm] = useState({ title: "", description: "", videoUrl: "", duration: "", moduleId: 0 });
+
+  const updateLessonMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: { title: string; description: string; videoUrl: string; duration: string; moduleId: number } }) => {
+      await apiRequest("PATCH", `/api/admin/lessons/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lessons"] });
+      setEditingLesson(null);
+      toast({ title: "Aula atualizada" });
     },
   });
 
@@ -643,21 +695,70 @@ export default function AdminDashboard() {
                             </p>
                           </div>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => deleteModuleMutation.mutate(mod.id)}
-                          className="text-muted-foreground hover:text-destructive shrink-0"
-                          data-testid={`button-delete-module-${mod.id}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-muted-foreground hover:text-gold"
+                            onClick={() => {
+                              setEditingModule(mod);
+                              setEditModuleForm({ title: mod.title, description: mod.description || "" });
+                            }}
+                            data-testid={`button-edit-module-${mod.id}`}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => deleteModuleMutation.mutate(mod.id)}
+                            className="text-muted-foreground hover:text-destructive"
+                            data-testid={`button-delete-module-${mod.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   );
                 })}
               </div>
             )}
+
+            {/* Edit Module Dialog */}
+            <Dialog open={!!editingModule} onOpenChange={(open) => !open && setEditingModule(null)}>
+              <DialogContent className="bg-card border-border/40">
+                <DialogHeader>
+                  <DialogTitle className="text-lg">Editar módulo</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">Altere os dados do módulo</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Título</Label>
+                    <Input
+                      value={editModuleForm.title}
+                      onChange={e => setEditModuleForm(f => ({ ...f, title: e.target.value }))}
+                      className="bg-background/50 border-border/40"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label>
+                    <Textarea
+                      value={editModuleForm.description}
+                      onChange={e => setEditModuleForm(f => ({ ...f, description: e.target.value }))}
+                      className="bg-background/50 border-border/40"
+                    />
+                  </div>
+                  <Button
+                    className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
+                    onClick={() => editingModule && updateModuleMutation.mutate({ id: editingModule.id, data: editModuleForm })}
+                    disabled={!editModuleForm.title || updateModuleMutation.isPending}
+                  >
+                    Salvar alterações
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           {/* ========== LESSONS TAB ========== */}
@@ -782,10 +883,34 @@ export default function AdminDashboard() {
 
                       {/* Lessons list */}
                       <div className="space-y-2 pl-2">
-                        {modLessons.map((lesson, idx) => (
+                        {modLessons.map((lesson, idx) => {
+                          const isFirstLesson = idx === 0;
+                          const isLastLesson = idx === modLessons.length - 1;
+                          return (
                           <Card key={lesson.id} className="border-border/25 bg-card/40 hover:bg-card/60 transition-colors">
                             <CardContent className="p-4 flex items-center justify-between gap-4">
                               <div className="flex items-center gap-4 min-w-0 flex-1">
+                                {/* Reorder arrows */}
+                                <div className="flex flex-col gap-0.5 shrink-0">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className={`h-5 w-5 p-0 ${isFirstLesson ? "text-muted-foreground/20 cursor-default" : "text-muted-foreground hover:text-gold"}`}
+                                    onClick={() => !isFirstLesson && moveLesson(lesson.id, "up", mod.id)}
+                                    disabled={isFirstLesson || reorderLessonsMutation.isPending}
+                                  >
+                                    <ChevronUp className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className={`h-5 w-5 p-0 ${isLastLesson ? "text-muted-foreground/20 cursor-default" : "text-muted-foreground hover:text-gold"}`}
+                                    onClick={() => !isLastLesson && moveLesson(lesson.id, "down", mod.id)}
+                                    disabled={isLastLesson || reorderLessonsMutation.isPending}
+                                  >
+                                    <ChevronDown className="w-3.5 h-3.5" />
+                                  </Button>
+                                </div>
                                 <div className="w-8 h-8 rounded-md bg-background/60 flex items-center justify-center shrink-0 text-sm font-medium text-muted-foreground">
                                   {idx + 1}
                                 </div>
@@ -812,24 +937,116 @@ export default function AdminDashboard() {
                                   </div>
                                 </div>
                               </div>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => deleteLessonMutation.mutate(lesson.id)}
-                                className="text-muted-foreground hover:text-destructive shrink-0"
-                                data-testid={`button-delete-lesson-${lesson.id}`}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-muted-foreground hover:text-gold"
+                                  onClick={() => {
+                                    setEditingLesson(lesson);
+                                    setEditLessonForm({
+                                      title: lesson.title,
+                                      description: lesson.description || "",
+                                      videoUrl: lesson.videoUrl || "",
+                                      duration: lesson.duration || "",
+                                      moduleId: lesson.moduleId,
+                                    });
+                                  }}
+                                  data-testid={`button-edit-lesson-${lesson.id}`}
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => deleteLessonMutation.mutate(lesson.id)}
+                                  className="text-muted-foreground hover:text-destructive"
+                                  data-testid={`button-delete-lesson-${lesson.id}`}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
                             </CardContent>
                           </Card>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   );
                 })}
               </div>
             )}
+
+            {/* Edit Lesson Dialog */}
+            <Dialog open={!!editingLesson} onOpenChange={(open) => !open && setEditingLesson(null)}>
+              <DialogContent className="bg-card border-border/40">
+                <DialogHeader>
+                  <DialogTitle className="text-lg">Editar aula</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">Altere os dados da aula</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Título</Label>
+                    <Input
+                      value={editLessonForm.title}
+                      onChange={e => setEditLessonForm(f => ({ ...f, title: e.target.value }))}
+                      className="bg-background/50 border-border/40"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label>
+                    <Textarea
+                      value={editLessonForm.description}
+                      onChange={e => setEditLessonForm(f => ({ ...f, description: e.target.value }))}
+                      className="bg-background/50 border-border/40"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">URL do vídeo</Label>
+                    <Input
+                      value={editLessonForm.videoUrl}
+                      onChange={e => setEditLessonForm(f => ({ ...f, videoUrl: e.target.value }))}
+                      placeholder="https://youtube.com/watch?v=..."
+                      className="bg-background/50 border-border/40"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração</Label>
+                    <Input
+                      value={editLessonForm.duration}
+                      onChange={e => setEditLessonForm(f => ({ ...f, duration: e.target.value }))}
+                      placeholder="Ex: 25:00"
+                      className="bg-background/50 border-border/40"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Módulo</Label>
+                    <Select
+                      value={String(editLessonForm.moduleId)}
+                      onValueChange={(v) => setEditLessonForm(f => ({ ...f, moduleId: parseInt(v) }))}
+                    >
+                      <SelectTrigger className="bg-background/50 border-border/40">
+                        <SelectValue placeholder="Selecione o módulo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {modules.map((m) => (
+                          <SelectItem key={m.id} value={String(m.id)}>
+                            {m.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
+                    onClick={() => editingLesson && updateLessonMutation.mutate({ id: editingLesson.id, data: editLessonForm })}
+                    disabled={!editLessonForm.title || !editLessonForm.moduleId || updateLessonMutation.isPending}
+                  >
+                    Salvar alterações
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
         </Tabs>
       </div>

@@ -152,6 +152,32 @@ export function registerRoutes(server: Server, app: Express) {
     res.json({ success: ok });
   });
 
+  // Reorder modules
+  app.post("/api/admin/modules/reorder", async (req, res) => {
+    const { orderedIds } = req.body;
+    if (!orderedIds || !Array.isArray(orderedIds)) {
+      return res.status(400).json({ message: "orderedIds array obrigatório" });
+    }
+    for (let i = 0; i < orderedIds.length; i++) {
+      await storage.updateModule(orderedIds[i], { order: i + 1 });
+    }
+    const updated = await storage.getModules();
+    res.json(updated);
+  });
+
+  // Reorder lessons
+  app.post("/api/admin/lessons/reorder", async (req, res) => {
+    const { orderedIds } = req.body;
+    if (!orderedIds || !Array.isArray(orderedIds)) {
+      return res.status(400).json({ message: "orderedIds array obrigatório" });
+    }
+    for (let i = 0; i < orderedIds.length; i++) {
+      await storage.updateLesson(orderedIds[i], { order: i + 1 });
+    }
+    const updated = await storage.getLessons();
+    res.json(updated);
+  });
+
   app.post("/api/admin/modules", async (req, res) => {
     try {
       const data = insertModuleSchema.parse(req.body);
@@ -227,7 +253,7 @@ export function registerRoutes(server: Server, app: Express) {
     // Create modules
     await storage.createModule({ title: "Fundamentos", description: "Introdução à Harmonização Orofacial", order: 1, imageUrl: null });
     await storage.createModule({ title: "Toxina Botulínica", description: "Técnicas e protocolos de aplicação", order: 2, imageUrl: null });
-    await storage.createModule({ title: "Ácido Hialurônico", description: "Preenchimentos e volumização", order: 3, imageUrl: null });
+    await storage.createModule({ title: "Preenchedores à Base de Ácido Hialurônico", description: "Preenchimentos e volumização", order: 3, imageUrl: null });
     await storage.createModule({ title: "Método NaturalUp®", description: "O protocolo integrado completo", order: 4, imageUrl: null });
 
     // Create sample lessons

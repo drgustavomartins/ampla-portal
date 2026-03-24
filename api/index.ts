@@ -249,6 +249,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return json(res, updated);
     }
 
+    // ── ADMIN: Reorder Lessons ──
+    if (path === "/api/admin/lessons/reorder" && method === "POST") {
+      const { orderedIds } = req.body;
+      if (!orderedIds || !Array.isArray(orderedIds)) {
+        return json(res, { message: "orderedIds array obrigatório" }, 400);
+      }
+      for (let i = 0; i < orderedIds.length; i++) {
+        await getDb().update(lessons).set({ order: i + 1 }).where(eq(lessons.id, orderedIds[i]));
+      }
+      const updated = await getDb().select().from(lessons).orderBy(lessons.order);
+      return json(res, updated);
+    }
+
     // ── ADMIN: Modules ──
     if (path === "/api/admin/modules" && method === "POST") {
       const [mod] = await getDb().insert(modules).values(req.body).returning();
@@ -315,7 +328,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await getDb().insert(modules).values([
         { title: "Fundamentos", description: "Introdução à Harmonização Orofacial", order: 1 },
         { title: "Toxina Botulínica", description: "Técnicas e protocolos de aplicação", order: 2 },
-        { title: "Ácido Hialurônico", description: "Preenchimentos e volumização", order: 3 },
+        { title: "Preenchedores à Base de Ácido Hialurônico", description: "Preenchimentos e volumização", order: 3 },
         { title: "Método NaturalUp®", description: "O protocolo integrado completo", order: 4 },
       ]);
 

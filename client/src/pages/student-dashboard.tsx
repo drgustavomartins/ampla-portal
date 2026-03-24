@@ -13,6 +13,26 @@ import {
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 
+function linkifyText(text: string) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, i) =>
+    urlRegex.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-gold underline hover:text-gold/80"
+      >
+        {part}
+      </a>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
+}
+
 export default function StudentDashboard() {
   const { user, logout } = useAuth();
   const [selectedModule, setSelectedModule] = useState<number | null>(null);
@@ -129,7 +149,7 @@ export default function StudentDashboard() {
                   <div>
                     <h2 className="text-lg font-semibold text-foreground">{selectedLesson.title}</h2>
                     {selectedLesson.description && (
-                      <p className="text-sm text-muted-foreground mt-1">{selectedLesson.description}</p>
+                      <p className="text-sm text-muted-foreground mt-1">{linkifyText(selectedLesson.description)}</p>
                     )}
                   </div>
                   {selectedLesson.duration && (
@@ -345,7 +365,7 @@ export default function StudentDashboard() {
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium truncate">{lesson.title}</p>
                                 {lesson.description && (
-                                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{lesson.description}</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{linkifyText(lesson.description)}</p>
                                 )}
                               </div>
                               {lesson.duration && (
