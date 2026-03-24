@@ -16,6 +16,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
+  phone: text("phone"),
   password: text("password").notNull(),
   role: text("role").notNull().default("student"),
   planId: integer("plan_id"),
@@ -73,6 +74,7 @@ export const insertLessonProgressSchema = createInsertSchema(lessonProgress).omi
 export const registerSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("Email inválido"),
+  phone: z.string().min(8, "Telefone é obrigatório"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
 });
 

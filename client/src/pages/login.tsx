@@ -26,7 +26,7 @@ export default function LoginPage() {
 
   const registerForm = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: "", email: "", password: "" },
+    defaultValues: { name: "", email: "", phone: "", password: "" },
   });
 
   const loginMutation = useMutation({
@@ -196,6 +196,20 @@ export default function LoginPage() {
                 />
                 {confirmEmailError && (
                   <p className="text-sm text-destructive">{confirmEmailError}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reg-phone" className="text-xs uppercase tracking-wider text-muted-foreground">Telefone</Label>
+                <Input
+                  id="reg-phone"
+                  type="tel"
+                  placeholder="+55 (11) 99999-9999"
+                  className="bg-background/50 border-border/50 focus:border-primary"
+                  data-testid="input-register-phone"
+                  {...registerForm.register("phone")}
+                />
+                {registerForm.formState.errors.phone && (
+                  <p className="text-sm text-destructive">{registerForm.formState.errors.phone.message}</p>
                 )}
               </div>
               <div className="space-y-2">

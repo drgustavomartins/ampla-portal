@@ -45,7 +45,7 @@ export default function StudentDashboard() {
   const [selectedModule, setSelectedModule] = useState<number | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [profileForm, setProfileForm] = useState({ name: "", email: "", currentPassword: "", newPassword: "", confirmNewPassword: "" });
+  const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "" });
 
   const { data: modules = [] } = useQuery<Module[]>({ queryKey: ["/api/modules"] });
   const { data: lessons = [] } = useQuery<Lesson[]>({ queryKey: ["/api/lessons"] });
@@ -75,6 +75,7 @@ export default function StudentDashboard() {
     mutationFn: async () => {
       const body: any = { userId: user?.id, currentPassword: profileForm.currentPassword };
       if (profileForm.name && profileForm.name !== user?.name) body.name = profileForm.name;
+      if (profileForm.phone !== (user as any)?.phone) body.phone = profileForm.phone;
       if (profileForm.email && profileForm.email !== user?.email) body.email = profileForm.email;
       if (profileForm.newPassword) body.newPassword = profileForm.newPassword;
       const res = await apiRequest("PATCH", "/api/auth/profile", body);
@@ -84,7 +85,7 @@ export default function StudentDashboard() {
       if (data.user) login(data.user);
       toast({ title: "Perfil atualizado", description: data.message });
       setProfileOpen(false);
-      setProfileForm({ name: "", email: "", currentPassword: "", newPassword: "", confirmNewPassword: "" });
+      setProfileForm({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "" });
     },
     onError: (error: any) => {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -291,6 +292,7 @@ export default function StudentDashboard() {
                 setProfileForm({
                   name: user?.name || "",
                   email: user?.email || "",
+                  phone: (user as any)?.phone || "",
                   currentPassword: "",
                   newPassword: "",
                   confirmNewPassword: "",
@@ -509,6 +511,16 @@ export default function StudentDashboard() {
                 type="email"
                 value={profileForm.email}
                 onChange={(e) => setProfileForm((f) => ({ ...f, email: e.target.value }))}
+                className="bg-background/50 border-border/40"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Telefone</Label>
+              <Input
+                type="tel"
+                placeholder="+55 (11) 99999-9999"
+                value={profileForm.phone}
+                onChange={(e) => setProfileForm((f) => ({ ...f, phone: e.target.value }))}
                 className="bg-background/50 border-border/40"
               />
             </div>

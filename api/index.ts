@@ -37,6 +37,7 @@ const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull(),
+  phone: text("phone"),
   password: text("password").notNull(),
   role: text("role").notNull().default("student"),
   planId: integer("plan_id"),
@@ -117,15 +118,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // ── AUTH: Register ──
     if (path === "/api/auth/register" && method === "POST") {
-      const { name, email, password } = req.body;
-      if (!name || !email || !password) {
+      const { name, email, phone, password } = req.body;
+      if (!name || !email || !phone || !password) {
         return json(res, { message: "Campos obrigatórios faltando" }, 400);
       }
       const [existing] = await getDb().select().from(users).where(eq(users.email, email));
       if (existing) return json(res, { message: "Email já cadastrado" }, 400);
       const hashed = await bcrypt.hash(password, 10);
       const [user] = await getDb().insert(users).values({
-        name, email, password: hashed, planId: null, createdAt: new Date().toISOString(),
+        name, email, phone, password: hashed, planId: null, createdAt: new Date().toISOString(),
       }).returning();
       return json(res, { message: "Cadastro realizado! Aguarde a aprovação do administrador.", user: { id: user.id, name: user.name, email: user.email } });
     }
@@ -352,7 +353,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── AUTH: Profile Update ──
     if (path === "/api/auth/profile" && method === "PATCH") {
-      const { userId, currentPassword, name, email, newPassword } = req.body;
+      const { userId, currentPassword, name, email, phone, newPassword } = req.body;
       if (!userId || !currentPassword) {
         return json(res, { message: "userId e senha atual são obrigatórios" }, 400);
       }
@@ -363,6 +364,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const updateData: any = {};
       if (name && name !== user.name) updateData.name = name;
+      if (phone !== undefined && phone !== user.phone) updateData.phone = phone;
       if (email && email !== user.email) {
         const [existing] = await getDb().select().from(users).where(eq(users.email, email));
         if (existing && existing.id !== user.id) {

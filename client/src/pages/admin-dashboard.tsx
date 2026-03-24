@@ -233,10 +233,10 @@ export default function AdminDashboard() {
 
   // ── Student Edit ──
   const [editingStudent, setEditingStudent] = useState<SafeUser | null>(null);
-  const [editStudentForm, setEditStudentForm] = useState({ planId: 0, accessExpiresAt: "", approved: false });
+  const [editStudentForm, setEditStudentForm] = useState({ name: "", phone: "", planId: 0, accessExpiresAt: "", approved: false });
 
   const updateStudentMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: { planId?: number; accessExpiresAt?: string; approved?: boolean } }) => {
+    mutationFn: async ({ id, data }: { id: number; data: { name?: string; phone?: string; planId?: number; accessExpiresAt?: string; approved?: boolean } }) => {
       await apiRequest("PATCH", `/api/admin/students/${id}`, data);
     },
     onSuccess: () => {
@@ -482,6 +482,7 @@ export default function AdminDashboard() {
                           <div className="min-w-0 flex-1">
                             <p className="font-medium text-foreground truncate">{s.name}</p>
                             <p className="text-sm text-muted-foreground truncate mt-0.5">{s.email}</p>
+                            {(s as any).phone && <p className="text-xs text-muted-foreground truncate mt-0.5">{(s as any).phone}</p>}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <Button
@@ -569,6 +570,7 @@ export default function AdminDashboard() {
                               )}
                             </div>
                             <p className="text-sm text-muted-foreground truncate mt-0.5">{s.email}</p>
+                            {(s as any).phone && <p className="text-xs text-muted-foreground truncate mt-0.5">{(s as any).phone}</p>}
                             <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
                               {plan && <span>{plan.name}</span>}
                               {s.approved && daysLeft > 0 && (
@@ -613,6 +615,8 @@ export default function AdminDashboard() {
                               onClick={() => {
                                 setEditingStudent(s);
                                 setEditStudentForm({
+                                  name: s.name,
+                                  phone: (s as any).phone || "",
                                   planId: s.planId || 0,
                                   accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
                                   approved: s.approved,
@@ -778,6 +782,24 @@ export default function AdminDashboard() {
                 </DialogHeader>
                 <div className="space-y-4 pt-2">
                   <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label>
+                    <Input
+                      value={editStudentForm.name}
+                      onChange={e => setEditStudentForm(f => ({ ...f, name: e.target.value }))}
+                      className="bg-background/50 border-border/40"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Telefone</Label>
+                    <Input
+                      type="tel"
+                      placeholder="+55 (11) 99999-9999"
+                      value={editStudentForm.phone}
+                      onChange={e => setEditStudentForm(f => ({ ...f, phone: e.target.value }))}
+                      className="bg-background/50 border-border/40"
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label className="text-xs uppercase tracking-wider text-muted-foreground">Plano</Label>
                     <Select
                       value={editStudentForm.planId ? String(editStudentForm.planId) : ""}
@@ -820,6 +842,8 @@ export default function AdminDashboard() {
                     onClick={() => {
                       if (!editingStudent) return;
                       const data: any = {};
+                      if (editStudentForm.name && editStudentForm.name !== editingStudent.name) data.name = editStudentForm.name;
+                      if (editStudentForm.phone !== ((editingStudent as any).phone || "")) data.phone = editStudentForm.phone;
                       if (editStudentForm.planId) data.planId = editStudentForm.planId;
                       if (editStudentForm.accessExpiresAt) data.accessExpiresAt = new Date(editStudentForm.accessExpiresAt).toISOString();
                       data.approved = editStudentForm.approved;

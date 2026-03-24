@@ -43,6 +43,7 @@ export function registerRoutes(server: Server, app: Express) {
       const user = await storage.createUser({
         name: data.name,
         email: data.email,
+        phone: data.phone,
         password: hashedPassword,
         planId: null,
         createdAt: new Date().toISOString(),
@@ -352,7 +353,7 @@ export function registerRoutes(server: Server, app: Express) {
   // ==================== AUTH: Profile Update ====================
   app.patch("/api/auth/profile", async (req, res) => {
     try {
-      const { userId, currentPassword, name, email, newPassword } = req.body;
+      const { userId, currentPassword, name, email, phone, newPassword } = req.body;
       if (!userId || !currentPassword) {
         return res.status(400).json({ message: "userId e senha atual são obrigatórios" });
       }
@@ -363,6 +364,7 @@ export function registerRoutes(server: Server, app: Express) {
 
       const updateData: any = {};
       if (name && name !== user.name) updateData.name = name;
+      if (phone !== undefined && phone !== user.phone) updateData.phone = phone;
       if (email && email !== user.email) {
         const existing = await storage.getUserByEmail(email);
         if (existing && existing.id !== user.id) {
