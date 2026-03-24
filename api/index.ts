@@ -4,6 +4,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 import { pgTable, text, serial, integer, boolean } from "drizzle-orm/pg-core";
 import { eq, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import ws from "ws";
 
 // ─── Neon DB (lazy init) ───
@@ -65,6 +66,15 @@ const lessonProgress = pgTable("lesson_progress", {
   lessonId: integer("lesson_id").notNull(),
   completed: boolean("completed").notNull().default(false),
   completedAt: text("completed_at"),
+});
+
+const passwordResets = pgTable("password_resets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  token: text("token").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  used: boolean("used").notNull().default(false),
+  createdAt: text("created_at").notNull(),
 });
 
 // ─── Helper ───
@@ -251,6 +261,82 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!updated) return json(res, { message: "Aluno não encontrado" }, 404);
       const { password, ...safe } = updated;
       return json(res, safe);
+    }
+
+    // ── ADMIN: Reset Password ──
+    const resetPasswordMatch = path.match(/^\/api\/admin\/students\/(\d+)\/reset-password$/);
+    if (resetPasswordMatch && method === "POST") {
+      const id = parseInt(resetPasswordMatch[1]);
+      const [user] = await getDb().select().from(users).where(eq(users.id, id));
+      if (!user) return json(res, { message: "Aluno não encontrado" }, 404);
+      const token = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      await getDb().insert(passwordResets).values({ userId: user.id, token, expiresAt, createdAt: new Date().toISOString() });
+      return json(res, { token, link: `/reset-password/${token}` });
+    }
+
+    // ── AUTH: Validate Reset Token ──
+    const validateResetMatch = path.match(/^\/api\/auth\/reset-password\/([a-f0-9-]+)$/);
+    if (validateResetMatch && method === "GET") {
+      const [pr] = await getDb().select().from(passwordResets).where(eq(passwordResets.token, validateResetMatch[1]));
+      if (!pr || pr.used || new Date() > new Date(pr.expiresAt)) {
+        return json(res, { message: "Token inválido ou expirado" }, 400);
+      }
+      return json(res, { valid: true });
+    }
+
+    // ── AUTH: Execute Reset Password ──
+    const executeResetMatch = path.match(/^\/api\/auth\/reset-password\/([a-f0-9-]+)$/);
+    if (executeResetMatch && method === "POST") {
+      const { password } = req.body;
+      if (!password || password.length < 6) {
+        return json(res, { message: "Senha deve ter pelo menos 6 caracteres" }, 400);
+      }
+      const [pr] = await getDb().select().from(passwordResets).where(eq(passwordResets.token, executeResetMatch[1]));
+      if (!pr || pr.used || new Date() > new Date(pr.expiresAt)) {
+        return json(res, { message: "Token inválido ou expirado" }, 400);
+      }
+      const hashed = await bcrypt.hash(password, 10);
+      await getDb().update(users).set({ password: hashed }).where(eq(users.id, pr.userId));
+      await getDb().update(passwordResets).set({ used: true }).where(eq(passwordResets.id, pr.id));
+      return json(res, { message: "Senha alterada com sucesso" });
+    }
+
+    // ── AUTH: Profile Update ──
+    if (path === "/api/auth/profile" && method === "PATCH") {
+      const { userId, currentPassword, name, email, newPassword } = req.body;
+      if (!userId || !currentPassword) {
+        return json(res, { message: "userId e senha atual são obrigatórios" }, 400);
+      }
+      const [user] = await getDb().select().from(users).where(eq(users.id, userId));
+      if (!user) return json(res, { message: "Usuário não encontrado" }, 404);
+      const valid = await bcrypt.compare(currentPassword, user.password);
+      if (!valid) return json(res, { message: "Senha atual incorreta" }, 401);
+
+      const updateData: any = {};
+      if (name && name !== user.name) updateData.name = name;
+      if (email && email !== user.email) {
+        const [existing] = await getDb().select().from(users).where(eq(users.email, email));
+        if (existing && existing.id !== user.id) {
+          return json(res, { message: "Este email já está em uso" }, 400);
+        }
+        updateData.email = email;
+      }
+      if (newPassword) {
+        if (newPassword.length < 6) {
+          return json(res, { message: "Nova senha deve ter pelo menos 6 caracteres" }, 400);
+        }
+        updateData.password = await bcrypt.hash(newPassword, 10);
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        const { password: _, ...safeUser } = user;
+        return json(res, { message: "Nenhuma alteração", user: safeUser });
+      }
+
+      const [updated] = await getDb().update(users).set(updateData).where(eq(users.id, userId)).returning();
+      const { password: _, ...safeUser } = updated;
+      return json(res, { message: "Perfil atualizado com sucesso", user: safeUser });
     }
 
     // ── ADMIN: Student Progress (all students) ──

@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Users, BookOpen, Layers, LogOut, Plus, Trash2, Check, X,
   Clock, Video, Shield, GraduationCap, ChevronUp, ChevronDown, Eye, Pencil,
-  CreditCard, RefreshCw
+  CreditCard, RefreshCw, KeyRound, Copy
 } from "lucide-react";
 import type { Module, Lesson, Plan, User } from "@shared/schema";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
@@ -251,6 +251,24 @@ export default function AdminDashboard() {
       setRenewingStudent(null);
       setRenewDays(30);
       toast({ title: "Acesso renovado" });
+    },
+  });
+
+  // ── Password Reset ──
+  const [resetLinkDialog, setResetLinkDialog] = useState<{ student: SafeUser; link: string } | null>(null);
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("POST", `/api/admin/students/${id}/reset-password`);
+      return res.json();
+    },
+    onSuccess: (data, id) => {
+      const student = students.find(s => s.id === id);
+      const link = `${window.location.origin}${window.location.pathname}#/reset-password/${data.token}`;
+      setResetLinkDialog({ student: student!, link });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
     },
   });
 
@@ -580,6 +598,16 @@ export default function AdminDashboard() {
                             >
                               <Pencil className="w-3.5 h-3.5" />
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-muted-foreground hover:text-gold"
+                              onClick={() => resetPasswordMutation.mutate(s.id)}
+                              title="Resetar senha"
+                              disabled={resetPasswordMutation.isPending}
+                            >
+                              <KeyRound className="w-3.5 h-3.5" />
+                            </Button>
                             {s.approved && (
                               <Button
                                 size="sm"
@@ -791,6 +819,44 @@ export default function AdminDashboard() {
                   >
                     Renovar acesso
                   </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Password Reset Link Dialog */}
+            <Dialog open={!!resetLinkDialog} onOpenChange={(open) => !open && setResetLinkDialog(null)}>
+              <DialogContent className="bg-card border-border/40 max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-lg">Link de Reset de Senha</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">
+                    {resetLinkDialog?.student.name}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <p className="text-sm text-muted-foreground">
+                    Envie este link para o aluno. Ele poderá criar uma nova senha. O link expira em 24 horas.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      readOnly
+                      value={resetLinkDialog?.link || ""}
+                      className="bg-background/50 border-border/40 text-xs"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-gold/30 text-gold hover:bg-gold/10 shrink-0"
+                      onClick={() => {
+                        if (resetLinkDialog?.link) {
+                          navigator.clipboard.writeText(resetLinkDialog.link);
+                          toast({ title: "Link copiado!" });
+                        }
+                      }}
+                    >
+                      <Copy className="w-4 h-4 mr-1" />
+                      Copiar
+                    </Button>
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>

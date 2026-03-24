@@ -16,6 +16,8 @@ import type { z } from "zod";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [confirmEmailError, setConfirmEmailError] = useState("");
   const { login } = useAuth();
   const { toast } = useToast();
 
@@ -55,6 +57,8 @@ export default function LoginPage() {
       toast({ title: "Cadastro realizado", description: data.message });
       setMode("login");
       registerForm.reset();
+      setConfirmEmail("");
+      setConfirmEmailError("");
     },
     onError: (error: any) => {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -144,7 +148,14 @@ export default function LoginPage() {
             </form>
           ) : (
             <form
-              onSubmit={registerForm.handleSubmit((data) => registerMutation.mutate(data))}
+              onSubmit={registerForm.handleSubmit((data) => {
+                if (data.email !== confirmEmail) {
+                  setConfirmEmailError("Os emails não coincidem");
+                  return;
+                }
+                setConfirmEmailError("");
+                registerMutation.mutate(data);
+              })}
               className="space-y-4"
             >
               <div className="space-y-2">
@@ -172,6 +183,25 @@ export default function LoginPage() {
                 />
                 {registerForm.formState.errors.email && (
                   <p className="text-sm text-destructive">{registerForm.formState.errors.email.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="reg-confirm-email" className="text-xs uppercase tracking-wider text-muted-foreground">Confirmar email</Label>
+                <Input
+                  id="reg-confirm-email"
+                  type="email"
+                  placeholder="Repita seu email"
+                  className="bg-background/50 border-border/50 focus:border-primary"
+                  data-testid="input-register-confirm-email"
+                  value={confirmEmail}
+                  onChange={(e) => {
+                    setConfirmEmail(e.target.value);
+                    if (confirmEmailError) setConfirmEmailError("");
+                  }}
+                  onPaste={(e) => e.preventDefault()}
+                />
+                {confirmEmailError && (
+                  <p className="text-sm text-destructive">{confirmEmailError}</p>
                 )}
               </div>
               <div className="space-y-2">

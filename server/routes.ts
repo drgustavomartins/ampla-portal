@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import type { Server } from "http";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { storage } from "./storage";
 import { registerSchema, loginSchema, insertModuleSchema, insertLessonSchema } from "@shared/schema";
 
@@ -250,6 +251,93 @@ export function registerRoutes(server: Server, app: Express) {
     if (!updated) return res.status(404).json({ message: "Aluno não encontrado" });
     const { password, ...safe } = updated;
     res.json(safe);
+  });
+
+  // ==================== ADMIN: Password Reset ====================
+  app.post("/api/admin/students/:id/reset-password", async (req, res) => {
+    try {
+      const user = await storage.getUser(parseInt(req.params.id));
+      if (!user) return res.status(404).json({ message: "Aluno não encontrado" });
+      const token = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      await storage.createPasswordReset(user.id, token, expiresAt);
+      res.json({ token, link: `/reset-password/${token}` });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Erro ao gerar link de reset" });
+    }
+  });
+
+  // ==================== AUTH: Reset Password ====================
+  app.get("/api/auth/reset-password/:token", async (req, res) => {
+    try {
+      const pr = await storage.getPasswordResetByToken(req.params.token);
+      if (!pr || pr.used || new Date() > new Date(pr.expiresAt)) {
+        return res.status(400).json({ message: "Token inválido ou expirado" });
+      }
+      res.json({ valid: true });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  app.post("/api/auth/reset-password/:token", async (req, res) => {
+    try {
+      const { password } = req.body;
+      if (!password || password.length < 6) {
+        return res.status(400).json({ message: "Senha deve ter pelo menos 6 caracteres" });
+      }
+      const pr = await storage.getPasswordResetByToken(req.params.token);
+      if (!pr || pr.used || new Date() > new Date(pr.expiresAt)) {
+        return res.status(400).json({ message: "Token inválido ou expirado" });
+      }
+      const hashed = await bcrypt.hash(password, 10);
+      await storage.updateUser(pr.userId, { password: hashed });
+      await storage.markPasswordResetUsed(pr.id);
+      res.json({ message: "Senha alterada com sucesso" });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
+  // ==================== AUTH: Profile Update ====================
+  app.patch("/api/auth/profile", async (req, res) => {
+    try {
+      const { userId, currentPassword, name, email, newPassword } = req.body;
+      if (!userId || !currentPassword) {
+        return res.status(400).json({ message: "userId e senha atual são obrigatórios" });
+      }
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
+      const valid = await bcrypt.compare(currentPassword, user.password);
+      if (!valid) return res.status(401).json({ message: "Senha atual incorreta" });
+
+      const updateData: any = {};
+      if (name && name !== user.name) updateData.name = name;
+      if (email && email !== user.email) {
+        const existing = await storage.getUserByEmail(email);
+        if (existing && existing.id !== user.id) {
+          return res.status(400).json({ message: "Este email já está em uso" });
+        }
+        updateData.email = email;
+      }
+      if (newPassword) {
+        if (newPassword.length < 6) {
+          return res.status(400).json({ message: "Nova senha deve ter pelo menos 6 caracteres" });
+        }
+        updateData.password = await bcrypt.hash(newPassword, 10);
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return res.json({ message: "Nenhuma alteração", user: { id: user.id, name: user.name, email: user.email, role: user.role, planId: user.planId, approved: user.approved, accessExpiresAt: user.accessExpiresAt, createdAt: user.createdAt } });
+      }
+
+      const updated = await storage.updateUser(userId, updateData);
+      if (!updated) return res.status(500).json({ message: "Erro ao atualizar" });
+      const { password: _, ...safe } = updated;
+      res.json({ message: "Perfil atualizado com sucesso", user: safe });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Erro ao atualizar perfil" });
+    }
   });
 
   // ==================== SEED (only if empty) ====================

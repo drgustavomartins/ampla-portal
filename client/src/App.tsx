@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "./lib/auth";
 import LoginPage from "./pages/login";
 import StudentDashboard from "./pages/student-dashboard";
 import AdminDashboard from "./pages/admin-dashboard";
+import ResetPasswordPage from "./pages/reset-password";
 import NotFound from "./pages/not-found";
 
 function AppContent() {
@@ -30,6 +31,7 @@ function App() {
         <Router hook={useHashLocation}>
           <Switch>
             <Route path="/" component={AppContent} />
+            <Route path="/reset-password/:token" component={ResetPasswordPage} />
             <Route component={NotFound} />
           </Switch>
         </Router>

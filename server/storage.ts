@@ -1,12 +1,13 @@
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
 import {
-  plans, users, modules, lessons, lessonProgress,
+  plans, users, modules, lessons, lessonProgress, passwordResets,
   type Plan, type InsertPlan,
   type User, type InsertUser,
   type Module, type InsertModule,
   type Lesson, type InsertLesson,
   type LessonProgress,
+  type PasswordReset,
 } from "@shared/schema";
 
 export const storage = {
@@ -139,5 +140,20 @@ export const storage = {
     await db.delete(lessonProgress)
       .where(and(eq(lessonProgress.userId, userId), eq(lessonProgress.lessonId, lessonId)));
     return true;
+  },
+
+  // ===== PASSWORD RESETS =====
+  async createPasswordReset(userId: number, token: string, expiresAt: string): Promise<PasswordReset> {
+    const [pr] = await db.insert(passwordResets).values({
+      userId, token, expiresAt, createdAt: new Date().toISOString(),
+    }).returning();
+    return pr;
+  },
+  async getPasswordResetByToken(token: string): Promise<PasswordReset | undefined> {
+    const [pr] = await db.select().from(passwordResets).where(eq(passwordResets.token, token));
+    return pr;
+  },
+  async markPasswordResetUsed(id: number): Promise<void> {
+    await db.update(passwordResets).set({ used: true }).where(eq(passwordResets.id, id));
   },
 };

@@ -44,6 +44,16 @@ export const lessons = pgTable("lessons", {
   order: integer("order").notNull().default(0),
 });
 
+// Password Resets
+export const passwordResets = pgTable("password_resets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  token: text("token").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  used: boolean("used").notNull().default(false),
+  createdAt: text("created_at").notNull(),
+});
+
 // Progress
 export const lessonProgress = pgTable("lesson_progress", {
   id: serial("id").primaryKey(),
@@ -83,3 +93,4 @@ export type Lesson = typeof lessons.$inferSelect;
 export type InsertLesson = z.infer<typeof insertLessonSchema>;
 export type LessonProgress = typeof lessonProgress.$inferSelect;
 export type InsertLessonProgress = z.infer<typeof insertLessonProgressSchema>;
+export type PasswordReset = typeof passwordResets.$inferSelect;

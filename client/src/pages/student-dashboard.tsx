@@ -6,9 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
-  ChevronRight, Calendar, Layers
+  ChevronRight, Calendar, Layers, Settings, Loader2
 } from "lucide-react";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
@@ -34,9 +40,12 @@ function linkifyText(text: string) {
 }
 
 export default function StudentDashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, login } = useAuth();
+  const { toast } = useToast();
   const [selectedModule, setSelectedModule] = useState<number | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name: "", email: "", currentPassword: "", newPassword: "", confirmNewPassword: "" });
 
   const { data: modules = [] } = useQuery<Module[]>({ queryKey: ["/api/modules"] });
   const { data: lessons = [] } = useQuery<Lesson[]>({ queryKey: ["/api/lessons"] });
@@ -59,6 +68,26 @@ export default function StudentDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/progress", user?.id] });
+    },
+  });
+
+  const profileMutation = useMutation({
+    mutationFn: async () => {
+      const body: any = { userId: user?.id, currentPassword: profileForm.currentPassword };
+      if (profileForm.name && profileForm.name !== user?.name) body.name = profileForm.name;
+      if (profileForm.email && profileForm.email !== user?.email) body.email = profileForm.email;
+      if (profileForm.newPassword) body.newPassword = profileForm.newPassword;
+      const res = await apiRequest("PATCH", "/api/auth/profile", body);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.user) login(data.user);
+      toast({ title: "Perfil atualizado", description: data.message });
+      setProfileOpen(false);
+      setProfileForm({ name: "", email: "", currentPassword: "", newPassword: "", confirmNewPassword: "" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
     },
   });
 
@@ -251,6 +280,25 @@ export default function StudentDashboard() {
             <span className="text-sm text-muted-foreground hidden sm:block">
               Olá, {user?.name?.split(" ")[0]}
             </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-gold"
+              onClick={() => {
+                setProfileForm({
+                  name: user?.name || "",
+                  email: user?.email || "",
+                  currentPassword: "",
+                  newPassword: "",
+                  confirmNewPassword: "",
+                });
+                setProfileOpen(true);
+              }}
+              data-testid="button-settings"
+              title="Configurações"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-gold" onClick={logout} data-testid="button-logout">
               <LogOut className="w-4 h-4" />
             </Button>
@@ -389,6 +437,96 @@ export default function StudentDashboard() {
           <PerplexityAttribution />
         </div>
       </footer>
+
+      {/* Profile Edit Dialog */}
+      <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+        <DialogContent className="bg-card border-border/40 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg">Editar Perfil</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Altere suas informações pessoais
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!profileForm.currentPassword) {
+                toast({ title: "Erro", description: "Informe sua senha atual para salvar", variant: "destructive" });
+                return;
+              }
+              if (profileForm.newPassword && profileForm.newPassword !== profileForm.confirmNewPassword) {
+                toast({ title: "Erro", description: "As novas senhas não coincidem", variant: "destructive" });
+                return;
+              }
+              if (profileForm.newPassword && profileForm.newPassword.length < 6) {
+                toast({ title: "Erro", description: "Nova senha deve ter pelo menos 6 caracteres", variant: "destructive" });
+                return;
+              }
+              profileMutation.mutate();
+            }}
+            className="space-y-4 pt-2"
+          >
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label>
+              <Input
+                value={profileForm.name}
+                onChange={(e) => setProfileForm((f) => ({ ...f, name: e.target.value }))}
+                className="bg-background/50 border-border/40"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Email</Label>
+              <Input
+                type="email"
+                value={profileForm.email}
+                onChange={(e) => setProfileForm((f) => ({ ...f, email: e.target.value }))}
+                className="bg-background/50 border-border/40"
+              />
+            </div>
+            <div className="w-full h-px bg-border/30" />
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Senha atual (obrigatória)</Label>
+              <Input
+                type="password"
+                placeholder="••••••"
+                value={profileForm.currentPassword}
+                onChange={(e) => setProfileForm((f) => ({ ...f, currentPassword: e.target.value }))}
+                className="bg-background/50 border-border/40"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Nova senha (opcional)</Label>
+              <Input
+                type="password"
+                placeholder="Deixe em branco para manter"
+                value={profileForm.newPassword}
+                onChange={(e) => setProfileForm((f) => ({ ...f, newPassword: e.target.value }))}
+                className="bg-background/50 border-border/40"
+              />
+            </div>
+            {profileForm.newPassword && (
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Confirmar nova senha</Label>
+                <Input
+                  type="password"
+                  placeholder="Repita a nova senha"
+                  value={profileForm.confirmNewPassword}
+                  onChange={(e) => setProfileForm((f) => ({ ...f, confirmNewPassword: e.target.value }))}
+                  className="bg-background/50 border-border/40"
+                />
+              </div>
+            )}
+            <Button
+              type="submit"
+              className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
+              disabled={profileMutation.isPending}
+            >
+              {profileMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar alterações
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
