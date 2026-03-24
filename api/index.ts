@@ -117,17 +117,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // ── AUTH: Register ──
     if (path === "/api/auth/register" && method === "POST") {
-      const { name, email, password, planId } = req.body;
-      if (!name || !email || !password || !planId) {
+      const { name, email, password } = req.body;
+      if (!name || !email || !password) {
         return json(res, { message: "Campos obrigatórios faltando" }, 400);
       }
       const [existing] = await getDb().select().from(users).where(eq(users.email, email));
       if (existing) return json(res, { message: "Email já cadastrado" }, 400);
-      const [plan] = await getDb().select().from(plans).where(eq(plans.id, planId));
-      if (!plan) return json(res, { message: "Plano inválido" }, 400);
       const hashed = await bcrypt.hash(password, 10);
       const [user] = await getDb().insert(users).values({
-        name, email, password: hashed, planId, createdAt: new Date().toISOString(),
+        name, email, password: hashed, planId: null, createdAt: new Date().toISOString(),
       }).returning();
       return json(res, { message: "Cadastro realizado! Aguarde a aprovação do administrador.", user: { id: user.id, name: user.name, email: user.email } });
     }
@@ -274,11 +272,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const id = parseInt(approveMatch[1]);
       const [user] = await getDb().select().from(users).where(eq(users.id, id));
       if (!user) return json(res, { message: "Aluno não encontrado" }, 404);
-      const [plan] = user.planId ? await getDb().select().from(plans).where(eq(plans.id, user.planId)) : [null];
+      const bodyPlanId = req.body?.planId ? parseInt(req.body.planId) : null;
+      const effectivePlanId = bodyPlanId || user.planId;
+      const [plan] = effectivePlanId ? await getDb().select().from(plans).where(eq(plans.id, effectivePlanId)) : [null];
       const days = plan ? plan.durationDays : 90;
       const expires = new Date();
       expires.setDate(expires.getDate() + days);
-      const [updated] = await getDb().update(users).set({ approved: true, accessExpiresAt: expires.toISOString() }).where(eq(users.id, id)).returning();
+      const updateData: any = { approved: true, accessExpiresAt: expires.toISOString() };
+      if (bodyPlanId) updateData.planId = bodyPlanId;
+      const [updated] = await getDb().update(users).set(updateData).where(eq(users.id, id)).returning();
       const { password, ...safe } = updated;
       return json(res, safe);
     }

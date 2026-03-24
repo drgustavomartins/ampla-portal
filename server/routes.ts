@@ -39,16 +39,12 @@ export function registerRoutes(server: Server, app: Express) {
       if (existing) {
         return res.status(400).json({ message: "Email já cadastrado" });
       }
-      const plan = await storage.getPlan(data.planId);
-      if (!plan) {
-        return res.status(400).json({ message: "Plano inválido" });
-      }
       const hashedPassword = await bcrypt.hash(data.password, 10);
       const user = await storage.createUser({
         name: data.name,
         email: data.email,
         password: hashedPassword,
-        planId: data.planId,
+        planId: null,
         createdAt: new Date().toISOString(),
       });
       return res.json({ message: "Cadastro realizado! Aguarde a aprovação do administrador.", user: { id: user.id, name: user.name, email: user.email } });
@@ -194,14 +190,15 @@ export function registerRoutes(server: Server, app: Express) {
     if (!requireAdmin(req, res)) return;
     const user = await storage.getUser(parseInt(req.params.id));
     if (!user) return res.status(404).json({ message: "Aluno não encontrado" });
-    const plan = user.planId ? await storage.getPlan(user.planId) : null;
+    const bodyPlanId = req.body?.planId ? parseInt(req.body.planId) : null;
+    const effectivePlanId = bodyPlanId || user.planId;
+    const plan = effectivePlanId ? await storage.getPlan(effectivePlanId) : null;
     const durationDays = plan ? plan.durationDays : 90;
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + durationDays);
-    const updated = await storage.updateUser(user.id, {
-      approved: true,
-      accessExpiresAt: expiresAt.toISOString(),
-    });
+    const updateData: any = { approved: true, accessExpiresAt: expiresAt.toISOString() };
+    if (bodyPlanId) updateData.planId = bodyPlanId;
+    const updated = await storage.updateUser(user.id, updateData);
     if (!updated) return res.status(500).json({ message: "Erro ao aprovar" });
     const { password, ...safe } = updated;
     res.json(safe);

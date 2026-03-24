@@ -23,7 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Users, BookOpen, Layers, LogOut, Plus, Trash2, Check, X,
   Clock, Video, Shield, GraduationCap, ChevronUp, ChevronDown, Eye, Pencil,
-  CreditCard, RefreshCw, KeyRound, Copy
+  CreditCard, RefreshCw, KeyRound, Copy, Loader2
 } from "lucide-react";
 import type { Module, Lesson, Plan, User } from "@shared/schema";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
@@ -45,14 +45,20 @@ export default function AdminDashboard() {
   // Student detail view
   const [selectedStudent, setSelectedStudent] = useState<SafeUser | null>(null);
 
+  // Approve dialog state
+  const [approvingStudent, setApprovingStudent] = useState<SafeUser | null>(null);
+  const [approvePlanId, setApprovePlanId] = useState<string>("");
+
   // Approve / Revoke
   const approveMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("POST", `/api/admin/students/${id}/approve`);
+    mutationFn: async ({ id, planId }: { id: number; planId?: number }) => {
+      await apiRequest("POST", `/api/admin/students/${id}/approve`, planId ? { planId } : {});
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students/pending"] });
+      setApprovingStudent(null);
+      setApprovePlanId("");
       toast({ title: "Aluno aprovado" });
     },
   });
@@ -470,25 +476,18 @@ export default function AdminDashboard() {
                 </div>
                 <div className="space-y-2">
                   {pendingStudents.map((s) => {
-                    const plan = plans.find(p => p.id === s.planId);
                     return (
                       <Card key={s.id} className="border-amber-500/20 bg-card/50">
                         <CardContent className="p-4 flex items-center justify-between gap-4">
                           <div className="min-w-0 flex-1">
                             <p className="font-medium text-foreground truncate">{s.name}</p>
                             <p className="text-sm text-muted-foreground truncate mt-0.5">{s.email}</p>
-                            {plan && (
-                              <Badge variant="secondary" className="mt-2 text-xs bg-gold/10 text-gold border-0">
-                                {plan.name}
-                              </Badge>
-                            )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <Button
                               size="sm"
                               className="bg-gold text-background hover:bg-gold/90 font-medium"
-                              onClick={() => approveMutation.mutate(s.id)}
-                              disabled={approveMutation.isPending}
+                              onClick={() => { setApprovingStudent(s); setApprovePlanId(""); }}
                               data-testid={`button-approve-${s.id}`}
                             >
                               <Check className="w-4 h-4 mr-1.5" />
@@ -659,7 +658,7 @@ export default function AdminDashboard() {
                               <Button
                                 size="sm"
                                 className="bg-gold text-background hover:bg-gold/90 text-xs"
-                                onClick={() => approveMutation.mutate(s.id)}
+                                onClick={() => { setApprovingStudent(s); setApprovePlanId(""); }}
                                 data-testid={`button-approve-list-${s.id}`}
                               >
                                 <Check className="w-3 h-3 mr-1" />
@@ -1627,6 +1626,53 @@ export default function AdminDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Approve student dialog — select plan */}
+      <Dialog open={!!approvingStudent} onOpenChange={(open) => { if (!open) { setApprovingStudent(null); setApprovePlanId(""); } }}>
+        <DialogContent className="bg-card border-border/40 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Aprovar aluno</DialogTitle>
+            <DialogDescription>
+              Selecione o plano de mentoria para <span className="font-medium text-foreground">{approvingStudent?.name}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Plano de mentoria</Label>
+              <Select value={approvePlanId} onValueChange={setApprovePlanId}>
+                <SelectTrigger className="bg-background/50 border-border/50">
+                  <SelectValue placeholder="Selecione um plano" />
+                </SelectTrigger>
+                <SelectContent>
+                  {plans.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.name}{p.price ? ` — ${p.price}` : ""} ({p.durationDays} dias)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" className="border-border/40" onClick={() => { setApprovingStudent(null); setApprovePlanId(""); }}>
+                Cancelar
+              </Button>
+              <Button
+                className="bg-gold text-background hover:bg-gold/90 font-medium"
+                disabled={!approvePlanId || approveMutation.isPending}
+                onClick={() => {
+                  if (approvingStudent && approvePlanId) {
+                    approveMutation.mutate({ id: approvingStudent.id, planId: parseInt(approvePlanId) });
+                  }
+                }}
+                data-testid="button-confirm-approve"
+              >
+                {approveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Aprovar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <footer className="border-t border-border/20 mt-8 py-5">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">

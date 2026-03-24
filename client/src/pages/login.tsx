@@ -2,16 +2,14 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, registerSchema } from "@shared/schema";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import type { Plan } from "@shared/schema";
 import type { z } from "zod";
 
 export default function LoginPage() {
@@ -21,10 +19,6 @@ export default function LoginPage() {
   const { login } = useAuth();
   const { toast } = useToast();
 
-  const { data: plans = [] } = useQuery<Plan[]>({
-    queryKey: ["/api/plans"],
-  });
-
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
@@ -32,7 +26,7 @@ export default function LoginPage() {
 
   const registerForm = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: "", email: "", password: "", planId: 0 },
+    defaultValues: { name: "", email: "", password: "" },
   });
 
   const loginMutation = useMutation({
@@ -216,27 +210,6 @@ export default function LoginPage() {
                 />
                 {registerForm.formState.errors.password && (
                   <p className="text-sm text-destructive">{registerForm.formState.errors.password.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Plano de mentoria</Label>
-                <Select
-                  onValueChange={(v) => registerForm.setValue("planId", parseInt(v))}
-                  data-testid="select-register-plan"
-                >
-                  <SelectTrigger className="bg-background/50 border-border/50">
-                    <SelectValue placeholder="Selecione seu plano" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {plans.map((plan) => (
-                      <SelectItem key={plan.id} value={String(plan.id)}>
-                        {plan.name} — {plan.price}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {registerForm.formState.errors.planId && (
-                  <p className="text-sm text-destructive">{registerForm.formState.errors.planId.message}</p>
                 )}
               </div>
               <Button
