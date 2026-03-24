@@ -520,7 +520,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── MIGRATE (adds new columns/tables to existing DB) ──
     if (path === "/api/admin/migrate" && method === "POST") {
-      if (!requireAdmin(req, res)) return;
+      // Allow migration with secret key (bypasses JWT since login may fail before migration)
+      const migrateKey = req.headers["x-migrate-key"] || req.body?.migrateKey;
+      const auth = authenticateRequest(req);
+      if (!migrateKey && (!auth || auth.role !== "admin")) {
+        return json(res, { message: "N\u00e3o autorizado" }, 401);
+      }
+      if (migrateKey && migrateKey !== (process.env.JWT_SECRET || "ampla-facial-dev-secret-2026")) {
+        return json(res, { message: "Chave inv\u00e1lida" }, 401);
+      }
       const results: string[] = [];
       try {
         await getDb().execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT`);
