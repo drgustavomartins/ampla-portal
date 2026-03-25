@@ -60,21 +60,21 @@ export default function LoginPage() {
   });
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4"
+    <div className="min-h-screen flex flex-col items-center justify-start p-4 pt-12 sm:pt-16 md:justify-center md:pt-4"
       style={{
         background: "radial-gradient(ellipse at 30% 20%, hsl(200 55% 12%) 0%, hsl(200 55% 7%) 70%)",
       }}
     >
-      <div className="w-full max-w-sm space-y-8">
+      <div className="w-full max-w-sm space-y-6">
         {/* Brand */}
         <div className="text-center space-y-4">
           <img
             src="/logo-icon.png"
             alt="Ampla Facial"
-            className="mx-auto h-16 w-16 object-contain"
+            className="mx-auto h-32 w-32 sm:h-36 sm:w-36 md:h-40 md:w-40 object-contain drop-shadow-lg"
           />
           <div>
-            <h1 className="text-2xl font-semibold tracking-brand text-gold uppercase">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-brand text-gold uppercase">
               Ampla Facial
             </h1>
             <div className="w-12 h-px bg-gold mx-auto mt-3 mb-2 opacity-60" />
