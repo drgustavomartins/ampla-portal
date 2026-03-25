@@ -6,7 +6,10 @@ import jwt from "jsonwebtoken";
 import { storage } from "./storage";
 import { registerSchema, loginSchema, insertModuleSchema, insertLessonSchema } from "@shared/schema";
 
-const JWT_SECRET = process.env.JWT_SECRET || "ampla-facial-dev-secret-2026";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is required");
+}
 
 function authenticateRequest(req: Request): { userId: number; role: string } | null {
   const authHeader = req.headers.authorization;
@@ -149,7 +152,13 @@ export function registerRoutes(server: Server, app: Express) {
 
   app.patch("/api/admin/plans/:id", async (req, res) => {
     if (!requireAdmin(req, res)) return;
-    const updated = await storage.updatePlan(parseInt(req.params.id), req.body);
+    const { name, description, durationDays, price } = req.body;
+    const planUpdate: Partial<{ name: string; description: string | null; durationDays: number; price: string | null }> = {};
+    if (name !== undefined) planUpdate.name = name;
+    if (description !== undefined) planUpdate.description = description;
+    if (durationDays !== undefined) planUpdate.durationDays = durationDays;
+    if (price !== undefined) planUpdate.price = price;
+    const updated = await storage.updatePlan(parseInt(req.params.id), planUpdate);
     if (!updated) return res.status(404).json({ message: "Plano não encontrado" });
     res.json(updated);
   });
@@ -311,7 +320,13 @@ export function registerRoutes(server: Server, app: Express) {
 
   app.patch("/api/admin/modules/:id", async (req, res) => {
     if (!requireAdmin(req, res)) return;
-    const updated = await storage.updateModule(parseInt(req.params.id), req.body);
+    const { title, description, order, imageUrl } = req.body;
+    const moduleUpdate: Partial<{ title: string; description: string | null; order: number; imageUrl: string | null }> = {};
+    if (title !== undefined) moduleUpdate.title = title;
+    if (description !== undefined) moduleUpdate.description = description;
+    if (order !== undefined) moduleUpdate.order = order;
+    if (imageUrl !== undefined) moduleUpdate.imageUrl = imageUrl;
+    const updated = await storage.updateModule(parseInt(req.params.id), moduleUpdate);
     if (!updated) return res.status(404).json({ message: "Módulo não encontrado" });
     res.json(updated);
   });
@@ -335,7 +350,15 @@ export function registerRoutes(server: Server, app: Express) {
 
   app.patch("/api/admin/lessons/:id", async (req, res) => {
     if (!requireAdmin(req, res)) return;
-    const updated = await storage.updateLesson(parseInt(req.params.id), req.body);
+    const { moduleId, title, description, videoUrl, duration, order } = req.body;
+    const lessonUpdate: Partial<{ moduleId: number; title: string; description: string | null; videoUrl: string | null; duration: string | null; order: number }> = {};
+    if (moduleId !== undefined) lessonUpdate.moduleId = moduleId;
+    if (title !== undefined) lessonUpdate.title = title;
+    if (description !== undefined) lessonUpdate.description = description;
+    if (videoUrl !== undefined) lessonUpdate.videoUrl = videoUrl;
+    if (duration !== undefined) lessonUpdate.duration = duration;
+    if (order !== undefined) lessonUpdate.order = order;
+    const updated = await storage.updateLesson(parseInt(req.params.id), lessonUpdate);
     if (!updated) return res.status(404).json({ message: "Aula não encontrada" });
     res.json(updated);
   });
@@ -409,10 +432,13 @@ export function registerRoutes(server: Server, app: Express) {
   // ==================== AUTH: Profile Update ====================
   app.patch("/api/auth/profile", async (req, res) => {
     try {
-      const { userId, currentPassword, name, email, phone, newPassword } = req.body;
-      if (!userId || !currentPassword) {
-        return res.status(400).json({ message: "userId e senha atual são obrigatórios" });
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+      const { currentPassword, name, email, phone, newPassword } = req.body;
+      if (!currentPassword) {
+        return res.status(400).json({ message: "Senha atual é obrigatória" });
       }
+      const userId = auth.userId;
       const user = await storage.getUser(userId);
       if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
       const valid = await bcrypt.compare(currentPassword, user.password);
@@ -461,8 +487,11 @@ export function registerRoutes(server: Server, app: Express) {
     await storage.createPlan({ name: "Presencial", description: "Mentoria presencial + acesso às aulas gravadas", durationDays: 180, price: "R$ 12.390" });
     await storage.createPlan({ name: "Completo", description: "Mentoria completa: online + presencial + acesso total", durationDays: 365, price: "R$ 17.350" });
 
-    // Create admin user — IMPORTANTE: troque ADMIN_PASSWORD em produção!
-    const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || "admin123", 10);
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (!adminPassword) {
+      return res.status(500).json({ message: "ADMIN_PASSWORD environment variable is required for seeding" });
+    }
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
     const admin = await storage.createUser({
       name: "Dr. Gustavo Martins",
       email: "admin@amplafacial.com",

@@ -8,7 +8,10 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import ws from "ws";
 
-const JWT_SECRET = process.env.JWT_SECRET || "ampla-facial-dev-secret-2026";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is required");
+}
 
 // ─── Neon DB (lazy init) ───
 neonConfig.webSocketConstructor = ws;
@@ -219,7 +222,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const patchPlanMatch = path.match(/^\/api\/admin\/plans\/(\d+)$/);
     if (patchPlanMatch && method === "PATCH") {
       if (!requireAdmin(req, res)) return;
-      const [updated] = await getDb().update(plans).set(req.body).where(eq(plans.id, parseInt(patchPlanMatch[1]))).returning();
+      const { name, description, durationDays, price } = req.body;
+      const planUpdate: Record<string, any> = {};
+      if (name !== undefined) planUpdate.name = name;
+      if (description !== undefined) planUpdate.description = description;
+      if (durationDays !== undefined) planUpdate.durationDays = durationDays;
+      if (price !== undefined) planUpdate.price = price;
+      const [updated] = await getDb().update(plans).set(planUpdate).where(eq(plans.id, parseInt(patchPlanMatch[1]))).returning();
       if (!updated) return json(res, { message: "Plano não encontrado" }, 404);
       return json(res, updated);
     }
@@ -412,10 +421,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── AUTH: Profile Update ──
     if (path === "/api/auth/profile" && method === "PATCH") {
-      const { userId, currentPassword, name, email, phone, newPassword } = req.body;
-      if (!userId || !currentPassword) {
-        return json(res, { message: "userId e senha atual são obrigatórios" }, 400);
+      const auth = authenticateRequest(req);
+      if (!auth) return json(res, { message: "Não autorizado" }, 401);
+      const { currentPassword, name, email, phone, newPassword } = req.body;
+      if (!currentPassword) {
+        return json(res, { message: "Senha atual é obrigatória" }, 400);
       }
+      const userId = auth.userId;
       const [user] = await getDb().select().from(users).where(eq(users.id, userId));
       if (!user) return json(res, { message: "Usuário não encontrado" }, 404);
       const valid = await bcrypt.compare(currentPassword, user.password);
@@ -486,14 +498,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ── ADMIN: Modules ──
     if (path === "/api/admin/modules" && method === "POST") {
       if (!requireAdmin(req, res)) return;
-      const [mod] = await getDb().insert(modules).values(req.body).returning();
+      const { title, description, order, imageUrl } = req.body;
+      if (!title) return json(res, { message: "Título é obrigatório" }, 400);
+      const [mod] = await getDb().insert(modules).values({ title, description: description || null, order: order || 0, imageUrl: imageUrl || null }).returning();
       return json(res, mod);
     }
 
     const patchModuleMatch = path.match(/^\/api\/admin\/modules\/(\d+)$/);
     if (patchModuleMatch && method === "PATCH") {
       if (!requireAdmin(req, res)) return;
-      const [updated] = await getDb().update(modules).set(req.body).where(eq(modules.id, parseInt(patchModuleMatch[1]))).returning();
+      const { title, description, order, imageUrl } = req.body;
+      const moduleUpdate: Record<string, any> = {};
+      if (title !== undefined) moduleUpdate.title = title;
+      if (description !== undefined) moduleUpdate.description = description;
+      if (order !== undefined) moduleUpdate.order = order;
+      if (imageUrl !== undefined) moduleUpdate.imageUrl = imageUrl;
+      const [updated] = await getDb().update(modules).set(moduleUpdate).where(eq(modules.id, parseInt(patchModuleMatch[1]))).returning();
       if (!updated) return json(res, { message: "Módulo não encontrado" }, 404);
       return json(res, updated);
     }
@@ -509,14 +529,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // ── ADMIN: Lessons ──
     if (path === "/api/admin/lessons" && method === "POST") {
       if (!requireAdmin(req, res)) return;
-      const [lesson] = await getDb().insert(lessons).values(req.body).returning();
+      const { moduleId, title, description, videoUrl, duration, order } = req.body;
+      if (!moduleId || !title) return json(res, { message: "moduleId e title são obrigatórios" }, 400);
+      const [lesson] = await getDb().insert(lessons).values({ moduleId, title, description: description || null, videoUrl: videoUrl || null, duration: duration || null, order: order || 0 }).returning();
       return json(res, lesson);
     }
 
     const patchLessonMatch = path.match(/^\/api\/admin\/lessons\/(\d+)$/);
     if (patchLessonMatch && method === "PATCH") {
       if (!requireAdmin(req, res)) return;
-      const [updated] = await getDb().update(lessons).set(req.body).where(eq(lessons.id, parseInt(patchLessonMatch[1]))).returning();
+      const { moduleId, title, description, videoUrl, duration, order } = req.body;
+      const lessonUpdate: Record<string, any> = {};
+      if (moduleId !== undefined) lessonUpdate.moduleId = moduleId;
+      if (title !== undefined) lessonUpdate.title = title;
+      if (description !== undefined) lessonUpdate.description = description;
+      if (videoUrl !== undefined) lessonUpdate.videoUrl = videoUrl;
+      if (duration !== undefined) lessonUpdate.duration = duration;
+      if (order !== undefined) lessonUpdate.order = order;
+      const [updated] = await getDb().update(lessons).set(lessonUpdate).where(eq(lessons.id, parseInt(patchLessonMatch[1]))).returning();
       if (!updated) return json(res, { message: "Aula não encontrada" }, 404);
       return json(res, updated);
     }
@@ -542,8 +572,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         { name: "Completo", description: "Mentoria completa: online + presencial + acesso total", durationDays: 365, price: "R$ 17.350" },
       ]);
 
-      // IMPORTANTE: troque ADMIN_PASSWORD em produção!
-      const hashed = await bcrypt.hash(process.env.ADMIN_PASSWORD || "admin123", 10);
+      const adminPassword = process.env.ADMIN_PASSWORD;
+      if (!adminPassword) {
+        return json(res, { message: "ADMIN_PASSWORD environment variable is required for seeding" }, 500);
+      }
+      const hashed = await bcrypt.hash(adminPassword, 10);
       const [admin] = await getDb().insert(users).values({
         name: "Dr. Gustavo Martins",
         email: "admin@amplafacial.com",
@@ -580,14 +613,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── MIGRATE (adds new columns/tables to existing DB) ──
     if (path === "/api/admin/migrate" && method === "POST") {
-      // Allow migration with secret key (bypasses JWT since login may fail before migration)
       const migrateKey = req.headers["x-migrate-key"] || req.body?.migrateKey;
       const auth = authenticateRequest(req);
+      const expectedKey = process.env.MIGRATE_KEY;
       if (!migrateKey && (!auth || auth.role !== "admin")) {
-        return json(res, { message: "N\u00e3o autorizado" }, 401);
+        return json(res, { message: "Não autorizado" }, 401);
       }
-      if (migrateKey && migrateKey !== (process.env.JWT_SECRET || "ampla-facial-dev-secret-2026")) {
-        return json(res, { message: "Chave inv\u00e1lida" }, 401);
+      if (migrateKey && (!expectedKey || migrateKey !== expectedKey)) {
+        return json(res, { message: "Chave inválida" }, 401);
       }
       const results: string[] = [];
       try {
@@ -613,7 +646,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return json(res, { message: "Rota não encontrada" }, 404);
 
   } catch (error: any) {
-    console.error("API Error:", error);
-    return json(res, { message: error.message || "Erro interno do servidor" }, 500);
+    console.error("API Error:", error?.message || error);
+    return json(res, { message: "Erro interno do servidor" }, 500);
   }
 }
