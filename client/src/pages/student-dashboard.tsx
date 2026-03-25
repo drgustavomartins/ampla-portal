@@ -73,7 +73,7 @@ export default function StudentDashboard() {
 
   const profileMutation = useMutation({
     mutationFn: async () => {
-      const body: any = { userId: user?.id, currentPassword: profileForm.currentPassword };
+      const body: any = { currentPassword: profileForm.currentPassword };
       if (profileForm.name && profileForm.name !== user?.name) body.name = profileForm.name;
       if (profileForm.phone !== (user as any)?.phone) body.phone = profileForm.phone;
       if (profileForm.email && profileForm.email !== user?.email) body.email = profileForm.email;
