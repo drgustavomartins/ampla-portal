@@ -308,14 +308,8 @@ export default function StudentDashboard() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           {/* Left: Logo */}
           <div className="flex items-center gap-3">
-            <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-              <path d="M16 2C8.268 2 2 8.268 2 16s6.268 14 14 14c0-7.732-6.268-14-14-14" fill="#D4A843" opacity="0.9"/>
-              <path d="M16 2c7.732 0 14 6.268 14 14s-6.268 14-14 14" stroke="#D4A843" strokeWidth="1.5" fill="none" opacity="0.4"/>
-            </svg>
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold text-gold tracking-wider leading-none">AMPLA FACIAL</span>
-              <span className="text-[10px] text-gold-muted tracking-brand leading-none mt-1">PORTAL DE MENTORIA</span>
-            </div>
+            <img src="/logo-icon.png" alt="Ampla Facial" className="w-7 h-7 object-contain" />
+            <span className="text-sm font-medium text-gold tracking-wide">AMPLA FACIAL</span>
           </div>
 
           {/* Right: User info */}
@@ -556,39 +550,82 @@ export default function StudentDashboard() {
           <section className="space-y-5">
             <h2 className="font-serif text-2xl font-semibold text-foreground">Recursos Exclusivos</h2>
             <div className="grid sm:grid-cols-3 gap-4">
-              {/* Comunidade */}
-              <a href="#" className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]">
+              {/* Comunidade — Lifetime access */}
+              <a
+                href="https://chat.whatsapp.com/C8pP9ctYkso5kH89l1CHHl"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
+              >
                 <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
                   <Users className="w-5 h-5 text-gold" />
                 </div>
                 <h3 className="font-semibold text-sm text-foreground">Comunidade NaturalUp®</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">Conecte-se com outros profissionais, troque experiências e evolua junto com a comunidade.</p>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">
+                    Acesso Vitalício
+                  </span>
+                </div>
                 <span className="inline-flex items-center text-xs font-medium text-gold group-hover:underline">
                   Acessar comunidade <ChevronRight className="w-3 h-3 ml-1" />
                 </span>
               </a>
-              {/* Tire Dúvidas */}
-              <a href="#" className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]">
-                <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
-                  <MessageCircle className="w-5 h-5 text-gold" />
+              {/* Tire Dúvidas — countdown + WhatsApp link */}
+              {isExpired ? (
+                <div className="rounded-2xl border border-destructive/30 bg-card/60 p-5 space-y-3 opacity-60 cursor-not-allowed">
+                  <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                    <MessageCircle className="w-5 h-5 text-gold" />
+                  </div>
+                  <h3 className="font-semibold text-sm text-foreground">Tire Dúvidas com Dr. Gustavo</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">Envie suas perguntas diretamente e receba orientações personalizadas do mentor.</p>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-destructive/15 border border-destructive/30 px-2 py-0.5 text-[10px] font-semibold text-destructive uppercase tracking-wider">
+                      Acesso Expirado
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center text-xs font-medium text-muted-foreground">
+                    Enviar dúvida <ChevronRight className="w-3 h-3 ml-1" />
+                  </span>
                 </div>
-                <h3 className="font-semibold text-sm text-foreground">Tire Dúvidas com Dr. Gustavo</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">Envie suas perguntas diretamente e receba orientações personalizadas do mentor.</p>
-                <span className="inline-flex items-center text-xs font-medium text-gold group-hover:underline">
-                  Enviar dúvida <ChevronRight className="w-3 h-3 ml-1" />
-                </span>
-              </a>
-              {/* Práticas Clínicas */}
-              <a href="#" className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]">
+              ) : (
+                <a
+                  href="https://wa.me/5521976310365"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                    <MessageCircle className="w-5 h-5 text-gold" />
+                  </div>
+                  <h3 className="font-semibold text-sm text-foreground">Tire Dúvidas com Dr. Gustavo</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">Envie suas perguntas diretamente e receba orientações personalizadas do mentor.</p>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-gold/15 border border-gold/30 px-2 py-0.5 text-[10px] font-semibold text-gold uppercase tracking-wider">
+                      {daysLeft === 1 ? "Resta 1 dia" : `Restam ${daysLeft} dias`}
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center text-xs font-medium text-gold group-hover:underline">
+                    Enviar dúvida <ChevronRight className="w-3 h-3 ml-1" />
+                  </span>
+                </a>
+              )}
+              {/* Práticas Clínicas — hours package info */}
+              <div className="rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3">
                 <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
                   <Activity className="w-5 h-5 text-gold" />
                 </div>
                 <h3 className="font-semibold text-sm text-foreground">Práticas Clínicas NaturalUp®</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">Acesse casos clínicos, protocolos práticos e referências para aplicar em consultório.</p>
-                <span className="inline-flex items-center text-xs font-medium text-gold group-hover:underline">
-                  Ver práticas <ChevronRight className="w-3 h-3 ml-1" />
+                <p className="text-xs text-muted-foreground leading-relaxed">Você possui um pacote de horas práticas definido no seu acordo individual. Entre em contato para agendar.</p>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center rounded-full bg-gold/15 border border-gold/30 px-2 py-0.5 text-[10px] font-semibold text-gold uppercase tracking-wider">
+                    Pacote de Horas
+                  </span>
+                </div>
+                <span className="inline-flex items-center text-xs font-medium text-muted-foreground">
+                  Conforme seu acordo individual
                 </span>
-              </a>
+              </div>
             </div>
           </section>
 
