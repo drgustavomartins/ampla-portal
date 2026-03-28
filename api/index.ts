@@ -642,6 +642,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return json(res, { message: "Migração concluída", results });
     }
 
+    // ── FIX VIDEO URLS (temporary endpoint to fix folder URLs) ──
+    if (path === "/api/admin/fix-video-urls" && method === "POST") {
+      const migrateKey = req.headers["x-migrate-key"] || req.body?.migrateKey;
+      const auth = authenticateRequest(req);
+      const expectedKey = process.env.MIGRATE_KEY;
+      if (!migrateKey && (!auth || auth.role !== "admin")) {
+        return json(res, { message: "Não autorizado" }, 401);
+      }
+      if (migrateKey && (!expectedKey || migrateKey !== expectedKey)) {
+        return json(res, { message: "Chave inválida" }, 401);
+      }
+      const fixes = [
+        { id: 11, videoUrl: "https://drive.google.com/file/d/1pUKKWH7Q0MVjvhfxSUAj_kYJYshkCkaA/view?usp=drive_link" },
+        { id: 12, videoUrl: "https://drive.google.com/file/d/1CETEnLGHfWDPQFfOfaclhrfAsYbTcdQQ/view?usp=drive_link" },
+        { id: 13, videoUrl: "https://drive.google.com/file/d/1FsOexRKxLj5L77F0r_DKUk9blncysQ9w/view?usp=drive_link" },
+        { id: 14, videoUrl: "https://drive.google.com/file/d/1fR4JbOt1SXjm2BdsmtRkqzGg0FBLilcY/view?usp=drive_link" },
+        { id: 15, videoUrl: "https://drive.google.com/file/d/1etEb3zGxGvzO3hXnw1fxaUL1xQuf7KCv/view?usp=drive_link" },
+        { id: 16, videoUrl: "https://drive.google.com/file/d/1jii66MxUfY4vY3HUWc3J1SE6sd3LYP56/view?usp=drive_link" },
+      ];
+      const results: string[] = [];
+      for (const fix of fixes) {
+        try {
+          await getDb().update(lessons).set({ videoUrl: fix.videoUrl }).where(eq(lessons.id, fix.id));
+          results.push(`Aula ${fix.id}: URL atualizada`);
+        } catch (e: any) { results.push(`Aula ${fix.id}: ${e.message}`); }
+      }
+      return json(res, { message: "URLs de vídeo atualizadas", results });
+    }
+
     // ── Not found ──
     return json(res, { message: "Rota não encontrada" }, 404);
 
