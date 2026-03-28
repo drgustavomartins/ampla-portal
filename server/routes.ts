@@ -756,10 +756,10 @@ export function registerRoutes(server: Server, app: Express) {
       await db.execute(`CREATE TABLE IF NOT EXISTS audit_logs (id SERIAL PRIMARY KEY, admin_id INTEGER NOT NULL, admin_name TEXT NOT NULL, action TEXT NOT NULL, target_type TEXT, target_id INTEGER, target_name TEXT, details TEXT, created_at TEXT NOT NULL)`);
       results.push("audit_logs table ensured");
     } catch (e: any) { results.push(`audit_logs: ${e.message}`); }
-    // Upgrade existing admin to super_admin
+    // Upgrade existing admin(s) to super_admin
     try {
-      await db.execute(`UPDATE users SET role = 'super_admin' WHERE email = 'admin@amplafacial.com' AND role = 'admin'`);
-      results.push("admin upgraded to super_admin");
+      await db.execute(`UPDATE users SET role = 'super_admin' WHERE role = 'admin'`);
+      results.push("admin(s) upgraded to super_admin");
     } catch (e: any) { results.push(`super_admin upgrade: ${e.message}`); }
     return res.json({ message: "Migração concluída", results });
   });
