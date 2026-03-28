@@ -792,6 +792,25 @@ export function registerRoutes(server: Server, app: Express) {
       const adminRows = Array.isArray(adminResult) ? adminResult : (adminResult as any).rows || [];
       results.push(`current_admins: ${JSON.stringify(adminRows)}`);
     } catch (e: any) { results.push(`admin_check: ${e.message}`); }
+    // Migrate video URLs from Google Drive to YouTube
+    const ytMigrations = [
+      { id: 7,  url: "https://youtu.be/UlrX0ZigQUc" },
+      { id: 8,  url: "https://youtu.be/F9X6wAA6ruI" },
+      { id: 9,  url: "https://youtu.be/D8mPWcHkxPI" },
+      { id: 10, url: "https://youtu.be/bAoMvimzb7c" },
+      { id: 11, url: "https://youtu.be/2cRE7SbOBjo" },
+      { id: 12, url: "https://youtu.be/FDB1slpYRQg" },
+      { id: 13, url: "https://youtu.be/WV_0tRncQc0" },
+      { id: 14, url: "https://youtu.be/P58M9KYtLz0" },
+      { id: 15, url: "https://youtu.be/wGA2Hbuit_Y" },
+      { id: 16, url: "https://youtu.be/mxA1koHKE9Q" },
+    ];
+    for (const yt of ytMigrations) {
+      try {
+        await db.execute(`UPDATE lessons SET video_url = '${yt.url}' WHERE id = ${yt.id}`);
+        results.push(`lesson ${yt.id}: YouTube URL set`);
+      } catch (e: any) { results.push(`lesson ${yt.id}: ${e.message}`); }
+    }
     return res.json({ message: "Migração concluída", results });
   });
 }
