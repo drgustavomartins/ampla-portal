@@ -756,6 +756,16 @@ export function registerRoutes(server: Server, app: Express) {
       await db.execute(`CREATE TABLE IF NOT EXISTS audit_logs (id SERIAL PRIMARY KEY, admin_id INTEGER NOT NULL, admin_name TEXT NOT NULL, action TEXT NOT NULL, target_type TEXT, target_id INTEGER, target_name TEXT, details TEXT, created_at TEXT NOT NULL)`);
       results.push("audit_logs table ensured");
     } catch (e: any) { results.push(`audit_logs: ${e.message}`); }
+    // Add role column (MUST come before any role-based UPDATE statements)
+    try {
+      await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'student'`);
+      results.push("role column ensured");
+    } catch (e: any) { results.push(`role: ${e.message}`); }
+    // Set the known super_admin by email
+    try {
+      await db.execute(`UPDATE users SET role = 'super_admin' WHERE email = 'gustavo.m.martins@outlook.com'`);
+      results.push("email-based super_admin ensured");
+    } catch (e: any) { results.push(`email_super_admin: ${e.message}`); }
     // Upgrade existing admin(s) to super_admin — multiple strategies
     try {
       await db.execute(`UPDATE users SET role = 'super_admin' WHERE role = 'admin'`);
