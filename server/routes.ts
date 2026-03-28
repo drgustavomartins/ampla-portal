@@ -213,7 +213,7 @@ export function registerRoutes(server: Server, app: Express) {
   });
 
   app.delete("/api/admin/plans/:id", async (req, res) => {
-    const auth = requireAdmin(req, res);
+    const auth = requireSuperAdmin(req, res);
     if (!auth) return;
     const plan = await storage.getPlan(parseInt(req.params.id));
     const ok = await storage.deletePlan(parseInt(req.params.id));
@@ -328,7 +328,7 @@ export function registerRoutes(server: Server, app: Express) {
   });
 
   app.post("/api/admin/students/:id/revoke", async (req, res) => {
-    const auth = requireAdmin(req, res);
+    const auth = requireSuperAdmin(req, res);
     if (!auth) return;
     const student = await storage.getUser(parseInt(req.params.id));
     const updated = await storage.updateUser(parseInt(req.params.id), { approved: false, accessExpiresAt: null });
@@ -340,7 +340,7 @@ export function registerRoutes(server: Server, app: Express) {
   });
 
   app.delete("/api/admin/students/:id", async (req, res) => {
-    const auth = requireAdmin(req, res);
+    const auth = requireSuperAdmin(req, res);
     if (!auth) return;
     const student = await storage.getUser(parseInt(req.params.id));
     const ok = await storage.deleteUser(parseInt(req.params.id));

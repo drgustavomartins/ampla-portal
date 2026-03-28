@@ -724,6 +724,7 @@ export default function AdminDashboard() {
                               <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0" onClick={() => resetPasswordMutation.mutate(s.id)} title="Resetar senha" disabled={resetPasswordMutation.isPending}>
                                 <KeyRound className="w-3.5 h-3.5" />
                               </Button>
+                              {isSuperAdmin && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0" data-testid={`button-delete-student-${s.id}`}>
@@ -741,6 +742,7 @@ export default function AdminDashboard() {
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
+                              )}
                             </div>
                           </div>
 
@@ -784,9 +786,11 @@ export default function AdminDashboard() {
                                   <RefreshCw className="w-3 h-3 mr-1.5" />
                                   Renovar
                                 </Button>
+                                {isSuperAdmin && (
                                 <Button size="sm" variant="outline" className="border-border/40 text-xs flex-1 sm:flex-none" onClick={() => revokeMutation.mutate(s.id)} data-testid={`button-revoke-${s.id}`}>
                                   Revogar
                                 </Button>
+                                )}
                               </>
                             ) : (
                               <Button size="sm" className="bg-gold text-background hover:bg-gold/90 text-xs flex-1 sm:flex-none" onClick={() => { setApprovingStudent(s); setApprovePlanId(""); }} data-testid={`button-approve-list-${s.id}`}>
@@ -1064,6 +1068,7 @@ export default function AdminDashboard() {
                             <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold" onClick={() => { setEditingPlan(plan); setEditPlanForm({ name: plan.name, description: plan.description || "", durationDays: plan.durationDays, price: plan.price || "" }); }}>
                               <Pencil className="w-4 h-4" />
                             </Button>
+                            {isSuperAdmin && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild><Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></Button></AlertDialogTrigger>
                               <AlertDialogContent className="bg-card border-border/40">
@@ -1071,6 +1076,7 @@ export default function AdminDashboard() {
                                 <AlertDialogFooter><AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deletePlanMutation.mutate(plan.id)}>Excluir</AlertDialogAction></AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
+                            )}
                           </div>
                         </div>
                         {plan.description && <p className="text-sm text-muted-foreground line-clamp-2">{plan.description}</p>}
