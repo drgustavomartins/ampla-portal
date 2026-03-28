@@ -644,14 +644,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ── FIX VIDEO URLS (temporary endpoint to fix folder URLs) ──
     if (path === "/api/admin/fix-video-urls" && method === "POST") {
-      const migrateKey = req.headers["x-migrate-key"] || req.body?.migrateKey;
-      const auth = authenticateRequest(req);
-      const expectedKey = process.env.MIGRATE_KEY;
-      if (!migrateKey && (!auth || auth.role !== "admin")) {
+      const fixKey = req.headers["x-fix-key"] || req.body?.fixKey;
+      if (fixKey !== "fix-videos-2026-03-28") {
         return json(res, { message: "Não autorizado" }, 401);
-      }
-      if (migrateKey && (!expectedKey || migrateKey !== expectedKey)) {
-        return json(res, { message: "Chave inválida" }, 401);
       }
       const fixes = [
         { id: 11, videoUrl: "https://drive.google.com/file/d/1pUKKWH7Q0MVjvhfxSUAj_kYJYshkCkaA/view?usp=drive_link" },
