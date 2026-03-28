@@ -8,6 +8,7 @@ interface AuthContextType {
   login: (user: SafeUser, token?: string) => void;
   logout: () => void;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   isStudent: boolean;
   isLoading: boolean;
 }
@@ -62,7 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
   }, []);
 
-  const isAdmin = user?.role === "admin";
+  const isSuperAdmin = user?.role === "super_admin";
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
   const isStudent = user?.role === "student";
 
   if (isLoading) {
@@ -77,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin, isStudent, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isAdmin, isSuperAdmin, isStudent, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

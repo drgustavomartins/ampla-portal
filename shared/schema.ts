@@ -11,20 +11,26 @@ export const plans = pgTable("plans", {
   price: text("price"),
 });
 
-// Users (students + admin)
+// Users (students + admins)
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   phone: text("phone"),
   password: text("password").notNull(),
-  role: text("role").notNull().default("student"),
+  role: text("role").notNull().default("student"), // 'student', 'admin', 'super_admin'
   planId: integer("plan_id"),
   approved: boolean("approved").notNull().default(false),
   accessExpiresAt: text("access_expires_at"),
   createdAt: text("created_at").notNull(),
   loginAttempts: integer("login_attempts").notNull().default(0),
   lockedUntil: text("locked_until"),
+  // Granular access control fields
+  communityAccess: boolean("community_access").notNull().default(true),
+  supportAccess: boolean("support_access").notNull().default(true),
+  supportExpiresAt: text("support_expires_at"), // null = uses accessExpiresAt
+  clinicalPracticeAccess: boolean("clinical_practice_access").notNull().default(true),
+  clinicalPracticeHours: integer("clinical_practice_hours").notNull().default(0),
 });
 
 // Modules
@@ -66,12 +72,26 @@ export const lessonProgress = pgTable("lesson_progress", {
   completedAt: text("completed_at"),
 });
 
+// Audit Logs
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  adminId: integer("admin_id").notNull(),
+  adminName: text("admin_name").notNull(),
+  action: text("action").notNull(),
+  targetType: text("target_type"), // 'student', 'module', 'lesson', 'admin', 'plan'
+  targetId: integer("target_id"),
+  targetName: text("target_name"),
+  details: text("details"), // JSON string
+  createdAt: text("created_at").notNull(),
+});
+
 // Insert schemas
 export const insertPlanSchema = createInsertSchema(plans).omit({ id: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, approved: true, role: true, accessExpiresAt: true });
 export const insertModuleSchema = createInsertSchema(modules).omit({ id: true });
 export const insertLessonSchema = createInsertSchema(lessons).omit({ id: true });
 export const insertLessonProgressSchema = createInsertSchema(lessonProgress).omit({ id: true });
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true });
 
 export const registerSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -97,3 +117,5 @@ export type InsertLesson = z.infer<typeof insertLessonSchema>;
 export type LessonProgress = typeof lessonProgress.$inferSelect;
 export type InsertLessonProgress = z.infer<typeof insertLessonProgressSchema>;
 export type PasswordReset = typeof passwordResets.$inferSelect;
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;

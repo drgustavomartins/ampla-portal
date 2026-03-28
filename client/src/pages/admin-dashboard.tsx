@@ -19,20 +19,21 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import {
   Users, BookOpen, Layers, LogOut, Plus, Trash2, Check, X,
   Clock, Video, Shield, GraduationCap, ChevronUp, ChevronDown, Eye, Pencil,
-  CreditCard, RefreshCw, KeyRound, Copy, Loader2
+  CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog
 } from "lucide-react";
-import type { Module, Lesson, Plan, User } from "@shared/schema";
+import type { Module, Lesson, Plan, User, AuditLog } from "@shared/schema";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 
 type SafeUser = Omit<User, "password">;
 type LessonProgress = { id: number; userId: number; lessonId: number; completed: boolean; completedAt: string | null };
 
 export default function AdminDashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, isSuperAdmin } = useAuth();
   const { toast } = useToast();
 
   const { data: students = [] } = useQuery<SafeUser[]>({ queryKey: ["/api/admin/students"] });
@@ -41,6 +42,11 @@ export default function AdminDashboard() {
   const { data: lessons = [] } = useQuery<Lesson[]>({ queryKey: ["/api/lessons"] });
   const { data: plans = [] } = useQuery<Plan[]>({ queryKey: ["/api/plans"] });
   const { data: allProgress = [] } = useQuery<LessonProgress[]>({ queryKey: ["/api/admin/students/progress"] });
+  const { data: auditLogs = [] } = useQuery<AuditLog[]>({ queryKey: ["/api/admin/audit-logs"] });
+  const { data: admins = [] } = useQuery<SafeUser[]>({
+    queryKey: ["/api/admin/admins"],
+    enabled: isSuperAdmin,
+  });
 
   // Student detail view
   const [selectedStudent, setSelectedStudent] = useState<SafeUser | null>(null);
@@ -57,6 +63,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       setApprovingStudent(null);
       setApprovePlanId("");
       toast({ title: "Aluno aprovado" });
@@ -70,6 +77,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       toast({ title: "Acesso revogado" });
     },
   });
@@ -81,6 +89,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       toast({ title: "Aluno removido" });
     },
   });
@@ -99,6 +108,7 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/modules"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       setModuleForm({ title: "", description: "", order: 0 });
       setModuleDialogOpen(false);
       toast({ title: "Módulo criado" });
@@ -112,7 +122,11 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/modules"] });
       queryClient.invalidateQueries({ queryKey: ["/api/lessons"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       toast({ title: "Módulo removido" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro", description: error.message?.includes("403") ? "Apenas o super admin pode excluir módulos" : error.message, variant: "destructive" });
     },
   });
 
@@ -154,6 +168,7 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/lessons"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       setLessonForm({ moduleId: 0, title: "", description: "", videoUrl: "", duration: "" });
       setLessonDialogOpen(false);
       toast({ title: "Aula criada" });
@@ -166,7 +181,11 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/lessons"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       toast({ title: "Aula removida" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro", description: error.message?.includes("403") ? "Apenas o super admin pode excluir aulas" : error.message, variant: "destructive" });
     },
   });
 
@@ -204,6 +223,7 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/plans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       setPlanForm({ name: "", description: "", durationDays: 0, price: "" });
       setPlanDialogOpen(false);
       toast({ title: "Plano criado" });
@@ -216,6 +236,7 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/plans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       setEditingPlan(null);
       toast({ title: "Plano atualizado" });
     },
@@ -227,21 +248,27 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/plans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       toast({ title: "Plano removido" });
     },
   });
 
   // ── Student Edit ──
   const [editingStudent, setEditingStudent] = useState<SafeUser | null>(null);
-  const [editStudentForm, setEditStudentForm] = useState({ name: "", phone: "", planId: 0, accessExpiresAt: "", approved: false });
+  const [editStudentForm, setEditStudentForm] = useState({
+    name: "", phone: "", planId: 0, accessExpiresAt: "", approved: false,
+    communityAccess: true, supportAccess: true, supportExpiresAt: "",
+    clinicalPracticeAccess: true, clinicalPracticeHours: 0,
+  });
 
   const updateStudentMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: { name?: string; phone?: string; planId?: number; accessExpiresAt?: string; approved?: boolean } }) => {
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
       await apiRequest("PATCH", `/api/admin/students/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       setEditingStudent(null);
       toast({ title: "Aluno atualizado" });
     },
@@ -259,6 +286,7 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       setRenewingStudent(null);
       setRenewDays(30);
       toast({ title: "Acesso renovado" });
@@ -277,6 +305,7 @@ export default function AdminDashboard() {
       const student = students.find(s => s.id === id);
       const link = `${window.location.origin}${window.location.pathname}#/reset-password/${data.token}`;
       setResetLinkDialog({ student: student!, link });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
     },
     onError: (error: any) => {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -293,6 +322,7 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/modules"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       setEditingModule(null);
       toast({ title: "Módulo atualizado" });
     },
@@ -308,10 +338,49 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/lessons"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       setEditingLesson(null);
       toast({ title: "Aula atualizada" });
     },
   });
+
+  // ── Admin CRUD (super_admin only) ──
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [adminForm, setAdminForm] = useState({ name: "", email: "", password: "", phone: "" });
+
+  const createAdminMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/admin/admins", adminForm);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/admins"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
+      setAdminForm({ name: "", email: "", password: "", phone: "" });
+      setAdminDialogOpen(false);
+      toast({ title: "Admin criado com sucesso" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteAdminMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/admin/admins/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/admins"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
+      toast({ title: "Admin removido" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Audit log filter state
+  const [logFilterAdmin, setLogFilterAdmin] = useState<string>("all");
+  const [logFilterAction, setLogFilterAction] = useState<string>("all");
 
   const approvedStudents = students.filter(s => s.approved);
 
@@ -325,6 +394,40 @@ export default function AdminDashboard() {
   const getStudentLessonCompleted = (studentId: number, lessonId: number) => {
     return allProgress.some(p => p.userId === studentId && p.lessonId === lessonId && p.completed);
   };
+
+  // Audit log helpers
+  const actionLabels: Record<string, string> = {
+    admin_login: "Login",
+    student_approved: "Aluno aprovado",
+    student_revoked: "Acesso revogado",
+    student_deleted: "Aluno excluído",
+    student_updated: "Aluno atualizado",
+    plan_created: "Plano criado",
+    plan_updated: "Plano atualizado",
+    plan_deleted: "Plano excluído",
+    module_created: "Módulo criado",
+    module_updated: "Módulo atualizado",
+    module_deleted: "Módulo excluído",
+    lesson_created: "Aula criada",
+    lesson_updated: "Aula atualizada",
+    lesson_deleted: "Aula excluída",
+    password_reset: "Reset de senha",
+    admin_created: "Admin criado",
+    admin_deleted: "Admin excluído",
+    access_toggled: "Acesso alterado",
+  };
+
+  const filteredLogs = auditLogs.filter(log => {
+    if (logFilterAdmin !== "all" && String(log.adminId) !== logFilterAdmin) return false;
+    if (logFilterAction !== "all" && log.action !== logFilterAction) return false;
+    return true;
+  });
+
+  const uniqueActions = [...new Set(auditLogs.map(l => l.action))];
+  const uniqueAdmins = [...new Map(auditLogs.map(l => [l.adminId, l.adminName])).entries()];
+
+  // Tab count: how many tabs to show
+  const tabCount = isSuperAdmin ? 6 : 4;
 
   return (
     <div className="min-h-screen bg-background">
@@ -345,7 +448,7 @@ export default function AdminDashboard() {
               className="text-[10px] bg-gold/15 text-gold border-0 px-2 py-0.5 font-medium ml-1"
             >
               <Shield className="w-3 h-3 mr-1" />
-              Admin
+              {isSuperAdmin ? "Super Admin" : "Admin"}
             </Badge>
           </div>
           <div className="flex items-center gap-3">
@@ -429,7 +532,7 @@ export default function AdminDashboard() {
 
         {/* ─── Main Content Tabs ─── */}
         <Tabs defaultValue="lessons" className="space-y-6">
-          <TabsList className="w-full grid grid-cols-4 bg-card/60 border border-border/30 p-1 h-11 sm:h-12">
+          <TabsList className={`w-full grid bg-card/60 border border-border/30 p-1 h-11 sm:h-12 ${isSuperAdmin ? "grid-cols-6" : "grid-cols-4"}`}>
             <TabsTrigger
               value="students"
               data-testid="tab-students"
@@ -462,6 +565,26 @@ export default function AdminDashboard() {
               <Video className="w-4 h-4 sm:mr-2 shrink-0" />
               <span className="hidden sm:inline">Aulas</span>
             </TabsTrigger>
+            {isSuperAdmin && (
+              <>
+                <TabsTrigger
+                  value="admins"
+                  data-testid="tab-admins"
+                  className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
+                >
+                  <UserCog className="w-4 h-4 sm:mr-2 shrink-0" />
+                  <span className="hidden sm:inline">Admins</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="history"
+                  data-testid="tab-history"
+                  className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
+                >
+                  <History className="w-4 h-4 sm:mr-2 shrink-0" />
+                  <span className="hidden sm:inline">Histórico</span>
+                </TabsTrigger>
+              </>
+            )}
           </TabsList>
 
           {/* ========== STUDENTS TAB ========== */}
@@ -475,59 +598,57 @@ export default function AdminDashboard() {
                   </h3>
                 </div>
                 <div className="space-y-2">
-                  {pendingStudents.map((s) => {
-                    return (
-                      <Card key={s.id} className="border-amber-500/20 bg-card/50">
-                        <CardContent className="p-4 space-y-3">
-                          <div className="min-w-0">
-                            <p className="font-medium text-foreground truncate">{s.name}</p>
-                            <p className="text-sm text-muted-foreground truncate mt-0.5">{s.email}</p>
-                            {(s as any).phone && <p className="text-xs text-muted-foreground truncate mt-0.5">{(s as any).phone}</p>}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              className="bg-gold text-background hover:bg-gold/90 font-medium flex-1 sm:flex-none"
-                              onClick={() => { setApprovingStudent(s); setApprovePlanId(""); }}
-                              data-testid={`button-approve-${s.id}`}
-                            >
-                              <Check className="w-4 h-4 mr-1.5" />
-                              Aprovar
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="border-border/40 hover:border-destructive/50 hover:text-destructive"
-                                  data-testid={`button-reject-${s.id}`}
+                  {pendingStudents.map((s) => (
+                    <Card key={s.id} className="border-amber-500/20 bg-card/50">
+                      <CardContent className="p-4 space-y-3">
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground truncate">{s.name}</p>
+                          <p className="text-sm text-muted-foreground truncate mt-0.5">{s.email}</p>
+                          {s.phone && <p className="text-xs text-muted-foreground truncate mt-0.5">{s.phone}</p>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            className="bg-gold text-background hover:bg-gold/90 font-medium flex-1 sm:flex-none"
+                            onClick={() => { setApprovingStudent(s); setApprovePlanId(""); }}
+                            data-testid={`button-approve-${s.id}`}
+                          >
+                            <Check className="w-4 h-4 mr-1.5" />
+                            Aprovar
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-border/40 hover:border-destructive/50 hover:text-destructive"
+                                data-testid={`button-reject-${s.id}`}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="bg-card border-border/40">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja rejeitar e excluir {s.name}? Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => deleteStudentMutation.mutate(s.id)}
                                 >
-                                  <X className="w-4 h-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="bg-card border-border/40">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Tem certeza que deseja rejeitar e excluir {s.name}? Esta ação não pode ser desfeita.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    onClick={() => deleteStudentMutation.mutate(s.id)}
-                                  >
-                                    Excluir
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </div>
             )}
@@ -556,7 +677,6 @@ export default function AdminDashboard() {
                     return (
                       <Card key={s.id} className="border-border/30 bg-card/50 hover:bg-card/70 transition-colors">
                         <CardContent className="p-4 space-y-3">
-                          {/* Row 1: Name + badge + icon buttons */}
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
@@ -572,81 +692,58 @@ export default function AdminDashboard() {
                                 )}
                               </div>
                               <p className="text-sm text-muted-foreground truncate mt-0.5">{s.email}</p>
-                              {(s as any).phone && <p className="text-xs text-muted-foreground truncate mt-0.5">{(s as any).phone}</p>}
+                              {s.phone && <p className="text-xs text-muted-foreground truncate mt-0.5">{s.phone}</p>}
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
                               {s.approved && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
-                                  onClick={() => setSelectedStudent(s)}
-                                  title="Ver progresso"
-                                >
+                                <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0" onClick={() => setSelectedStudent(s)} title="Ver progresso">
                                   <Eye className="w-3.5 h-3.5" />
                                 </Button>
                               )}
                               <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
+                                size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
                                 onClick={() => {
                                   setEditingStudent(s);
                                   setEditStudentForm({
                                     name: s.name,
-                                    phone: (s as any).phone || "",
+                                    phone: s.phone || "",
                                     planId: s.planId || 0,
                                     accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
                                     approved: s.approved,
+                                    communityAccess: s.communityAccess ?? true,
+                                    supportAccess: s.supportAccess ?? true,
+                                    supportExpiresAt: s.supportExpiresAt ? s.supportExpiresAt.slice(0, 16) : "",
+                                    clinicalPracticeAccess: s.clinicalPracticeAccess ?? true,
+                                    clinicalPracticeHours: s.clinicalPracticeHours ?? 0,
                                   });
                                 }}
                                 title="Editar aluno"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
-                                onClick={() => resetPasswordMutation.mutate(s.id)}
-                                title="Resetar senha"
-                                disabled={resetPasswordMutation.isPending}
-                              >
+                              <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0" onClick={() => resetPasswordMutation.mutate(s.id)} title="Resetar senha" disabled={resetPasswordMutation.isPending}>
                                 <KeyRound className="w-3.5 h-3.5" />
                               </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
-                                    data-testid={`button-delete-student-${s.id}`}
-                                  >
+                                  <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0" data-testid={`button-delete-student-${s.id}`}>
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent className="bg-card border-border/40">
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Tem certeza que deseja excluir {s.name}? Esta ação não pode ser desfeita.
-                                    </AlertDialogDescription>
+                                    <AlertDialogDescription>Tem certeza que deseja excluir {s.name}? Esta ação não pode ser desfeita.</AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                      onClick={() => deleteStudentMutation.mutate(s.id)}
-                                    >
-                                      Excluir
-                                    </AlertDialogAction>
+                                    <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteStudentMutation.mutate(s.id)}>Excluir</AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
                             </div>
                           </div>
 
-                          {/* Row 2: Plan + stats in grid */}
                           {s.approved && (
                             <div className="grid grid-cols-3 gap-2 text-xs">
                               {plan && (
@@ -670,12 +767,9 @@ export default function AdminDashboard() {
                             </div>
                           )}
                           {!s.approved && plan && (
-                            <div className="text-xs text-muted-foreground">
-                              Plano: {plan.name}
-                            </div>
+                            <div className="text-xs text-muted-foreground">Plano: {plan.name}</div>
                           )}
 
-                          {/* Progress bar */}
                           {s.approved && lessons.length > 0 && (
                             <div className="flex items-center gap-3">
                               <Progress value={progress.percent} className="h-1.5 flex-1" />
@@ -683,37 +777,19 @@ export default function AdminDashboard() {
                             </div>
                           )}
 
-                          {/* Row 3: Action buttons */}
                           <div className="flex items-center gap-2 pt-1">
                             {s.approved ? (
                               <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="border-gold/30 text-gold hover:bg-gold/10 text-xs flex-1 sm:flex-none"
-                                  onClick={() => { setRenewingStudent(s); setRenewDays(30); }}
-                                  title="Renovar acesso"
-                                >
+                                <Button size="sm" variant="outline" className="border-gold/30 text-gold hover:bg-gold/10 text-xs flex-1 sm:flex-none" onClick={() => { setRenewingStudent(s); setRenewDays(30); }} title="Renovar acesso">
                                   <RefreshCw className="w-3 h-3 mr-1.5" />
                                   Renovar
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="border-border/40 text-xs flex-1 sm:flex-none"
-                                  onClick={() => revokeMutation.mutate(s.id)}
-                                  data-testid={`button-revoke-${s.id}`}
-                                >
+                                <Button size="sm" variant="outline" className="border-border/40 text-xs flex-1 sm:flex-none" onClick={() => revokeMutation.mutate(s.id)} data-testid={`button-revoke-${s.id}`}>
                                   Revogar
                                 </Button>
                               </>
                             ) : (
-                              <Button
-                                size="sm"
-                                className="bg-gold text-background hover:bg-gold/90 text-xs flex-1 sm:flex-none"
-                                onClick={() => { setApprovingStudent(s); setApprovePlanId(""); }}
-                                data-testid={`button-approve-list-${s.id}`}
-                              >
+                              <Button size="sm" className="bg-gold text-background hover:bg-gold/90 text-xs flex-1 sm:flex-none" onClick={() => { setApprovingStudent(s); setApprovePlanId(""); }} data-testid={`button-approve-list-${s.id}`}>
                                 <Check className="w-3 h-3 mr-1" />
                                 Aprovar
                               </Button>
@@ -732,13 +808,10 @@ export default function AdminDashboard() {
               <DialogContent className="bg-card border-border/40 max-w-lg">
                 <DialogHeader>
                   <DialogTitle className="text-lg">Progresso do Aluno</DialogTitle>
-                  <DialogDescription className="text-muted-foreground">
-                    {selectedStudent?.name} — {selectedStudent?.email}
-                  </DialogDescription>
+                  <DialogDescription className="text-muted-foreground">{selectedStudent?.name} — {selectedStudent?.email}</DialogDescription>
                 </DialogHeader>
                 {selectedStudent && (
                   <div className="space-y-4 pt-2">
-                    {/* Overall progress */}
                     {(() => {
                       const prog = getStudentProgress(selectedStudent.id);
                       return (
@@ -751,8 +824,6 @@ export default function AdminDashboard() {
                         </div>
                       );
                     })()}
-
-                    {/* Per-module breakdown */}
                     <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
                       {modules.sort((a, b) => a.order - b.order).map((mod) => {
                         const modLessons = lessons.filter(l => l.moduleId === mod.id).sort((a, b) => a.order - b.order);
@@ -768,17 +839,11 @@ export default function AdminDashboard() {
                               const done = getStudentLessonCompleted(selectedStudent.id, lesson.id);
                               return (
                                 <div key={lesson.id} className="flex items-center gap-2.5 pl-2">
-                                  <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
-                                    done ? "bg-emerald-500/20" : "bg-card/80 border border-border/40"
-                                  }`}>
+                                  <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${done ? "bg-emerald-500/20" : "bg-card/80 border border-border/40"}`}>
                                     {done && <Check className="w-2.5 h-2.5 text-emerald-400" />}
                                   </div>
-                                  <span className={`text-sm truncate ${done ? "text-foreground" : "text-muted-foreground"}`}>
-                                    {lesson.title}
-                                  </span>
-                                  {lesson.duration && (
-                                    <span className="text-xs text-muted-foreground shrink-0 ml-auto">{lesson.duration}</span>
-                                  )}
+                                  <span className={`text-sm truncate ${done ? "text-foreground" : "text-muted-foreground"}`}>{lesson.title}</span>
+                                  {lesson.duration && <span className="text-xs text-muted-foreground shrink-0 ml-auto">{lesson.duration}</span>}
                                 </div>
                               );
                             })}
@@ -791,60 +856,34 @@ export default function AdminDashboard() {
               </DialogContent>
             </Dialog>
 
-            {/* Student Edit Dialog */}
+            {/* Student Edit Dialog — now with granular access control */}
             <Dialog open={!!editingStudent} onOpenChange={(open) => !open && setEditingStudent(null)}>
-              <DialogContent className="bg-card border-border/40 max-w-md">
+              <DialogContent className="bg-card border-border/40 max-w-md max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="text-lg">Editar Aluno</DialogTitle>
-                  <DialogDescription className="text-muted-foreground">
-                    {editingStudent?.name} — {editingStudent?.email}
-                  </DialogDescription>
+                  <DialogDescription className="text-muted-foreground">{editingStudent?.name} — {editingStudent?.email}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 pt-2">
                   <div className="space-y-2">
                     <Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label>
-                    <Input
-                      value={editStudentForm.name}
-                      onChange={e => setEditStudentForm(f => ({ ...f, name: e.target.value }))}
-                      className="bg-background/50 border-border/40"
-                    />
+                    <Input value={editStudentForm.name} onChange={e => setEditStudentForm(f => ({ ...f, name: e.target.value }))} className="bg-background/50 border-border/40" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs uppercase tracking-wider text-muted-foreground">Telefone</Label>
-                    <Input
-                      type="tel"
-                      placeholder="+55 (11) 99999-9999"
-                      value={editStudentForm.phone}
-                      onChange={e => setEditStudentForm(f => ({ ...f, phone: e.target.value }))}
-                      className="bg-background/50 border-border/40"
-                    />
+                    <Input type="tel" placeholder="+55 (11) 99999-9999" value={editStudentForm.phone} onChange={e => setEditStudentForm(f => ({ ...f, phone: e.target.value }))} className="bg-background/50 border-border/40" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs uppercase tracking-wider text-muted-foreground">Plano</Label>
-                    <Select
-                      value={editStudentForm.planId ? String(editStudentForm.planId) : ""}
-                      onValueChange={(v) => setEditStudentForm(f => ({ ...f, planId: parseInt(v) }))}
-                    >
-                      <SelectTrigger className="bg-background/50 border-border/40">
-                        <SelectValue placeholder="Selecione o plano" />
-                      </SelectTrigger>
+                    <Select value={editStudentForm.planId ? String(editStudentForm.planId) : ""} onValueChange={(v) => setEditStudentForm(f => ({ ...f, planId: parseInt(v) }))}>
+                      <SelectTrigger className="bg-background/50 border-border/40"><SelectValue placeholder="Selecione o plano" /></SelectTrigger>
                       <SelectContent>
-                        {plans.map((p) => (
-                          <SelectItem key={p.id} value={String(p.id)}>
-                            {p.name} ({p.durationDays} dias)
-                          </SelectItem>
-                        ))}
+                        {plans.map((p) => (<SelectItem key={p.id} value={String(p.id)}>{p.name} ({p.durationDays} dias)</SelectItem>))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs uppercase tracking-wider text-muted-foreground">Data de expiração</Label>
-                    <Input
-                      type="datetime-local"
-                      value={editStudentForm.accessExpiresAt}
-                      onChange={e => setEditStudentForm(f => ({ ...f, accessExpiresAt: e.target.value }))}
-                      className="bg-background/50 border-border/40"
-                    />
+                    <Input type="datetime-local" value={editStudentForm.accessExpiresAt} onChange={e => setEditStudentForm(f => ({ ...f, accessExpiresAt: e.target.value }))} className="bg-background/50 border-border/40" />
                   </div>
                   <div className="flex items-center gap-3">
                     <Label className="text-xs uppercase tracking-wider text-muted-foreground">Status</Label>
@@ -857,16 +896,75 @@ export default function AdminDashboard() {
                       {editStudentForm.approved ? "Aprovado" : "Pendente"}
                     </Button>
                   </div>
+
+                  {/* ── Granular Access Control ── */}
+                  <div className="w-full h-px bg-border/30" />
+                  <h4 className="text-xs font-semibold text-gold uppercase tracking-brand">Controle de Acessos</h4>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm font-medium">Comunidade WhatsApp</Label>
+                        <p className="text-xs text-muted-foreground">Acesso ao grupo da comunidade</p>
+                      </div>
+                      <Switch
+                        checked={editStudentForm.communityAccess}
+                        onCheckedChange={(checked) => setEditStudentForm(f => ({ ...f, communityAccess: checked }))}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm font-medium">Tire Dúvidas (WhatsApp)</Label>
+                        <p className="text-xs text-muted-foreground">Acesso ao suporte direto</p>
+                      </div>
+                      <Switch
+                        checked={editStudentForm.supportAccess}
+                        onCheckedChange={(checked) => setEditStudentForm(f => ({ ...f, supportAccess: checked }))}
+                      />
+                    </div>
+                    {editStudentForm.supportAccess && (
+                      <div className="space-y-2 pl-4 border-l-2 border-gold/20">
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Prazo do suporte (opcional)</Label>
+                        <Input type="datetime-local" value={editStudentForm.supportExpiresAt} onChange={e => setEditStudentForm(f => ({ ...f, supportExpiresAt: e.target.value }))} className="bg-background/50 border-border/40" placeholder="Usar expiração do plano" />
+                        <p className="text-xs text-muted-foreground">Deixe vazio para usar a expiração do plano</p>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm font-medium">Práticas Clínicas</Label>
+                        <p className="text-xs text-muted-foreground">Pacote de horas práticas</p>
+                      </div>
+                      <Switch
+                        checked={editStudentForm.clinicalPracticeAccess}
+                        onCheckedChange={(checked) => setEditStudentForm(f => ({ ...f, clinicalPracticeAccess: checked }))}
+                      />
+                    </div>
+                    {editStudentForm.clinicalPracticeAccess && (
+                      <div className="space-y-2 pl-4 border-l-2 border-gold/20">
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Horas disponíveis</Label>
+                        <Input type="number" min={0} value={editStudentForm.clinicalPracticeHours} onChange={e => setEditStudentForm(f => ({ ...f, clinicalPracticeHours: parseInt(e.target.value) || 0 }))} className="bg-background/50 border-border/40" />
+                      </div>
+                    )}
+                  </div>
+
                   <Button
                     className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
                     onClick={() => {
                       if (!editingStudent) return;
                       const data: any = {};
                       if (editStudentForm.name && editStudentForm.name !== editingStudent.name) data.name = editStudentForm.name;
-                      if (editStudentForm.phone !== ((editingStudent as any).phone || "")) data.phone = editStudentForm.phone;
+                      if (editStudentForm.phone !== (editingStudent.phone || "")) data.phone = editStudentForm.phone;
                       if (editStudentForm.planId) data.planId = editStudentForm.planId;
                       if (editStudentForm.accessExpiresAt) data.accessExpiresAt = new Date(editStudentForm.accessExpiresAt).toISOString();
                       data.approved = editStudentForm.approved;
+                      // Access control fields
+                      data.communityAccess = editStudentForm.communityAccess;
+                      data.supportAccess = editStudentForm.supportAccess;
+                      data.supportExpiresAt = editStudentForm.supportExpiresAt ? new Date(editStudentForm.supportExpiresAt).toISOString() : null;
+                      data.clinicalPracticeAccess = editStudentForm.clinicalPracticeAccess;
+                      data.clinicalPracticeHours = editStudentForm.clinicalPracticeHours;
                       updateStudentMutation.mutate({ id: editingStudent.id, data });
                     }}
                     disabled={updateStudentMutation.isPending}
@@ -882,29 +980,17 @@ export default function AdminDashboard() {
               <DialogContent className="bg-card border-border/40 max-w-sm">
                 <DialogHeader>
                   <DialogTitle className="text-lg">Renovar Acesso</DialogTitle>
-                  <DialogDescription className="text-muted-foreground">
-                    {renewingStudent?.name}
-                  </DialogDescription>
+                  <DialogDescription className="text-muted-foreground">{renewingStudent?.name}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 pt-2">
                   <div className="space-y-2">
                     <Label className="text-xs uppercase tracking-wider text-muted-foreground">Dias a adicionar (a partir de agora)</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={renewDays}
-                      onChange={e => setRenewDays(parseInt(e.target.value) || 0)}
-                      className="bg-background/50 border-border/40"
-                    />
+                    <Input type="number" min={1} value={renewDays} onChange={e => setRenewDays(parseInt(e.target.value) || 0)} className="bg-background/50 border-border/40" />
                     <p className="text-xs text-muted-foreground">
                       Nova expiração: {renewDays > 0 ? new Date(Date.now() + renewDays * 86400000).toLocaleDateString("pt-BR") : "—"}
                     </p>
                   </div>
-                  <Button
-                    className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
-                    onClick={() => renewingStudent && renewAccessMutation.mutate({ id: renewingStudent.id, days: renewDays })}
-                    disabled={renewDays <= 0 || renewAccessMutation.isPending}
-                  >
+                  <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => renewingStudent && renewAccessMutation.mutate({ id: renewingStudent.id, days: renewDays })} disabled={renewDays <= 0 || renewAccessMutation.isPending}>
                     Renovar acesso
                   </Button>
                 </div>
@@ -916,33 +1002,14 @@ export default function AdminDashboard() {
               <DialogContent className="bg-card border-border/40 max-w-md">
                 <DialogHeader>
                   <DialogTitle className="text-lg">Link de Reset de Senha</DialogTitle>
-                  <DialogDescription className="text-muted-foreground">
-                    {resetLinkDialog?.student.name}
-                  </DialogDescription>
+                  <DialogDescription className="text-muted-foreground">{resetLinkDialog?.student.name}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 pt-2">
-                  <p className="text-sm text-muted-foreground">
-                    Envie este link para o aluno. Ele poderá criar uma nova senha. O link expira em 24 horas.
-                  </p>
+                  <p className="text-sm text-muted-foreground">Envie este link para o aluno. Ele poderá criar uma nova senha. O link expira em 24 horas.</p>
                   <div className="flex items-center gap-2">
-                    <Input
-                      readOnly
-                      value={resetLinkDialog?.link || ""}
-                      className="bg-background/50 border-border/40 text-xs"
-                    />
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-gold/30 text-gold hover:bg-gold/10 shrink-0"
-                      onClick={() => {
-                        if (resetLinkDialog?.link) {
-                          navigator.clipboard.writeText(resetLinkDialog.link);
-                          toast({ title: "Link copiado!" });
-                        }
-                      }}
-                    >
-                      <Copy className="w-4 h-4 mr-1" />
-                      Copiar
+                    <Input readOnly value={resetLinkDialog?.link || ""} className="bg-background/50 border-border/40 text-xs" />
+                    <Button size="sm" variant="outline" className="border-gold/30 text-gold hover:bg-gold/10 shrink-0" onClick={() => { if (resetLinkDialog?.link) { navigator.clipboard.writeText(resetLinkDialog.link); toast({ title: "Link copiado!" }); } }}>
+                      <Copy className="w-4 h-4 mr-1" /> Copiar
                     </Button>
                   </div>
                 </div>
@@ -953,14 +1020,11 @@ export default function AdminDashboard() {
           {/* ========== PLANS TAB ========== */}
           <TabsContent value="plans" className="space-y-6 mt-0">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">
-                Planos ({plans.length})
-              </h3>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Planos ({plans.length})</h3>
               <Dialog open={planDialogOpen} onOpenChange={setPlanDialogOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm" className="bg-gold text-background hover:bg-gold/90 font-medium" data-testid="button-add-plan">
-                    <Plus className="w-4 h-4 mr-1.5" />
-                    Novo plano
+                    <Plus className="w-4 h-4 mr-1.5" /> Novo plano
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="bg-card border-border/40">
@@ -969,65 +1033,18 @@ export default function AdminDashboard() {
                     <DialogDescription className="text-muted-foreground">Crie um novo plano de acesso</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label>
-                      <Input
-                        value={planForm.name}
-                        onChange={e => setPlanForm(f => ({ ...f, name: e.target.value }))}
-                        placeholder="Ex: Experiência 48h"
-                        className="bg-background/50 border-border/40"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label>
-                      <Textarea
-                        value={planForm.description}
-                        onChange={e => setPlanForm(f => ({ ...f, description: e.target.value }))}
-                        placeholder="Descrição do plano..."
-                        className="bg-background/50 border-border/40"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração (dias)</Label>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={planForm.durationDays || ""}
-                        onChange={e => setPlanForm(f => ({ ...f, durationDays: parseInt(e.target.value) || 0 }))}
-                        placeholder="Ex: 2 (para 48 horas)"
-                        className="bg-background/50 border-border/40"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Preço</Label>
-                      <Input
-                        value={planForm.price}
-                        onChange={e => setPlanForm(f => ({ ...f, price: e.target.value }))}
-                        placeholder="Ex: R$ 497"
-                        className="bg-background/50 border-border/40"
-                      />
-                    </div>
-                    <Button
-                      className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
-                      onClick={() => createPlanMutation.mutate()}
-                      disabled={!planForm.name || !planForm.durationDays || createPlanMutation.isPending}
-                    >
-                      Criar plano
-                    </Button>
+                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label><Input value={planForm.name} onChange={e => setPlanForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Experiência 48h" className="bg-background/50 border-border/40" /></div>
+                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label><Textarea value={planForm.description} onChange={e => setPlanForm(f => ({ ...f, description: e.target.value }))} placeholder="Descrição do plano..." className="bg-background/50 border-border/40" /></div>
+                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração (dias)</Label><Input type="number" min={1} value={planForm.durationDays || ""} onChange={e => setPlanForm(f => ({ ...f, durationDays: parseInt(e.target.value) || 0 }))} placeholder="Ex: 2 (para 48 horas)" className="bg-background/50 border-border/40" /></div>
+                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Preço</Label><Input value={planForm.price} onChange={e => setPlanForm(f => ({ ...f, price: e.target.value }))} placeholder="Ex: R$ 497" className="bg-background/50 border-border/40" /></div>
+                    <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createPlanMutation.mutate()} disabled={!planForm.name || !planForm.durationDays || createPlanMutation.isPending}>Criar plano</Button>
                   </div>
                 </DialogContent>
               </Dialog>
             </div>
 
             {plans.length === 0 ? (
-              <Card className="border-border/30 bg-card/40">
-                <CardContent className="p-12 text-center">
-                  <div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4">
-                    <CreditCard className="w-7 h-7 text-muted-foreground/40" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">Nenhum plano criado ainda</p>
-                </CardContent>
-              </Card>
+              <Card className="border-border/30 bg-card/40"><CardContent className="p-12 text-center"><div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4"><CreditCard className="w-7 h-7 text-muted-foreground/40" /></div><p className="text-sm text-muted-foreground">Nenhum plano criado ainda</p></CardContent></Card>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {plans.map((plan) => {
@@ -1037,73 +1054,29 @@ export default function AdminDashboard() {
                       <CardContent className="p-4 sm:p-5 space-y-3">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center shrink-0">
-                              <CreditCard className="w-5 h-5 text-gold" />
-                            </div>
+                            <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center shrink-0"><CreditCard className="w-5 h-5 text-gold" /></div>
                             <div className="min-w-0">
                               <p className="font-medium text-foreground truncate">{plan.name}</p>
                               {plan.price && <p className="text-sm text-gold font-medium">{plan.price}</p>}
                             </div>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-muted-foreground hover:text-gold"
-                              onClick={() => {
-                                setEditingPlan(plan);
-                                setEditPlanForm({
-                                  name: plan.name,
-                                  description: plan.description || "",
-                                  durationDays: plan.durationDays,
-                                  price: plan.price || "",
-                                });
-                              }}
-                            >
+                            <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold" onClick={() => { setEditingPlan(plan); setEditPlanForm({ name: plan.name, description: plan.description || "", durationDays: plan.durationDays, price: plan.price || "" }); }}>
                               <Pencil className="w-4 h-4" />
                             </Button>
                             <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-muted-foreground hover:text-destructive"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </AlertDialogTrigger>
+                              <AlertDialogTrigger asChild><Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive"><Trash2 className="w-4 h-4" /></Button></AlertDialogTrigger>
                               <AlertDialogContent className="bg-card border-border/40">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Tem certeza que deseja excluir o plano "{plan.name}"? Esta ação não pode ser desfeita.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    onClick={() => deletePlanMutation.mutate(plan.id)}
-                                  >
-                                    Excluir
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
+                                <AlertDialogHeader><AlertDialogTitle>Confirmar exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o plano "{plan.name}"?</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooter><AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deletePlanMutation.mutate(plan.id)}>Excluir</AlertDialogAction></AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
                           </div>
                         </div>
-                        {plan.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-2">{plan.description}</p>
-                        )}
+                        {plan.description && <p className="text-sm text-muted-foreground line-clamp-2">{plan.description}</p>}
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5" />
-                            {plan.durationDays} dias
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Users className="w-3.5 h-3.5" />
-                            {planStudents.length} {planStudents.length === 1 ? "aluno" : "alunos"}
-                          </span>
+                          <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{plan.durationDays} dias</span>
+                          <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{planStudents.length} {planStudents.length === 1 ? "aluno" : "alunos"}</span>
                         </div>
                       </CardContent>
                     </Card>
@@ -1115,52 +1088,13 @@ export default function AdminDashboard() {
             {/* Edit Plan Dialog */}
             <Dialog open={!!editingPlan} onOpenChange={(open) => !open && setEditingPlan(null)}>
               <DialogContent className="bg-card border-border/40">
-                <DialogHeader>
-                  <DialogTitle className="text-lg">Editar plano</DialogTitle>
-                  <DialogDescription className="text-muted-foreground">Altere os dados do plano</DialogDescription>
-                </DialogHeader>
+                <DialogHeader><DialogTitle className="text-lg">Editar plano</DialogTitle><DialogDescription className="text-muted-foreground">Altere os dados do plano</DialogDescription></DialogHeader>
                 <div className="space-y-4 pt-2">
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label>
-                    <Input
-                      value={editPlanForm.name}
-                      onChange={e => setEditPlanForm(f => ({ ...f, name: e.target.value }))}
-                      className="bg-background/50 border-border/40"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label>
-                    <Textarea
-                      value={editPlanForm.description}
-                      onChange={e => setEditPlanForm(f => ({ ...f, description: e.target.value }))}
-                      className="bg-background/50 border-border/40"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração (dias)</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={editPlanForm.durationDays || ""}
-                      onChange={e => setEditPlanForm(f => ({ ...f, durationDays: parseInt(e.target.value) || 0 }))}
-                      className="bg-background/50 border-border/40"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Preço</Label>
-                    <Input
-                      value={editPlanForm.price}
-                      onChange={e => setEditPlanForm(f => ({ ...f, price: e.target.value }))}
-                      className="bg-background/50 border-border/40"
-                    />
-                  </div>
-                  <Button
-                    className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
-                    onClick={() => editingPlan && updatePlanMutation.mutate({ id: editingPlan.id, data: editPlanForm })}
-                    disabled={!editPlanForm.name || !editPlanForm.durationDays || updatePlanMutation.isPending}
-                  >
-                    Salvar alterações
-                  </Button>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label><Input value={editPlanForm.name} onChange={e => setEditPlanForm(f => ({ ...f, name: e.target.value }))} className="bg-background/50 border-border/40" /></div>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label><Textarea value={editPlanForm.description} onChange={e => setEditPlanForm(f => ({ ...f, description: e.target.value }))} className="bg-background/50 border-border/40" /></div>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração (dias)</Label><Input type="number" min={1} value={editPlanForm.durationDays || ""} onChange={e => setEditPlanForm(f => ({ ...f, durationDays: parseInt(e.target.value) || 0 }))} className="bg-background/50 border-border/40" /></div>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Preço</Label><Input value={editPlanForm.price} onChange={e => setEditPlanForm(f => ({ ...f, price: e.target.value }))} className="bg-background/50 border-border/40" /></div>
+                  <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => editingPlan && updatePlanMutation.mutate({ id: editingPlan.id, data: editPlanForm })} disabled={!editPlanForm.name || !editPlanForm.durationDays || updatePlanMutation.isPending}>Salvar alterações</Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -1169,155 +1103,56 @@ export default function AdminDashboard() {
           {/* ========== MODULES TAB ========== */}
           <TabsContent value="modules" className="space-y-6 mt-0">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">
-                Módulos ({modules.length})
-              </h3>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Módulos ({modules.length})</h3>
               <Dialog open={moduleDialogOpen} onOpenChange={setModuleDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="bg-gold text-background hover:bg-gold/90 font-medium" data-testid="button-add-module">
-                    <Plus className="w-4 h-4 mr-1.5" />
-                    Novo módulo
-                  </Button>
-                </DialogTrigger>
+                <DialogTrigger asChild><Button size="sm" className="bg-gold text-background hover:bg-gold/90 font-medium" data-testid="button-add-module"><Plus className="w-4 h-4 mr-1.5" />Novo módulo</Button></DialogTrigger>
                 <DialogContent className="bg-card border-border/40">
-                  <DialogHeader>
-                    <DialogTitle className="text-lg">Novo módulo</DialogTitle>
-                    <DialogDescription className="text-muted-foreground">Adicione um novo módulo de aulas</DialogDescription>
-                  </DialogHeader>
+                  <DialogHeader><DialogTitle className="text-lg">Novo módulo</DialogTitle><DialogDescription className="text-muted-foreground">Adicione um novo módulo de aulas</DialogDescription></DialogHeader>
                   <div className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Título</Label>
-                      <Input
-                        value={moduleForm.title}
-                        onChange={e => setModuleForm(f => ({ ...f, title: e.target.value }))}
-                        placeholder="Ex: Skinboosters"
-                        className="bg-background/50 border-border/40"
-                        data-testid="input-module-title"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label>
-                      <Textarea
-                        value={moduleForm.description}
-                        onChange={e => setModuleForm(f => ({ ...f, description: e.target.value }))}
-                        placeholder="Descrição do módulo..."
-                        className="bg-background/50 border-border/40"
-                        data-testid="input-module-description"
-                      />
-                    </div>
-                    <Button
-                      className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
-                      onClick={() => createModuleMutation.mutate()}
-                      disabled={!moduleForm.title || createModuleMutation.isPending}
-                      data-testid="button-save-module"
-                    >
-                      Criar módulo
-                    </Button>
+                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Título</Label><Input value={moduleForm.title} onChange={e => setModuleForm(f => ({ ...f, title: e.target.value }))} placeholder="Ex: Skinboosters" className="bg-background/50 border-border/40" data-testid="input-module-title" /></div>
+                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label><Textarea value={moduleForm.description} onChange={e => setModuleForm(f => ({ ...f, description: e.target.value }))} placeholder="Descrição do módulo..." className="bg-background/50 border-border/40" data-testid="input-module-description" /></div>
+                    <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createModuleMutation.mutate()} disabled={!moduleForm.title || createModuleMutation.isPending} data-testid="button-save-module">Criar módulo</Button>
                   </div>
                 </DialogContent>
               </Dialog>
             </div>
 
             {modules.length === 0 ? (
-              <Card className="border-border/30 bg-card/40">
-                <CardContent className="p-12 text-center">
-                  <div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4">
-                    <Layers className="w-7 h-7 text-muted-foreground/40" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">Nenhum módulo criado ainda</p>
-                </CardContent>
-              </Card>
+              <Card className="border-border/30 bg-card/40"><CardContent className="p-12 text-center"><div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4"><Layers className="w-7 h-7 text-muted-foreground/40" /></div><p className="text-sm text-muted-foreground">Nenhum módulo criado ainda</p></CardContent></Card>
             ) : (
               <div className="space-y-3">
                 {[...modules].sort((a, b) => a.order - b.order).map((mod, idx) => {
                   const modLessons = lessons.filter(l => l.moduleId === mod.id);
-                  const sortedModules = [...modules].sort((a, b) => a.order - b.order);
+                  const sortedMods = [...modules].sort((a, b) => a.order - b.order);
                   const isFirst = idx === 0;
-                  const isLast = idx === sortedModules.length - 1;
+                  const isLast = idx === sortedMods.length - 1;
                   return (
                     <Card key={mod.id} className="border-border/30 bg-card/50 hover:bg-card/70 transition-colors">
                       <CardContent className="p-4 sm:p-5">
                         <div className="flex items-start gap-3 sm:gap-4">
-                          {/* Reorder arrows */}
                           <div className="flex flex-col gap-0.5 shrink-0 mt-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className={`h-6 w-6 p-0 ${isFirst ? "text-muted-foreground/20 cursor-default" : "text-muted-foreground hover:text-gold"}`}
-                              onClick={() => !isFirst && moveModule(mod.id, "up")}
-                              disabled={isFirst || reorderMutation.isPending}
-                            >
-                              <ChevronUp className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className={`h-6 w-6 p-0 ${isLast ? "text-muted-foreground/20 cursor-default" : "text-muted-foreground hover:text-gold"}`}
-                              onClick={() => !isLast && moveModule(mod.id, "down")}
-                              disabled={isLast || reorderMutation.isPending}
-                            >
-                              <ChevronDown className="w-4 h-4" />
-                            </Button>
+                            <Button size="sm" variant="ghost" className={`h-6 w-6 p-0 ${isFirst ? "text-muted-foreground/20 cursor-default" : "text-muted-foreground hover:text-gold"}`} onClick={() => !isFirst && moveModule(mod.id, "up")} disabled={isFirst || reorderMutation.isPending}><ChevronUp className="w-4 h-4" /></Button>
+                            <Button size="sm" variant="ghost" className={`h-6 w-6 p-0 ${isLast ? "text-muted-foreground/20 cursor-default" : "text-muted-foreground hover:text-gold"}`} onClick={() => !isLast && moveModule(mod.id, "down")} disabled={isLast || reorderMutation.isPending}><ChevronDown className="w-4 h-4" /></Button>
                           </div>
-                          <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center shrink-0 mt-0.5 hidden sm:flex">
-                            <BookOpen className="w-5 h-5 text-gold" />
-                          </div>
+                          <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center shrink-0 mt-0.5 hidden sm:flex"><BookOpen className="w-5 h-5 text-gold" /></div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-muted-foreground font-mono">{String(idx + 1).padStart(2, "0")}</span>
-                                  <p className="font-medium text-foreground text-sm sm:text-[15px] truncate">{mod.title}</p>
-                                </div>
-                                {mod.description && (
-                                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{mod.description}</p>
-                                )}
-                                <p className="text-xs text-muted-foreground mt-2">
-                                  {modLessons.length} {modLessons.length === 1 ? "aula" : "aulas"}
-                                </p>
+                                <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground font-mono">{String(idx + 1).padStart(2, "0")}</span><p className="font-medium text-foreground text-sm sm:text-[15px] truncate">{mod.title}</p></div>
+                                {mod.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{mod.description}</p>}
+                                <p className="text-xs text-muted-foreground mt-2">{modLessons.length} {modLessons.length === 1 ? "aula" : "aulas"}</p>
                               </div>
                               <div className="flex items-center gap-1 shrink-0">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
-                                  onClick={() => {
-                                    setEditingModule(mod);
-                                    setEditModuleForm({ title: mod.title, description: mod.description || "" });
-                                  }}
-                                  data-testid={`button-edit-module-${mod.id}`}
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
-                                      data-testid={`button-delete-module-${mod.id}`}
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent className="bg-card border-border/40">
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Tem certeza que deseja excluir o módulo "{mod.title}"? Todas as aulas deste módulo também serão removidas. Esta ação não pode ser desfeita.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                        onClick={() => deleteModuleMutation.mutate(mod.id)}
-                                      >
-                                        Excluir
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
+                                <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0" onClick={() => { setEditingModule(mod); setEditModuleForm({ title: mod.title, description: mod.description || "" }); }} data-testid={`button-edit-module-${mod.id}`}><Pencil className="w-4 h-4" /></Button>
+                                {isSuperAdmin && (
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild><Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0" data-testid={`button-delete-module-${mod.id}`}><Trash2 className="w-4 h-4" /></Button></AlertDialogTrigger>
+                                    <AlertDialogContent className="bg-card border-border/40">
+                                      <AlertDialogHeader><AlertDialogTitle>Confirmar exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o módulo "{mod.title}"? Todas as aulas serão removidas.</AlertDialogDescription></AlertDialogHeader>
+                                      <AlertDialogFooter><AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteModuleMutation.mutate(mod.id)}>Excluir</AlertDialogAction></AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1332,34 +1167,11 @@ export default function AdminDashboard() {
             {/* Edit Module Dialog */}
             <Dialog open={!!editingModule} onOpenChange={(open) => !open && setEditingModule(null)}>
               <DialogContent className="bg-card border-border/40">
-                <DialogHeader>
-                  <DialogTitle className="text-lg">Editar módulo</DialogTitle>
-                  <DialogDescription className="text-muted-foreground">Altere os dados do módulo</DialogDescription>
-                </DialogHeader>
+                <DialogHeader><DialogTitle className="text-lg">Editar módulo</DialogTitle><DialogDescription className="text-muted-foreground">Altere os dados do módulo</DialogDescription></DialogHeader>
                 <div className="space-y-4 pt-2">
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Título</Label>
-                    <Input
-                      value={editModuleForm.title}
-                      onChange={e => setEditModuleForm(f => ({ ...f, title: e.target.value }))}
-                      className="bg-background/50 border-border/40"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label>
-                    <Textarea
-                      value={editModuleForm.description}
-                      onChange={e => setEditModuleForm(f => ({ ...f, description: e.target.value }))}
-                      className="bg-background/50 border-border/40"
-                    />
-                  </div>
-                  <Button
-                    className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
-                    onClick={() => editingModule && updateModuleMutation.mutate({ id: editingModule.id, data: editModuleForm })}
-                    disabled={!editModuleForm.title || updateModuleMutation.isPending}
-                  >
-                    Salvar alterações
-                  </Button>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Título</Label><Input value={editModuleForm.title} onChange={e => setEditModuleForm(f => ({ ...f, title: e.target.value }))} className="bg-background/50 border-border/40" /></div>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label><Textarea value={editModuleForm.description} onChange={e => setEditModuleForm(f => ({ ...f, description: e.target.value }))} className="bg-background/50 border-border/40" /></div>
+                  <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => editingModule && updateModuleMutation.mutate({ id: editingModule.id, data: editModuleForm })} disabled={!editModuleForm.title || updateModuleMutation.isPending}>Salvar alterações</Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -1368,102 +1180,25 @@ export default function AdminDashboard() {
           {/* ========== LESSONS TAB ========== */}
           <TabsContent value="lessons" className="space-y-6 mt-0">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">
-                Aulas ({lessons.length})
-              </h3>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Aulas ({lessons.length})</h3>
               <Dialog open={lessonDialogOpen} onOpenChange={setLessonDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="bg-gold text-background hover:bg-gold/90 font-medium" data-testid="button-add-lesson">
-                    <Plus className="w-4 h-4 mr-1.5" />
-                    Nova aula
-                  </Button>
-                </DialogTrigger>
+                <DialogTrigger asChild><Button size="sm" className="bg-gold text-background hover:bg-gold/90 font-medium" data-testid="button-add-lesson"><Plus className="w-4 h-4 mr-1.5" />Nova aula</Button></DialogTrigger>
                 <DialogContent className="bg-card border-border/40">
-                  <DialogHeader>
-                    <DialogTitle className="text-lg">Nova aula</DialogTitle>
-                    <DialogDescription className="text-muted-foreground">Adicione uma nova aula a um módulo</DialogDescription>
-                  </DialogHeader>
+                  <DialogHeader><DialogTitle className="text-lg">Nova aula</DialogTitle><DialogDescription className="text-muted-foreground">Adicione uma nova aula a um módulo</DialogDescription></DialogHeader>
                   <div className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Módulo</Label>
-                      <Select
-                        onValueChange={(v) => setLessonForm(f => ({ ...f, moduleId: parseInt(v) }))}
-                      >
-                        <SelectTrigger className="bg-background/50 border-border/40" data-testid="select-lesson-module">
-                          <SelectValue placeholder="Selecione o módulo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {modules.map((m) => (
-                            <SelectItem key={m.id} value={String(m.id)}>
-                              {m.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Título da aula</Label>
-                      <Input
-                        value={lessonForm.title}
-                        onChange={e => setLessonForm(f => ({ ...f, title: e.target.value }))}
-                        placeholder="Ex: Técnicas de aplicação"
-                        className="bg-background/50 border-border/40"
-                        data-testid="input-lesson-title"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label>
-                      <Textarea
-                        value={lessonForm.description}
-                        onChange={e => setLessonForm(f => ({ ...f, description: e.target.value }))}
-                        placeholder="Descrição da aula..."
-                        className="bg-background/50 border-border/40"
-                        data-testid="input-lesson-description"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">URL do vídeo</Label>
-                      <Input
-                        value={lessonForm.videoUrl}
-                        onChange={e => setLessonForm(f => ({ ...f, videoUrl: e.target.value }))}
-                        placeholder="https://youtube.com/watch?v=..."
-                        className="bg-background/50 border-border/40"
-                        data-testid="input-lesson-video"
-                      />
-                      <p className="text-xs text-muted-foreground">YouTube, Vimeo ou Google Drive</p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração</Label>
-                      <Input
-                        value={lessonForm.duration}
-                        onChange={e => setLessonForm(f => ({ ...f, duration: e.target.value }))}
-                        placeholder="Ex: 25:00"
-                        className="bg-background/50 border-border/40"
-                        data-testid="input-lesson-duration"
-                      />
-                    </div>
-                    <Button
-                      className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
-                      onClick={() => createLessonMutation.mutate()}
-                      disabled={!lessonForm.title || !lessonForm.moduleId || createLessonMutation.isPending}
-                      data-testid="button-save-lesson"
-                    >
-                      Criar aula
-                    </Button>
+                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Módulo</Label><Select onValueChange={(v) => setLessonForm(f => ({ ...f, moduleId: parseInt(v) }))}><SelectTrigger className="bg-background/50 border-border/40" data-testid="select-lesson-module"><SelectValue placeholder="Selecione o módulo" /></SelectTrigger><SelectContent>{modules.map((m) => (<SelectItem key={m.id} value={String(m.id)}>{m.title}</SelectItem>))}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Título da aula</Label><Input value={lessonForm.title} onChange={e => setLessonForm(f => ({ ...f, title: e.target.value }))} placeholder="Ex: Técnicas de aplicação" className="bg-background/50 border-border/40" data-testid="input-lesson-title" /></div>
+                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label><Textarea value={lessonForm.description} onChange={e => setLessonForm(f => ({ ...f, description: e.target.value }))} placeholder="Descrição da aula..." className="bg-background/50 border-border/40" data-testid="input-lesson-description" /></div>
+                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">URL do vídeo</Label><Input value={lessonForm.videoUrl} onChange={e => setLessonForm(f => ({ ...f, videoUrl: e.target.value }))} placeholder="https://youtube.com/watch?v=..." className="bg-background/50 border-border/40" data-testid="input-lesson-video" /><p className="text-xs text-muted-foreground">YouTube, Vimeo ou Google Drive</p></div>
+                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração</Label><Input value={lessonForm.duration} onChange={e => setLessonForm(f => ({ ...f, duration: e.target.value }))} placeholder="Ex: 25:00" className="bg-background/50 border-border/40" data-testid="input-lesson-duration" /></div>
+                    <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createLessonMutation.mutate()} disabled={!lessonForm.title || !lessonForm.moduleId || createLessonMutation.isPending} data-testid="button-save-lesson">Criar aula</Button>
                   </div>
                 </DialogContent>
               </Dialog>
             </div>
 
             {lessons.length === 0 ? (
-              <Card className="border-border/30 bg-card/40">
-                <CardContent className="p-12 text-center">
-                  <div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4">
-                    <Video className="w-7 h-7 text-muted-foreground/40" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">Nenhuma aula criada ainda</p>
-                </CardContent>
-              </Card>
+              <Card className="border-border/30 bg-card/40"><CardContent className="p-12 text-center"><div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4"><Video className="w-7 h-7 text-muted-foreground/40" /></div><p className="text-sm text-muted-foreground">Nenhuma aula criada ainda</p></CardContent></Card>
             ) : (
               <div className="space-y-6">
                 {[...modules].sort((a, b) => a.order - b.order).map((mod) => {
@@ -1471,131 +1206,51 @@ export default function AdminDashboard() {
                   if (modLessons.length === 0) return null;
                   return (
                     <div key={mod.id} className="space-y-3">
-                      {/* Module header */}
                       <div className="flex items-center gap-3 pb-1">
-                        <div className="w-7 h-7 rounded-md bg-gold/10 flex items-center justify-center shrink-0">
-                          <BookOpen className="w-3.5 h-3.5 text-gold" />
-                        </div>
-                        <h4 className="text-xs font-semibold text-gold uppercase tracking-brand">
-                          {mod.title}
-                        </h4>
+                        <div className="w-7 h-7 rounded-md bg-gold/10 flex items-center justify-center shrink-0"><BookOpen className="w-3.5 h-3.5 text-gold" /></div>
+                        <h4 className="text-xs font-semibold text-gold uppercase tracking-brand">{mod.title}</h4>
                         <div className="flex-1 h-px bg-border/30" />
-                        <span className="text-xs text-muted-foreground">
-                          {modLessons.length} {modLessons.length === 1 ? "aula" : "aulas"}
-                        </span>
+                        <span className="text-xs text-muted-foreground">{modLessons.length} {modLessons.length === 1 ? "aula" : "aulas"}</span>
                       </div>
-
-                      {/* Lessons list */}
                       <div className="space-y-2 pl-0 sm:pl-2">
                         {modLessons.map((lesson, idx) => {
                           const isFirstLesson = idx === 0;
                           const isLastLesson = idx === modLessons.length - 1;
                           return (
-                          <Card key={lesson.id} className="border-border/25 bg-card/40 hover:bg-card/60 transition-colors">
-                            <CardContent className="p-3 sm:p-4">
-                              <div className="flex items-start gap-2 sm:gap-4">
-                                {/* Reorder arrows */}
-                                <div className="flex flex-col gap-0.5 shrink-0">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className={`h-5 w-5 p-0 ${isFirstLesson ? "text-muted-foreground/20 cursor-default" : "text-muted-foreground hover:text-gold"}`}
-                                    onClick={() => !isFirstLesson && moveLesson(lesson.id, "up", mod.id)}
-                                    disabled={isFirstLesson || reorderLessonsMutation.isPending}
-                                  >
-                                    <ChevronUp className="w-3.5 h-3.5" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className={`h-5 w-5 p-0 ${isLastLesson ? "text-muted-foreground/20 cursor-default" : "text-muted-foreground hover:text-gold"}`}
-                                    onClick={() => !isLastLesson && moveLesson(lesson.id, "down", mod.id)}
-                                    disabled={isLastLesson || reorderLessonsMutation.isPending}
-                                  >
-                                    <ChevronDown className="w-3.5 h-3.5" />
-                                  </Button>
-                                </div>
-                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-background/60 flex items-center justify-center shrink-0 text-xs sm:text-sm font-medium text-muted-foreground">
-                                  {idx + 1}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-sm font-medium text-foreground truncate">
-                                        {lesson.title}
-                                      </p>
-                                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                        {lesson.duration && (
-                                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />
-                                            {lesson.duration}
-                                          </span>
-                                        )}
-                                        {lesson.videoUrl ? (
-                                          <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-0 px-1.5">
-                                            Com vídeo
-                                          </Badge>
-                                        ) : (
-                                          <Badge variant="outline" className="text-[10px] border-border/30 text-muted-foreground px-1.5">
-                                            Sem vídeo
-                                          </Badge>
+                            <Card key={lesson.id} className="border-border/25 bg-card/40 hover:bg-card/60 transition-colors">
+                              <CardContent className="p-3 sm:p-4">
+                                <div className="flex items-start gap-2 sm:gap-4">
+                                  <div className="flex flex-col gap-0.5 shrink-0">
+                                    <Button size="sm" variant="ghost" className={`h-5 w-5 p-0 ${isFirstLesson ? "text-muted-foreground/20 cursor-default" : "text-muted-foreground hover:text-gold"}`} onClick={() => !isFirstLesson && moveLesson(lesson.id, "up", mod.id)} disabled={isFirstLesson || reorderLessonsMutation.isPending}><ChevronUp className="w-3.5 h-3.5" /></Button>
+                                    <Button size="sm" variant="ghost" className={`h-5 w-5 p-0 ${isLastLesson ? "text-muted-foreground/20 cursor-default" : "text-muted-foreground hover:text-gold"}`} onClick={() => !isLastLesson && moveLesson(lesson.id, "down", mod.id)} disabled={isLastLesson || reorderLessonsMutation.isPending}><ChevronDown className="w-3.5 h-3.5" /></Button>
+                                  </div>
+                                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-background/60 flex items-center justify-center shrink-0 text-xs sm:text-sm font-medium text-muted-foreground">{idx + 1}</div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-medium text-foreground truncate">{lesson.title}</p>
+                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                          {lesson.duration && <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" />{lesson.duration}</span>}
+                                          {lesson.videoUrl ? <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-0 px-1.5">Com vídeo</Badge> : <Badge variant="outline" className="text-[10px] border-border/30 text-muted-foreground px-1.5">Sem vídeo</Badge>}
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0" onClick={() => { setEditingLesson(lesson); setEditLessonForm({ title: lesson.title, description: lesson.description || "", videoUrl: lesson.videoUrl || "", duration: lesson.duration || "", moduleId: lesson.moduleId }); }} data-testid={`button-edit-lesson-${lesson.id}`}><Pencil className="w-3.5 h-3.5" /></Button>
+                                        {isSuperAdmin && (
+                                          <AlertDialog>
+                                            <AlertDialogTrigger asChild><Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0" data-testid={`button-delete-lesson-${lesson.id}`}><Trash2 className="w-3.5 h-3.5" /></Button></AlertDialogTrigger>
+                                            <AlertDialogContent className="bg-card border-border/40">
+                                              <AlertDialogHeader><AlertDialogTitle>Confirmar exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir a aula "{lesson.title}"?</AlertDialogDescription></AlertDialogHeader>
+                                              <AlertDialogFooter><AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteLessonMutation.mutate(lesson.id)}>Excluir</AlertDialogAction></AlertDialogFooter>
+                                            </AlertDialogContent>
+                                          </AlertDialog>
                                         )}
                                       </div>
                                     </div>
-                                    <div className="flex items-center gap-1 shrink-0">
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
-                                        onClick={() => {
-                                          setEditingLesson(lesson);
-                                          setEditLessonForm({
-                                            title: lesson.title,
-                                            description: lesson.description || "",
-                                            videoUrl: lesson.videoUrl || "",
-                                            duration: lesson.duration || "",
-                                            moduleId: lesson.moduleId,
-                                          });
-                                        }}
-                                        data-testid={`button-edit-lesson-${lesson.id}`}
-                                      >
-                                        <Pencil className="w-3.5 h-3.5" />
-                                      </Button>
-                                      <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
-                                            data-testid={`button-delete-lesson-${lesson.id}`}
-                                          >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                          </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent className="bg-card border-border/40">
-                                          <AlertDialogHeader>
-                                            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                              Tem certeza que deseja excluir a aula "{lesson.title}"? Esta ação não pode ser desfeita.
-                                            </AlertDialogDescription>
-                                          </AlertDialogHeader>
-                                          <AlertDialogFooter>
-                                            <AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel>
-                                            <AlertDialogAction
-                                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                              onClick={() => deleteLessonMutation.mutate(lesson.id)}
-                                            >
-                                              Excluir
-                                            </AlertDialogAction>
-                                          </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                      </AlertDialog>
-                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            </CardContent>
-                          </Card>
+                              </CardContent>
+                            </Card>
                           );
                         })}
                       </div>
@@ -1608,75 +1263,186 @@ export default function AdminDashboard() {
             {/* Edit Lesson Dialog */}
             <Dialog open={!!editingLesson} onOpenChange={(open) => !open && setEditingLesson(null)}>
               <DialogContent className="bg-card border-border/40">
-                <DialogHeader>
-                  <DialogTitle className="text-lg">Editar aula</DialogTitle>
-                  <DialogDescription className="text-muted-foreground">Altere os dados da aula</DialogDescription>
-                </DialogHeader>
+                <DialogHeader><DialogTitle className="text-lg">Editar aula</DialogTitle><DialogDescription className="text-muted-foreground">Altere os dados da aula</DialogDescription></DialogHeader>
                 <div className="space-y-4 pt-2">
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Título</Label>
-                    <Input
-                      value={editLessonForm.title}
-                      onChange={e => setEditLessonForm(f => ({ ...f, title: e.target.value }))}
-                      className="bg-background/50 border-border/40"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label>
-                    <Textarea
-                      value={editLessonForm.description}
-                      onChange={e => setEditLessonForm(f => ({ ...f, description: e.target.value }))}
-                      className="bg-background/50 border-border/40"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">URL do vídeo</Label>
-                    <Input
-                      value={editLessonForm.videoUrl}
-                      onChange={e => setEditLessonForm(f => ({ ...f, videoUrl: e.target.value }))}
-                      placeholder="https://youtube.com/watch?v=..."
-                      className="bg-background/50 border-border/40"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração</Label>
-                    <Input
-                      value={editLessonForm.duration}
-                      onChange={e => setEditLessonForm(f => ({ ...f, duration: e.target.value }))}
-                      placeholder="Ex: 25:00"
-                      className="bg-background/50 border-border/40"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Módulo</Label>
-                    <Select
-                      value={String(editLessonForm.moduleId)}
-                      onValueChange={(v) => setEditLessonForm(f => ({ ...f, moduleId: parseInt(v) }))}
-                    >
-                      <SelectTrigger className="bg-background/50 border-border/40">
-                        <SelectValue placeholder="Selecione o módulo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {modules.map((m) => (
-                          <SelectItem key={m.id} value={String(m.id)}>
-                            {m.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button
-                    className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
-                    onClick={() => editingLesson && updateLessonMutation.mutate({ id: editingLesson.id, data: editLessonForm })}
-                    disabled={!editLessonForm.title || !editLessonForm.moduleId || updateLessonMutation.isPending}
-                  >
-                    Salvar alterações
-                  </Button>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Título</Label><Input value={editLessonForm.title} onChange={e => setEditLessonForm(f => ({ ...f, title: e.target.value }))} className="bg-background/50 border-border/40" /></div>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label><Textarea value={editLessonForm.description} onChange={e => setEditLessonForm(f => ({ ...f, description: e.target.value }))} className="bg-background/50 border-border/40" /></div>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">URL do vídeo</Label><Input value={editLessonForm.videoUrl} onChange={e => setEditLessonForm(f => ({ ...f, videoUrl: e.target.value }))} placeholder="https://youtube.com/watch?v=..." className="bg-background/50 border-border/40" /></div>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração</Label><Input value={editLessonForm.duration} onChange={e => setEditLessonForm(f => ({ ...f, duration: e.target.value }))} placeholder="Ex: 25:00" className="bg-background/50 border-border/40" /></div>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Módulo</Label><Select value={String(editLessonForm.moduleId)} onValueChange={(v) => setEditLessonForm(f => ({ ...f, moduleId: parseInt(v) }))}><SelectTrigger className="bg-background/50 border-border/40"><SelectValue placeholder="Selecione o módulo" /></SelectTrigger><SelectContent>{modules.map((m) => (<SelectItem key={m.id} value={String(m.id)}>{m.title}</SelectItem>))}</SelectContent></Select></div>
+                  <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => editingLesson && updateLessonMutation.mutate({ id: editingLesson.id, data: editLessonForm })} disabled={!editLessonForm.title || !editLessonForm.moduleId || updateLessonMutation.isPending}>Salvar alterações</Button>
                 </div>
               </DialogContent>
             </Dialog>
           </TabsContent>
+
+          {/* ========== ADMINS TAB (super_admin only) ========== */}
+          {isSuperAdmin && (
+            <TabsContent value="admins" className="space-y-6 mt-0">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Administradores ({admins.length})</h3>
+                <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="bg-gold text-background hover:bg-gold/90 font-medium">
+                      <Plus className="w-4 h-4 mr-1.5" /> Novo admin
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-card border-border/40">
+                    <DialogHeader>
+                      <DialogTitle className="text-lg">Novo administrador</DialogTitle>
+                      <DialogDescription className="text-muted-foreground">Crie uma conta de admin secundário</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-2">
+                      <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label><Input value={adminForm.name} onChange={e => setAdminForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Amanda Silva" className="bg-background/50 border-border/40" /></div>
+                      <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Email</Label><Input type="email" value={adminForm.email} onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))} placeholder="admin@exemplo.com" className="bg-background/50 border-border/40" /></div>
+                      <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Senha</Label><Input type="password" value={adminForm.password} onChange={e => setAdminForm(f => ({ ...f, password: e.target.value }))} placeholder="Mínimo 6 caracteres" className="bg-background/50 border-border/40" /></div>
+                      <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Telefone (opcional)</Label><Input value={adminForm.phone} onChange={e => setAdminForm(f => ({ ...f, phone: e.target.value }))} placeholder="+55 (11) 99999-9999" className="bg-background/50 border-border/40" /></div>
+                      <div className="rounded-md bg-gold/5 border border-gold/20 p-3 text-xs text-muted-foreground space-y-1">
+                        <p className="font-medium text-gold">Permissões do admin secundário:</p>
+                        <p>- Gerenciar alunos (aprovar, editar, renovar)</p>
+                        <p>- Alterar acessos dos entregáveis</p>
+                        <p>- Criar/editar módulos e aulas</p>
+                        <p className="text-destructive/70">- NÃO pode excluir módulos/aulas, criar admins ou ver histórico completo</p>
+                      </div>
+                      <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createAdminMutation.mutate()} disabled={!adminForm.name || !adminForm.email || !adminForm.password || adminForm.password.length < 6 || createAdminMutation.isPending}>
+                        {createAdminMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Criar admin
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              <div className="space-y-2">
+                {admins.map((admin) => (
+                  <Card key={admin.id} className="border-border/30 bg-card/50 hover:bg-card/70 transition-colors">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-foreground truncate">{admin.name}</p>
+                            <Badge variant="secondary" className={`text-[11px] border-0 shrink-0 ${admin.role === "super_admin" ? "bg-gold/15 text-gold" : "bg-blue-500/10 text-blue-400"}`}>
+                              {admin.role === "super_admin" ? "Super Admin" : "Admin"}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground truncate mt-0.5">{admin.email}</p>
+                          {admin.phone && <p className="text-xs text-muted-foreground mt-0.5">{admin.phone}</p>}
+                        </div>
+                        {admin.role === "admin" && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0 shrink-0">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="bg-card border-border/40">
+                              <AlertDialogHeader><AlertDialogTitle>Confirmar exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o admin {admin.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                              <AlertDialogFooter><AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteAdminMutation.mutate(admin.id)}>Excluir</AlertDialogAction></AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+          )}
+
+          {/* ========== HISTORY TAB (super_admin: all logs, admin: own logs inline) ========== */}
+          {isSuperAdmin && (
+            <TabsContent value="history" className="space-y-6 mt-0">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Histórico de ações ({filteredLogs.length})</h3>
+                <div className="flex items-center gap-2">
+                  <Select value={logFilterAdmin} onValueChange={setLogFilterAdmin}>
+                    <SelectTrigger className="bg-background/50 border-border/40 w-40 h-8 text-xs"><SelectValue placeholder="Filtrar por admin" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os admins</SelectItem>
+                      {uniqueAdmins.map(([id, name]) => <SelectItem key={id} value={String(id)}>{name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select value={logFilterAction} onValueChange={setLogFilterAction}>
+                    <SelectTrigger className="bg-background/50 border-border/40 w-40 h-8 text-xs"><SelectValue placeholder="Filtrar por ação" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as ações</SelectItem>
+                      {uniqueActions.map(a => <SelectItem key={a} value={a}>{actionLabels[a] || a}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {filteredLogs.length === 0 ? (
+                <Card className="border-border/30 bg-card/40"><CardContent className="p-12 text-center"><div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4"><History className="w-7 h-7 text-muted-foreground/40" /></div><p className="text-sm text-muted-foreground">Nenhuma ação registrada</p></CardContent></Card>
+              ) : (
+                <div className="space-y-2">
+                  {filteredLogs.map((log) => (
+                    <Card key={log.id} className="border-border/25 bg-card/40">
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center shrink-0 mt-0.5">
+                            <History className="w-4 h-4 text-gold" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-foreground">
+                                  {actionLabels[log.action] || log.action}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  por <span className="text-foreground font-medium">{log.adminName}</span>
+                                  {log.targetName && <> em <span className="text-foreground">{log.targetName}</span></>}
+                                </p>
+                              </div>
+                              <span className="text-xs text-muted-foreground shrink-0">
+                                {new Date(log.createdAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            </div>
+                            {log.details && (() => {
+                              try {
+                                const details = JSON.parse(log.details);
+                                const entries = Object.entries(details).slice(0, 4);
+                                if (entries.length === 0) return null;
+                                return (
+                                  <div className="mt-1.5 flex flex-wrap gap-1">
+                                    {entries.map(([k, v]) => (
+                                      <Badge key={k} variant="outline" className="text-[10px] border-border/30 text-muted-foreground px-1.5">
+                                        {k}: {String(v).slice(0, 30)}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                );
+                              } catch { return null; }
+                            })()}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+          )}
         </Tabs>
+
+        {/* Secondary admin: small audit log widget at the bottom */}
+        {!isSuperAdmin && auditLogs.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Suas ações recentes</h3>
+            <div className="space-y-2">
+              {auditLogs.slice(0, 10).map((log) => (
+                <div key={log.id} className="flex items-center gap-3 text-xs p-2 rounded-lg bg-card/30 border border-border/20">
+                  <History className="w-3.5 h-3.5 text-gold shrink-0" />
+                  <span className="text-foreground font-medium">{actionLabels[log.action] || log.action}</span>
+                  {log.targetName && <span className="text-muted-foreground">— {log.targetName}</span>}
+                  <span className="text-muted-foreground ml-auto shrink-0">
+                    {new Date(log.createdAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Approve student dialog — select plan */}
@@ -1684,40 +1450,19 @@ export default function AdminDashboard() {
         <DialogContent className="bg-card border-border/40 sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Aprovar aluno</DialogTitle>
-            <DialogDescription>
-              Selecione o plano de mentoria para <span className="font-medium text-foreground">{approvingStudent?.name}</span>
-            </DialogDescription>
+            <DialogDescription>Selecione o plano de mentoria para <span className="font-medium text-foreground">{approvingStudent?.name}</span></DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Plano de mentoria</Label>
               <Select value={approvePlanId} onValueChange={setApprovePlanId}>
-                <SelectTrigger className="bg-background/50 border-border/50">
-                  <SelectValue placeholder="Selecione um plano" />
-                </SelectTrigger>
-                <SelectContent>
-                  {plans.map((p) => (
-                    <SelectItem key={p.id} value={String(p.id)}>
-                      {p.name}{p.price ? ` — ${p.price}` : ""} ({p.durationDays} dias)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                <SelectTrigger className="bg-background/50 border-border/50"><SelectValue placeholder="Selecione um plano" /></SelectTrigger>
+                <SelectContent>{plans.map((p) => (<SelectItem key={p.id} value={String(p.id)}>{p.name}{p.price ? ` — ${p.price}` : ""} ({p.durationDays} dias)</SelectItem>))}</SelectContent>
               </Select>
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" className="border-border/40" onClick={() => { setApprovingStudent(null); setApprovePlanId(""); }}>
-                Cancelar
-              </Button>
-              <Button
-                className="bg-gold text-background hover:bg-gold/90 font-medium"
-                disabled={!approvePlanId || approveMutation.isPending}
-                onClick={() => {
-                  if (approvingStudent && approvePlanId) {
-                    approveMutation.mutate({ id: approvingStudent.id, planId: parseInt(approvePlanId) });
-                  }
-                }}
-                data-testid="button-confirm-approve"
-              >
+              <Button variant="outline" className="border-border/40" onClick={() => { setApprovingStudent(null); setApprovePlanId(""); }}>Cancelar</Button>
+              <Button className="bg-gold text-background hover:bg-gold/90 font-medium" disabled={!approvePlanId || approveMutation.isPending} onClick={() => { if (approvingStudent && approvePlanId) { approveMutation.mutate({ id: approvingStudent.id, planId: parseInt(approvePlanId) }); } }} data-testid="button-confirm-approve">
                 {approveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Aprovar
               </Button>

@@ -106,6 +106,18 @@ export default function StudentDashboard() {
   const isExpired = rawDaysLeft !== null && rawDaysLeft <= 0 && user?.approved;
   const isExpiringSoon = rawDaysLeft !== null && rawDaysLeft > 0 && rawDaysLeft <= 3;
 
+  // Granular access control
+  const communityEnabled = (user as any)?.communityAccess !== false;
+  const supportEnabled = (user as any)?.supportAccess !== false;
+  const supportExpiry = (user as any)?.supportExpiresAt || user?.accessExpiresAt;
+  const rawSupportDaysLeft = supportExpiry
+    ? Math.ceil((new Date(supportExpiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+  const supportDaysLeft = rawSupportDaysLeft !== null ? Math.max(0, rawSupportDaysLeft) : 0;
+  const isSupportExpired = !supportEnabled || (rawSupportDaysLeft !== null && rawSupportDaysLeft <= 0);
+  const clinicalEnabled = (user as any)?.clinicalPracticeAccess !== false;
+  const clinicalHours = (user as any)?.clinicalPracticeHours || 0;
+
   const getLessonsForModule = (moduleId: number) =>
     lessons.filter(l => l.moduleId === moduleId).sort((a, b) => a.order - b.order);
 
@@ -550,29 +562,47 @@ export default function StudentDashboard() {
           <section className="space-y-5">
             <h2 className="font-serif text-2xl font-semibold text-foreground">Recursos Exclusivos</h2>
             <div className="grid sm:grid-cols-3 gap-4">
-              {/* Comunidade — Lifetime access */}
-              <a
-                href="https://chat.whatsapp.com/C8pP9ctYkso5kH89l1CHHl"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
-              >
-                <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-gold" />
-                </div>
-                <h3 className="font-semibold text-sm text-foreground">Comunidade NaturalUp®</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">Conecte-se com outros profissionais, troque experiências e evolua junto com a comunidade.</p>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">
-                    Acesso Vitalício
+              {/* Comunidade — Lifetime access (respects communityAccess toggle) */}
+              {communityEnabled ? (
+                <a
+                  href="https://chat.whatsapp.com/C8pP9ctYkso5kH89l1CHHl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-gold" />
+                  </div>
+                  <h3 className="font-semibold text-sm text-foreground">Comunidade NaturalUp®</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">Conecte-se com outros profissionais, troque experiências e evolua junto com a comunidade.</p>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">
+                      Acesso Vitalício
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center text-xs font-medium text-gold group-hover:underline">
+                    Acessar comunidade <ChevronRight className="w-3 h-3 ml-1" />
+                  </span>
+                </a>
+              ) : (
+                <div className="rounded-2xl border border-destructive/30 bg-card/60 p-5 space-y-3 opacity-60 cursor-not-allowed">
+                  <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-gold" />
+                  </div>
+                  <h3 className="font-semibold text-sm text-foreground">Comunidade NaturalUp®</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">Conecte-se com outros profissionais, troque experiências e evolua junto com a comunidade.</p>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-destructive/15 border border-destructive/30 px-2 py-0.5 text-[10px] font-semibold text-destructive uppercase tracking-wider">
+                      Acesso Desabilitado
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center text-xs font-medium text-muted-foreground">
+                    Acessar comunidade <ChevronRight className="w-3 h-3 ml-1" />
                   </span>
                 </div>
-                <span className="inline-flex items-center text-xs font-medium text-gold group-hover:underline">
-                  Acessar comunidade <ChevronRight className="w-3 h-3 ml-1" />
-                </span>
-              </a>
-              {/* Tire Dúvidas — countdown + WhatsApp link */}
-              {isExpired ? (
+              )}
+              {/* Tire Dúvidas — respects supportAccess toggle and supportExpiresAt */}
+              {isSupportExpired ? (
                 <div className="rounded-2xl border border-destructive/30 bg-card/60 p-5 space-y-3 opacity-60 cursor-not-allowed">
                   <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
                     <MessageCircle className="w-5 h-5 text-gold" />
@@ -581,7 +611,7 @@ export default function StudentDashboard() {
                   <p className="text-xs text-muted-foreground leading-relaxed">Envie suas perguntas diretamente e receba orientações personalizadas do mentor.</p>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center rounded-full bg-destructive/15 border border-destructive/30 px-2 py-0.5 text-[10px] font-semibold text-destructive uppercase tracking-wider">
-                      Acesso Expirado
+                      {!supportEnabled ? "Acesso Desabilitado" : "Acesso Expirado"}
                     </span>
                   </div>
                   <span className="inline-flex items-center text-xs font-medium text-muted-foreground">
@@ -602,7 +632,7 @@ export default function StudentDashboard() {
                   <p className="text-xs text-muted-foreground leading-relaxed">Envie suas perguntas diretamente e receba orientações personalizadas do mentor.</p>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center rounded-full bg-gold/15 border border-gold/30 px-2 py-0.5 text-[10px] font-semibold text-gold uppercase tracking-wider">
-                      {daysLeft === 1 ? "Resta 1 dia" : `Restam ${daysLeft} dias`}
+                      {supportDaysLeft === 1 ? "Resta 1 dia" : `Restam ${supportDaysLeft} dias`}
                     </span>
                   </div>
                   <span className="inline-flex items-center text-xs font-medium text-gold group-hover:underline">
@@ -610,22 +640,46 @@ export default function StudentDashboard() {
                   </span>
                 </a>
               )}
-              {/* Práticas Clínicas — hours package info */}
-              <div className="rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3">
-                <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
-                  <Activity className="w-5 h-5 text-gold" />
-                </div>
-                <h3 className="font-semibold text-sm text-foreground">Práticas Clínicas NaturalUp®</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">Você possui um pacote de horas práticas definido no seu acordo individual. Entre em contato para agendar.</p>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center rounded-full bg-gold/15 border border-gold/30 px-2 py-0.5 text-[10px] font-semibold text-gold uppercase tracking-wider">
-                    Pacote de Horas
+              {/* Práticas Clínicas — respects clinicalPracticeAccess toggle and shows hours */}
+              {clinicalEnabled ? (
+                <div className="rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3">
+                  <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                    <Activity className="w-5 h-5 text-gold" />
+                  </div>
+                  <h3 className="font-semibold text-sm text-foreground">Práticas Clínicas NaturalUp®</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">Você possui um pacote de horas práticas definido no seu acordo individual. Entre em contato para agendar.</p>
+                  <div className="flex items-center gap-2">
+                    {clinicalHours > 0 ? (
+                      <span className="inline-flex items-center rounded-full bg-gold/15 border border-gold/30 px-2 py-0.5 text-[10px] font-semibold text-gold uppercase tracking-wider">
+                        {clinicalHours} {clinicalHours === 1 ? "hora" : "horas"} disponíveis
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full bg-gold/15 border border-gold/30 px-2 py-0.5 text-[10px] font-semibold text-gold uppercase tracking-wider">
+                        Pacote de Horas
+                      </span>
+                    )}
+                  </div>
+                  <span className="inline-flex items-center text-xs font-medium text-muted-foreground">
+                    Conforme seu acordo individual
                   </span>
                 </div>
-                <span className="inline-flex items-center text-xs font-medium text-muted-foreground">
-                  Conforme seu acordo individual
-                </span>
-              </div>
+              ) : (
+                <div className="rounded-2xl border border-destructive/30 bg-card/60 p-5 space-y-3 opacity-60 cursor-not-allowed">
+                  <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                    <Activity className="w-5 h-5 text-gold" />
+                  </div>
+                  <h3 className="font-semibold text-sm text-foreground">Práticas Clínicas NaturalUp®</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">Você possui um pacote de horas práticas definido no seu acordo individual. Entre em contato para agendar.</p>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-destructive/15 border border-destructive/30 px-2 py-0.5 text-[10px] font-semibold text-destructive uppercase tracking-wider">
+                      Acesso Desabilitado
+                    </span>
+                  </div>
+                  <span className="inline-flex items-center text-xs font-medium text-muted-foreground">
+                    Conforme seu acordo individual
+                  </span>
+                </div>
+              )}
             </div>
           </section>
 

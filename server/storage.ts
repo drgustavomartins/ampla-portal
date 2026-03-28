@@ -1,13 +1,14 @@
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import {
-  plans, users, modules, lessons, lessonProgress, passwordResets,
+  plans, users, modules, lessons, lessonProgress, passwordResets, auditLogs,
   type Plan, type InsertPlan,
   type User, type InsertUser,
   type Module, type InsertModule,
   type Lesson, type InsertLesson,
   type LessonProgress,
   type PasswordReset,
+  type AuditLog, type InsertAuditLog,
 } from "@shared/schema";
 
 export const storage = {
@@ -44,12 +45,15 @@ export const storage = {
     const [u] = await db.select().from(users).where(eq(users.email, email));
     return u;
   },
-  async createUser(user: InsertUser & { createdAt: string }): Promise<User> {
+  async createUser(user: InsertUser & { createdAt: string; role?: string; approved?: boolean }): Promise<User> {
     const [u] = await db.insert(users).values({
       name: user.name,
       email: user.email,
       password: user.password,
+      phone: user.phone ?? null,
       planId: user.planId ?? null,
+      role: user.role ?? "student",
+      approved: user.approved ?? false,
       createdAt: user.createdAt,
     }).returning();
     return u;
@@ -68,6 +72,16 @@ export const storage = {
   },
   async getPendingStudents(): Promise<User[]> {
     return db.select().from(users).where(and(eq(users.role, "student"), eq(users.approved, false)));
+  },
+  async getAdmins(): Promise<User[]> {
+    return db.select().from(users).where(
+      eq(users.role, "admin")
+    );
+  },
+  async getAllAdmins(): Promise<User[]> {
+    // Returns both admin and super_admin
+    const all = await db.select().from(users);
+    return all.filter(u => u.role === "admin" || u.role === "super_admin");
   },
 
   // ===== MODULES =====
@@ -155,5 +169,27 @@ export const storage = {
   },
   async markPasswordResetUsed(id: number): Promise<void> {
     await db.update(passwordResets).set({ used: true }).where(eq(passwordResets.id, id));
+  },
+
+  // ===== AUDIT LOGS =====
+  async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
+    const [al] = await db.insert(auditLogs).values(log).returning();
+    return al;
+  },
+  async getAuditLogs(filters?: { adminId?: number; action?: string; limit?: number; offset?: number }): Promise<AuditLog[]> {
+    let query = db.select().from(auditLogs);
+    if (filters?.adminId) {
+      query = query.where(eq(auditLogs.adminId, filters.adminId)) as any;
+    }
+    if (filters?.action) {
+      query = query.where(eq(auditLogs.action, filters.action)) as any;
+    }
+    return (query as any).orderBy(desc(auditLogs.createdAt)).limit(filters?.limit || 200).offset(filters?.offset || 0);
+  },
+  async getAuditLogsByAdmin(adminId: number): Promise<AuditLog[]> {
+    return db.select().from(auditLogs)
+      .where(eq(auditLogs.adminId, adminId))
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(200);
   },
 };

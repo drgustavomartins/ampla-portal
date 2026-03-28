@@ -11,13 +11,14 @@ import ResetPasswordPage from "./pages/reset-password";
 import NotFound from "./pages/not-found";
 
 function AppContent() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   if (!user) {
     return <LoginPage />;
   }
 
-  if (user.role === "admin") {
+  // Both admin and super_admin see the admin dashboard
+  if (isAdmin) {
     return <AdminDashboard />;
   }
 
