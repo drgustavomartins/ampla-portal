@@ -885,6 +885,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return json(res, { message: "Migração concluída", results });
     }
 
+    // ── FIX VIDEO URLS (migrate Drive to YouTube) ──
+    if (path === "/api/admin/fix-video-urls" && method === "POST") {
+      const fixKey = req.headers["x-fix-key"] || req.body?.fixKey;
+      if (fixKey !== "yt-migrate-2026-03-28") {
+        return json(res, { message: "Não autorizado" }, 401);
+      }
+      const fixes = [
+        { id: 7,  videoUrl: "https://youtu.be/UlrX0ZigQUc" },
+        { id: 8,  videoUrl: "https://youtu.be/F9X6wAA6ruI" },
+        { id: 9,  videoUrl: "https://youtu.be/D8mPWcHkxPI" },
+        { id: 10, videoUrl: "https://youtu.be/bAoMvimzb7c" },
+        { id: 11, videoUrl: "https://youtu.be/2cRE7SbOBjo" },
+        { id: 12, videoUrl: "https://youtu.be/FDB1slpYRQg" },
+        { id: 13, videoUrl: "https://youtu.be/WV_0tRncQc0" },
+        { id: 14, videoUrl: "https://youtu.be/P58M9KYtLz0" },
+        { id: 15, videoUrl: "https://youtu.be/wGA2Hbuit_Y" },
+        { id: 16, videoUrl: "https://youtu.be/mxA1koHKE9Q" },
+      ];
+      const results: string[] = [];
+      for (const fix of fixes) {
+        try {
+          await getDb().update(lessons).set({ videoUrl: fix.videoUrl }).where(eq(lessons.id, fix.id));
+          results.push(`Aula ${fix.id}: atualizada para YouTube`);
+        } catch (e: any) { results.push(`Aula ${fix.id}: ${e.message}`); }
+      }
+      return json(res, { message: "URLs migradas para YouTube", results });
+    }
+
     // ── Not found ──
     return json(res, { message: "Rota não encontrada" }, 404);
 
