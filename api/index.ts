@@ -842,11 +842,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await getDb().execute(`CREATE TABLE IF NOT EXISTS audit_logs (id SERIAL PRIMARY KEY, admin_id INTEGER NOT NULL, admin_name TEXT NOT NULL, action TEXT NOT NULL, target_type TEXT, target_id INTEGER, target_name TEXT, details TEXT, created_at TEXT NOT NULL)`);
         results.push("audit_logs table ensured");
       } catch (e: any) { results.push(`audit_logs: ${e.message}`); }
-      // Upgrade existing admin(s) to super_admin
+      // Upgrade existing admin(s) to super_admin — multiple strategies
       try {
-        await getDb().execute(`UPDATE users SET role = 'super_admin' WHERE role = 'admin'`);
-        results.push("admin(s) upgraded to super_admin");
-      } catch (e: any) { results.push(`super_admin upgrade: ${e.message}`); }
+        // Strategy 1: Upgrade users with role = 'admin'
+        const r1 = await getDb().execute(`UPDATE users SET role = 'super_admin' WHERE role = 'admin'`);
+        results.push("strategy1: upgraded role='admin' users");
+      } catch (e: any) { results.push(`strategy1: ${e.message}`); }
+      try {
+        // Strategy 2: Ensure the first user (id=1) is super_admin if they are not a student
+        const r2 = await getDb().execute(`UPDATE users SET role = 'super_admin' WHERE id = 1 AND role != 'student'`);
+        results.push("strategy2: ensured first user is super_admin");
+      } catch (e: any) { results.push(`strategy2: ${e.message}`); }
+      try {
+        // Strategy 3: If no super_admin exists at all, promote the first non-student user
+        const checkResult = await getDb().execute(`SELECT COUNT(*) as cnt FROM users WHERE role = 'super_admin'`);
+        const rows = Array.isArray(checkResult) ? checkResult : (checkResult as any).rows || [];
+        const firstRow = rows[0] || {};
+        const count = Number(firstRow.cnt || firstRow.count || 0);
+        if (count === 0) {
+          await getDb().execute(`UPDATE users SET role = 'super_admin' WHERE id = (SELECT MIN(id) FROM users WHERE role != 'student') AND role != 'student'`);
+          results.push("strategy3: promoted first non-student to super_admin (no super_admin existed)");
+        } else {
+          results.push(`strategy3: skipped (${count} super_admin(s) already exist)`);
+        }
+      } catch (e: any) { results.push(`strategy3: ${e.message}`); }
+      // Report current admin roles for debugging
+      try {
+        const adminResult = await getDb().execute(`SELECT id, name, email, role FROM users WHERE role IN ('admin', 'super_admin')`);
+        const adminRows = Array.isArray(adminResult) ? adminResult : (adminResult as any).rows || [];
+        results.push(`current_admins: ${JSON.stringify(adminRows)}`);
+      } catch (e: any) { results.push(`admin_check: ${e.message}`); }
       return json(res, { message: "Migração concluída", results });
     }
 

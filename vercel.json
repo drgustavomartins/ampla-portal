@@ -35,7 +35,7 @@
   ],
   "build": {
     "env": {
-      "FORCE_REBUILD": "v6"
+      "FORCE_REBUILD": "v7"
     }
   }
 }
