@@ -295,8 +295,9 @@ export default function StudentDashboard() {
     const title = mod.title.toLowerCase();
     if (title.includes("toxina")) return "/images/course-toxina.png";
     if (title.includes("preenchedores") || title.includes("ácido") || title.includes("acido")) return "/images/course-preenchedores.png";
-    if (title.includes("bioestimulador")) return "/images/course-bioestimuladores.png";
-    if (title.includes("regeneração") || title.includes("regeneracao")) return "/images/course-regeneracao.png";
+    if (title.includes("bioestimulador")) return "/images/bioestimuladores-colageno.png";
+    if (title.includes("regeneração") || title.includes("regeneracao") || title.includes("modulador") || title.includes("matriz")) return "/images/moduladores-matriz.png";
+    if (title.includes("naturalup") || title.includes("natural up") || title.includes("método") || title.includes("metodo")) return "/images/metodo-naturalup.png";
     return null;
   };
 
