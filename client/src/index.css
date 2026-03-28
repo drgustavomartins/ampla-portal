@@ -71,7 +71,7 @@
 
   /* Typography */
   --font-sans: 'General Sans', 'Inter', sans-serif;
-  --font-serif: Georgia, serif;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
   --font-mono: Menlo, monospace;
 
   /* Radius & Spacing */

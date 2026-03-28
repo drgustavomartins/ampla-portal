@@ -14,7 +14,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
-  ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle
+  ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle,
+  Users, MessageCircle, Activity, Lock
 } from "lucide-react";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
@@ -271,23 +272,65 @@ export default function StudentDashboard() {
   }
 
   // ========== MAIN DASHBOARD ==========
+
+  const firstName = user?.name?.split(" ")[0] || "";
+  const initials = user?.name
+    ? user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
+    : "?";
+
+  // Map modules to course card data
+  const getCourseImage = (mod: Module): string | null => {
+    const title = mod.title.toLowerCase();
+    if (title.includes("toxina")) return "/images/course-toxina.png";
+    if (title.includes("preenchedores") || title.includes("ácido") || title.includes("acido")) return "/images/course-preenchedores.png";
+    if (title.includes("bioestimulador")) return "/images/course-bioestimuladores.png";
+    if (title.includes("regeneração") || title.includes("regeneracao")) return "/images/course-regeneracao.png";
+    return null;
+  };
+
+  // Filter: skip "Boas vindas" / intro module (order 1), show the rest as course cards
+  const sortedModules = [...modules].sort((a, b) => a.order - b.order);
+  const introModule = sortedModules.find(m => m.order === 1 || m.title.toLowerCase().includes("boas vindas") || m.title.toLowerCase().includes("boas-vindas"));
+  const courseModules = sortedModules.filter(m => m !== introModule);
+
+  // Intro lessons get merged into the first course module for display
+  const introLessons = introModule ? getLessonsForModule(introModule.id) : [];
+
+  // Plan progress (days)
+  const planDurationDays = userPlan?.durationDays || 365;
+  const daysUsed = Math.max(0, planDurationDays - daysLeft);
+  const dayProgressPercent = Math.min(100, Math.round((daysUsed / planDurationDays) * 100));
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Top bar */}
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* ===== HEADER ===== */}
       <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          {/* Left: Logo */}
           <div className="flex items-center gap-3">
-            <img src="/logo-icon.png" alt="Ampla Facial" className="w-7 h-7 object-contain" />
-            <span className="text-sm font-medium text-gold tracking-wide">AMPLA FACIAL</span>
+            <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+              <path d="M16 2C8.268 2 2 8.268 2 16s6.268 14 14 14c0-7.732-6.268-14-14-14" fill="#D4A843" opacity="0.9"/>
+              <path d="M16 2c7.732 0 14 6.268 14 14s-6.268 14-14 14" stroke="#D4A843" strokeWidth="1.5" fill="none" opacity="0.4"/>
+            </svg>
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-gold tracking-wider leading-none">AMPLA FACIAL</span>
+              <span className="text-[10px] text-gold-muted tracking-brand leading-none mt-1">PORTAL DE MENTORIA</span>
+            </div>
           </div>
+
+          {/* Right: User info */}
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground hidden sm:block">
-              Olá, {user?.name?.split(" ")[0]}
-            </span>
+            <div className="hidden sm:flex flex-col items-end mr-1">
+              <span className="text-sm font-medium text-foreground leading-none">{firstName}</span>
+              {userPlan && <span className="text-[10px] text-gold-muted mt-0.5">{userPlan.name}</span>}
+            </div>
+            <div className="w-9 h-9 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center">
+              <span className="text-xs font-semibold text-gold">{initials}</span>
+            </div>
             <Button
               variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-gold"
+              className="text-muted-foreground hover:text-gold h-9 w-9 p-0"
               onClick={() => {
                 setProfileForm({
                   name: user?.name || "",
@@ -304,168 +347,259 @@ export default function StudentDashboard() {
             >
               <Settings className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-gold" onClick={logout} data-testid="button-logout">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-gold h-9 w-9 p-0" onClick={logout} data-testid="button-logout">
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto p-4 lg:p-6 space-y-6">
-        {/* Access expiry banners */}
-        {isExpired && (
-          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-destructive">Seu acesso expirou</p>
-              <p className="text-sm text-destructive/80 mt-1">
-                Entre em contato com o administrador para renovar seu plano.
+      <main className="flex-1">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 lg:py-10 space-y-10">
+
+          {/* Access expiry banners */}
+          {isExpired && (
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-destructive">Seu acesso expirou</p>
+                <p className="text-sm text-destructive/80 mt-1">
+                  Entre em contato com o administrador para renovar seu plano.
+                </p>
+              </div>
+            </div>
+          )}
+          {isExpiringSoon && (
+            <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-amber-500">
+                  Seu acesso expira em {rawDaysLeft} {rawDaysLeft === 1 ? "dia" : "dias"}
+                </p>
+                <p className="text-sm text-amber-500/80 mt-1">
+                  Entre em contato para renovação.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* ===== HERO WELCOME ===== */}
+          <section className="grid lg:grid-cols-[1fr_340px] gap-6 items-start">
+            <div className="space-y-3">
+              <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-foreground leading-tight">
+                Bem-vindo à sua mentoria, <span className="text-gold">{firstName}</span>
+              </h1>
+              <p className="text-muted-foreground text-sm sm:text-base max-w-lg leading-relaxed">
+                Explore os cursos do Método NaturalUp® e evolua sua prática clínica em harmonização facial com excelência e naturalidade.
               </p>
             </div>
-          </div>
-        )}
-        {isExpiringSoon && (
-          <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-amber-500">
-                Seu acesso expira em {rawDaysLeft} {rawDaysLeft === 1 ? "dia" : "dias"}
-              </p>
-              <p className="text-sm text-amber-500/80 mt-1">
-                Entre em contato para renovação.
-              </p>
+            {/* Plan card */}
+            <div className="rounded-2xl border border-border/40 bg-card/80 p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-gold-muted uppercase tracking-brand">Seu Plano</span>
+                <Badge variant="secondary" className="text-xs bg-gold/10 text-gold border-0">{userPlan?.name || "—"}</Badge>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Progresso do plano</span>
+                  <span className="font-medium text-gold">{daysUsed}/{planDurationDays} dias</span>
+                </div>
+                <Progress value={dayProgressPercent} className="h-1.5 bg-border/30" />
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Dias restantes</span>
+                <span className="font-semibold text-foreground">{daysLeft}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Aulas concluídas</span>
+                <span className="font-medium text-gold">{completedCount}/{totalLessons}</span>
+              </div>
             </div>
-          </div>
-        )}
+          </section>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Card className="border-border/40 bg-card/60">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
-                <Layers className="w-5 h-5 text-gold" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Progresso</p>
-                <p className="text-lg font-semibold text-foreground">{progressPercent}%</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-border/40 bg-card/60">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-gold" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Plano</p>
-                <p className="text-lg font-semibold text-foreground">{userPlan?.name || "—"}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-border/40 bg-card/60">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-gold" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Dias restantes</p>
-                <p className="text-lg font-semibold text-foreground">{daysLeft}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          {/* ===== SEUS CURSOS ===== */}
+          <section className="space-y-5">
+            <div className="flex items-center justify-between">
+              <h2 className="font-serif text-2xl font-semibold text-foreground">Seus Cursos</h2>
+              <span className="text-xs text-muted-foreground">{courseModules.length} cursos</span>
+            </div>
 
-        {/* Overall progress bar */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Progresso total</span>
-            <span className="font-medium text-gold">{completedCount}/{totalLessons} aulas</span>
-          </div>
-          <Progress value={progressPercent} className="h-1.5 bg-border/30" />
-        </div>
+            <div className="grid sm:grid-cols-2 gap-5">
+              {courseModules.map((mod, idx) => {
+                const modLessons = getLessonsForModule(mod.id);
+                // Merge intro lessons into first course
+                const allLessons = idx === 0 ? [...introLessons, ...modLessons] : modLessons;
+                const isUnlocked = allLessons.length > 0;
+                const isOpen = selectedModule === mod.id;
+                const courseImage = getCourseImage(mod);
+                const courseNumber = String(idx + 1).padStart(2, "0");
+                const modProgress = getModuleProgress(mod.id);
+                const completedInModule = allLessons.filter(l => completedIds.has(l.id)).length;
 
-        <div className="w-full h-px bg-border/30" />
+                return (
+                  <div key={mod.id} className="space-y-0">
+                    <div
+                      className={`relative rounded-2xl overflow-hidden border cursor-pointer transition-all duration-300 ${
+                        isOpen
+                          ? "border-gold/40 shadow-[0_12px_40px_rgba(0,0,0,0.3)]"
+                          : "border-border/40 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)]"
+                      } bg-card/60`}
+                      onClick={() => {
+                        if (isUnlocked) {
+                          setSelectedModule(isOpen ? null : mod.id);
+                        }
+                      }}
+                      data-testid={`button-module-${mod.id}`}
+                    >
+                      {/* Image area */}
+                      <div
+                        className="h-36 bg-cover bg-center relative"
+                        style={courseImage
+                          ? { backgroundImage: `url(${courseImage})` }
+                          : { background: "linear-gradient(135deg, hsl(200 45% 12%), hsl(200 55% 8%))" }
+                        }
+                      >
+                        {/* Gradient overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/30 to-transparent" />
+                        {/* Course number */}
+                        <span className="absolute top-3 left-3 text-[10px] font-bold text-white/50 tracking-wider">{courseNumber}</span>
+                        {/* Status badge */}
+                        <div className="absolute top-3 right-3">
+                          {isUnlocked ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">
+                              Liberado
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 border border-gold/30 px-2.5 py-0.5 text-[10px] font-semibold text-gold uppercase tracking-wider">
+                              Em breve
+                            </span>
+                          )}
+                        </div>
 
-        {/* Modules */}
-        <div className="space-y-3">
-          <h2 className="text-xs font-semibold text-gold-muted uppercase tracking-brand">Módulos</h2>
-          <div className="grid gap-3">
-            {modules.map((mod) => {
-              const modLessons = getLessonsForModule(mod.id);
-              const modProgress = getModuleProgress(mod.id);
-              const isOpen = selectedModule === mod.id;
-
-              return (
-                <Card key={mod.id} className="overflow-hidden border-border/40 bg-card/60">
-                  <button
-                    className="w-full text-left p-4 flex items-center gap-4 hover:bg-muted/20 transition-colors"
-                    onClick={() => setSelectedModule(isOpen ? null : mod.id)}
-                    data-testid={`button-module-${mod.id}`}
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center shrink-0">
-                      <BookOpen className="w-5 h-5 text-gold" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="font-medium truncate text-foreground">{mod.title}</h3>
-                        <Badge variant="secondary" className="shrink-0 text-xs bg-gold/10 text-gold border-0">
-                          {modLessons.filter(l => completedIds.has(l.id)).length}/{modLessons.length}
-                        </Badge>
+                        {/* Locked overlay */}
+                        {!isUnlocked && (
+                          <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
+                            <Lock className="w-8 h-8 text-gold/50" />
+                            <span className="text-xs font-bold text-gold/60 uppercase tracking-brand">Em breve</span>
+                          </div>
+                        )}
                       </div>
-                      {mod.description && (
-                        <p className="text-sm text-muted-foreground mt-0.5 truncate">{mod.description}</p>
-                      )}
-                      <Progress value={modProgress} className="h-1 mt-2 bg-border/30" />
-                    </div>
-                    <ChevronRight className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${isOpen ? "rotate-90" : ""}`} />
-                  </button>
 
-                  {isOpen && (
-                    <div className="border-t border-border/30">
-                      {modLessons.length === 0 ? (
-                        <p className="p-4 text-sm text-muted-foreground">Nenhuma aula neste módulo ainda.</p>
-                      ) : (
-                        modLessons.map((lesson, i) => {
-                          const done = completedIds.has(lesson.id);
-                          return (
-                            <button
-                              key={lesson.id}
-                              onClick={() => setSelectedLesson(lesson)}
-                              className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors border-b border-border/20 last:border-b-0"
-                              data-testid={`button-lesson-item-${lesson.id}`}
-                            >
-                              <div className="shrink-0">
-                                {done ? (
-                                  <CheckCircle2 className="w-4 h-4 text-gold" />
-                                ) : (
-                                  <Play className="w-4 h-4 text-muted-foreground" />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">{lesson.title}</p>
-                                {lesson.description && (
-                                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{linkifyText(lesson.description)}</p>
-                                )}
-                              </div>
-                              {lesson.duration && (
-                                <span className="text-xs text-muted-foreground shrink-0">{lesson.duration}</span>
-                              )}
-                            </button>
-                          );
-                        })
-                      )}
+                      {/* Card body */}
+                      <div className="p-4 space-y-2">
+                        <h3 className="font-semibold text-foreground text-sm leading-snug line-clamp-1">{mod.title}</h3>
+                        {mod.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{mod.description}</p>
+                        )}
+                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground pt-1">
+                          <span className="flex items-center gap-1">
+                            <BookOpen className="w-3 h-3" />
+                            {allLessons.length} {allLessons.length === 1 ? "aula" : "aulas"}
+                          </span>
+                          {isUnlocked && (
+                            <span className="flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-gold" />
+                              {completedInModule}/{allLessons.length}
+                            </span>
+                          )}
+                        </div>
+                        {isUnlocked && (
+                          <Progress value={modProgress} className="h-1 bg-border/30 mt-1" />
+                        )}
+                      </div>
                     </div>
-                  )}
-                </Card>
-              );
-            })}
-          </div>
+
+                    {/* Expanded lessons list */}
+                    {isOpen && isUnlocked && (
+                      <div className="mt-2 rounded-xl border border-border/30 bg-card/40 overflow-hidden">
+                        {allLessons.length === 0 ? (
+                          <p className="p-4 text-sm text-muted-foreground">Nenhuma aula neste módulo ainda.</p>
+                        ) : (
+                          allLessons.sort((a, b) => a.order - b.order).map((lesson) => {
+                            const done = completedIds.has(lesson.id);
+                            return (
+                              <button
+                                key={lesson.id}
+                                onClick={(e) => { e.stopPropagation(); setSelectedLesson(lesson); }}
+                                className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-muted/20 transition-colors border-b border-border/20 last:border-b-0"
+                                data-testid={`button-lesson-item-${lesson.id}`}
+                              >
+                                <div className="shrink-0">
+                                  {done ? (
+                                    <CheckCircle2 className="w-4 h-4 text-gold" />
+                                  ) : (
+                                    <Play className="w-4 h-4 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{lesson.title}</p>
+                                  {lesson.description && (
+                                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{linkifyText(lesson.description)}</p>
+                                  )}
+                                </div>
+                                {lesson.duration && (
+                                  <span className="text-xs text-muted-foreground shrink-0">{lesson.duration}</span>
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* ===== RECURSOS EXCLUSIVOS ===== */}
+          <section className="space-y-5">
+            <h2 className="font-serif text-2xl font-semibold text-foreground">Recursos Exclusivos</h2>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {/* Comunidade */}
+              <a href="#" className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]">
+                <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-gold" />
+                </div>
+                <h3 className="font-semibold text-sm text-foreground">Comunidade NaturalUp®</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">Conecte-se com outros profissionais, troque experiências e evolua junto com a comunidade.</p>
+                <span className="inline-flex items-center text-xs font-medium text-gold group-hover:underline">
+                  Acessar comunidade <ChevronRight className="w-3 h-3 ml-1" />
+                </span>
+              </a>
+              {/* Tire Dúvidas */}
+              <a href="#" className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]">
+                <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                  <MessageCircle className="w-5 h-5 text-gold" />
+                </div>
+                <h3 className="font-semibold text-sm text-foreground">Tire Dúvidas com Dr. Gustavo</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">Envie suas perguntas diretamente e receba orientações personalizadas do mentor.</p>
+                <span className="inline-flex items-center text-xs font-medium text-gold group-hover:underline">
+                  Enviar dúvida <ChevronRight className="w-3 h-3 ml-1" />
+                </span>
+              </a>
+              {/* Práticas Clínicas */}
+              <a href="#" className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]">
+                <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                  <Activity className="w-5 h-5 text-gold" />
+                </div>
+                <h3 className="font-semibold text-sm text-foreground">Práticas Clínicas NaturalUp®</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">Acesse casos clínicos, protocolos práticos e referências para aplicar em consultório.</p>
+                <span className="inline-flex items-center text-xs font-medium text-gold group-hover:underline">
+                  Ver práticas <ChevronRight className="w-3 h-3 ml-1" />
+                </span>
+              </a>
+            </div>
+          </section>
+
         </div>
-      </div>
+      </main>
 
-      <footer className="border-t border-border/30 mt-8 py-4">
-        <div className="max-w-5xl mx-auto px-4">
-          <PerplexityAttribution />
+      {/* ===== FOOTER ===== */}
+      <footer className="border-t border-border/30 py-6 mt-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span>© 2026 Ampla Facial — Todos os direitos reservados</span>
+          <span className="text-gold-muted font-semibold tracking-brand text-[10px]">NATURALUP®</span>
         </div>
       </footer>
 
