@@ -246,8 +246,8 @@ export default function ModulePage() {
     const prevLesson = moduleLessons[currentIdx - 1];
 
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm sticky top-0 z-10">
+      <div className="h-screen bg-background flex flex-col overflow-hidden">
+        <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm shrink-0 z-10">
           <div className="max-w-[1400px] mx-auto px-4 h-14 flex items-center justify-between">
             <button
               onClick={() => setSelectedLesson(null)}
