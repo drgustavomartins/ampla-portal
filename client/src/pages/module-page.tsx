@@ -157,14 +157,9 @@ export default function ModulePage() {
   const introModule = sortedModules.find(m => m.order === 1 || m.title.toLowerCase().includes("boas vindas") || m.title.toLowerCase().includes("boas-vindas"));
   const courseModules = sortedModules.filter(m => m !== introModule);
 
-  // Get lessons for this module, merge intro lessons into first course module
-  const introLessons = introModule ? lessons.filter(l => l.moduleId === introModule.id).sort((a, b) => a.order - b.order) : [];
-  const isFirstCourse = courseModules.length > 0 && currentModule?.id === courseModules[0].id;
+  // Get lessons for this module only (no merging from other modules)
   const moduleLessons = currentModule
-    ? [
-        ...(isFirstCourse ? introLessons : []),
-        ...lessons.filter(l => l.moduleId === currentModule.id).sort((a, b) => a.order - b.order),
-      ]
+    ? lessons.filter(l => l.moduleId === currentModule.id).sort((a, b) => a.order - b.order)
     : [];
 
   const completedInModule = moduleLessons.filter(l => completedIds.has(l.id)).length;
