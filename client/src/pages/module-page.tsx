@@ -262,9 +262,9 @@ export default function ModulePage() {
 
         {/* Desktop: side-by-side, fills viewport below header */}
         <div className="flex-1 hidden lg:flex" style={{ height: "calc(100vh - 3.5rem)" }}>
-          {/* Left: Video + details (60-65%) */}
-          <div ref={leftPanelRef} className="flex-[3] overflow-y-auto p-6">
-            <div className="max-w-4xl space-y-4">
+          {/* Left: Video + details centered */}
+          <div ref={leftPanelRef} className="flex-[3] overflow-y-auto p-6 flex flex-col justify-center">
+            <div className="max-w-4xl mx-auto w-full space-y-4">
               {embedUrl ? (
                 <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border/30">
                   <iframe
@@ -338,7 +338,7 @@ export default function ModulePage() {
           </div>
 
           {/* Right: Lesson list sidebar (35-40%) */}
-          <div className="flex-[2] border-l border-border/50 overflow-y-auto bg-card/30">
+          <div className="flex-[2] border-l border-border/50 overflow-y-auto bg-card/50 shadow-inner">
             <div className="p-4">
               <h3 className="text-xs font-semibold uppercase tracking-brand mb-3" style={{ color: theme.accent }}>
                 Aulas do modulo

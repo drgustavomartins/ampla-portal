@@ -451,7 +451,14 @@ export default function StudentDashboard() {
           )}
 
           {/* ===== HERO WELCOME ===== */}
-          <section className="grid lg:grid-cols-[1fr_340px] gap-6 items-start">
+          <section className="relative rounded-2xl overflow-hidden">
+            {/* Background image */}
+            <div className="absolute inset-0">
+              <img src="/images/hero-dashboard.png" alt="" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/60" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/70 to-transparent" />
+            </div>
+            <div className="relative grid lg:grid-cols-[1fr_340px] gap-6 items-start p-6 sm:p-8 lg:p-10">
             <div className="space-y-3">
               <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-foreground leading-tight">
                 Boas-vindas à sua mentoria, <span className="text-gold">{firstName}</span>
@@ -461,7 +468,7 @@ export default function StudentDashboard() {
               </p>
             </div>
             {/* Plan card */}
-            <div className="rounded-2xl border border-border/40 bg-card/80 p-5 space-y-4">
+            <div className="rounded-2xl border border-border/40 bg-card/90 backdrop-blur-sm p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-gold-muted uppercase tracking-brand">Seu Plano</span>
                 <Badge variant="secondary" className="text-xs bg-gold/10 text-gold border-0">{userPlan?.name || "\u2014"}</Badge>
