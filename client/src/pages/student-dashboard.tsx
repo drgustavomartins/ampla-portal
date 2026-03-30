@@ -540,9 +540,6 @@ export default function StudentDashboard() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium truncate">{lesson.title}</p>
-                                  {lesson.description && (
-                                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{linkifyText(lesson.description)}</p>
-                                  )}
                                 </div>
                                 {lesson.duration && (
                                   <span className="text-xs text-muted-foreground shrink-0">{lesson.duration}</span>
