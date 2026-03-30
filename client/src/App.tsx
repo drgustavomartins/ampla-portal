@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, useAuth } from "./lib/auth";
 import LoginPage from "./pages/login";
 import StudentDashboard from "./pages/student-dashboard";
+import ModulePage from "./pages/module-page";
 import AdminDashboard from "./pages/admin-dashboard";
 import ResetPasswordPage from "./pages/reset-password";
 import NotFound from "./pages/not-found";
@@ -25,6 +26,12 @@ function AppContent() {
   return <StudentDashboard />;
 }
 
+function ProtectedModulePage() {
+  const { user, isAdmin } = useAuth();
+  if (!user || isAdmin) return <LoginPage />;
+  return <ModulePage />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -32,6 +39,7 @@ function App() {
         <Router hook={useHashLocation}>
           <Switch>
             <Route path="/" component={AppContent} />
+            <Route path="/module/:id" component={ProtectedModulePage} />
             <Route path="/reset-password/:token" component={ResetPasswordPage} />
             <Route component={NotFound} />
           </Switch>

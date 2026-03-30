@@ -150,6 +150,30 @@
     letter-spacing: 0.15em;
   }
 
+  /* Carousel shelf styles */
+  .carousel-shelf {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+  .carousel-shelf::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+  }
+  .carousel-card {
+    scroll-snap-align: start;
+    /* Desktop: show 2.5 cards (~280px each) */
+    width: 280px;
+    min-height: 360px;
+  }
+  @media (max-width: 640px) {
+    .carousel-card {
+      /* Mobile: show 1.3 cards */
+      width: calc(100vw - 6rem);
+      min-width: 240px;
+      min-height: 340px;
+    }
+  }
+
   .no-default-hover-elevate {}
   .no-default-active-elevate {}
 
