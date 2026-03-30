@@ -38,6 +38,13 @@ function extractFirstUrl(text: string): string | null {
   return match ? match[0] : null;
 }
 
+function getFirstDescLine(desc: string): string | null {
+  if (!desc) return null;
+  const firstLine = desc.split('\n')[0].trim();
+  if (firstLine.startsWith('http') || firstLine.startsWith('Drive com') || firstLine.startsWith('Links')) return null;
+  return firstLine;
+}
+
 // Module theme colors
 const MODULE_THEMES: Record<string, { accent: string; accentRgb: string; gradient: string; progressBg: string; activeBg: string; accentText: string }> = {
   toxina: {
@@ -323,6 +330,8 @@ export default function ModulePage() {
                 {moduleLessons.map((lesson, i) => {
                   const done = completedIds.has(lesson.id);
                   const isActive = lesson.id === selectedLesson.id;
+                  const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
+                  const supportUrl = lesson.description ? extractFirstUrl(lesson.description) : null;
                   return (
                     <button
                       key={lesson.id}
@@ -346,6 +355,24 @@ export default function ModulePage() {
                         <p className={`text-sm font-medium truncate ${isActive ? theme.accentText : ""}`}>
                           {lesson.title}
                         </p>
+                        {descLine && (
+                          <p className="text-[11px] text-muted-foreground mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap">
+                            {descLine}
+                          </p>
+                        )}
+                        {supportUrl && (
+                          <a
+                            href={supportUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 text-[11px] mt-0.5 hover:underline"
+                            style={{ color: theme.accent }}
+                          >
+                            <Paperclip className="w-3 h-3" />
+                            Material de apoio
+                          </a>
+                        )}
                         {lesson.duration && (
                           <p className="text-xs text-muted-foreground mt-0.5">{lesson.duration}</p>
                         )}
@@ -441,6 +468,8 @@ export default function ModulePage() {
               {moduleLessons.map((lesson, i) => {
                 const done = completedIds.has(lesson.id);
                 const isActive = lesson.id === selectedLesson.id;
+                const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
+                const supportUrl = lesson.description ? extractFirstUrl(lesson.description) : null;
                 return (
                   <button
                     key={lesson.id}
@@ -464,6 +493,23 @@ export default function ModulePage() {
                       <p className={`text-sm font-medium truncate ${isActive ? theme.accentText : ""}`}>
                         {lesson.title}
                       </p>
+                      {descLine && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap">
+                          {descLine}
+                        </p>
+                      )}
+                      {supportUrl && (
+                        <a
+                          href={supportUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 text-[11px] mt-0.5 hover:underline text-gold"
+                        >
+                          <Paperclip className="w-3 h-3" />
+                          Material de apoio
+                        </a>
+                      )}
                       {lesson.duration && (
                         <p className="text-xs text-muted-foreground mt-0.5">{lesson.duration}</p>
                       )}
@@ -587,6 +633,7 @@ export default function ModulePage() {
             {moduleLessons.map((lesson, i) => {
               const done = completedIds.has(lesson.id);
               const supportUrl = lesson.description ? extractFirstUrl(lesson.description) : null;
+              const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
 
               return (
                 <div
@@ -617,11 +664,16 @@ export default function ModulePage() {
                       )}
                     </div>
 
-                    {/* Title and support link */}
+                    {/* Title, description and support link */}
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm font-medium truncate ${done ? "text-foreground/70" : "text-foreground"}`}>
                         {lesson.title}
                       </p>
+                      {!isLocked && descLine && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap">
+                          {descLine}
+                        </p>
+                      )}
                       {!isLocked && supportUrl && (
                         <a
                           href={supportUrl}

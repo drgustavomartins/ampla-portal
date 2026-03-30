@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
   ChevronRight, ChevronLeft, Calendar, Layers, Settings, Loader2, AlertTriangle,
-  Users, MessageCircle, Activity, Lock, ShoppingCart, ExternalLink
+  Users, MessageCircle, Activity, Lock, ShoppingCart, ExternalLink, Paperclip
 } from "lucide-react";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 
@@ -45,6 +45,12 @@ function extractFirstUrl(text: string): string | null {
   return match ? match[0] : null;
 }
 
+function getFirstDescLine(desc: string): string | null {
+  if (!desc) return null;
+  const firstLine = desc.split('\n')[0].trim();
+  if (firstLine.startsWith('http') || firstLine.startsWith('Drive com') || firstLine.startsWith('Links')) return null;
+  return firstLine;
+}
 
 export default function StudentDashboard() {
   const { user, logout, login } = useAuth();
@@ -281,6 +287,8 @@ export default function StudentDashboard() {
               {moduleLessons.map((lesson, i) => {
                 const done = completedIds.has(lesson.id);
                 const isActive = lesson.id === selectedLesson.id;
+                const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
+                const supportUrl = lesson.description ? extractFirstUrl(lesson.description) : null;
                 return (
                   <button
                     key={lesson.id}
@@ -305,6 +313,23 @@ export default function StudentDashboard() {
                       <p className={`text-sm font-medium truncate ${isActive ? "text-gold" : ""}`}>
                         {lesson.title}
                       </p>
+                      {descLine && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap">
+                          {descLine}
+                        </p>
+                      )}
+                      {supportUrl && (
+                        <a
+                          href={supportUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 text-[11px] mt-0.5 hover:underline text-gold"
+                        >
+                          <Paperclip className="w-3 h-3" />
+                          Material de apoio
+                        </a>
+                      )}
                       {lesson.duration && (
                         <p className="text-xs text-muted-foreground mt-0.5">{lesson.duration}</p>
                       )}
