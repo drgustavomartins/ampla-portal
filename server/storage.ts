@@ -1,13 +1,14 @@
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 import {
-  plans, users, modules, lessons, lessonProgress, passwordResets, auditLogs,
+  plans, users, modules, lessons, lessonProgress, passwordResets, auditLogs, planModules,
   type Plan, type InsertPlan,
   type User, type InsertUser,
   type Module, type InsertModule,
   type Lesson, type InsertLesson,
   type LessonProgress,
   type PasswordReset,
+  type PlanModule,
   type AuditLog, type InsertAuditLog,
 } from "@shared/schema";
 
@@ -82,6 +83,20 @@ export const storage = {
     // Returns both admin and super_admin
     const all = await db.select().from(users);
     return all.filter(u => u.role === "admin" || u.role === "super_admin");
+  },
+
+  // ===== PLAN MODULES =====
+  async getPlanModules(planId: number): Promise<PlanModule[]> {
+    return db.select().from(planModules).where(eq(planModules.planId, planId));
+  },
+  async getAllPlanModules(): Promise<PlanModule[]> {
+    return db.select().from(planModules);
+  },
+  async setPlanModules(planId: number, moduleIds: number[]): Promise<void> {
+    await db.delete(planModules).where(eq(planModules.planId, planId));
+    if (moduleIds.length > 0) {
+      await db.insert(planModules).values(moduleIds.map(moduleId => ({ planId, moduleId })));
+    }
   },
 
   // ===== MODULES =====

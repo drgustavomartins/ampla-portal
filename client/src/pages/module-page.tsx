@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, ChevronLeft,
-  ChevronRight, Layers, Lock, Paperclip
+  ChevronRight, Layers, Lock, Paperclip, ExternalLink, ShoppingCart
 } from "lucide-react";
 import type { Module, Lesson, LessonProgress } from "@shared/schema";
 
@@ -121,6 +121,14 @@ export default function ModulePage() {
     },
     enabled: !!user?.id,
   });
+  const { data: myModules } = useQuery<{ accessAll: boolean; moduleIds: number[] }>({
+    queryKey: ["/api/my-modules"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/my-modules");
+      return res.json();
+    },
+    enabled: !!user?.id,
+  });
 
   const completeMutation = useMutation({
     mutationFn: async ({ lessonId, complete }: { lessonId: number; complete: boolean }) => {
@@ -182,7 +190,18 @@ export default function ModulePage() {
 
   const theme = getModuleTheme(currentModule.title);
   const courseImage = getCourseImage(currentModule);
-  const isUnlocked = moduleLessons.length > 0;
+  const hasContent = moduleLessons.length > 0;
+
+  // Check module access
+  const isBoasVindas = currentModule.order === 1 || currentModule.title.toLowerCase().includes("boas vindas") || currentModule.title.toLowerCase().includes("boas-vindas");
+  const hasAccess = isBoasVindas || !myModules || myModules.accessAll || myModules.moduleIds.includes(currentModule.id);
+  const isUnlocked = hasContent && hasAccess;
+  const isLocked = hasContent && !hasAccess;
+
+  const getWhatsAppUrl = () => {
+    const msg = encodeURIComponent(`Olá! Tenho interesse em adquirir o módulo ${currentModule.title} da mentoria Ampla Facial. Meu email de acesso é ${user?.email || ""}.`);
+    return `https://wa.me/5521976310365?text=${msg}`;
+  };
 
   const videoRef = useRef<HTMLDivElement>(null);
 
@@ -195,7 +214,7 @@ export default function ModulePage() {
   }, []);
 
   // ========== LESSON VIEW ==========
-  if (selectedLesson) {
+  if (selectedLesson && !isLocked) {
     const embedUrl = getEmbedUrl(selectedLesson.videoUrl || "");
     const isCompleted = completedIds.has(selectedLesson.id);
     const currentIdx = moduleLessons.findIndex(l => l.id === selectedLesson.id);
@@ -509,7 +528,7 @@ export default function ModulePage() {
             </div>
 
             {/* Progress bar */}
-            {isUnlocked && (
+            {isUnlocked && !isLocked && (
               <div className="max-w-md pt-1">
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <span className="text-white/50">Progresso</span>
@@ -527,9 +546,35 @@ export default function ModulePage() {
         </div>
       </div>
 
+      {/* Locked Module Banner */}
+      {isLocked && (
+        <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 pt-6">
+          <div className="rounded-xl border border-gold/30 bg-gold/5 p-5 sm:p-6 text-center space-y-4">
+            <div className="w-14 h-14 rounded-full bg-gold/10 flex items-center justify-center mx-auto">
+              <Lock className="w-7 h-7 text-gold" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-semibold text-foreground text-lg">Este módulo não está incluso no seu plano atual</h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                Entre em contato pelo WhatsApp para adquirir acesso a este módulo individualmente.
+              </p>
+            </div>
+            <a
+              href={getWhatsAppUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg bg-[#25D366] hover:bg-[#22c55e] text-white font-semibold px-6 py-3 text-sm transition-colors"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              Adquirir este módulo
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Lesson List */}
       <div className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-8">
-        {!isUnlocked ? (
+        {!hasContent ? (
           <div className="text-center py-16 space-y-4">
             <Lock className="w-12 h-12 text-gold/40 mx-auto" />
             <p className="text-lg font-semibold text-foreground">Conteudo em breve</p>
@@ -544,12 +589,12 @@ export default function ModulePage() {
               const supportUrl = lesson.description ? extractFirstUrl(lesson.description) : null;
 
               return (
-                <button
+                <div
                   key={lesson.id}
-                  onClick={() => setSelectedLesson(lesson)}
-                  className="w-full text-left group"
+                  onClick={() => !isLocked && setSelectedLesson(lesson)}
+                  className={`w-full text-left group ${isLocked ? "cursor-default opacity-60" : "cursor-pointer"}`}
                 >
-                  <div className="flex items-center gap-4 px-4 py-4 rounded-xl transition-all duration-200 hover:bg-card/60 border border-transparent hover:border-border/30">
+                  <div className={`flex items-center gap-4 px-4 py-4 rounded-xl transition-all duration-200 border border-transparent ${!isLocked ? "hover:bg-card/60 hover:border-border/30" : ""}`}>
                     {/* Lesson number */}
                     <span className="w-8 text-center text-sm font-medium text-muted-foreground shrink-0">
                       {String(i + 1).padStart(2, "0")}
@@ -557,7 +602,11 @@ export default function ModulePage() {
 
                     {/* Play icon */}
                     <div className="shrink-0">
-                      {done ? (
+                      {isLocked ? (
+                        <div className="w-10 h-10 rounded-full bg-card border border-border/40 flex items-center justify-center">
+                          <Lock className="w-4 h-4 text-muted-foreground/50" />
+                        </div>
+                      ) : done ? (
                         <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `rgba(${theme.accentRgb}, 0.15)` }}>
                           <CheckCircle2 className="w-5 h-5" style={{ color: theme.accent }} />
                         </div>
@@ -573,7 +622,7 @@ export default function ModulePage() {
                       <p className={`text-sm font-medium truncate ${done ? "text-foreground/70" : "text-foreground"}`}>
                         {lesson.title}
                       </p>
-                      {supportUrl && (
+                      {!isLocked && supportUrl && (
                         <a
                           href={supportUrl}
                           target="_blank"
@@ -594,9 +643,11 @@ export default function ModulePage() {
                     )}
 
                     {/* Chevron */}
-                    <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {!isLocked && (
+                      <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>

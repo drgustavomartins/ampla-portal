@@ -183,13 +183,16 @@ export function registerRoutes(server: Server, app: Express) {
     const auth = requireAdmin(req, res);
     if (!auth) return;
     try {
-      const { name, description, durationDays, price } = req.body;
+      const { name, description, durationDays, price, moduleIds } = req.body;
       if (!name || !durationDays) {
         return res.status(400).json({ message: "Nome e duração são obrigatórios" });
       }
       const plan = await storage.createPlan({ name: sanitize(name), description: description ? sanitize(description) : null, durationDays: parseInt(durationDays), price: price ? sanitize(price) : null });
+      if (Array.isArray(moduleIds)) {
+        await storage.setPlanModules(plan.id, moduleIds.map(Number));
+      }
       const admin = await storage.getUser(auth.userId);
-      await logAction(auth.userId, admin?.name || "Admin", "plan_created", "plan", plan.id, plan.name);
+      await logAction(auth.userId, admin?.name || "Admin", "plan_created", "plan", plan.id, plan.name, { moduleIds });
       res.json(plan);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -199,7 +202,7 @@ export function registerRoutes(server: Server, app: Express) {
   app.patch("/api/admin/plans/:id", async (req, res) => {
     const auth = requireAdmin(req, res);
     if (!auth) return;
-    const { name, description, durationDays, price } = req.body;
+    const { name, description, durationDays, price, moduleIds } = req.body;
     const planUpdate: Partial<{ name: string; description: string | null; durationDays: number; price: string | null }> = {};
     if (name !== undefined) planUpdate.name = sanitize(name);
     if (description !== undefined) planUpdate.description = description ? sanitize(description) : null;
@@ -207,8 +210,11 @@ export function registerRoutes(server: Server, app: Express) {
     if (price !== undefined) planUpdate.price = price ? sanitize(price) : null;
     const updated = await storage.updatePlan(parseInt(req.params.id), planUpdate);
     if (!updated) return res.status(404).json({ message: "Plano não encontrado" });
+    if (Array.isArray(moduleIds)) {
+      await storage.setPlanModules(updated.id, moduleIds.map(Number));
+    }
     const admin = await storage.getUser(auth.userId);
-    await logAction(auth.userId, admin?.name || "Admin", "plan_updated", "plan", updated.id, updated.name, planUpdate);
+    await logAction(auth.userId, admin?.name || "Admin", "plan_updated", "plan", updated.id, updated.name, { ...planUpdate, moduleIds });
     res.json(updated);
   });
 
@@ -222,6 +228,32 @@ export function registerRoutes(server: Server, app: Express) {
     res.json({ success: ok });
   });
 
+  // ==================== PLAN MODULES ====================
+  app.get("/api/admin/plan-modules", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const all = await storage.getAllPlanModules();
+    res.json(all);
+  });
+
+  app.get("/api/admin/plan-modules/:planId", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const pm = await storage.getPlanModules(parseInt(req.params.planId));
+    res.json(pm.map(p => p.moduleId));
+  });
+
+  app.put("/api/admin/plan-modules/:planId", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    const { moduleIds } = req.body;
+    if (!Array.isArray(moduleIds)) {
+      return res.status(400).json({ message: "moduleIds array obrigatório" });
+    }
+    await storage.setPlanModules(parseInt(req.params.planId), moduleIds.map(Number));
+    const admin = await storage.getUser(auth.userId);
+    await logAction(auth.userId, admin?.name || "Admin", "plan_modules_updated", "plan", parseInt(req.params.planId), undefined, { moduleIds });
+    res.json({ success: true, moduleIds });
+  });
+
   // ==================== MODULES ====================
   app.get("/api/modules", async (_req, res) => {
     const m = await storage.getModules();
@@ -232,6 +264,26 @@ export function registerRoutes(server: Server, app: Express) {
     const mod = await storage.getModule(parseInt(req.params.id));
     if (!mod) return res.status(404).json({ message: "Módulo não encontrado" });
     res.json(mod);
+  });
+
+  // ==================== MY ACCESSIBLE MODULES ====================
+  app.get("/api/my-modules", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    // Admins see all modules
+    if (auth.role === "admin" || auth.role === "super_admin") {
+      return res.json({ accessAll: true, moduleIds: [] });
+    }
+    const user = await storage.getUser(auth.userId);
+    if (!user || !user.planId) {
+      return res.json({ accessAll: false, moduleIds: [] });
+    }
+    const pm = await storage.getPlanModules(user.planId);
+    // No plan_modules records = access to all (backwards compatible)
+    if (pm.length === 0) {
+      return res.json({ accessAll: true, moduleIds: [] });
+    }
+    return res.json({ accessAll: false, moduleIds: pm.map(p => p.moduleId) });
   });
 
   // ==================== LESSONS ====================
@@ -756,6 +808,11 @@ export function registerRoutes(server: Server, app: Express) {
       await db.execute(`CREATE TABLE IF NOT EXISTS audit_logs (id SERIAL PRIMARY KEY, admin_id INTEGER NOT NULL, admin_name TEXT NOT NULL, action TEXT NOT NULL, target_type TEXT, target_id INTEGER, target_name TEXT, details TEXT, created_at TEXT NOT NULL)`);
       results.push("audit_logs table ensured");
     } catch (e: any) { results.push(`audit_logs: ${e.message}`); }
+    // Plan-Module associations table
+    try {
+      await db.execute(`CREATE TABLE IF NOT EXISTS plan_modules (id SERIAL PRIMARY KEY, plan_id INTEGER NOT NULL, module_id INTEGER NOT NULL, UNIQUE(plan_id, module_id))`);
+      results.push("plan_modules table ensured");
+    } catch (e: any) { results.push(`plan_modules: ${e.message}`); }
     // Add role column (MUST come before any role-based UPDATE statements)
     try {
       await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'student'`);

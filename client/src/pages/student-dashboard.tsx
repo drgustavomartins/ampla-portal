@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
   ChevronRight, ChevronLeft, Calendar, Layers, Settings, Loader2, AlertTriangle,
-  Users, MessageCircle, Activity, Lock
+  Users, MessageCircle, Activity, Lock, ShoppingCart, ExternalLink
 } from "lucide-react";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 
@@ -67,6 +67,15 @@ export default function StudentDashboard() {
     enabled: !!user?.id,
   });
   const { data: plans = [] } = useQuery<Plan[]>({ queryKey: ["/api/plans"] });
+  const { data: myModules } = useQuery<{ accessAll: boolean; moduleIds: number[] }>({
+    queryKey: ["/api/my-modules"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/my-modules");
+      return res.json();
+    },
+    enabled: !!user?.id,
+  });
+  const [purchaseModule, setPurchaseModule] = useState<Module | null>(null);
 
   const completeMutation = useMutation({
     mutationFn: async ({ lessonId, complete }: { lessonId: number; complete: boolean }) => {
@@ -128,6 +137,21 @@ export default function StudentDashboard() {
 
   const getLessonsForModule = (moduleId: number) =>
     lessons.filter(l => l.moduleId === moduleId).sort((a, b) => a.order - b.order);
+
+  // Check if student has access to a module
+  const hasModuleAccess = (mod: Module) => {
+    // "Boas Vindas" is always accessible
+    if (mod.order === 1 || mod.title.toLowerCase().includes("boas vindas") || mod.title.toLowerCase().includes("boas-vindas")) return true;
+    // If no access data yet or accessAll, grant access
+    if (!myModules || myModules.accessAll) return true;
+    // Check if module is in the plan's module list
+    return myModules.moduleIds.includes(mod.id);
+  };
+
+  const getWhatsAppUrl = (mod: Module) => {
+    const msg = encodeURIComponent(`Olá! Tenho interesse em adquirir o módulo ${mod.title} da mentoria Ampla Facial. Meu email de acesso é ${user?.email || ""}.`);
+    return `https://wa.me/5521976310365?text=${msg}`;
+  };
 
   // Video embed logic
   const getEmbedUrl = (url: string) => {
@@ -502,7 +526,10 @@ export default function StudentDashboard() {
               {courseModules.map((mod, idx) => {
                 const modLessons = getLessonsForModule(mod.id);
                 const allLessons = idx === 0 ? [...introLessons, ...modLessons] : modLessons;
-                const isUnlocked = allLessons.length > 0;
+                const hasContent = allLessons.length > 0;
+                const accessible = hasModuleAccess(mod);
+                const isUnlocked = hasContent && accessible;
+                const isPurchasable = hasContent && !accessible;
                 const courseImage = getCourseImage(mod);
                 const courseNumber = String(idx + 1).padStart(2, "0");
 
@@ -513,7 +540,9 @@ export default function StudentDashboard() {
                       className="relative rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.35)] group"
                       style={{ aspectRatio: "3/4" }}
                       onClick={() => {
-                        if (isUnlocked) {
+                        if (isPurchasable) {
+                          setPurchaseModule(mod);
+                        } else if (isUnlocked) {
                           setLocation(`/module/${mod.id}`);
                         }
                       }}
@@ -542,6 +571,11 @@ export default function StudentDashboard() {
                           <span className="inline-flex items-center rounded-md bg-emerald-500/25 backdrop-blur-sm border border-emerald-500/30 px-1.5 py-0.5 text-[8px] font-bold text-emerald-300 uppercase tracking-wider">
                             Liberado
                           </span>
+                        ) : isPurchasable ? (
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-gold/25 backdrop-blur-sm border border-gold/40 px-1.5 py-0.5 text-[8px] font-bold text-gold uppercase tracking-wider">
+                            <ShoppingCart className="w-2.5 h-2.5" />
+                            Adquirir
+                          </span>
                         ) : (
                           <span className="inline-flex items-center gap-0.5 rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-1.5 py-0.5 text-[8px] font-bold text-white/60 uppercase tracking-wider">
                             <Lock className="w-2.5 h-2.5" />
@@ -550,8 +584,15 @@ export default function StudentDashboard() {
                         )}
                       </div>
 
-                      {/* Locked overlay */}
-                      {!isUnlocked && (
+                      {/* Locked overlay for purchasable */}
+                      {isPurchasable && (
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex items-center justify-center">
+                          <Lock className="w-8 h-8 text-gold/50" />
+                        </div>
+                      )}
+
+                      {/* Locked overlay for no content */}
+                      {!hasContent && (
                         <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center">
                           <Lock className="w-7 h-7 text-white/30" />
                         </div>
@@ -712,6 +753,46 @@ export default function StudentDashboard() {
           <span className="text-gold-muted font-semibold tracking-brand text-[10px]">NATURALUP&reg;</span>
         </div>
       </footer>
+
+      {/* Purchase Module Dialog */}
+      <Dialog open={!!purchaseModule} onOpenChange={(open) => !open && setPurchaseModule(null)}>
+        <DialogContent className="bg-card border-border/40 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg">{purchaseModule?.title}</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Este módulo não está incluso no seu plano atual
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            {purchaseModule?.description && (
+              <p className="text-sm text-muted-foreground">{purchaseModule.description}</p>
+            )}
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <BookOpen className="w-4 h-4 text-gold" />
+                {purchaseModule ? getLessonsForModule(purchaseModule.id).length : 0} aulas
+              </span>
+            </div>
+            <div className="rounded-lg border border-gold/20 bg-gold/5 p-4 text-center space-y-3">
+              <p className="text-sm text-foreground font-medium">
+                Deseja adquirir este módulo?
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Entre em contato pelo WhatsApp para adquirir acesso a este módulo individualmente.
+              </p>
+              <a
+                href={purchaseModule ? getWhatsAppUrl(purchaseModule) : "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg bg-[#25D366] hover:bg-[#22c55e] text-white font-semibold px-6 py-3 text-sm transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Adquirir este módulo
+              </a>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Profile Edit Dialog */}
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>

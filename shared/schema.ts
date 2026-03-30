@@ -72,6 +72,13 @@ export const lessonProgress = pgTable("lesson_progress", {
   completedAt: text("completed_at"),
 });
 
+// Plan-Module associations (many-to-many)
+export const planModules = pgTable("plan_modules", {
+  id: serial("id").primaryKey(),
+  planId: integer("plan_id").notNull(),
+  moduleId: integer("module_id").notNull(),
+});
+
 // Audit Logs
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
@@ -91,6 +98,7 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true, creat
 export const insertModuleSchema = createInsertSchema(modules).omit({ id: true });
 export const insertLessonSchema = createInsertSchema(lessons).omit({ id: true });
 export const insertLessonProgressSchema = createInsertSchema(lessonProgress).omit({ id: true });
+export const insertPlanModuleSchema = createInsertSchema(planModules).omit({ id: true });
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true });
 
 export const registerSchema = z.object({
@@ -117,5 +125,7 @@ export type InsertLesson = z.infer<typeof insertLessonSchema>;
 export type LessonProgress = typeof lessonProgress.$inferSelect;
 export type InsertLessonProgress = z.infer<typeof insertLessonProgressSchema>;
 export type PasswordReset = typeof passwordResets.$inferSelect;
+export type PlanModule = typeof planModules.$inferSelect;
+export type InsertPlanModule = z.infer<typeof insertPlanModuleSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;

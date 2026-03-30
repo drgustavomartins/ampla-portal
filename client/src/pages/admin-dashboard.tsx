@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import {
   Users, BookOpen, Layers, LogOut, Plus, Trash2, Check, X,
@@ -31,6 +32,7 @@ import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 
 type SafeUser = Omit<User, "password">;
 type LessonProgress = { id: number; userId: number; lessonId: number; completed: boolean; completedAt: string | null };
+type PlanModuleEntry = { id: number; planId: number; moduleId: number };
 
 export default function AdminDashboard() {
   const { user, logout, isSuperAdmin } = useAuth();
@@ -43,6 +45,7 @@ export default function AdminDashboard() {
   const { data: plans = [] } = useQuery<Plan[]>({ queryKey: ["/api/plans"] });
   const { data: allProgress = [] } = useQuery<LessonProgress[]>({ queryKey: ["/api/admin/students/progress"] });
   const { data: auditLogs = [] } = useQuery<AuditLog[]>({ queryKey: ["/api/admin/audit-logs"] });
+  const { data: allPlanModules = [] } = useQuery<PlanModuleEntry[]>({ queryKey: ["/api/admin/plan-modules"] });
   const { data: admins = [] } = useQuery<SafeUser[]>({
     queryKey: ["/api/admin/admins"],
     enabled: isSuperAdmin,
@@ -212,10 +215,10 @@ export default function AdminDashboard() {
   };
 
   // ── Plan CRUD ──
-  const [planForm, setPlanForm] = useState({ name: "", description: "", durationDays: 0, price: "" });
+  const [planForm, setPlanForm] = useState({ name: "", description: "", durationDays: 0, price: "", moduleIds: [] as number[] });
   const [planDialogOpen, setPlanDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
-  const [editPlanForm, setEditPlanForm] = useState({ name: "", description: "", durationDays: 0, price: "" });
+  const [editPlanForm, setEditPlanForm] = useState({ name: "", description: "", durationDays: 0, price: "", moduleIds: [] as number[] });
 
   const createPlanMutation = useMutation({
     mutationFn: async () => {
@@ -223,8 +226,9 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/plans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/plan-modules"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
-      setPlanForm({ name: "", description: "", durationDays: 0, price: "" });
+      setPlanForm({ name: "", description: "", durationDays: 0, price: "", moduleIds: [] });
       setPlanDialogOpen(false);
       toast({ title: "Plano criado" });
     },
@@ -236,6 +240,7 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/plans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/plan-modules"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       setEditingPlan(null);
       toast({ title: "Plano atualizado" });
@@ -1041,6 +1046,28 @@ export default function AdminDashboard() {
                     <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label><Textarea value={planForm.description} onChange={e => setPlanForm(f => ({ ...f, description: e.target.value }))} placeholder="Descrição do plano..." className="bg-background/50 border-border/40" /></div>
                     <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração (dias)</Label><Input type="number" min={1} value={planForm.durationDays || ""} onChange={e => setPlanForm(f => ({ ...f, durationDays: parseInt(e.target.value) || 0 }))} placeholder="Ex: 2 (para 48 horas)" className="bg-background/50 border-border/40" /></div>
                     <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Preço</Label><Input value={planForm.price} onChange={e => setPlanForm(f => ({ ...f, price: e.target.value }))} placeholder="Ex: R$ 497" className="bg-background/50 border-border/40" /></div>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Módulos inclusos</Label>
+                      <p className="text-xs text-muted-foreground">Sem seleção = acesso a todos os módulos</p>
+                      <div className="space-y-2 max-h-48 overflow-y-auto border border-border/30 rounded-lg p-3">
+                        {[...modules].sort((a, b) => a.order - b.order).map(mod => (
+                          <label key={mod.id} className="flex items-center gap-2 cursor-pointer">
+                            <Checkbox
+                              checked={planForm.moduleIds.includes(mod.id)}
+                              onCheckedChange={(checked) => {
+                                setPlanForm(f => ({
+                                  ...f,
+                                  moduleIds: checked
+                                    ? [...f.moduleIds, mod.id]
+                                    : f.moduleIds.filter(id => id !== mod.id),
+                                }));
+                              }}
+                            />
+                            <span className="text-sm text-foreground">{mod.title}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                     <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createPlanMutation.mutate()} disabled={!planForm.name || !planForm.durationDays || createPlanMutation.isPending}>Criar plano</Button>
                   </div>
                 </DialogContent>
@@ -1065,7 +1092,7 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
-                            <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold" onClick={() => { setEditingPlan(plan); setEditPlanForm({ name: plan.name, description: plan.description || "", durationDays: plan.durationDays, price: plan.price || "" }); }}>
+                            <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold" onClick={() => { setEditingPlan(plan); setEditPlanForm({ name: plan.name, description: plan.description || "", durationDays: plan.durationDays, price: plan.price || "", moduleIds: allPlanModules.filter(pm => pm.planId === plan.id).map(pm => pm.moduleId) }); }}>
                               <Pencil className="w-4 h-4" />
                             </Button>
                             {isSuperAdmin && (
@@ -1080,6 +1107,16 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                         {plan.description && <p className="text-sm text-muted-foreground line-clamp-2">{plan.description}</p>}
+                        {(() => {
+                          const planMods = allPlanModules.filter(pm => pm.planId === plan.id);
+                          return (
+                            <p className="text-xs text-gold/70">
+                              {planMods.length === 0
+                                ? "Todos os módulos"
+                                : planMods.map(pm => modules.find(m => m.id === pm.moduleId)?.title || "?").join(", ")}
+                            </p>
+                          );
+                        })()}
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{plan.durationDays} dias</span>
                           <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{planStudents.length} {planStudents.length === 1 ? "aluno" : "alunos"}</span>
@@ -1100,6 +1137,28 @@ export default function AdminDashboard() {
                   <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label><Textarea value={editPlanForm.description} onChange={e => setEditPlanForm(f => ({ ...f, description: e.target.value }))} className="bg-background/50 border-border/40" /></div>
                   <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração (dias)</Label><Input type="number" min={1} value={editPlanForm.durationDays || ""} onChange={e => setEditPlanForm(f => ({ ...f, durationDays: parseInt(e.target.value) || 0 }))} className="bg-background/50 border-border/40" /></div>
                   <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Preço</Label><Input value={editPlanForm.price} onChange={e => setEditPlanForm(f => ({ ...f, price: e.target.value }))} className="bg-background/50 border-border/40" /></div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Módulos inclusos</Label>
+                    <p className="text-xs text-muted-foreground">Sem seleção = acesso a todos os módulos</p>
+                    <div className="space-y-2 max-h-48 overflow-y-auto border border-border/30 rounded-lg p-3">
+                      {[...modules].sort((a, b) => a.order - b.order).map(mod => (
+                        <label key={mod.id} className="flex items-center gap-2 cursor-pointer">
+                          <Checkbox
+                            checked={editPlanForm.moduleIds.includes(mod.id)}
+                            onCheckedChange={(checked) => {
+                              setEditPlanForm(f => ({
+                                ...f,
+                                moduleIds: checked
+                                  ? [...f.moduleIds, mod.id]
+                                  : f.moduleIds.filter(id => id !== mod.id),
+                              }));
+                            }}
+                          />
+                          <span className="text-sm text-foreground">{mod.title}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                   <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => editingPlan && updatePlanMutation.mutate({ id: editingPlan.id, data: editPlanForm })} disabled={!editPlanForm.name || !editPlanForm.durationDays || updatePlanMutation.isPending}>Salvar alterações</Button>
                 </div>
               </DialogContent>
