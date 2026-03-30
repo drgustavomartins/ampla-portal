@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
@@ -184,6 +184,16 @@ export default function ModulePage() {
   const courseImage = getCourseImage(currentModule);
   const isUnlocked = moduleLessons.length > 0;
 
+  const videoRef = useRef<HTMLDivElement>(null);
+
+  const handleSelectLesson = useCallback((lesson: Lesson) => {
+    setSelectedLesson(lesson);
+    // On mobile, scroll to the video when selecting a lesson
+    if (window.innerWidth < 1024 && videoRef.current) {
+      videoRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
+
   // ========== LESSON VIEW ==========
   if (selectedLesson) {
     const embedUrl = getEmbedUrl(selectedLesson.videoUrl || "");
@@ -193,9 +203,9 @@ export default function ModulePage() {
     const prevLesson = moduleLessons[currentIdx - 1];
 
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm sticky top-0 z-10">
-          <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="max-w-[1400px] mx-auto px-4 h-14 flex items-center justify-between">
             <button
               onClick={() => setSelectedLesson(null)}
               className="text-sm text-muted-foreground hover:text-gold flex items-center gap-1 transition-colors"
@@ -207,9 +217,11 @@ export default function ModulePage() {
           </div>
         </header>
 
-        <div className="max-w-6xl mx-auto p-4 lg:p-6">
-          <div className="grid lg:grid-cols-[1fr_320px] gap-6">
-            <div className="space-y-4">
+        {/* Desktop: side-by-side, fills viewport below header */}
+        <div className="flex-1 hidden lg:flex" style={{ height: "calc(100vh - 3.5rem)" }}>
+          {/* Left: Video + details (60-65%) */}
+          <div className="flex-[3] overflow-y-auto p-6">
+            <div className="max-w-4xl space-y-4">
               {embedUrl ? (
                 <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border/30">
                   <iframe
@@ -263,7 +275,7 @@ export default function ModulePage() {
                   <div className="flex-1" />
 
                   {prevLesson && (
-                    <Button variant="outline" size="sm" className="border-border/50" onClick={() => setSelectedLesson(prevLesson)}>
+                    <Button variant="outline" size="sm" className="border-border/50" onClick={() => handleSelectLesson(prevLesson)}>
                       Anterior
                     </Button>
                   )}
@@ -272,7 +284,7 @@ export default function ModulePage() {
                       size="sm"
                       style={{ backgroundColor: theme.accent, color: "#0C1A21" }}
                       className="hover:opacity-90"
-                      onClick={() => setSelectedLesson(nextLesson)}
+                      onClick={() => handleSelectLesson(nextLesson)}
                     >
                       Proxima
                     </Button>
@@ -280,19 +292,140 @@ export default function ModulePage() {
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Lesson list sidebar */}
-            <div className="space-y-2">
+          {/* Right: Lesson list sidebar (35-40%) */}
+          <div className="flex-[2] border-l border-border/50 overflow-y-auto bg-card/30">
+            <div className="p-4">
               <h3 className="text-xs font-semibold uppercase tracking-brand mb-3" style={{ color: theme.accent }}>
                 Aulas do modulo
               </h3>
+              <div className="space-y-1">
+                {moduleLessons.map((lesson, i) => {
+                  const done = completedIds.has(lesson.id);
+                  const isActive = lesson.id === selectedLesson.id;
+                  return (
+                    <button
+                      key={lesson.id}
+                      onClick={() => handleSelectLesson(lesson)}
+                      className={`w-full text-left p-3 rounded-lg transition-colors flex items-start gap-3 ${
+                        isActive
+                          ? theme.activeBg + " border"
+                          : "hover:bg-card/80"
+                      }`}
+                    >
+                      <div className="mt-0.5 shrink-0">
+                        {done ? (
+                          <CheckCircle2 className="w-4 h-4" style={{ color: theme.accent }} />
+                        ) : (
+                          <span className="w-4 h-4 flex items-center justify-center text-xs text-muted-foreground font-medium">
+                            {i + 1}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className={`text-sm font-medium truncate ${isActive ? theme.accentText : ""}`}>
+                          {lesson.title}
+                        </p>
+                        {lesson.duration && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{lesson.duration}</p>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile: stacked layout */}
+        <div className="lg:hidden">
+          <div className="p-4 space-y-4" ref={videoRef}>
+            {embedUrl ? (
+              <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border/30">
+                <iframe
+                  src={embedUrl}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  title={selectedLesson.title}
+                />
+              </div>
+            ) : (
+              <div className="aspect-video bg-card rounded-lg flex items-center justify-center ring-1 ring-border/30">
+                <div className="text-center space-y-2 text-muted-foreground">
+                  <Play className="w-12 h-12 mx-auto opacity-30" />
+                  <p className="text-sm">Video sera adicionado em breve</p>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground">{selectedLesson.title}</h2>
+                  {selectedLesson.description && (
+                    <p className="text-sm text-muted-foreground mt-1">{linkifyText(selectedLesson.description)}</p>
+                  )}
+                </div>
+                {selectedLesson.duration && (
+                  <Badge variant="secondary" className="shrink-0 text-xs">
+                    <Clock className="w-3 h-3 mr-1" />
+                    {selectedLesson.duration}
+                  </Badge>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={isCompleted ? "secondary" : "default"}
+                  size="sm"
+                  style={!isCompleted ? { backgroundColor: theme.accent, color: "#0C1A21" } : undefined}
+                  className={isCompleted ? "" : "hover:opacity-90"}
+                  onClick={() => completeMutation.mutate({ lessonId: selectedLesson.id, complete: !isCompleted })}
+                >
+                  {isCompleted ? (
+                    <><CheckCircle2 className="w-4 h-4 mr-1.5" />Concluida</>
+                  ) : (
+                    <><Circle className="w-4 h-4 mr-1.5" />Marcar como concluida</>
+                  )}
+                </Button>
+
+                <div className="flex-1" />
+
+                {prevLesson && (
+                  <Button variant="outline" size="sm" className="border-border/50" onClick={() => handleSelectLesson(prevLesson)}>
+                    Anterior
+                  </Button>
+                )}
+                {nextLesson && (
+                  <Button
+                    size="sm"
+                    style={{ backgroundColor: theme.accent, color: "#0C1A21" }}
+                    className="hover:opacity-90"
+                    onClick={() => handleSelectLesson(nextLesson)}
+                  >
+                    Proxima
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile lesson list */}
+          <div className="border-t border-border/50 p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-brand mb-3" style={{ color: theme.accent }}>
+              Aulas do modulo
+            </h3>
+            <div className="space-y-1">
               {moduleLessons.map((lesson, i) => {
                 const done = completedIds.has(lesson.id);
                 const isActive = lesson.id === selectedLesson.id;
                 return (
                   <button
                     key={lesson.id}
-                    onClick={() => setSelectedLesson(lesson)}
+                    onClick={() => handleSelectLesson(lesson)}
                     className={`w-full text-left p-3 rounded-lg transition-colors flex items-start gap-3 ${
                       isActive
                         ? theme.activeBg + " border"

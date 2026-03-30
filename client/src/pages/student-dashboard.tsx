@@ -405,10 +405,10 @@ export default function StudentDashboard() {
           <section className="grid lg:grid-cols-[1fr_340px] gap-6 items-start">
             <div className="space-y-3">
               <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-foreground leading-tight">
-                Bem-vindo a sua mentoria, <span className="text-gold">{firstName}</span>
+                Boas-vindas à sua mentoria, <span className="text-gold">{firstName}</span>
               </h1>
               <p className="text-muted-foreground text-sm sm:text-base max-w-lg leading-relaxed">
-                Explore os cursos do Metodo NaturalUp&reg; e evolua sua pratica clinica em harmonizacao facial com excelencia e naturalidade.
+                Explore os cursos do Método NaturalUp&reg; e evolua sua prática clínica em harmonização facial com excelência e naturalidade.
               </p>
             </div>
             {/* Plan card */}
