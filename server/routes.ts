@@ -828,7 +828,7 @@ export function registerRoutes(server: Server, app: Express) {
     ];
     for (const dm of descMigrations) {
       try {
-        await db.execute(`UPDATE lessons SET description = '${dm.desc}' WHERE title = '${dm.title}' AND (description IS NULL OR description = '' OR description LIKE '%drive.google.com%' OR description LIKE 'Drive com%' OR description LIKE 'Seringa de aplicação%' OR description LIKE 'Essa toxina%')`);
+        await db.execute(`UPDATE lessons SET description = '${dm.desc}' || E'\\n\\n' || COALESCE(description, '') WHERE title = '${dm.title}' AND (description IS NULL OR description = '' OR description LIKE 'Drive com%' OR description LIKE 'Seringa de%' OR description LIKE 'Essa toxina%')`);
         results.push(`desc migration: ${dm.title} updated`);
       } catch (e: any) { results.push(`desc migration ${dm.title}: ${e.message}`); }
     }

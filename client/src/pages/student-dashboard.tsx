@@ -40,6 +40,11 @@ function linkifyText(text: string) {
   );
 }
 
+function extractFirstUrl(text: string): string | null {
+  const match = text.match(/https?:\/\/[^\s]+/);
+  return match ? match[0] : null;
+}
+
 export default function StudentDashboard() {
   const { user, logout, login } = useAuth();
   const { toast } = useToast();
@@ -540,6 +545,17 @@ export default function StudentDashboard() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium truncate">{lesson.title}</p>
+                                  {lesson.description && extractFirstUrl(lesson.description) && (
+                                    <a
+                                      href={extractFirstUrl(lesson.description)!}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-[11px] text-gold/70 hover:text-gold flex items-center gap-1 mt-0.5"
+                                    >
+                                      📎 Material de apoio
+                                    </a>
+                                  )}
                                 </div>
                                 {lesson.duration && (
                                   <span className="text-xs text-muted-foreground shrink-0">{lesson.duration}</span>
