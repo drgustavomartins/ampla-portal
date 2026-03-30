@@ -813,24 +813,24 @@ export function registerRoutes(server: Server, app: Express) {
     }
     // Migrate lesson descriptions (AI-generated, professional Portuguese)
     const descMigrations = [
-      { keyword: "Aula inicial", desc: "Introdução ao curso e orientações gerais para aproveitar ao máximo sua mentoria." },
-      { keyword: "Introdução", desc: "Visão geral sobre a toxina botulínica e sua importância na prática clínica estética." },
-      { keyword: "Apresentação à toxina botulínica", desc: "Conheça as principais características e propriedades da toxina botulínica." },
-      { keyword: "Mecanismo de ação no músculo", desc: "Entenda como a toxina botulínica atua na junção neuromuscular e seus efeitos fisiológicos." },
-      { keyword: "Tipos e subtipos de toxina botulínica", desc: "Classificação dos diferentes tipos e subtipos de toxina botulínica disponíveis no mercado." },
-      { keyword: "Tempo de duração dos efeitos", desc: "Aprenda sobre a duração clínica dos efeitos e o processo de recuperação neuromuscular." },
-      { keyword: "Tem como fazer a toxina durar mais", desc: "Estratégias e evidências para prolongar os resultados da aplicação de toxina botulínica." },
-      { keyword: "Indicações terapêuticas e estéticas", desc: "Principais indicações clínicas da toxina botulínica nas áreas terapêutica e estética." },
-      { keyword: "Usos off-label e contraindicações", desc: "Aplicações off-label da toxina botulínica e situações em que o uso é contraindicado." },
-      { keyword: "Reconstituição e seringas", desc: "Técnicas de reconstituição da toxina e escolha adequada de seringas para aplicação." },
-      { keyword: "Toxina Dysport", desc: "Particularidades da toxina Dysport: diluição, difusão e protocolos específicos." },
-      { keyword: "O procedimento e a parte burocrática", desc: "Aspectos práticos do procedimento e documentação necessária para a prática clínica." },
+      { title: "Aula inicial", desc: "Introdução ao curso e orientações gerais para aproveitar ao máximo sua mentoria." },
+      { title: "Introdução", desc: "Visão geral sobre a toxina botulínica e sua importância na prática clínica estética." },
+      { title: "Apresentação à toxina botulínica", desc: "Conheça as principais características e propriedades da toxina botulínica." },
+      { title: "Mecanismo de ação no músculo", desc: "Entenda como a toxina botulínica atua na junção neuromuscular e seus efeitos fisiológicos." },
+      { title: "Tipos e subtipos de toxina botulínica", desc: "Classificação dos diferentes tipos e subtipos de toxina botulínica disponíveis no mercado." },
+      { title: "Tempo de duração dos efeitos e recuperação dos movimentos", desc: "Aprenda sobre a duração clínica dos efeitos e o processo de recuperação neuromuscular." },
+      { title: "Tem como fazer a toxina durar mais?", desc: "Estratégias e evidências para prolongar os resultados da aplicação de toxina botulínica." },
+      { title: "Indicações terapêuticas e estéticas", desc: "Principais indicações clínicas da toxina botulínica nas áreas terapêutica e estética." },
+      { title: "Usos off-label e contraindicações", desc: "Aplicações off-label da toxina botulínica e situações em que o uso é contraindicado." },
+      { title: "Reconstituição e seringas de aplicação", desc: "Técnicas de reconstituição da toxina e escolha adequada de seringas para aplicação." },
+      { title: "Toxina Dysport", desc: "Particularidades da toxina Dysport: diluição, difusão e protocolos específicos." },
+      { title: "O procedimento e a parte burocrática", desc: "Aspectos práticos do procedimento e documentação necessária para a prática clínica." },
     ];
     for (const dm of descMigrations) {
       try {
-        await db.execute(`UPDATE lessons SET description = '${dm.desc}' WHERE title LIKE '%${dm.keyword}%' AND (description IS NULL OR description = '' OR description LIKE '%drive.google.com%' OR description LIKE 'Drive com%' OR description LIKE 'Seringa de aplicação%' OR description LIKE 'Essa toxina%')`);
-        results.push(`desc migration: ${dm.keyword} updated`);
-      } catch (e: any) { results.push(`desc migration ${dm.keyword}: ${e.message}`); }
+        await db.execute(`UPDATE lessons SET description = '${dm.desc}' WHERE title = '${dm.title}' AND (description IS NULL OR description = '' OR description LIKE '%drive.google.com%' OR description LIKE 'Drive com%' OR description LIKE 'Seringa de aplicação%' OR description LIKE 'Essa toxina%')`);
+        results.push(`desc migration: ${dm.title} updated`);
+      } catch (e: any) { results.push(`desc migration ${dm.title}: ${e.message}`); }
     }
 
     return res.json({ message: "Migração concluída", results });
