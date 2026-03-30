@@ -455,8 +455,8 @@ export default function StudentDashboard() {
             {/* Background image */}
             <div className="absolute inset-0">
               <img src="/images/hero-dashboard.png" alt="" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/60" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/70 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-background/85 via-background/60 to-background/30" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/50 to-transparent" />
             </div>
             <div className="relative grid lg:grid-cols-[1fr_340px] gap-6 items-start p-6 sm:p-8 lg:p-10">
             <div className="space-y-3">
