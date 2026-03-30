@@ -220,13 +220,17 @@ export default function ModulePage() {
   // Auto-scroll to video when a lesson is selected
   useEffect(() => {
     if (!selectedLesson) return;
-    // Desktop: scroll left panel to top
-    if (window.innerWidth >= 1024 && leftPanelRef.current) {
+    // Always scroll page to top first
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Desktop: also scroll left panel to top
+    if (leftPanelRef.current) {
       leftPanelRef.current.scrollTo({ top: 0, behavior: "smooth" });
     }
-    // Mobile: scroll video into view
-    if (window.innerWidth < 1024 && videoRef.current) {
-      videoRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Mobile: also scroll video into view
+    if (videoRef.current) {
+      setTimeout(() => {
+        videoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
     }
   }, [selectedLesson]);
 
