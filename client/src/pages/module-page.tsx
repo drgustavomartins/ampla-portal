@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
@@ -211,14 +211,32 @@ export default function ModulePage() {
   };
 
   const videoRef = useRef<HTMLDivElement>(null);
+  const leftPanelRef = useRef<HTMLDivElement>(null);
 
   const handleSelectLesson = useCallback((lesson: Lesson) => {
     setSelectedLesson(lesson);
-    // On mobile, scroll to the video when selecting a lesson
+  }, []);
+
+  // Auto-scroll to video when a lesson is selected
+  useEffect(() => {
+    if (!selectedLesson) return;
+    // Desktop: scroll left panel to top
+    if (window.innerWidth >= 1024 && leftPanelRef.current) {
+      leftPanelRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    // Mobile: scroll video into view
     if (window.innerWidth < 1024 && videoRef.current) {
       videoRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  }, []);
+  }, [selectedLesson]);
+
+  // Get support URL for a lesson, falling back to any URL found in the module's lessons
+  const getLessonSupportUrl = useCallback((lesson: Lesson): string | null => {
+    const url = lesson.description ? extractFirstUrl(lesson.description) : null;
+    if (url) return url;
+    const fallback = moduleLessons.find(l => l.description && extractFirstUrl(l.description));
+    return fallback ? extractFirstUrl(fallback.description!) : null;
+  }, [moduleLessons]);
 
   // ========== LESSON VIEW ==========
   if (selectedLesson && !isLocked) {
@@ -246,7 +264,7 @@ export default function ModulePage() {
         {/* Desktop: side-by-side, fills viewport below header */}
         <div className="flex-1 hidden lg:flex" style={{ height: "calc(100vh - 3.5rem)" }}>
           {/* Left: Video + details (60-65%) */}
-          <div className="flex-[3] overflow-y-auto p-6">
+          <div ref={leftPanelRef} className="flex-[3] overflow-y-auto p-6">
             <div className="max-w-4xl space-y-4">
               {embedUrl ? (
                 <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border/30">
@@ -331,7 +349,7 @@ export default function ModulePage() {
                   const done = completedIds.has(lesson.id);
                   const isActive = lesson.id === selectedLesson.id;
                   const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
-                  const supportUrl = lesson.description ? extractFirstUrl(lesson.description) : null;
+                  const supportUrl = getLessonSupportUrl(lesson);
                   return (
                     <button
                       key={lesson.id}
@@ -469,7 +487,7 @@ export default function ModulePage() {
                 const done = completedIds.has(lesson.id);
                 const isActive = lesson.id === selectedLesson.id;
                 const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
-                const supportUrl = lesson.description ? extractFirstUrl(lesson.description) : null;
+                const supportUrl = getLessonSupportUrl(lesson);
                 return (
                   <button
                     key={lesson.id}
@@ -632,7 +650,7 @@ export default function ModulePage() {
           <div className="space-y-1">
             {moduleLessons.map((lesson, i) => {
               const done = completedIds.has(lesson.id);
-              const supportUrl = lesson.description ? extractFirstUrl(lesson.description) : null;
+              const supportUrl = getLessonSupportUrl(lesson);
               const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
 
               return (
