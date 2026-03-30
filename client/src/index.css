@@ -155,22 +155,29 @@
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none; /* Firefox */
+    scroll-behavior: smooth;
   }
   .carousel-shelf::-webkit-scrollbar {
     display: none; /* Chrome, Safari */
   }
   .carousel-card {
     scroll-snap-align: start;
-    /* Desktop: show 2.5 cards (~280px each) */
-    width: 280px;
-    min-height: 360px;
+    /* Desktop: book cover ~180x250, fits 4-5 cards */
+    width: 180px;
+    min-height: 250px;
+  }
+  @media (max-width: 768px) {
+    .carousel-card {
+      /* Tablet: show 3 cards */
+      width: 160px;
+      min-height: 220px;
+    }
   }
   @media (max-width: 640px) {
     .carousel-card {
-      /* Mobile: show 1.3 cards */
-      width: calc(100vw - 6rem);
-      min-width: 240px;
-      min-height: 340px;
+      /* Mobile: show 2 cards */
+      width: 140px;
+      min-height: 200px;
     }
   }
 

@@ -45,16 +45,6 @@ function extractFirstUrl(text: string): string | null {
   return match ? match[0] : null;
 }
 
-// Module theme accent colors (matching module-page.tsx)
-function getModuleAccent(title: string): string {
-  const t = title.toLowerCase();
-  if (t.includes("toxina")) return "#D4A843";
-  if (t.includes("preenchedores") || t.includes("ácido") || t.includes("acido")) return "#E8829B";
-  if (t.includes("bioestimulador")) return "#34D399";
-  if (t.includes("regeneração") || t.includes("regeneracao") || t.includes("modulador") || t.includes("matriz")) return "#DC2626";
-  if (t.includes("naturalup") || t.includes("natural up") || t.includes("método") || t.includes("metodo")) return "#22D3EE";
-  return "#D4A843";
-}
 
 export default function StudentDashboard() {
   const { user, logout, login } = useAuth();
@@ -138,13 +128,6 @@ export default function StudentDashboard() {
 
   const getLessonsForModule = (moduleId: number) =>
     lessons.filter(l => l.moduleId === moduleId).sort((a, b) => a.order - b.order);
-
-  const getModuleProgress = (moduleId: number) => {
-    const moduleLessons = getLessonsForModule(moduleId);
-    if (moduleLessons.length === 0) return 0;
-    const completed = moduleLessons.filter(l => completedIds.has(l.id)).length;
-    return Math.round((completed / moduleLessons.length) * 100);
-  };
 
   // Video embed logic
   const getEmbedUrl = (url: string) => {
@@ -486,32 +469,35 @@ export default function StudentDashboard() {
             </section>
           )}
 
-          {/* ===== SEUS CURSOS — HORIZONTAL CAROUSEL ===== */}
-          <section className="space-y-5">
+          {/* ===== SEUS CURSOS — BOOK COVER CAROUSEL ===== */}
+          <section className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-serif text-2xl font-semibold text-foreground">Seus Cursos</h2>
-              <div className="hidden sm:flex items-center gap-2">
-                <button
-                  onClick={() => scrollCarousel("left")}
-                  className="w-8 h-8 rounded-full border border-border/40 bg-card/60 flex items-center justify-center text-muted-foreground hover:text-gold hover:border-gold/30 transition-colors"
-                  aria-label="Rolar para esquerda"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => scrollCarousel("right")}
-                  className="w-8 h-8 rounded-full border border-border/40 bg-card/60 flex items-center justify-center text-muted-foreground hover:text-gold hover:border-gold/30 transition-colors"
-                  aria-label="Rolar para direita"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground">{courseModules.length} cursos</span>
+                <div className="hidden sm:flex items-center gap-1.5">
+                  <button
+                    onClick={() => scrollCarousel("left")}
+                    className="w-7 h-7 rounded-full border border-border/40 bg-card/60 flex items-center justify-center text-muted-foreground hover:text-gold hover:border-gold/30 transition-colors"
+                    aria-label="Rolar para esquerda"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => scrollCarousel("right")}
+                    className="w-7 h-7 rounded-full border border-border/40 bg-card/60 flex items-center justify-center text-muted-foreground hover:text-gold hover:border-gold/30 transition-colors"
+                    aria-label="Rolar para direita"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Carousel container */}
+            {/* Book cover carousel */}
             <div
               ref={carouselRef}
-              className="carousel-shelf flex gap-5 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6"
+              className="carousel-shelf flex gap-3 sm:gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6"
             >
               {courseModules.map((mod, idx) => {
                 const modLessons = getLessonsForModule(mod.id);
@@ -519,41 +505,46 @@ export default function StudentDashboard() {
                 const isUnlocked = allLessons.length > 0;
                 const courseImage = getCourseImage(mod);
                 const courseNumber = String(idx + 1).padStart(2, "0");
-                const modProgress = getModuleProgress(mod.id);
-                const completedInModule = allLessons.filter(l => completedIds.has(l.id)).length;
-                const accent = getModuleAccent(mod.title);
 
                 return (
-                  <div
-                    key={mod.id}
-                    className="carousel-card shrink-0 relative rounded-2xl overflow-hidden border cursor-pointer transition-all duration-300 border-border/40 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_12px_40px_rgba(0,0,0,0.3)] bg-card/60"
-                    onClick={() => {
-                      if (isUnlocked) {
-                        setLocation(`/module/${mod.id}`);
-                      }
-                    }}
-                    data-testid={`button-module-${mod.id}`}
-                  >
-                    {/* Image area — taller portrait orientation */}
+                  <div key={mod.id} className="carousel-card shrink-0 flex flex-col">
+                    {/* Book cover card */}
                     <div
-                      className="h-48 sm:h-56 bg-cover bg-center relative"
-                      style={courseImage
-                        ? { backgroundImage: `url(${courseImage})` }
-                        : { background: "linear-gradient(135deg, hsl(200 45% 12%), hsl(200 55% 8%))" }
-                      }
+                      className="relative rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.35)] group"
+                      style={{ aspectRatio: "3/4" }}
+                      onClick={() => {
+                        if (isUnlocked) {
+                          setLocation(`/module/${mod.id}`);
+                        }
+                      }}
+                      data-testid={`button-module-${mod.id}`}
                     >
-                      {/* Gradient overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
-                      {/* Course number */}
-                      <span className="absolute top-3 left-3 text-[10px] font-bold text-white/50 tracking-wider">{courseNumber}</span>
-                      {/* Status badge */}
-                      <div className="absolute top-3 right-3">
+                      {/* Cover image */}
+                      <div
+                        className="absolute inset-0 bg-cover bg-center"
+                        style={courseImage
+                          ? { backgroundImage: `url(${courseImage})` }
+                          : { background: "linear-gradient(135deg, hsl(200 45% 12%), hsl(200 55% 8%))" }
+                        }
+                      />
+
+                      {/* Dark gradient at bottom for title */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                      {/* Module number badge top-left */}
+                      <span className="absolute top-2 left-2 w-6 h-6 rounded-md bg-black/50 backdrop-blur-sm flex items-center justify-center text-[9px] font-bold text-white/70 tracking-wider">
+                        {courseNumber}
+                      </span>
+
+                      {/* Status badge top-right */}
+                      <div className="absolute top-2 right-2">
                         {isUnlocked ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">
+                          <span className="inline-flex items-center rounded-md bg-emerald-500/25 backdrop-blur-sm border border-emerald-500/30 px-1.5 py-0.5 text-[8px] font-bold text-emerald-300 uppercase tracking-wider">
                             Liberado
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 border border-gold/30 px-2.5 py-0.5 text-[10px] font-semibold text-gold uppercase tracking-wider">
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-1.5 py-0.5 text-[8px] font-bold text-white/60 uppercase tracking-wider">
+                            <Lock className="w-2.5 h-2.5" />
                             Em breve
                           </span>
                         )}
@@ -561,39 +552,24 @@ export default function StudentDashboard() {
 
                       {/* Locked overlay */}
                       {!isUnlocked && (
-                        <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
-                          <Lock className="w-8 h-8 text-gold/50" />
-                          <span className="text-xs font-bold text-gold/60 uppercase tracking-brand">Em breve</span>
+                        <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center">
+                          <Lock className="w-7 h-7 text-white/30" />
                         </div>
                       )}
+
+                      {/* Title overlaid on gradient */}
+                      <div className="absolute bottom-0 left-0 right-0 p-2.5 sm:p-3">
+                        <h3 className="text-white font-bold text-[11px] sm:text-[13px] leading-tight line-clamp-2 drop-shadow-md">
+                          {mod.title}
+                        </h3>
+                      </div>
                     </div>
 
-                    {/* Card body */}
-                    <div className="p-4 space-y-2">
-                      <h3 className="font-semibold text-foreground text-sm leading-snug line-clamp-1">{mod.title}</h3>
-                      {mod.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{mod.description}</p>
-                      )}
-                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground pt-1">
-                        <span className="flex items-center gap-1">
-                          <BookOpen className="w-3 h-3" />
-                          {allLessons.length} {allLessons.length === 1 ? "aula" : "aulas"}
-                        </span>
-                        {isUnlocked && (
-                          <span className="flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" style={{ color: accent }} />
-                            {completedInModule}/{allLessons.length}
-                          </span>
-                        )}
-                      </div>
-                      {isUnlocked && (
-                        <div className="h-1 rounded-full bg-border/30 mt-1 overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{ width: `${modProgress}%`, backgroundColor: accent }}
-                          />
-                        </div>
-                      )}
+                    {/* Lesson count below card */}
+                    <div className="mt-1.5 px-0.5">
+                      <span className="text-[10px] sm:text-[11px] text-muted-foreground">
+                        {allLessons.length} {allLessons.length === 1 ? "aula" : "aulas"}
+                      </span>
                     </div>
                   </div>
                 );
