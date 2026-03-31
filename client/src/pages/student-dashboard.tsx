@@ -489,6 +489,7 @@ export default function StudentDashboard() {
                 <span className="font-medium text-gold">{completedCount}/{totalLessons}</span>
               </div>
             </div>
+            </div>
           </section>
 
           {/* ===== BOAS VINDAS (Featured/Hero Section) ===== */}
