@@ -521,7 +521,7 @@ export default function StudentDashboard() {
                       </span>
                       <span className="flex items-center gap-1.5 text-gold/80">
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        {introLessons.filter(l => completedIds.has(l.id)).length}/{introLessons.length} conclu\u00edda{introLessons.filter(l => completedIds.has(l.id)).length !== 1 ? "s" : ""}
+                        {introLessons.filter(l => completedIds.has(l.id)).length}/{introLessons.length} concluída{introLessons.filter(l => completedIds.has(l.id)).length !== 1 ? "s" : ""}
                       </span>
                     </div>
                   </div>
