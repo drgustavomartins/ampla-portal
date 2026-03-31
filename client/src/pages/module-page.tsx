@@ -106,6 +106,7 @@ function getCourseImage(mod: Module): string | null {
   if (title.includes("bioestimulador")) return "/images/bioestimuladores-colageno.png";
   if (title.includes("regeneração") || title.includes("regeneracao") || title.includes("modulador") || title.includes("matriz")) return "/images/moduladores-matriz.png";
   if (title.includes("naturalup") || title.includes("natural up") || title.includes("método") || title.includes("metodo")) return "/images/metodo-naturalup.png";
+  if (title.includes("boas vindas") || title.includes("boas-vindas")) return "/images/boas-vindas-card.png";
   return null;
 }
 
