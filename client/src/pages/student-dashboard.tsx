@@ -497,30 +497,35 @@ export default function StudentDashboard() {
             <section className="space-y-4">
               <h2 className="font-serif text-2xl font-semibold text-foreground">Boas-Vindas</h2>
               <div
-                className="relative rounded-2xl overflow-hidden border border-gold/20 bg-gradient-to-r from-card via-card/90 to-card/70 cursor-pointer transition-all duration-300 hover:border-gold/40 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
+                className="relative rounded-2xl overflow-hidden border border-gold/20 cursor-pointer transition-all duration-300 hover:border-gold/40 hover:shadow-[0_8px_24px_rgba(0,0,0,0.3)] group"
                 onClick={() => setLocation(`/module/${introModule.id}`)}
               >
-                <div className="flex items-center gap-6 p-5 sm:p-6">
-                  <div className="shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
-                    <Play className="w-8 h-8 sm:w-10 sm:h-10 text-gold" />
+                {/* Background image */}
+                <div className="absolute inset-0">
+                  <img src="/images/boas-vindas-card.png" alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-background/30" />
+                </div>
+                <div className="relative flex items-center gap-6 p-6 sm:p-8">
+                  <div className="shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gold/20 backdrop-blur-sm border-2 border-gold/40 flex items-center justify-center">
+                    <Play className="w-8 h-8 sm:w-10 sm:h-10 text-gold fill-gold/30" />
                   </div>
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    <h3 className="font-semibold text-foreground text-base sm:text-lg">{introModule.title}</h3>
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <h3 className="font-serif font-semibold text-foreground text-lg sm:text-xl">{introModule.title}</h3>
                     {introModule.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">{introModule.description}</p>
+                      <p className="text-sm text-muted-foreground/90 line-clamp-2">{introModule.description}</p>
                     )}
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
+                    <div className="flex items-center gap-4 text-xs">
+                      <span className="flex items-center gap-1.5 text-gold/80">
                         <BookOpen className="w-3.5 h-3.5" />
                         {introLessons.length} {introLessons.length === 1 ? "aula" : "aulas"}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-gold" />
-                        {introLessons.filter(l => completedIds.has(l.id)).length}/{introLessons.length}
+                      <span className="flex items-center gap-1.5 text-gold/80">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {introLessons.filter(l => completedIds.has(l.id)).length}/{introLessons.length} conclu\u00edda{introLessons.filter(l => completedIds.has(l.id)).length !== 1 ? "s" : ""}
                       </span>
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gold/60 shrink-0 hidden sm:block" />
+                  <ChevronRight className="w-6 h-6 text-gold/60 shrink-0 hidden sm:block transition-transform group-hover:translate-x-1" />
                 </div>
               </div>
             </section>
