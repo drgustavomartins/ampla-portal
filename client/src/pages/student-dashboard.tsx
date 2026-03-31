@@ -178,7 +178,7 @@ export default function StudentDashboard() {
     if (title.includes("preenchedores") || title.includes("ácido") || title.includes("acido")) return "/images/course-preenchedores.png";
     if (title.includes("bioestimulador")) return "/images/bioestimuladores-colageno.png";
     if (title.includes("regeneração") || title.includes("regeneracao") || title.includes("modulador") || title.includes("matriz")) return "/images/moduladores-matriz.png";
-    if (title.includes("naturalup") || title.includes("natural up") || title.includes("método") || title.includes("metodo")) return "/images/metodo-naturalup.png";
+    if (title.includes("naturalup") || title.includes("natural up") || title.includes("método") || title.includes("metodo")) return "/images/naturalup-v2.png";
     return null;
   };
 
@@ -502,7 +502,7 @@ export default function StudentDashboard() {
               >
                 {/* Background image */}
                 <div className="absolute inset-0">
-                  <img src="/images/boas-vindas-card.png" alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <img src="/images/boas-vindas-v2.png" alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-background/30" />
                 </div>
                 <div className="relative flex items-center gap-6 p-6 sm:p-8">
