@@ -383,6 +383,58 @@ export default function AdminDashboard() {
     },
   });
 
+  // ── Edit Admin ──
+  const [editingAdmin, setEditingAdmin] = useState<SafeUser | null>(null);
+  const [editAdminForm, setEditAdminForm] = useState({ name: "", email: "", phone: "" });
+
+  const updateAdminMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: { name?: string; email?: string; phone?: string; approved?: boolean } }) => {
+      await apiRequest("PATCH", `/api/admin/admins/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/admins"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
+      setEditingAdmin(null);
+      toast({ title: "Admin atualizado" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const toggleAdminActiveMutation = useMutation({
+    mutationFn: async ({ id, approved }: { id: number; approved: boolean }) => {
+      await apiRequest("PATCH", `/api/admin/admins/${id}`, { approved });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/admins"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
+      toast({ title: "Status do admin atualizado" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  // ── Admin Password Reset ──
+  const [adminResetLinkDialog, setAdminResetLinkDialog] = useState<{ admin: SafeUser; link: string } | null>(null);
+
+  const resetAdminPasswordMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("POST", `/api/admin/admins/${id}/reset-password`);
+      return res.json();
+    },
+    onSuccess: (data, id) => {
+      const admin = admins.find(a => a.id === id);
+      const link = `${window.location.origin}${window.location.pathname}#/reset-password/${data.token}`;
+      setAdminResetLinkDialog({ admin: admin!, link });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
   // Audit log filter state
   const [logFilterAdmin, setLogFilterAdmin] = useState<string>("all");
   const [logFilterAction, setLogFilterAction] = useState<string>("all");
@@ -418,7 +470,9 @@ export default function AdminDashboard() {
     lesson_deleted: "Aula excluída",
     password_reset: "Reset de senha",
     admin_created: "Admin criado",
+    admin_updated: "Admin atualizado",
     admin_deleted: "Admin excluído",
+    admin_password_reset: "Reset de senha admin",
     access_toggled: "Acesso alterado",
   };
 
@@ -1380,7 +1434,7 @@ export default function AdminDashboard() {
 
               <div className="space-y-2">
                 {admins.map((admin) => (
-                  <Card key={admin.id} className="border-border/30 bg-card/50 hover:bg-card/70 transition-colors">
+                  <Card key={admin.id} className={`border-border/30 bg-card/50 hover:bg-card/70 transition-colors ${admin.role === "admin" && admin.approved === false ? "opacity-60" : ""}`}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0 flex-1">
@@ -1389,23 +1443,55 @@ export default function AdminDashboard() {
                             <Badge variant="secondary" className={`text-[11px] border-0 shrink-0 ${admin.role === "super_admin" ? "bg-gold/15 text-gold" : "bg-blue-500/10 text-blue-400"}`}>
                               {admin.role === "super_admin" ? "Super Admin" : "Admin"}
                             </Badge>
+                            {admin.role === "admin" && admin.approved === false && (
+                              <Badge variant="secondary" className="text-[10px] border-0 shrink-0 bg-destructive/15 text-destructive">
+                                Desativado
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground truncate mt-0.5">{admin.email}</p>
                           {admin.phone && <p className="text-xs text-muted-foreground mt-0.5">{admin.phone}</p>}
                         </div>
-                        {admin.role === "admin" && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0 shrink-0">
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="bg-card border-border/40">
-                              <AlertDialogHeader><AlertDialogTitle>Confirmar exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o admin {admin.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
-                              <AlertDialogFooter><AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteAdminMutation.mutate(admin.id)}>Excluir</AlertDialogAction></AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
+                        <div className="flex items-center gap-1 shrink-0">
+                          {/* Edit button */}
+                          <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0" onClick={() => {
+                            setEditingAdmin(admin);
+                            setEditAdminForm({ name: admin.name, email: admin.email, phone: admin.phone || "" });
+                          }}>
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          {/* Password reset button */}
+                          <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-amber-400 h-8 w-8 p-0" onClick={() => resetAdminPasswordMutation.mutate(admin.id)} disabled={resetAdminPasswordMutation.isPending}>
+                            <KeyRound className="w-3.5 h-3.5" />
+                          </Button>
+                          {/* Enable/disable toggle (only for secondary admins) */}
+                          {admin.role === "admin" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className={`h-8 w-8 p-0 ${admin.approved !== false ? "text-emerald-400 hover:text-destructive" : "text-destructive hover:text-emerald-400"}`}
+                              onClick={() => toggleAdminActiveMutation.mutate({ id: admin.id, approved: admin.approved === false })}
+                              disabled={toggleAdminActiveMutation.isPending}
+                              title={admin.approved !== false ? "Desativar admin" : "Ativar admin"}
+                            >
+                              {admin.approved !== false ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+                            </Button>
+                          )}
+                          {/* Delete button (only for secondary admins) */}
+                          {admin.role === "admin" && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="bg-card border-border/40">
+                                <AlertDialogHeader><AlertDialogTitle>Confirmar exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o admin {admin.name}? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                                <AlertDialogFooter><AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteAdminMutation.mutate(admin.id)}>Excluir</AlertDialogAction></AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -1532,6 +1618,67 @@ export default function AdminDashboard() {
                 Aprovar
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Admin dialog */}
+      <Dialog open={!!editingAdmin} onOpenChange={(open) => { if (!open) setEditingAdmin(null); }}>
+        <DialogContent className="bg-card border-border/40 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar administrador</DialogTitle>
+            <DialogDescription>Atualize os dados de <span className="font-medium text-foreground">{editingAdmin?.name}</span></DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label>
+              <Input value={editAdminForm.name} onChange={e => setEditAdminForm(f => ({ ...f, name: e.target.value }))} placeholder="Nome do admin" className="bg-background/50 border-border/40" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Email</Label>
+              <Input type="email" value={editAdminForm.email} onChange={e => setEditAdminForm(f => ({ ...f, email: e.target.value }))} placeholder="admin@exemplo.com" className="bg-background/50 border-border/40" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Telefone</Label>
+              <Input value={editAdminForm.phone} onChange={e => setEditAdminForm(f => ({ ...f, phone: e.target.value }))} placeholder="+55 (11) 99999-9999" className="bg-background/50 border-border/40" />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" className="border-border/40" onClick={() => setEditingAdmin(null)}>Cancelar</Button>
+              <Button className="bg-gold text-background hover:bg-gold/90 font-medium" disabled={!editAdminForm.name || !editAdminForm.email || updateAdminMutation.isPending} onClick={() => {
+                if (editingAdmin) {
+                  updateAdminMutation.mutate({ id: editingAdmin.id, data: editAdminForm });
+                }
+              }}>
+                {updateAdminMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Salvar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin Password Reset Link dialog */}
+      <Dialog open={!!adminResetLinkDialog} onOpenChange={(open) => { if (!open) setAdminResetLinkDialog(null); }}>
+        <DialogContent className="bg-card border-border/40 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Link de redefinição de senha</DialogTitle>
+            <DialogDescription>
+              Envie este link para <span className="font-medium text-foreground">{adminResetLinkDialog?.admin.name}</span> redefinir a senha. O link expira em 24 horas.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center gap-2">
+              <Input readOnly value={adminResetLinkDialog?.link || ""} className="bg-background/50 border-border/40 text-xs font-mono" />
+              <Button size="sm" variant="outline" className="shrink-0 border-border/40" onClick={() => {
+                if (adminResetLinkDialog?.link) {
+                  navigator.clipboard.writeText(adminResetLinkDialog.link);
+                  toast({ title: "Link copiado!" });
+                }
+              }}>
+                <Copy className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">O admin poderá definir uma nova senha acessando este link.</p>
           </div>
         </DialogContent>
       </Dialog>

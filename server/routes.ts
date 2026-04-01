@@ -140,6 +140,10 @@ export function registerRoutes(server: Server, app: Express) {
       if (user.role === "student" && !user.approved) {
         return res.status(403).json({ message: "Sua conta ainda não foi aprovada. Aguarde o administrador." });
       }
+      // Disabled admin accounts cannot login
+      if (user.role === "admin" && user.approved === false) {
+        return res.status(403).json({ message: "Sua conta de administrador foi desativada. Entre em contato com o super admin." });
+      }
       if (user.role === "student" && user.accessExpiresAt) {
         const now = new Date();
         const expires = new Date(user.accessExpiresAt);
@@ -674,6 +678,73 @@ export function registerRoutes(server: Server, app: Express) {
       res.json(safe);
     } catch (e: any) {
       res.status(400).json({ message: e.message || "Erro ao criar admin" });
+    }
+  });
+
+  app.patch("/api/admin/admins/:id", async (req, res) => {
+    const auth = requireSuperAdmin(req, res);
+    if (!auth) return;
+    try {
+      const targetId = parseInt(req.params.id);
+      const target = await storage.getUser(targetId);
+      if (!target || (target.role !== "admin" && target.role !== "super_admin")) {
+        return res.status(404).json({ message: "Admin não encontrado" });
+      }
+      // Only super_admin can edit other super_admins or themselves
+      if (target.role === "super_admin" && target.id !== auth.userId) {
+        return res.status(403).json({ message: "Não é possível editar outro super admin" });
+      }
+      const { name, email, phone, approved } = req.body;
+      const updateData: any = {};
+      if (name !== undefined) updateData.name = sanitize(name);
+      if (email !== undefined) {
+        const emailLower = email.trim().toLowerCase();
+        if (emailLower !== target.email) {
+          const existing = await storage.getUserByEmail(emailLower);
+          if (existing) {
+            return res.status(400).json({ message: "Email já cadastrado" });
+          }
+        }
+        updateData.email = emailLower;
+      }
+      if (phone !== undefined) updateData.phone = phone ? sanitize(phone) : null;
+      if (approved !== undefined && target.role !== "super_admin") {
+        updateData.approved = !!approved;
+      }
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ message: "Nenhum campo para atualizar" });
+      }
+      const updated = await storage.updateUser(targetId, updateData);
+      if (!updated) return res.status(500).json({ message: "Erro ao atualizar admin" });
+      const { password: _, ...safe } = updated;
+      const superAdmin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, superAdmin?.name || "Super Admin", "admin_updated", "admin", targetId, target.name, updateData);
+      res.json(safe);
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Erro ao atualizar admin" });
+    }
+  });
+
+  app.post("/api/admin/admins/:id/reset-password", async (req, res) => {
+    const auth = requireSuperAdmin(req, res);
+    if (!auth) return;
+    try {
+      const targetId = parseInt(req.params.id);
+      const target = await storage.getUser(targetId);
+      if (!target || (target.role !== "admin" && target.role !== "super_admin")) {
+        return res.status(404).json({ message: "Admin não encontrado" });
+      }
+      if (target.role === "super_admin" && target.id !== auth.userId) {
+        return res.status(403).json({ message: "Não é possível resetar senha de outro super admin" });
+      }
+      const token = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      await storage.createPasswordReset(target.id, token, expiresAt);
+      const superAdmin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, superAdmin?.name || "Super Admin", "admin_password_reset", "admin", target.id, target.name);
+      res.json({ token, link: `/reset-password/${token}` });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message || "Erro ao gerar link de reset" });
     }
   });
 
