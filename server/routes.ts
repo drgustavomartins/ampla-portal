@@ -75,9 +75,10 @@ export async function registerRoutes(server: Server, app: Express) {
   try {
     const { db } = await import("./db");
     await db.execute(`ALTER TABLE plans ADD COLUMN IF NOT EXISTS material_topics TEXT`);
-    console.log("[auto-migrate] material_topics column ensured on plans table");
+    await db.execute(`ALTER TABLE plans ADD COLUMN IF NOT EXISTS "order" INTEGER NOT NULL DEFAULT 0`);
+    console.log("[auto-migrate] material_topics and order columns ensured on plans table");
   } catch (e: any) {
-    console.error("[auto-migrate] Failed to ensure material_topics column:", e.message);
+    console.error("[auto-migrate] Failed to ensure plans columns:", e.message);
   }
 
   // ==================== AUTH ====================
@@ -492,6 +493,20 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json(updated);
   });
 
+  // Reorder plans
+  app.post("/api/admin/plans/reorder", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const { orderedIds } = req.body;
+    if (!orderedIds || !Array.isArray(orderedIds)) {
+      return res.status(400).json({ message: "orderedIds array obrigatório" });
+    }
+    for (let i = 0; i < orderedIds.length; i++) {
+      await storage.updatePlan(orderedIds[i], { order: i + 1 });
+    }
+    const updated = await storage.getPlans();
+    res.json(updated);
+  });
+
   // Reorder lessons
   app.post("/api/admin/lessons/reorder", async (req, res) => {
     if (!requireAdmin(req, res)) return;
@@ -870,6 +885,11 @@ export async function registerRoutes(server: Server, app: Express) {
       await db.execute(`ALTER TABLE plans ADD COLUMN IF NOT EXISTS material_topics TEXT`);
       results.push("material_topics column ensured");
     } catch (e: any) { results.push(`material_topics: ${e.message}`); }
+    // Order column on plans
+    try {
+      await db.execute(`ALTER TABLE plans ADD COLUMN IF NOT EXISTS "order" INTEGER NOT NULL DEFAULT 0`);
+      results.push("plans order column ensured");
+    } catch (e: any) { results.push(`plans_order: ${e.message}`); }
     // Add role column (MUST come before any role-based UPDATE statements)
     try {
       await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'student'`);

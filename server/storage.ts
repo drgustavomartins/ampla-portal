@@ -15,7 +15,7 @@ import {
 export const storage = {
   // ===== PLANS =====
   async getPlans(): Promise<Plan[]> {
-    return db.select().from(plans);
+    return db.select().from(plans).orderBy(plans.order);
   },
   async getPlan(id: number): Promise<Plan | undefined> {
     const [p] = await db.select().from(plans).where(eq(plans.id, id));
