@@ -16,8 +16,9 @@ import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
   ChevronRight, ChevronLeft, Calendar, Layers, Settings, Loader2, AlertTriangle,
-  Users, MessageCircle, Activity, Lock, ShoppingCart, ExternalLink, Paperclip
+  Users, MessageCircle, Activity, Lock, ShoppingCart, ExternalLink, Paperclip, Library
 } from "lucide-react";
+import MateriaisComplementares from "./materiais-complementares";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 
 function linkifyText(text: string) {
@@ -82,6 +83,7 @@ export default function StudentDashboard() {
     enabled: !!user?.id,
   });
   const [purchaseModule, setPurchaseModule] = useState<Module | null>(null);
+  const [showMateriais, setShowMateriais] = useState(false);
 
   const completeMutation = useMutation({
     mutationFn: async ({ lessonId, complete }: { lessonId: number; complete: boolean }) => {
@@ -344,6 +346,49 @@ export default function StudentDashboard() {
     );
   }
 
+  // ========== MATERIAIS COMPLEMENTARES VIEW ==========
+  if (showMateriais) {
+    const firstName = user?.name?.split(" ")[0] || "";
+    const initials = user?.name
+      ? user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
+      : "?";
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm sticky top-0 z-10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src="/logo-icon.png" alt="Ampla Facial" className="w-7 h-7 object-contain" />
+              <span className="text-sm font-medium text-gold tracking-wide">AMPLA FACIAL</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex flex-col items-end mr-1">
+                <span className="text-sm font-medium text-foreground leading-none">{firstName}</span>
+                {userPlan && <span className="text-[10px] text-gold-muted mt-0.5">{userPlan.name}</span>}
+              </div>
+              <div className="w-9 h-9 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center">
+                <span className="text-xs font-semibold text-gold">{initials}</span>
+              </div>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-gold h-9 w-9 p-0" onClick={logout} data-testid="button-logout">
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </header>
+        <main className="flex-1">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 lg:py-10">
+            <MateriaisComplementares onBack={() => setShowMateriais(false)} />
+          </div>
+        </main>
+        <footer className="border-t border-border/30 py-6 mt-4">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
+            <span>&copy; 2026 Ampla Facial &mdash; Todos os direitos reservados</span>
+            <span className="text-gold-muted font-semibold tracking-brand text-[10px]">NATURALUP&reg;</span>
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
   // ========== MAIN DASHBOARD ==========
 
   const firstName = user?.name?.split(" ")[0] || "";
@@ -394,6 +439,16 @@ export default function StudentDashboard() {
             <div className="w-9 h-9 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center">
               <span className="text-xs font-semibold text-gold">{initials}</span>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-gold h-9 w-9 p-0"
+              onClick={() => setShowMateriais(true)}
+              data-testid="button-materiais"
+              title="Materiais Complementares"
+            >
+              <Library className="w-4 h-4" />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
