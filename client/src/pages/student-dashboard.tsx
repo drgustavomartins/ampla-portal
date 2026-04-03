@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
   ChevronRight, ChevronLeft, Calendar, Layers, Settings, Loader2, AlertTriangle,
-  Users, MessageCircle, Activity, Lock, ShoppingCart, ExternalLink, Paperclip
+  Users, MessageCircle, Activity, Lock, ShoppingCart, ExternalLink, Paperclip, FileText
 } from "lucide-react";
 import MateriaisComplementares from "./materiais-complementares";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
@@ -59,6 +59,7 @@ export default function StudentDashboard() {
   const [, setLocation] = useLocation();
   const [selectedModule, setSelectedModule] = useState<number | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [showMateriais, setShowMateriais] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "" });
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -341,6 +342,31 @@ export default function StudentDashboard() {
             </div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // ========== MATERIAIS COMPLEMENTARES (full-page view) ==========
+  if (showMateriais) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm sticky top-0 z-10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+            <button
+              onClick={() => setShowMateriais(false)}
+              className="text-sm text-muted-foreground hover:text-gold flex items-center gap-1 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Voltar
+            </button>
+            <span className="text-xs font-medium text-gold-muted uppercase tracking-wider">Materiais</span>
+          </div>
+        </header>
+        <main className="flex-1">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+            <MateriaisComplementares />
+          </div>
+        </main>
       </div>
     );
   }
@@ -660,7 +686,7 @@ export default function StudentDashboard() {
           {/* ===== RECURSOS EXCLUSIVOS ===== */}
           <section className="space-y-5">
             <h2 className="font-serif text-2xl font-semibold text-foreground">Recursos Exclusivos</h2>
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Comunidade — Lifetime access (respects communityAccess toggle) */}
               {communityEnabled ? (
                 <a
@@ -779,11 +805,25 @@ export default function StudentDashboard() {
                   </span>
                 </div>
               )}
+              {/* Materiais Complementares — shortcut card */}
+              <button
+                onClick={() => setShowMateriais(true)}
+                className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 text-left transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-gold" />
+                </div>
+                <h3 className="font-semibold text-sm text-foreground">Materiais Complementares</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">Artigos, compilados e materiais de apoio organizados por tema.</p>
+                <span className="inline-flex items-center text-xs font-medium text-gold group-hover:underline">
+                  Acessar materiais <ChevronRight className="w-3 h-3 ml-1" />
+                </span>
+              </button>
             </div>
           </section>
 
-          {/* ===== MATERIAIS COMPLEMENTARES (inline) ===== */}
-          <section className="space-y-4">
+          {/* ===== MATERIAIS COMPLEMENTARES (inline, visible on larger screens) ===== */}
+          <section className="hidden lg:block space-y-4">
             <MateriaisComplementares />
           </section>
 
