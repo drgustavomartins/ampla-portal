@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
-  useSensor, useSensors, type DragEndEvent
+  useSensor, useSensors, DragOverlay, type DragEndEvent, type DragStartEvent
 } from "@dnd-kit/core";
 import {
   arrayMove, SortableContext, useSortable, verticalListSortingStrategy
@@ -330,6 +330,9 @@ export default function AdminDashboard() {
       setModuleDialogOpen(false);
       toast({ title: "Módulo criado" });
     },
+    onError: (error: any) => {
+      toast({ title: "Erro ao criar módulo", description: error.message, variant: "destructive" });
+    },
   });
 
   const deleteModuleMutation = useMutation({
@@ -356,6 +359,9 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/modules"] });
       toast({ title: "Ordem atualizada" });
     },
+    onError: (error: any) => {
+      toast({ title: "Erro ao reordenar", description: error.message, variant: "destructive" });
+    },
   });
 
   const sortedModules = useMemo(
@@ -374,7 +380,15 @@ export default function AdminDashboard() {
     useSensor(KeyboardSensor)
   );
 
+  // Track active drag item for DragOverlay
+  const [activeDragId, setActiveDragId] = useState<number | null>(null);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragId(Number(event.active.id));
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
+    setActiveDragId(null);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const oldIndex = sortedModules.findIndex(m => m.id === active.id);
@@ -382,6 +396,10 @@ export default function AdminDashboard() {
     if (oldIndex === -1 || newIndex === -1) return;
     const reordered = arrayMove(sortedModules, oldIndex, newIndex);
     reorderMutation.mutate(reordered.map(m => m.id));
+  };
+
+  const handleDragCancel = () => {
+    setActiveDragId(null);
   };
 
   // Reorder plans
@@ -392,6 +410,9 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/plans"] });
       toast({ title: "Ordem dos planos atualizada" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro ao reordenar planos", description: error.message, variant: "destructive" });
     },
   });
 
@@ -448,6 +469,9 @@ export default function AdminDashboard() {
       setLessonDialogOpen(false);
       toast({ title: "Aula criada" });
     },
+    onError: (error: any) => {
+      toast({ title: "Erro ao criar aula", description: error.message, variant: "destructive" });
+    },
   });
 
   const deleteLessonMutation = useMutation({
@@ -472,6 +496,9 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/lessons"] });
       toast({ title: "Ordem das aulas atualizada" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro ao reordenar aulas", description: error.message, variant: "destructive" });
     },
   });
 
@@ -501,6 +528,9 @@ export default function AdminDashboard() {
       setPlanDialogOpen(false);
       toast({ title: "Plano criado" });
     },
+    onError: (error: any) => {
+      toast({ title: "Erro ao criar plano", description: error.message, variant: "destructive" });
+    },
   });
 
   const updatePlanMutation = useMutation({
@@ -513,6 +543,9 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       setEditingPlan(null);
       toast({ title: "Plano atualizado" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro ao atualizar plano", description: error.message, variant: "destructive" });
     },
   });
 
@@ -1269,6 +1302,7 @@ export default function AdminDashboard() {
                     }}
                     disabled={updateStudentMutation.isPending}
                   >
+                    {updateStudentMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Salvar alterações
                   </Button>
                 </div>
@@ -1291,6 +1325,7 @@ export default function AdminDashboard() {
                     </p>
                   </div>
                   <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => renewingStudent && renewAccessMutation.mutate({ id: renewingStudent.id, days: renewDays })} disabled={renewDays <= 0 || renewAccessMutation.isPending}>
+                    {renewAccessMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Renovar acesso
                   </Button>
                 </div>
@@ -1381,7 +1416,7 @@ export default function AdminDashboard() {
                         ))}
                       </div>
                     </div>
-                    <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createPlanMutation.mutate()} disabled={!planForm.name || !planForm.durationDays || createPlanMutation.isPending}>Criar plano</Button>
+                    <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createPlanMutation.mutate()} disabled={!planForm.name || !planForm.durationDays || createPlanMutation.isPending}>{createPlanMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar plano</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -1470,7 +1505,7 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                   </div>
-                  <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => editingPlan && updatePlanMutation.mutate({ id: editingPlan.id, data: editPlanForm })} disabled={!editPlanForm.name || !editPlanForm.durationDays || updatePlanMutation.isPending}>Salvar alterações</Button>
+                  <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => editingPlan && updatePlanMutation.mutate({ id: editingPlan.id, data: editPlanForm })} disabled={!editPlanForm.name || !editPlanForm.durationDays || updatePlanMutation.isPending}>{updatePlanMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar alterações</Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -1487,7 +1522,7 @@ export default function AdminDashboard() {
                   <div className="space-y-4 pt-2">
                     <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Título</Label><Input value={moduleForm.title} onChange={e => setModuleForm(f => ({ ...f, title: e.target.value }))} placeholder="Ex: Skinboosters" className="bg-background/50 border-border/40" data-testid="input-module-title" /></div>
                     <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label><Textarea value={moduleForm.description} onChange={e => setModuleForm(f => ({ ...f, description: e.target.value }))} placeholder="Descrição do módulo..." className="bg-background/50 border-border/40" data-testid="input-module-description" /></div>
-                    <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createModuleMutation.mutate()} disabled={!moduleForm.title || createModuleMutation.isPending} data-testid="button-save-module">Criar módulo</Button>
+                    <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createModuleMutation.mutate()} disabled={!moduleForm.title || createModuleMutation.isPending} data-testid="button-save-module">{createModuleMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar módulo</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -1496,7 +1531,7 @@ export default function AdminDashboard() {
             {modules.length === 0 ? (
               <Card className="border-border/30 bg-card/40"><CardContent className="p-12 text-center"><div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4"><Layers className="w-7 h-7 text-muted-foreground/40" /></div><p className="text-sm text-muted-foreground">Nenhum módulo criado ainda</p></CardContent></Card>
             ) : (
-              <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
                 <SortableContext items={moduleIds} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
                     {sortedModules.map((mod, idx) => {
@@ -1516,6 +1551,23 @@ export default function AdminDashboard() {
                     })}
                   </div>
                 </SortableContext>
+                <DragOverlay>
+                  {activeDragId ? (() => {
+                    const mod = sortedModules.find(m => m.id === activeDragId);
+                    if (!mod) return null;
+                    return (
+                      <Card className="border-gold/40 bg-card shadow-xl shadow-gold/10 scale-[1.03]">
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex items-center gap-3">
+                            <GripVertical className="w-5 h-5 text-gold" />
+                            <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center shrink-0"><BookOpen className="w-5 h-5 text-gold" /></div>
+                            <p className="font-medium text-foreground text-sm sm:text-[15px]">{mod.title}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })() : null}
+                </DragOverlay>
               </DndContext>
             )}
 
@@ -1526,7 +1578,7 @@ export default function AdminDashboard() {
                 <div className="space-y-4 pt-2">
                   <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Título</Label><Input value={editModuleForm.title} onChange={e => setEditModuleForm(f => ({ ...f, title: e.target.value }))} className="bg-background/50 border-border/40" /></div>
                   <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label><Textarea value={editModuleForm.description} onChange={e => setEditModuleForm(f => ({ ...f, description: e.target.value }))} className="bg-background/50 border-border/40" /></div>
-                  <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => editingModule && updateModuleMutation.mutate({ id: editingModule.id, data: editModuleForm })} disabled={!editModuleForm.title || updateModuleMutation.isPending}>Salvar alterações</Button>
+                  <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => editingModule && updateModuleMutation.mutate({ id: editingModule.id, data: editModuleForm })} disabled={!editModuleForm.title || updateModuleMutation.isPending}>{updateModuleMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar alterações</Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -1546,7 +1598,7 @@ export default function AdminDashboard() {
                     <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label><Textarea value={lessonForm.description} onChange={e => setLessonForm(f => ({ ...f, description: e.target.value }))} placeholder="Descrição da aula..." className="bg-background/50 border-border/40" data-testid="input-lesson-description" /></div>
                     <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">URL do vídeo</Label><Input value={lessonForm.videoUrl} onChange={e => setLessonForm(f => ({ ...f, videoUrl: e.target.value }))} placeholder="https://youtube.com/watch?v=..." className="bg-background/50 border-border/40" data-testid="input-lesson-video" /><p className="text-xs text-muted-foreground">YouTube, Vimeo ou Google Drive</p></div>
                     <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração</Label><Input value={lessonForm.duration} onChange={e => setLessonForm(f => ({ ...f, duration: e.target.value }))} placeholder="Ex: 25:00" className="bg-background/50 border-border/40" data-testid="input-lesson-duration" /></div>
-                    <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createLessonMutation.mutate()} disabled={!lessonForm.title || !lessonForm.moduleId || createLessonMutation.isPending} data-testid="button-save-lesson">Criar aula</Button>
+                    <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createLessonMutation.mutate()} disabled={!lessonForm.title || !lessonForm.moduleId || createLessonMutation.isPending} data-testid="button-save-lesson">{createLessonMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar aula</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -1602,7 +1654,7 @@ export default function AdminDashboard() {
                   <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">URL do vídeo</Label><Input value={editLessonForm.videoUrl} onChange={e => setEditLessonForm(f => ({ ...f, videoUrl: e.target.value }))} placeholder="https://youtube.com/watch?v=..." className="bg-background/50 border-border/40" /></div>
                   <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração</Label><Input value={editLessonForm.duration} onChange={e => setEditLessonForm(f => ({ ...f, duration: e.target.value }))} placeholder="Ex: 25:00" className="bg-background/50 border-border/40" /></div>
                   <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Módulo</Label><Select value={String(editLessonForm.moduleId)} onValueChange={(v) => setEditLessonForm(f => ({ ...f, moduleId: parseInt(v) }))}><SelectTrigger className="bg-background/50 border-border/40"><SelectValue placeholder="Selecione o módulo" /></SelectTrigger><SelectContent>{modules.map((m) => (<SelectItem key={m.id} value={String(m.id)}>{m.title}</SelectItem>))}</SelectContent></Select></div>
-                  <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => editingLesson && updateLessonMutation.mutate({ id: editingLesson.id, data: editLessonForm })} disabled={!editLessonForm.title || !editLessonForm.moduleId || updateLessonMutation.isPending}>Salvar alterações</Button>
+                  <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => editingLesson && updateLessonMutation.mutate({ id: editingLesson.id, data: editLessonForm })} disabled={!editLessonForm.title || !editLessonForm.moduleId || updateLessonMutation.isPending}>{updateLessonMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar alterações</Button>
                 </div>
               </DialogContent>
             </Dialog>
