@@ -1053,7 +1053,7 @@ export default function AdminDashboard() {
                     <Plus className="w-4 h-4 mr-1.5" /> Novo plano
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-card border-border/40">
+                <DialogContent className="bg-card border-border/40 max-h-[85vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="text-lg">Novo plano</DialogTitle>
                     <DialogDescription className="text-muted-foreground">Crie um novo plano de acesso</DialogDescription>
@@ -1177,7 +1177,7 @@ export default function AdminDashboard() {
 
             {/* Edit Plan Dialog */}
             <Dialog open={!!editingPlan} onOpenChange={(open) => !open && setEditingPlan(null)}>
-              <DialogContent className="bg-card border-border/40">
+              <DialogContent className="bg-card border-border/40 max-h-[85vh] overflow-y-auto">
                 <DialogHeader><DialogTitle className="text-lg">Editar plano</DialogTitle><DialogDescription className="text-muted-foreground">Altere os dados do plano</DialogDescription></DialogHeader>
                 <div className="space-y-4 pt-2">
                   <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label><Input value={editPlanForm.name} onChange={e => setEditPlanForm(f => ({ ...f, name: e.target.value }))} className="bg-background/50 border-border/40" /></div>
