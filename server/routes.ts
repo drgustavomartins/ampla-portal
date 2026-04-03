@@ -76,8 +76,11 @@ export async function registerRoutes(server: Server, app: Express) {
     const { db } = await import("./db");
     await db.execute(`ALTER TABLE plans ADD COLUMN IF NOT EXISTS material_topics TEXT`);
     await db.execute(`ALTER TABLE plans ADD COLUMN IF NOT EXISTS "order" INTEGER NOT NULL DEFAULT 0`);
-    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS materials_access BOOLEAN NOT NULL DEFAULT false`);
-    console.log("[auto-migrate] material_topics, order, and materials_access columns ensured");
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS materials_access BOOLEAN NOT NULL DEFAULT true`);
+    await db.execute(`ALTER TABLE users ALTER COLUMN materials_access SET DEFAULT true`);
+    // Grant materials access to all existing users (idempotent — safe to run multiple times)
+    await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false`);
+    console.log("[auto-migrate] material_topics, order, and materials_access columns ensured; all users granted materials access");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
@@ -880,8 +883,10 @@ export async function registerRoutes(server: Server, app: Express) {
       results.push("clinical_practice_hours column ensured");
     } catch (e: any) { results.push(`clinical_practice_hours: ${e.message}`); }
     try {
-      await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS materials_access BOOLEAN NOT NULL DEFAULT false`);
-      results.push("materials_access column ensured");
+      await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS materials_access BOOLEAN NOT NULL DEFAULT true`);
+      await db.execute(`ALTER TABLE users ALTER COLUMN materials_access SET DEFAULT true`);
+      await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false`);
+      results.push("materials_access column ensured; all users granted materials access");
     } catch (e: any) { results.push(`materials_access: ${e.message}`); }
     // Audit logs table
     try {
