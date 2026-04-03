@@ -67,7 +67,19 @@ function sanitize(val: any): string {
   return val.trim().slice(0, 500);
 }
 
-export function registerRoutes(server: Server, app: Express) {
+export async function registerRoutes(server: Server, app: Express) {
+  // ==================== AUTO-MIGRATE critical columns on startup ====================
+  // This ensures new columns exist before any Drizzle query tries to SELECT them.
+  // Without this, db.select().from(plans) generates SQL referencing material_topics,
+  // which fails if the column doesn't exist yet — causing all plans to "disappear".
+  try {
+    const { db } = await import("./db");
+    await db.execute(`ALTER TABLE plans ADD COLUMN IF NOT EXISTS material_topics TEXT`);
+    console.log("[auto-migrate] material_topics column ensured on plans table");
+  } catch (e: any) {
+    console.error("[auto-migrate] Failed to ensure material_topics column:", e.message);
+  }
+
   // ==================== AUTH ====================
 
   app.post("/api/auth/register", async (req, res) => {
@@ -174,8 +186,13 @@ export function registerRoutes(server: Server, app: Express) {
 
   // ==================== PLANS ====================
   app.get("/api/plans", async (_req, res) => {
-    const p = await storage.getPlans();
-    res.json(p);
+    try {
+      const p = await storage.getPlans();
+      res.json(p);
+    } catch (e: any) {
+      console.error("Error fetching plans:", e.message);
+      res.status(500).json({ message: "Erro ao buscar planos" });
+    }
   });
 
   // ==================== ADMIN: Plans CRUD ====================
