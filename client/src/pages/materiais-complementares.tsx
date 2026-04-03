@@ -143,7 +143,7 @@ function driveDownloadUrl(id: string) {
   return `https://drive.google.com/uc?export=download&id=${id}`;
 }
 function driveAudioUrl(id: string) {
-  return `https://docs.google.com/uc?export=open&id=${id}`;
+  return `https://drive.google.com/file/d/${id}/preview`;
 }
 
 function FileTypeIcon({ type }: { type: FileEntry["type"] }) {
@@ -183,13 +183,12 @@ function FileRow({ file }: { file: FileEntry }) {
           <TypeLabel type={file.type} />
         </div>
         {file.type === "mp3" && (
-          <audio
-            controls
-            preload="none"
-            className="w-full max-w-md h-8 mt-1 [&::-webkit-media-controls-panel]:bg-card/80"
-          >
-            <source src={driveAudioUrl(file.driveId)} type="audio/mpeg" />
-          </audio>
+          <iframe
+            src={driveAudioUrl(file.driveId)}
+            className="w-full max-w-md h-20 mt-1 rounded-lg border border-border/20"
+            allow="autoplay"
+            sandbox="allow-same-origin allow-scripts allow-popups"
+          />
         )}
       </div>
       <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
@@ -333,7 +332,7 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
                 alt={theme.title}
                 className="w-full h-full object-cover object-top"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628] via-[#0A1628]/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628] via-[#0A1628]/50 to-[#0A1628]/20" />
 
               {/* File count badge */}
               {theme.fileCount > 0 && (
