@@ -31,7 +31,7 @@ type Theme = {
 const THEMES: Theme[] = [
   {
     title: "Toxina Botulínica",
-    cover: "/images/covers/cover_toxina_botulinica.png",
+    cover: "/images/covers/cover_toxina_botulinica.png?v=2",
     fileCount: 23,
     subcategories: [
       {
@@ -76,13 +76,13 @@ const THEMES: Theme[] = [
   },
   {
     title: "Preenchedores Faciais",
-    cover: "/images/covers/cover_preenchedores_faciais.png",
+    cover: "/images/covers/cover_preenchedores_faciais.png?v=2",
     fileCount: 0,
     subcategories: [],
   },
   {
     title: "Bioestimuladores de Colágeno",
-    cover: "/images/covers/cover_bioestimuladores.png",
+    cover: "/images/covers/cover_bioestimuladores.png?v=2",
     fileCount: 6,
     subcategories: [
       {
@@ -100,13 +100,13 @@ const THEMES: Theme[] = [
   },
   {
     title: "Moduladores de Matriz Extracelular",
-    cover: "/images/covers/cover_moduladores_matriz.png",
+    cover: "/images/covers/cover_moduladores_matriz.png?v=2",
     fileCount: 0,
     subcategories: [],
   },
   {
     title: "Método NaturalUp®",
-    cover: "/images/covers/cover_metodo_naturalup.png",
+    cover: "/images/covers/cover_metodo_naturalup.png?v=2",
     fileCount: 2,
     subcategories: [
       {
@@ -120,7 +120,7 @@ const THEMES: Theme[] = [
   },
   {
     title: "IA na Medicina",
-    cover: "/images/covers/cover_ia_medicina.png",
+    cover: "/images/covers/cover_ia_medicina.png?v=2",
     fileCount: 2,
     subcategories: [
       {
