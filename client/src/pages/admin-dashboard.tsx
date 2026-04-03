@@ -216,10 +216,18 @@ export default function AdminDashboard() {
   };
 
   // ── Plan CRUD ──
-  const [planForm, setPlanForm] = useState({ name: "", description: "", durationDays: 0, price: "", moduleIds: [] as number[] });
+  const MATERIAL_TOPIC_OPTIONS = [
+    "Toxina Botulínica",
+    "Preenchedores Faciais",
+    "Bioestimuladores de Colágeno",
+    "Moduladores de Matriz Extracelular",
+    "Método NaturalUp®",
+    "IA na Medicina",
+  ];
+  const [planForm, setPlanForm] = useState({ name: "", description: "", durationDays: 0, price: "", moduleIds: [] as number[], materialTopics: [] as string[] });
   const [planDialogOpen, setPlanDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
-  const [editPlanForm, setEditPlanForm] = useState({ name: "", description: "", durationDays: 0, price: "", moduleIds: [] as number[] });
+  const [editPlanForm, setEditPlanForm] = useState({ name: "", description: "", durationDays: 0, price: "", moduleIds: [] as number[], materialTopics: [] as string[] });
 
   const createPlanMutation = useMutation({
     mutationFn: async () => {
@@ -229,7 +237,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/plans"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/plan-modules"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
-      setPlanForm({ name: "", description: "", durationDays: 0, price: "", moduleIds: [] });
+      setPlanForm({ name: "", description: "", durationDays: 0, price: "", moduleIds: [], materialTopics: [] });
       setPlanDialogOpen(false);
       toast({ title: "Plano criado" });
     },
@@ -1077,6 +1085,28 @@ export default function AdminDashboard() {
                         ))}
                       </div>
                     </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Materiais complementares inclusos</Label>
+                      <p className="text-xs text-muted-foreground">Sem seleção = sem acesso a materiais complementares</p>
+                      <div className="space-y-2 max-h-48 overflow-y-auto border border-border/30 rounded-lg p-3">
+                        {MATERIAL_TOPIC_OPTIONS.map(topic => (
+                          <label key={topic} className="flex items-center gap-2 cursor-pointer">
+                            <Checkbox
+                              checked={planForm.materialTopics.includes(topic)}
+                              onCheckedChange={(checked) => {
+                                setPlanForm(f => ({
+                                  ...f,
+                                  materialTopics: checked
+                                    ? [...f.materialTopics, topic]
+                                    : f.materialTopics.filter(t => t !== topic),
+                                }));
+                              }}
+                            />
+                            <span className="text-sm text-foreground">{topic}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                     <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createPlanMutation.mutate()} disabled={!planForm.name || !planForm.durationDays || createPlanMutation.isPending}>Criar plano</Button>
                   </div>
                 </DialogContent>
@@ -1101,7 +1131,7 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
-                            <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold" onClick={() => { setEditingPlan(plan); setEditPlanForm({ name: plan.name, description: plan.description || "", durationDays: plan.durationDays, price: plan.price || "", moduleIds: allPlanModules.filter(pm => pm.planId === plan.id).map(pm => pm.moduleId) }); }}>
+                            <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold" onClick={() => { setEditingPlan(plan); setEditPlanForm({ name: plan.name, description: plan.description || "", durationDays: plan.durationDays, price: plan.price || "", moduleIds: allPlanModules.filter(pm => pm.planId === plan.id).map(pm => pm.moduleId), materialTopics: plan.materialTopics ? (() => { try { return JSON.parse(plan.materialTopics); } catch { return []; } })() : [] }); }}>
                               <Pencil className="w-4 h-4" />
                             </Button>
                             {isSuperAdmin && (
@@ -1118,12 +1148,20 @@ export default function AdminDashboard() {
                         {plan.description && <p className="text-sm text-muted-foreground line-clamp-2">{plan.description}</p>}
                         {(() => {
                           const planMods = allPlanModules.filter(pm => pm.planId === plan.id);
+                          const matTopics: string[] = plan.materialTopics ? (() => { try { return JSON.parse(plan.materialTopics); } catch { return []; } })() : [];
                           return (
-                            <p className="text-xs text-gold/70">
-                              {planMods.length === 0
-                                ? "Todos os módulos"
-                                : planMods.map(pm => modules.find(m => m.id === pm.moduleId)?.title || "?").join(", ")}
-                            </p>
+                            <>
+                              <p className="text-xs text-gold/70">
+                                {planMods.length === 0
+                                  ? "Todos os módulos"
+                                  : planMods.map(pm => modules.find(m => m.id === pm.moduleId)?.title || "?").join(", ")}
+                              </p>
+                              {matTopics.length > 0 && (
+                                <p className="text-xs text-emerald-400/70">
+                                  Materiais: {matTopics.join(", ")}
+                                </p>
+                              )}
+                            </>
                           );
                         })()}
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -1164,6 +1202,28 @@ export default function AdminDashboard() {
                             }}
                           />
                           <span className="text-sm text-foreground">{mod.title}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Materiais complementares inclusos</Label>
+                    <p className="text-xs text-muted-foreground">Sem seleção = sem acesso a materiais complementares</p>
+                    <div className="space-y-2 max-h-48 overflow-y-auto border border-border/30 rounded-lg p-3">
+                      {MATERIAL_TOPIC_OPTIONS.map(topic => (
+                        <label key={topic} className="flex items-center gap-2 cursor-pointer">
+                          <Checkbox
+                            checked={editPlanForm.materialTopics.includes(topic)}
+                            onCheckedChange={(checked) => {
+                              setEditPlanForm(f => ({
+                                ...f,
+                                materialTopics: checked
+                                  ? [...f.materialTopics, topic]
+                                  : f.materialTopics.filter(t => t !== topic),
+                              }));
+                            }}
+                          />
+                          <span className="text-sm text-foreground">{topic}</span>
                         </label>
                       ))}
                     </div>

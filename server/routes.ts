@@ -183,16 +183,16 @@ export function registerRoutes(server: Server, app: Express) {
     const auth = requireAdmin(req, res);
     if (!auth) return;
     try {
-      const { name, description, durationDays, price, moduleIds } = req.body;
+      const { name, description, durationDays, price, moduleIds, materialTopics } = req.body;
       if (!name || !durationDays) {
         return res.status(400).json({ message: "Nome e duração são obrigatórios" });
       }
-      const plan = await storage.createPlan({ name: sanitize(name), description: description ? sanitize(description) : null, durationDays: parseInt(durationDays), price: price ? sanitize(price) : null });
+      const plan = await storage.createPlan({ name: sanitize(name), description: description ? sanitize(description) : null, durationDays: parseInt(durationDays), price: price ? sanitize(price) : null, materialTopics: Array.isArray(materialTopics) ? JSON.stringify(materialTopics) : null });
       if (Array.isArray(moduleIds)) {
         await storage.setPlanModules(plan.id, moduleIds.map(Number));
       }
       const admin = await storage.getUser(auth.userId);
-      await logAction(auth.userId, admin?.name || "Admin", "plan_created", "plan", plan.id, plan.name, { moduleIds });
+      await logAction(auth.userId, admin?.name || "Admin", "plan_created", "plan", plan.id, plan.name, { moduleIds, materialTopics });
       res.json(plan);
     } catch (e: any) {
       res.status(400).json({ message: e.message });
@@ -202,19 +202,20 @@ export function registerRoutes(server: Server, app: Express) {
   app.patch("/api/admin/plans/:id", async (req, res) => {
     const auth = requireAdmin(req, res);
     if (!auth) return;
-    const { name, description, durationDays, price, moduleIds } = req.body;
-    const planUpdate: Partial<{ name: string; description: string | null; durationDays: number; price: string | null }> = {};
+    const { name, description, durationDays, price, moduleIds, materialTopics } = req.body;
+    const planUpdate: Partial<{ name: string; description: string | null; durationDays: number; price: string | null; materialTopics: string | null }> = {};
     if (name !== undefined) planUpdate.name = sanitize(name);
     if (description !== undefined) planUpdate.description = description ? sanitize(description) : null;
     if (durationDays !== undefined) planUpdate.durationDays = parseInt(durationDays);
     if (price !== undefined) planUpdate.price = price ? sanitize(price) : null;
+    if (materialTopics !== undefined) planUpdate.materialTopics = Array.isArray(materialTopics) && materialTopics.length > 0 ? JSON.stringify(materialTopics) : null;
     const updated = await storage.updatePlan(parseInt(req.params.id), planUpdate);
     if (!updated) return res.status(404).json({ message: "Plano não encontrado" });
     if (Array.isArray(moduleIds)) {
       await storage.setPlanModules(updated.id, moduleIds.map(Number));
     }
     const admin = await storage.getUser(auth.userId);
-    await logAction(auth.userId, admin?.name || "Admin", "plan_updated", "plan", updated.id, updated.name, { ...planUpdate, moduleIds });
+    await logAction(auth.userId, admin?.name || "Admin", "plan_updated", "plan", updated.id, updated.name, { ...planUpdate, moduleIds, materialTopics });
     res.json(updated);
   });
 
@@ -284,6 +285,31 @@ export function registerRoutes(server: Server, app: Express) {
       return res.json({ accessAll: true, moduleIds: [] });
     }
     return res.json({ accessAll: false, moduleIds: pm.map(p => p.moduleId) });
+  });
+
+  // ==================== MY ACCESSIBLE MATERIAL TOPICS ====================
+  app.get("/api/my-materials", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    // Admins see all material topics
+    if (auth.role === "admin" || auth.role === "super_admin") {
+      return res.json({ accessAll: true, topics: [] });
+    }
+    const user = await storage.getUser(auth.userId);
+    if (!user || !user.planId) {
+      return res.json({ accessAll: false, topics: [] });
+    }
+    const plan = await storage.getPlan(user.planId);
+    if (!plan || !plan.materialTopics) {
+      // No materialTopics set = no access to materials (inverse of modules logic)
+      return res.json({ accessAll: false, topics: [] });
+    }
+    try {
+      const topics: string[] = JSON.parse(plan.materialTopics);
+      return res.json({ accessAll: false, topics });
+    } catch {
+      return res.json({ accessAll: false, topics: [] });
+    }
   });
 
   // ==================== LESSONS ====================
@@ -813,6 +839,11 @@ export function registerRoutes(server: Server, app: Express) {
       await db.execute(`CREATE TABLE IF NOT EXISTS plan_modules (id SERIAL PRIMARY KEY, plan_id INTEGER NOT NULL, module_id INTEGER NOT NULL, UNIQUE(plan_id, module_id))`);
       results.push("plan_modules table ensured");
     } catch (e: any) { results.push(`plan_modules: ${e.message}`); }
+    // Material topics column on plans (JSON array of topic titles)
+    try {
+      await db.execute(`ALTER TABLE plans ADD COLUMN IF NOT EXISTS material_topics TEXT`);
+      results.push("material_topics column ensured");
+    } catch (e: any) { results.push(`material_topics: ${e.message}`); }
     // Add role column (MUST come before any role-based UPDATE statements)
     try {
       await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'student'`);

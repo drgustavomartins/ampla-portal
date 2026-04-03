@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -282,6 +284,28 @@ function ThemeDetail({ theme, onBack }: { theme: Theme; onBack: () => void }) {
 
 export default function MateriaisComplementares({ onBack }: { onBack?: () => void }) {
   const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
+  const { user } = useAuth();
+
+  const { data: myMaterials } = useQuery<{ accessAll: boolean; topics: string[] }>({
+    queryKey: ["/api/my-materials"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/my-materials");
+      return res.json();
+    },
+    enabled: !!user,
+  });
+
+  // Filter themes based on access: admins see all, students see only allowed topics
+  const allowedThemes = myMaterials?.accessAll
+    ? THEMES
+    : myMaterials && myMaterials.topics.length > 0
+      ? THEMES.filter(t => myMaterials.topics.includes(t.title))
+      : [];
+
+  // Don't render anything if no materials are accessible
+  if (!myMaterials?.accessAll && (!myMaterials || myMaterials.topics.length === 0)) {
+    return null;
+  }
 
   if (selectedTheme) {
     return (
@@ -315,7 +339,7 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {THEMES.map((theme) => (
+        {allowedThemes.map((theme) => (
           <button
             key={theme.title}
             onClick={() => theme.fileCount > 0 && setSelectedTheme(theme)}

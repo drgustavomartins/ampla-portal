@@ -9,6 +9,7 @@ export const plans = pgTable("plans", {
   description: text("description"),
   durationDays: integer("duration_days").notNull(),
   price: text("price"),
+  materialTopics: text("material_topics"), // JSON array of allowed material topic titles (e.g. '["Toxina Botulínica","IA na Medicina"]')
 });
 
 // Users (students + admins)
