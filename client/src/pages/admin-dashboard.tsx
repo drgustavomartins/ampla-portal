@@ -25,10 +25,11 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Users, BookOpen, Layers, LogOut, Plus, Trash2, Check, X,
   Clock, Video, Shield, GraduationCap, ChevronUp, ChevronDown, Eye, Pencil,
-  CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog
+  CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library
 } from "lucide-react";
 import type { Module, Lesson, Plan, User, AuditLog } from "@shared/schema";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
+import MateriaisComplementares from "./materiais-complementares";
 
 type SafeUser = Omit<User, "password">;
 type LessonProgress = { id: number; userId: number; lessonId: number; completed: boolean; completedAt: string | null };
@@ -432,7 +433,7 @@ export default function AdminDashboard() {
   const uniqueAdmins = [...new Map(auditLogs.map(l => [l.adminId, l.adminName])).entries()];
 
   // Tab count: how many tabs to show
-  const tabCount = isSuperAdmin ? 6 : 4;
+  const tabCount = isSuperAdmin ? 7 : 5;
 
   return (
     <div className="min-h-screen bg-background">
@@ -537,7 +538,7 @@ export default function AdminDashboard() {
 
         {/* ─── Main Content Tabs ─── */}
         <Tabs defaultValue="lessons" className="space-y-6">
-          <TabsList className={`w-full grid bg-card/60 border border-border/30 p-1 h-11 sm:h-12 ${isSuperAdmin ? "grid-cols-6" : "grid-cols-4"}`}>
+          <TabsList className={`w-full grid bg-card/60 border border-border/30 p-1 h-11 sm:h-12 ${isSuperAdmin ? "grid-cols-7" : "grid-cols-5"}`}>
             <TabsTrigger
               value="students"
               data-testid="tab-students"
@@ -569,6 +570,14 @@ export default function AdminDashboard() {
             >
               <Video className="w-4 h-4 sm:mr-2 shrink-0" />
               <span className="hidden sm:inline">Aulas</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="materiais"
+              data-testid="tab-materiais"
+              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
+            >
+              <Library className="w-4 h-4 sm:mr-2 shrink-0" />
+              <span className="hidden sm:inline">Materiais</span>
             </TabsTrigger>
             {isSuperAdmin && (
               <>
@@ -1339,6 +1348,11 @@ export default function AdminDashboard() {
                 </div>
               </DialogContent>
             </Dialog>
+          </TabsContent>
+
+          {/* ========== MATERIAIS TAB ========== */}
+          <TabsContent value="materiais" className="space-y-6 mt-0">
+            <MateriaisComplementares />
           </TabsContent>
 
           {/* ========== ADMINS TAB (super_admin only) ========== */}
