@@ -190,8 +190,17 @@ export async function registerRoutes(server: Server, app: Express) {
       const p = await storage.getPlans();
       res.json(p);
     } catch (e: any) {
-      console.error("Error fetching plans:", e.message);
-      res.status(500).json({ message: "Erro ao buscar planos" });
+      console.error("GET /api/plans error:", e?.message || e);
+      // Fallback: raw SQL query without the material_topics column
+      try {
+        const { db } = await import("./db");
+        const result = await db.execute(`SELECT id, name, description, duration_days as "durationDays", price FROM plans`);
+        const rows = (result as any).rows || [];
+        res.json(rows.map((r: any) => ({ ...r, materialTopics: null })));
+      } catch (e2: any) {
+        console.error("GET /api/plans fallback error:", e2?.message || e2);
+        res.status(500).json({ message: "Erro ao carregar planos" });
+      }
     }
   });
 
