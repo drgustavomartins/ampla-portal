@@ -62,7 +62,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-start p-4 pt-12 sm:pt-16 md:justify-center md:pt-4"
       style={{
-        background: "radial-gradient(ellipse at 30% 20%, hsl(200 55% 12%) 0%, hsl(200 55% 7%) 70%)",
+        background: "radial-gradient(ellipse at 30% 20%, hsl(216 60% 14%) 0%, hsl(216 60% 7%) 70%)",
       }}
     >
       <div className="w-full max-w-sm space-y-6">

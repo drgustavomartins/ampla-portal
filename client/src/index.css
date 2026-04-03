@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* AMPLA FACIAL — Dark Luxury: Navy (#0C3044) + Gold (#D4A843)
+/* AMPLA FACIAL — Dark Luxury: Navy (#0A1628) + Gold (#D4A843)
    Premium medical aesthetics identity */
 
 /* ===== DARK MODE (default — matches brand) ===== */
@@ -14,44 +14,44 @@
   --elevate-2: rgba(255,255,255, .09);
 
   /* Navy foundation */
-  --background: 212 71% 8%;
+  --background: 216 60% 8%;
   --foreground: 40 20% 92%;
-  --border: 200 30% 16%;
+  --border: 216 30% 16%;
 
   /* Cards — slightly lighter navy */
-  --card: 200 45% 10%;
+  --card: 216 45% 10%;
   --card-foreground: 40 20% 92%;
-  --card-border: 200 30% 14%;
+  --card-border: 216 30% 14%;
 
   /* Sidebar */
-  --sidebar: 200 55% 6%;
+  --sidebar: 216 55% 6%;
   --sidebar-foreground: 40 20% 92%;
-  --sidebar-border: 200 30% 14%;
+  --sidebar-border: 216 30% 14%;
   --sidebar-primary: 40 55% 55%;
-  --sidebar-primary-foreground: 200 55% 7%;
-  --sidebar-accent: 200 30% 15%;
+  --sidebar-primary-foreground: 216 55% 7%;
+  --sidebar-accent: 216 30% 15%;
   --sidebar-accent-foreground: 40 20% 92%;
   --sidebar-ring: 40 55% 55%;
 
   /* Popover */
-  --popover: 200 45% 10%;
+  --popover: 216 45% 10%;
   --popover-foreground: 40 20% 92%;
-  --popover-border: 200 30% 16%;
+  --popover-border: 216 30% 16%;
 
   /* Primary = Gold accent */
   --primary: 40 55% 55%;
-  --primary-foreground: 200 55% 7%;
+  --primary-foreground: 216 55% 7%;
 
   /* Secondary */
-  --secondary: 200 25% 15%;
+  --secondary: 216 25% 15%;
   --secondary-foreground: 40 20% 88%;
 
   /* Muted */
-  --muted: 200 20% 16%;
-  --muted-foreground: 200 15% 55%;
+  --muted: 216 20% 16%;
+  --muted-foreground: 216 15% 55%;
 
   /* Accent */
-  --accent: 200 25% 14%;
+  --accent: 216 25% 14%;
   --accent-foreground: 40 20% 92%;
 
   /* Destructive */
@@ -59,13 +59,13 @@
   --destructive-foreground: 0 0% 100%;
 
   /* Input */
-  --input: 200 20% 20%;
+  --input: 216 20% 20%;
   --ring: 40 55% 55%;
 
   /* Charts */
   --chart-1: 40 55% 55%;
   --chart-2: 170 40% 45%;
-  --chart-3: 200 50% 45%;
+  --chart-3: 216 50% 45%;
   --chart-4: 340 40% 50%;
   --chart-5: 260 35% 55%;
 
