@@ -76,11 +76,11 @@ export async function registerRoutes(server: Server, app: Express) {
     const { db } = await import("./db");
     await db.execute(`ALTER TABLE plans ADD COLUMN IF NOT EXISTS material_topics TEXT`);
     await db.execute(`ALTER TABLE plans ADD COLUMN IF NOT EXISTS "order" INTEGER NOT NULL DEFAULT 0`);
-    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS materials_access BOOLEAN NOT NULL DEFAULT true`);
-    await db.execute(`ALTER TABLE users ALTER COLUMN materials_access SET DEFAULT true`);
-    // Grant materials access to all existing users (idempotent — safe to run multiple times)
-    await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false`);
-    console.log("[auto-migrate] material_topics, order, and materials_access columns ensured; all users granted materials access");
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS materials_access BOOLEAN NOT NULL DEFAULT false`);
+    await db.execute(`ALTER TABLE users ALTER COLUMN materials_access SET DEFAULT false`);
+    // Grant materials access to all existing users — runs only once (skips if any user already has access)
+    await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false AND NOT EXISTS (SELECT 1 FROM users WHERE materials_access = true)`);
+    console.log("[auto-migrate] material_topics, order, and materials_access columns ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
@@ -883,10 +883,11 @@ export async function registerRoutes(server: Server, app: Express) {
       results.push("clinical_practice_hours column ensured");
     } catch (e: any) { results.push(`clinical_practice_hours: ${e.message}`); }
     try {
-      await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS materials_access BOOLEAN NOT NULL DEFAULT true`);
-      await db.execute(`ALTER TABLE users ALTER COLUMN materials_access SET DEFAULT true`);
-      await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false`);
-      results.push("materials_access column ensured; all users granted materials access");
+      await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS materials_access BOOLEAN NOT NULL DEFAULT false`);
+      await db.execute(`ALTER TABLE users ALTER COLUMN materials_access SET DEFAULT false`);
+      // Grant materials access to existing users — only if no user already has access (one-time migration)
+      await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false AND NOT EXISTS (SELECT 1 FROM users WHERE materials_access = true)`);
+      results.push("materials_access column ensured");
     } catch (e: any) { results.push(`materials_access: ${e.message}`); }
     // Audit logs table
     try {
