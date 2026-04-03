@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Users, BookOpen, Layers, LogOut, Plus, Trash2, Check, X,
   Clock, Video, Shield, GraduationCap, ChevronUp, ChevronDown, Eye, Pencil,
-  CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog
+  CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Paperclip
 } from "lucide-react";
 import type { Module, Lesson, Plan, User, AuditLog } from "@shared/schema";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
@@ -37,6 +38,7 @@ type PlanModuleEntry = { id: number; planId: number; moduleId: number };
 export default function AdminDashboard() {
   const { user, logout, isSuperAdmin } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const { data: students = [] } = useQuery<SafeUser[]>({ queryKey: ["/api/admin/students"] });
   const { data: pendingStudents = [] } = useQuery<SafeUser[]>({ queryKey: ["/api/admin/students/pending"] });
@@ -457,6 +459,15 @@ export default function AdminDashboard() {
             </Badge>
           </div>
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-gold text-xs gap-1.5"
+              onClick={() => setLocation("/materiais")}
+            >
+              <Paperclip className="w-4 h-4" />
+              <span className="hidden sm:inline">Materiais</span>
+            </Button>
             <span className="text-sm text-muted-foreground hidden sm:block">
               {user?.name}
             </span>
