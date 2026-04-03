@@ -9,6 +9,7 @@ import StudentDashboard from "./pages/student-dashboard";
 import ModulePage from "./pages/module-page";
 import AdminDashboard from "./pages/admin-dashboard";
 import ResetPasswordPage from "./pages/reset-password";
+import MateriaisComplementares from "./pages/materiais-complementares";
 import NotFound from "./pages/not-found";
 
 function AppContent() {
@@ -32,6 +33,12 @@ function ProtectedModulePage() {
   return <ModulePage />;
 }
 
+function ProtectedMateriaisPage() {
+  const { user } = useAuth();
+  if (!user) return <LoginPage />;
+  return <MateriaisComplementares />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -40,6 +47,7 @@ function App() {
           <Switch>
             <Route path="/" component={AppContent} />
             <Route path="/module/:id" component={ProtectedModulePage} />
+            <Route path="/materiais" component={ProtectedMateriaisPage} />
             <Route path="/reset-password/:token" component={ResetPasswordPage} />
             <Route component={NotFound} />
           </Switch>

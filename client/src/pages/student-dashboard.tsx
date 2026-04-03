@@ -656,6 +656,26 @@ export default function StudentDashboard() {
             </div>
           </section>
 
+          {/* ===== MATERIAIS COMPLEMENTARES ===== */}
+          <section className="space-y-4">
+            <h2 className="font-serif text-2xl font-semibold text-foreground">Materiais Complementares</h2>
+            <div
+              className="group rounded-2xl overflow-hidden border border-border/40 bg-card/60 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
+              onClick={() => setLocation("/materiais")}
+            >
+              <div className="flex items-center gap-5 p-5 sm:p-6">
+                <div className="shrink-0 w-12 h-12 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
+                  <Paperclip className="w-6 h-6 text-gold" />
+                </div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <h3 className="font-semibold text-foreground text-sm sm:text-base">Compilados, artigos e resumos em audio</h3>
+                  <p className="text-xs text-muted-foreground">Materiais de apoio organizados por tema para complementar seus estudos.</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gold/60 shrink-0 transition-transform group-hover:translate-x-1" />
+              </div>
+            </div>
+          </section>
+
           {/* ===== RECURSOS EXCLUSIVOS ===== */}
           <section className="space-y-5">
             <h2 className="font-serif text-2xl font-semibold text-foreground">Recursos Exclusivos</h2>
