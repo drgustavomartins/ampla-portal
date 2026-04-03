@@ -3,8 +3,50 @@ import type { Server } from "http";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import { sql } from "drizzle-orm";
 import { storage } from "./storage";
 import { registerSchema, loginSchema, insertModuleSchema, insertLessonSchema } from "@shared/schema";
+
+// In-memory rate limiter for IP-based throttling
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+function rateLimit(key: string, maxRequests: number, windowMs: number): boolean {
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
+  if (!entry || now > entry.resetAt) {
+    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (entry.count >= maxRequests) {
+    return false;
+  }
+  entry.count++;
+  return true;
+}
+// Clean up stale entries periodically
+setInterval(() => {
+  const now = Date.now();
+  rateLimitStore.forEach((entry, key) => {
+    if (now > entry.resetAt) rateLimitStore.delete(key);
+  });
+}, 60000);
+
+// Validate and parse integer route params safely
+function safeParseInt(val: string): number | null {
+  const n = parseInt(val, 10);
+  if (isNaN(n) || n < 0 || n > 2147483647) return null;
+  return n;
+}
+
+// Validate URL format (prevent stored XSS via javascript: URLs)
+function isValidUrl(url: string): boolean {
+  if (!url) return true;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -85,6 +127,10 @@ export async function registerRoutes(server: Server, app: Express) {
 
   app.post("/api/auth/register", async (req, res) => {
     try {
+      const ip = req.ip || req.socket.remoteAddress || "unknown";
+      if (!rateLimit(`register:${ip}`, 5, 15 * 60 * 1000)) {
+        return res.status(429).json({ message: "Muitas tentativas. Tente novamente mais tarde." });
+      }
       const data = registerSchema.parse(req.body);
       const existing = await storage.getUserByEmail(data.email);
       if (existing) {
@@ -107,6 +153,10 @@ export async function registerRoutes(server: Server, app: Express) {
 
   app.post("/api/auth/login", async (req, res) => {
     try {
+      const ip = req.ip || req.socket.remoteAddress || "unknown";
+      if (!rateLimit(`login:${ip}`, 10, 15 * 60 * 1000)) {
+        return res.status(429).json({ message: "Muitas tentativas de login. Tente novamente mais tarde." });
+      }
       const data = loginSchema.parse(req.body);
       const user = await storage.getUserByEmail(data.email.trim().toLowerCase());
       if (!user) {
@@ -181,7 +231,7 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
     const user = await storage.getUser(auth.userId);
     if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
-    const { password, ...safeUser } = user;
+    const { password, loginAttempts, lockedUntil, ...safeUser } = user;
     res.json({ user: safeUser });
   });
 
@@ -483,8 +533,11 @@ export async function registerRoutes(server: Server, app: Express) {
   app.post("/api/admin/modules/reorder", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const { orderedIds } = req.body;
-    if (!orderedIds || !Array.isArray(orderedIds)) {
+    if (!orderedIds || !Array.isArray(orderedIds) || orderedIds.length > 500) {
       return res.status(400).json({ message: "orderedIds array obrigatório" });
+    }
+    if (!orderedIds.every((id: any) => typeof id === "number" && Number.isInteger(id) && id > 0)) {
+      return res.status(400).json({ message: "orderedIds deve conter apenas IDs inteiros positivos" });
     }
     for (let i = 0; i < orderedIds.length; i++) {
       await storage.updateModule(orderedIds[i], { order: i + 1 });
@@ -497,8 +550,11 @@ export async function registerRoutes(server: Server, app: Express) {
   app.post("/api/admin/plans/reorder", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const { orderedIds } = req.body;
-    if (!orderedIds || !Array.isArray(orderedIds)) {
+    if (!orderedIds || !Array.isArray(orderedIds) || orderedIds.length > 500) {
       return res.status(400).json({ message: "orderedIds array obrigatório" });
+    }
+    if (!orderedIds.every((id: any) => typeof id === "number" && Number.isInteger(id) && id > 0)) {
+      return res.status(400).json({ message: "orderedIds deve conter apenas IDs inteiros positivos" });
     }
     for (let i = 0; i < orderedIds.length; i++) {
       await storage.updatePlan(orderedIds[i], { order: i + 1 });
@@ -511,8 +567,11 @@ export async function registerRoutes(server: Server, app: Express) {
   app.post("/api/admin/lessons/reorder", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const { orderedIds } = req.body;
-    if (!orderedIds || !Array.isArray(orderedIds)) {
+    if (!orderedIds || !Array.isArray(orderedIds) || orderedIds.length > 500) {
       return res.status(400).json({ message: "orderedIds array obrigatório" });
+    }
+    if (!orderedIds.every((id: any) => typeof id === "number" && Number.isInteger(id) && id > 0)) {
+      return res.status(400).json({ message: "orderedIds deve conter apenas IDs inteiros positivos" });
     }
     for (let i = 0; i < orderedIds.length; i++) {
       await storage.updateLesson(orderedIds[i], { order: i + 1 });
@@ -543,7 +602,10 @@ export async function registerRoutes(server: Server, app: Express) {
     if (title !== undefined) moduleUpdate.title = sanitize(title);
     if (description !== undefined) moduleUpdate.description = description ? sanitize(description) : null;
     if (order !== undefined) moduleUpdate.order = order;
-    if (imageUrl !== undefined) moduleUpdate.imageUrl = imageUrl;
+    if (imageUrl !== undefined) {
+      if (imageUrl && !isValidUrl(imageUrl)) return res.status(400).json({ message: "URL de imagem inválida" });
+      moduleUpdate.imageUrl = imageUrl;
+    }
     const updated = await storage.updateModule(parseInt(req.params.id), moduleUpdate);
     if (!updated) return res.status(404).json({ message: "Módulo não encontrado" });
     const admin = await storage.getUser(auth.userId);
@@ -584,8 +646,11 @@ export async function registerRoutes(server: Server, app: Express) {
     if (moduleId !== undefined) lessonUpdate.moduleId = moduleId;
     if (title !== undefined) lessonUpdate.title = sanitize(title);
     if (description !== undefined) lessonUpdate.description = description ? sanitize(description) : null;
-    if (videoUrl !== undefined) lessonUpdate.videoUrl = videoUrl;
-    if (duration !== undefined) lessonUpdate.duration = duration;
+    if (videoUrl !== undefined) {
+      if (videoUrl && !isValidUrl(videoUrl)) return res.status(400).json({ message: "URL de vídeo inválida" });
+      lessonUpdate.videoUrl = videoUrl;
+    }
+    if (duration !== undefined) lessonUpdate.duration = duration ? sanitize(duration) : null;
     if (order !== undefined) lessonUpdate.order = order;
     const updated = await storage.updateLesson(parseInt(req.params.id), lessonUpdate);
     if (!updated) return res.status(404).json({ message: "Aula não encontrada" });
@@ -638,6 +703,10 @@ export async function registerRoutes(server: Server, app: Express) {
 
   app.post("/api/auth/reset-password/:token", async (req, res) => {
     try {
+      const ip = req.ip || req.socket.remoteAddress || "unknown";
+      if (!rateLimit(`reset:${ip}`, 5, 15 * 60 * 1000)) {
+        return res.status(429).json({ message: "Muitas tentativas. Tente novamente mais tarde." });
+      }
       const { password } = req.body;
       if (!password || password.length < 6) {
         return res.status(400).json({ message: "Senha deve ter pelo menos 6 caracteres" });
@@ -693,7 +762,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
       const updated = await storage.updateUser(userId, updateData);
       if (!updated) return res.status(500).json({ message: "Erro ao atualizar" });
-      const { password: _, ...safe } = updated;
+      const { password: _, loginAttempts: _la, lockedUntil: _lu, ...safe } = updated;
       res.json({ message: "Perfil atualizado com sucesso", user: safe });
     } catch (e: any) {
       res.status(500).json({ message: e.message || "Erro ao atualizar perfil" });
@@ -926,7 +995,7 @@ export async function registerRoutes(server: Server, app: Express) {
       const adminRows = Array.isArray(adminResult) ? adminResult : (adminResult as any).rows || [];
       results.push(`current_admins: ${JSON.stringify(adminRows)}`);
     } catch (e: any) { results.push(`admin_check: ${e.message}`); }
-    // Migrate video URLs from Google Drive to YouTube
+    // Migrate video URLs from Google Drive to YouTube (parameterized queries)
     const ytMigrations = [
       { id: 7,  url: "https://youtu.be/UlrX0ZigQUc" },
       { id: 8,  url: "https://youtu.be/F9X6wAA6ruI" },
@@ -941,11 +1010,11 @@ export async function registerRoutes(server: Server, app: Express) {
     ];
     for (const yt of ytMigrations) {
       try {
-        await db.execute(`UPDATE lessons SET video_url = '${yt.url}' WHERE id = ${yt.id}`);
+        await db.execute(sql`UPDATE lessons SET video_url = ${yt.url} WHERE id = ${yt.id}`);
         results.push(`lesson ${yt.id}: YouTube URL set`);
       } catch (e: any) { results.push(`lesson ${yt.id}: ${e.message}`); }
     }
-    // Migrate lesson descriptions (AI-generated, professional Portuguese)
+    // Migrate lesson descriptions (parameterized queries)
     const descMigrations = [
       { title: "Aula inicial", desc: "Introdução ao curso e orientações gerais para aproveitar ao máximo sua mentoria." },
       { title: "Introdução", desc: "Visão geral sobre a toxina botulínica e sua importância na prática clínica estética." },
@@ -962,7 +1031,7 @@ export async function registerRoutes(server: Server, app: Express) {
     ];
     for (const dm of descMigrations) {
       try {
-        await db.execute(`UPDATE lessons SET description = '${dm.desc}' || E'\\n\\n' || COALESCE(description, '') WHERE title = '${dm.title}' AND (description IS NULL OR description = '' OR description LIKE 'Drive com%' OR description LIKE 'Seringa de%' OR description LIKE 'Essa toxina%' OR description LIKE 'Links %')`);
+        await db.execute(sql`UPDATE lessons SET description = ${dm.desc} || E'\n\n' || COALESCE(description, '') WHERE title = ${dm.title} AND (description IS NULL OR description = '' OR description LIKE 'Drive com%' OR description LIKE 'Seringa de%' OR description LIKE 'Essa toxina%' OR description LIKE 'Links %')`);
         results.push(`desc migration: ${dm.title} updated`);
       } catch (e: any) { results.push(`desc migration ${dm.title}: ${e.message}`); }
     }
