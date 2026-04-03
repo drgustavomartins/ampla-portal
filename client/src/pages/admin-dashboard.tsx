@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
@@ -25,8 +25,17 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Users, BookOpen, Layers, LogOut, Plus, Trash2, Check, X,
   Clock, Video, Shield, GraduationCap, ChevronUp, ChevronDown, Eye, Pencil,
-  CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library, GripVertical
+  CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library,
+  GripVertical
 } from "lucide-react";
+import {
+  DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
+  useSensor, useSensors, type DragEndEvent
+} from "@dnd-kit/core";
+import {
+  arrayMove, SortableContext, useSortable, verticalListSortingStrategy
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { Module, Lesson, Plan, User, AuditLog } from "@shared/schema";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -43,45 +52,65 @@ type SafeUser = Omit<User, "password">;
 type LessonProgress = { id: number; userId: number; lessonId: number; completed: boolean; completedAt: string | null };
 type PlanModuleEntry = { id: number; planId: number; moduleId: number };
 
-function SortableModuleCard({ mod, idx, lessons, isSuperAdmin, reorderPending, onEdit, onDelete }: {
-  mod: Module; idx: number; lessons: Lesson[]; isSuperAdmin: boolean; reorderPending: boolean;
-  onEdit: (m: Module) => void; onDelete: (id: number) => void;
+function SortableModuleCard({
+  mod, idx, modLessons, isSuperAdmin, reorderPending, onEdit, onDelete
+}: {
+  mod: Module; idx: number; modLessons: Lesson[]; isSuperAdmin: boolean;
+  reorderPending: boolean; onEdit: () => void; onDelete: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: mod.id });
-  const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : undefined, position: "relative" as const };
-  const modLessons = lessons.filter(l => l.moduleId === mod.id);
+  const {
+    attributes, listeners, setNodeRef, setActivatorNodeRef,
+    transform, transition, isDragging
+  } = useSortable({ id: mod.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    position: "relative" as const,
+  };
+
   return (
-    <Card ref={setNodeRef} style={style} className={`border-border/30 bg-card/50 transition-colors ${isDragging ? "shadow-xl shadow-gold/10 opacity-90 ring-1 ring-gold/30" : "hover:bg-card/70"}`}>
-      <CardContent className="p-4 sm:p-5">
-        <div className="flex items-start gap-3 sm:gap-4">
-          <button type="button" className="flex items-center justify-center w-8 h-10 shrink-0 mt-0.5 cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-gold touch-none" {...attributes} {...listeners} aria-label="Arrastar para reordenar">
-            <GripVertical className="w-5 h-5" />
-          </button>
-          <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center shrink-0 mt-0.5 hidden sm:flex"><BookOpen className="w-5 h-5 text-gold" /></div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground font-mono">{String(idx + 1).padStart(2, "0")}</span><p className="font-medium text-foreground text-sm sm:text-[15px] truncate">{mod.title}</p></div>
-                {mod.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{mod.description}</p>}
-                <p className="text-xs text-muted-foreground mt-2">{modLessons.length} {modLessons.length === 1 ? "aula" : "aulas"}</p>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0" onClick={() => onEdit(mod)} data-testid={`button-edit-module-${mod.id}`}><Pencil className="w-4 h-4" /></Button>
-                {isSuperAdmin && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild><Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0" data-testid={`button-delete-module-${mod.id}`}><Trash2 className="w-4 h-4" /></Button></AlertDialogTrigger>
-                    <AlertDialogContent className="bg-card border-border/40">
-                      <AlertDialogHeader><AlertDialogTitle>Confirmar exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o módulo "{mod.title}"? Todas as aulas serão removidas.</AlertDialogDescription></AlertDialogHeader>
-                      <AlertDialogFooter><AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => onDelete(mod.id)}>Excluir</AlertDialogAction></AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
+    <div ref={setNodeRef} style={style}>
+      <Card className={`border-border/30 bg-card/50 transition-all ${isDragging ? "shadow-lg shadow-gold/10 opacity-90 scale-[1.02] border-gold/30" : "hover:bg-card/70"}`}>
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <button
+              ref={setActivatorNodeRef}
+              {...attributes}
+              {...listeners}
+              className={`shrink-0 mt-1.5 cursor-grab active:cursor-grabbing touch-none rounded p-1 -ml-1 transition-colors ${isDragging ? "text-gold" : "text-muted-foreground/50 hover:text-gold/80"}`}
+              aria-label="Arrastar para reordenar"
+              disabled={reorderPending}
+            >
+              <GripVertical className="w-5 h-5" />
+            </button>
+            <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center shrink-0 mt-0.5 hidden sm:flex"><BookOpen className="w-5 h-5 text-gold" /></div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2"><span className="text-xs text-muted-foreground font-mono">{String(idx + 1).padStart(2, "0")}</span><p className="font-medium text-foreground text-sm sm:text-[15px] truncate">{mod.title}</p></div>
+                  {mod.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{mod.description}</p>}
+                  <p className="text-xs text-muted-foreground mt-2">{modLessons.length} {modLessons.length === 1 ? "aula" : "aulas"}</p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0" onClick={onEdit} data-testid={`button-edit-module-${mod.id}`}><Pencil className="w-4 h-4" /></Button>
+                  {isSuperAdmin && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild><Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0" data-testid={`button-delete-module-${mod.id}`}><Trash2 className="w-4 h-4" /></Button></AlertDialogTrigger>
+                      <AlertDialogContent className="bg-card border-border/40">
+                        <AlertDialogHeader><AlertDialogTitle>Confirmar exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir o módulo "{mod.title}"? Todas as aulas serão removidas.</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogFooter><AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={onDelete}>Excluir</AlertDialogAction></AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -195,20 +224,29 @@ export default function AdminDashboard() {
     },
   });
 
-  const sensors = useSensors(
+  const sortedModules = useMemo(
+    () => [...modules].sort((a, b) => a.order - b.order),
+    [modules]
+  );
+
+  const moduleIds = useMemo(
+    () => sortedModules.map(m => m.id),
+    [sortedModules]
+  );
+
+  const dndSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
     useSensor(KeyboardSensor)
   );
 
-  const handleModuleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const sorted = [...modules].sort((a, b) => a.order - b.order);
-    const oldIndex = sorted.findIndex(m => m.id === active.id);
-    const newIndex = sorted.findIndex(m => m.id === over.id);
+    const oldIndex = sortedModules.findIndex(m => m.id === active.id);
+    const newIndex = sortedModules.findIndex(m => m.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
-    const reordered = arrayMove(sorted, oldIndex, newIndex);
+    const reordered = arrayMove(sortedModules, oldIndex, newIndex);
     reorderMutation.mutate(reordered.map(m => m.id));
   };
 
@@ -1310,21 +1348,24 @@ export default function AdminDashboard() {
             {modules.length === 0 ? (
               <Card className="border-border/30 bg-card/40"><CardContent className="p-12 text-center"><div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4"><Layers className="w-7 h-7 text-muted-foreground/40" /></div><p className="text-sm text-muted-foreground">Nenhum módulo criado ainda</p></CardContent></Card>
             ) : (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleModuleDragEnd}>
-                <SortableContext items={[...modules].sort((a, b) => a.order - b.order).map(m => m.id)} strategy={verticalListSortingStrategy}>
+              <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={moduleIds} strategy={verticalListSortingStrategy}>
                   <div className="space-y-3">
-                    {[...modules].sort((a, b) => a.order - b.order).map((mod, idx) => (
-                      <SortableModuleCard
-                        key={mod.id}
-                        mod={mod}
-                        idx={idx}
-                        lessons={lessons}
-                        isSuperAdmin={isSuperAdmin}
-                        reorderPending={reorderMutation.isPending}
-                        onEdit={(m) => { setEditingModule(m); setEditModuleForm({ title: m.title, description: m.description || "" }); }}
-                        onDelete={(id) => deleteModuleMutation.mutate(id)}
-                      />
-                    ))}
+                    {sortedModules.map((mod, idx) => {
+                      const modLessons = lessons.filter(l => l.moduleId === mod.id);
+                      return (
+                        <SortableModuleCard
+                          key={mod.id}
+                          mod={mod}
+                          idx={idx}
+                          modLessons={modLessons}
+                          isSuperAdmin={isSuperAdmin}
+                          reorderPending={reorderMutation.isPending}
+                          onEdit={() => { setEditingModule(mod); setEditModuleForm({ title: mod.title, description: mod.description || "" }); }}
+                          onDelete={() => deleteModuleMutation.mutate(mod.id)}
+                        />
+                      );
+                    })}
                   </div>
                 </SortableContext>
               </DndContext>
