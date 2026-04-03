@@ -33,7 +33,7 @@ export const users = pgTable("users", {
   supportExpiresAt: text("support_expires_at"), // null = uses accessExpiresAt
   clinicalPracticeAccess: boolean("clinical_practice_access").notNull().default(true),
   clinicalPracticeHours: integer("clinical_practice_hours").notNull().default(0),
-  materialsAccess: boolean("materials_access").notNull().default(false),
+  materialsAccess: boolean("materials_access").notNull().default(true),
 });
 
 // Modules
