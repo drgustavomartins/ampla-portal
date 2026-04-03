@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
   ChevronRight, ChevronLeft, Calendar, Layers, Settings, Loader2, AlertTriangle,
-  Users, MessageCircle, Activity, Lock, ShoppingCart, ExternalLink, Paperclip, Library
+  Users, MessageCircle, Activity, Lock, ShoppingCart, ExternalLink, Paperclip
 } from "lucide-react";
 import MateriaisComplementares from "./materiais-complementares";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
@@ -83,7 +83,6 @@ export default function StudentDashboard() {
     enabled: !!user?.id,
   });
   const [purchaseModule, setPurchaseModule] = useState<Module | null>(null);
-  const materiaisRef = useRef<HTMLDivElement>(null);
 
   const completeMutation = useMutation({
     mutationFn: async ({ lessonId, complete }: { lessonId: number; complete: boolean }) => {
@@ -396,16 +395,6 @@ export default function StudentDashboard() {
             <div className="w-9 h-9 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center">
               <span className="text-xs font-semibold text-gold">{initials}</span>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-gold h-9 w-9 p-0"
-              onClick={() => materiaisRef.current?.scrollIntoView({ behavior: "smooth" })}
-              data-testid="button-materiais"
-              title="Materiais Complementares"
-            >
-              <Library className="w-4 h-4" />
-            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -794,7 +783,7 @@ export default function StudentDashboard() {
           </section>
 
           {/* ===== MATERIAIS COMPLEMENTARES (inline) ===== */}
-          <section ref={materiaisRef} className="space-y-4">
+          <section className="space-y-4">
             <MateriaisComplementares />
           </section>
 
