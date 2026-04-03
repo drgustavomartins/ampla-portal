@@ -76,9 +76,10 @@ export async function registerRoutes(server: Server, app: Express) {
     const { db } = await import("./db");
     await db.execute(`ALTER TABLE plans ADD COLUMN IF NOT EXISTS material_topics TEXT`);
     await db.execute(`ALTER TABLE plans ADD COLUMN IF NOT EXISTS "order" INTEGER NOT NULL DEFAULT 0`);
-    console.log("[auto-migrate] material_topics and order columns ensured on plans table");
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS materials_access BOOLEAN NOT NULL DEFAULT false`);
+    console.log("[auto-migrate] material_topics, order, and materials_access columns ensured");
   } catch (e: any) {
-    console.error("[auto-migrate] Failed to ensure plans columns:", e.message);
+    console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
 
   // ==================== AUTH ====================
@@ -323,7 +324,14 @@ export async function registerRoutes(server: Server, app: Express) {
       return res.json({ accessAll: true, topics: [] });
     }
     const user = await storage.getUser(auth.userId);
-    if (!user || !user.planId) {
+    if (!user) {
+      return res.json({ accessAll: false, topics: [] });
+    }
+    // User-level materialsAccess gate: if false/missing, no access
+    if (!user.materialsAccess) {
+      return res.json({ accessAll: false, topics: [] });
+    }
+    if (!user.planId) {
       return res.json({ accessAll: false, topics: [] });
     }
     const plan = await storage.getPlan(user.planId);
@@ -458,7 +466,8 @@ export async function registerRoutes(server: Server, app: Express) {
     const auth = requireAdmin(req, res);
     if (!auth) return;
     const allowedFields = ['name', 'email', 'phone', 'planId', 'approved', 'accessExpiresAt',
-      'communityAccess', 'supportAccess', 'supportExpiresAt', 'clinicalPracticeAccess', 'clinicalPracticeHours'];
+      'communityAccess', 'supportAccess', 'supportExpiresAt', 'clinicalPracticeAccess', 'clinicalPracticeHours',
+      'materialsAccess'];
     const updateData: any = {};
     for (const key of allowedFields) {
       if (req.body[key] !== undefined) {
@@ -870,6 +879,10 @@ export async function registerRoutes(server: Server, app: Express) {
       await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS clinical_practice_hours INTEGER NOT NULL DEFAULT 0`);
       results.push("clinical_practice_hours column ensured");
     } catch (e: any) { results.push(`clinical_practice_hours: ${e.message}`); }
+    try {
+      await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS materials_access BOOLEAN NOT NULL DEFAULT false`);
+      results.push("materials_access column ensured");
+    } catch (e: any) { results.push(`materials_access: ${e.message}`); }
     // Audit logs table
     try {
       await db.execute(`CREATE TABLE IF NOT EXISTS audit_logs (id SERIAL PRIMARY KEY, admin_id INTEGER NOT NULL, admin_name TEXT NOT NULL, action TEXT NOT NULL, target_type TEXT, target_id INTEGER, target_name TEXT, details TEXT, created_at TEXT NOT NULL)`);
