@@ -134,6 +134,42 @@ export async function registerRoutes(server: Server, app: Express) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
 
+  // ==================== ONE-TIME: Grant all materials access to existing users ====================
+  // This migration sets materials_access = true and inserts user_material_categories rows
+  // for ALL 6 categories with enabled = true, for every existing user that doesn't already
+  // have them. Uses a migrations_applied table to ensure it runs only once — subsequent
+  // restarts will skip it, so admin overrides (disabling access) are never reverted.
+  try {
+    const { db } = await import("./db");
+    await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
+    const migrationName = "grant_all_materials_access_2026_04";
+    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    const alreadyRows = Array.isArray(already) ? already : (already as any).rows || [];
+    if (alreadyRows.length === 0) {
+      // 1. Enable materials_access for all existing users who still have it as false
+      await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false`);
+      // 2. Insert user_material_categories for all users × all 6 categories (skip existing)
+      const categories = [
+        "Toxina Botulínica",
+        "Preenchedores Faciais",
+        "Bioestimuladores de Colágeno",
+        "Moduladores de Matriz Extracelular",
+        "Método NaturalUp®",
+        "IA na Medicina",
+      ];
+      for (const cat of categories) {
+        await db.execute(`INSERT INTO user_material_categories (user_id, category_name, enabled) SELECT id, '${cat.replace(/'/g, "''")}', true FROM users WHERE NOT EXISTS (SELECT 1 FROM user_material_categories WHERE user_material_categories.user_id = users.id AND user_material_categories.category_name = '${cat.replace(/'/g, "''")}')`);
+      }
+      // 3. Mark migration as applied
+      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+      console.log("[one-time-migrate] Granted all materials access to existing users");
+    } else {
+      console.log("[one-time-migrate] grant_all_materials_access already applied, skipping");
+    }
+  } catch (e: any) {
+    console.error("[one-time-migrate] Failed to grant materials access:", e.message);
+  }
+
   // ==================== AUTH ====================
 
   app.post("/api/auth/register", async (req, res) => {
