@@ -6,7 +6,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft, FileText, Headphones, FileIcon, Download, ChevronDown, ChevronUp, ExternalLink,
+  ArrowLeft, FileText, Headphones, FileIcon, Download, ChevronDown, ChevronUp, ExternalLink, Eye, X,
 } from "lucide-react";
 
 /* ───────── Types ───────── */
@@ -296,9 +296,10 @@ function driveViewUrl(id: string) {
 function driveDownloadUrl(id: string) {
   return `https://drive.google.com/uc?export=download&id=${id}`;
 }
-function driveAudioUrl(id: string) {
+function drivePreviewUrl(id: string) {
   return `https://drive.google.com/file/d/${id}/preview`;
 }
+const driveAudioUrl = drivePreviewUrl;
 
 function FileTypeIcon({ type }: { type: FileEntry["type"] }) {
   switch (type) {
@@ -328,54 +329,80 @@ function TypeLabel({ type }: { type: FileEntry["type"] }) {
 /* ───────── Components ───────── */
 
 function FileRow({ file }: { file: FileEntry }) {
+  const [pdfOpen, setPdfOpen] = useState(false);
+  const showDownload = !(file.type === "mp3" && file.youtubeId);
+
   return (
-    <div className="group flex items-start gap-3 py-3 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
-      <FileTypeIcon type={file.type} />
-      <div className="flex-1 min-w-0 space-y-1.5">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-foreground/90 leading-snug">{file.name}</span>
-          <TypeLabel type={file.type} />
-        </div>
-        {file.type === "mp3" && file.youtubeId ? (
-          <div className="relative w-full mt-1 rounded-lg overflow-hidden border border-border/20" style={{ paddingBottom: "56.25%", maxWidth: "28rem" }}>
-            <iframe
-              src={`https://www.youtube.com/embed/${file.youtubeId}`}
-              className="absolute inset-0 w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              frameBorder="0"
-              title={file.name}
-            />
+    <div className="group py-3 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
+      <div className="flex items-start gap-3">
+        <FileTypeIcon type={file.type} />
+        <div className="flex-1 min-w-0 space-y-1.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-foreground/90 leading-snug">{file.name}</span>
+            <TypeLabel type={file.type} />
           </div>
-        ) : file.type === "mp3" ? (
+          {file.type === "mp3" && file.youtubeId ? (
+            <div className="relative w-full mt-1 rounded-lg overflow-hidden border border-border/20" style={{ paddingBottom: "56.25%", maxWidth: "28rem" }}>
+              <iframe
+                src={`https://www.youtube.com/embed/${file.youtubeId}`}
+                className="absolute inset-0 w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                frameBorder="0"
+                title={file.name}
+              />
+            </div>
+          ) : file.type === "mp3" ? (
+            <iframe
+              src={driveAudioUrl(file.driveId)}
+              className="w-full max-w-md h-20 mt-1 rounded-lg border border-border/20"
+              allow="autoplay"
+              sandbox="allow-same-origin allow-scripts allow-popups"
+            />
+          ) : null}
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+          {file.type === "pdf" && (
+            <button
+              onClick={() => setPdfOpen(!pdfOpen)}
+              className={`transition-colors ${pdfOpen ? "text-gold" : "text-muted-foreground hover:text-gold"}`}
+              title={pdfOpen ? "Fechar visualização" : "Visualizar PDF"}
+            >
+              {pdfOpen ? <X className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          )}
+          <a
+            href={driveViewUrl(file.driveId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-gold transition-colors"
+            title="Abrir no Google Drive"
+          >
+            <ExternalLink className="w-4 h-4" />
+          </a>
+          {showDownload && (
+            <a
+              href={driveDownloadUrl(file.driveId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-gold transition-colors"
+              title="Baixar"
+            >
+              <Download className="w-4 h-4" />
+            </a>
+          )}
+        </div>
+      </div>
+      {file.type === "pdf" && pdfOpen && (
+        <div className="mt-2 rounded-lg overflow-hidden border border-border/20">
           <iframe
-            src={driveAudioUrl(file.driveId)}
-            className="w-full max-w-md h-20 mt-1 rounded-lg border border-border/20"
-            allow="autoplay"
-            sandbox="allow-same-origin allow-scripts allow-popups"
+            src={drivePreviewUrl(file.driveId)}
+            className="w-full border-0"
+            style={{ height: "min(70vh, 600px)" }}
+            title={file.name}
           />
-        ) : null}
-      </div>
-      <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
-        <a
-          href={driveViewUrl(file.driveId)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-muted-foreground hover:text-gold transition-colors"
-          title="Visualizar"
-        >
-          <ExternalLink className="w-4 h-4" />
-        </a>
-        <a
-          href={driveDownloadUrl(file.driveId)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-muted-foreground hover:text-gold transition-colors"
-          title="Baixar"
-        >
-          <Download className="w-4 h-4" />
-        </a>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
