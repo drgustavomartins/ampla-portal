@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, asc, desc } from "drizzle-orm";
 import {
   plans, users, modules, lessons, lessonProgress, passwordResets, auditLogs, planModules,
   userModules, userMaterialCategories,
@@ -71,10 +71,10 @@ export const storage = {
     return true;
   },
   async getStudents(): Promise<User[]> {
-    return db.select().from(users).where(eq(users.role, "student"));
+    return db.select().from(users).where(eq(users.role, "student")).orderBy(asc(users.name));
   },
   async getPendingStudents(): Promise<User[]> {
-    return db.select().from(users).where(and(eq(users.role, "student"), eq(users.approved, false)));
+    return db.select().from(users).where(and(eq(users.role, "student"), eq(users.approved, false))).orderBy(asc(users.name));
   },
   async getAdmins(): Promise<User[]> {
     return db.select().from(users).where(

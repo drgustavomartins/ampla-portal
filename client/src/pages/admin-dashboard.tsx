@@ -706,7 +706,9 @@ export default function AdminDashboard() {
   const [logFilterAdmin, setLogFilterAdmin] = useState<string>("all");
   const [logFilterAction, setLogFilterAction] = useState<string>("all");
 
-  const approvedStudents = students.filter(s => s.approved);
+  const sortedStudents = [...students].sort((a, b) => a.name.localeCompare(b.name));
+  const sortedPendingStudents = [...pendingStudents].sort((a, b) => a.name.localeCompare(b.name));
+  const approvedStudents = sortedStudents.filter(s => s.approved);
 
   // Progress helpers
   const getStudentProgress = (studentId: number) => {
@@ -930,7 +932,7 @@ export default function AdminDashboard() {
                   </h3>
                 </div>
                 <div className="space-y-2">
-                  {pendingStudents.map((s) => (
+                  {sortedPendingStudents.map((s) => (
                     <Card key={s.id} className="border-amber-500/20 bg-card/50">
                       <CardContent className="p-4 space-y-3">
                         <div className="min-w-0">
@@ -987,9 +989,9 @@ export default function AdminDashboard() {
 
             <div className="space-y-3">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">
-                Todos os alunos ({students.length})
+                Todos os alunos ({sortedStudents.length})
               </h3>
-              {students.length === 0 ? (
+              {sortedStudents.length === 0 ? (
                 <Card className="border-border/30 bg-card/40">
                   <CardContent className="p-12 text-center">
                     <div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4">
@@ -1000,7 +1002,7 @@ export default function AdminDashboard() {
                 </Card>
               ) : (
                 <div className="space-y-2">
-                  {students.map((s) => {
+                  {sortedStudents.map((s) => {
                     const plan = plans.find(p => p.id === s.planId);
                     const daysLeft = s.accessExpiresAt
                       ? Math.max(0, Math.ceil((new Date(s.accessExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
