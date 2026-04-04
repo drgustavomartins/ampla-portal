@@ -1,3 +1,4 @@
+// Force rebuild v2 — ensure Vite cache invalidation for Preenchedores Faciais content
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
