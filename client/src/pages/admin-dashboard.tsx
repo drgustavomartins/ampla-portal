@@ -565,7 +565,7 @@ export default function AdminDashboard() {
   const [editStudentForm, setEditStudentForm] = useState({
     name: "", phone: "", planId: 0, accessExpiresAt: "", approved: false,
     communityAccess: true, supportAccess: true, supportExpiresAt: "",
-    clinicalPracticeAccess: true, clinicalPracticeHours: 0,
+    clinicalPracticeAccess: true,
     materialsAccess: false,
     mentorshipStartDate: "", mentorshipEndDate: "",
   });
@@ -1046,7 +1046,6 @@ export default function AdminDashboard() {
                                     supportAccess: s.supportAccess ?? true,
                                     supportExpiresAt: s.supportExpiresAt ? s.supportExpiresAt.slice(0, 16) : "",
                                     clinicalPracticeAccess: s.clinicalPracticeAccess ?? true,
-                                    clinicalPracticeHours: s.clinicalPracticeHours ?? 0,
                                     materialsAccess: s.materialsAccess ?? false,
                                     mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
                                     mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
@@ -1410,19 +1409,13 @@ export default function AdminDashboard() {
                       <div className="flex items-center justify-between">
                         <div>
                           <Label className="text-sm font-medium">Praticas Clinicas</Label>
-                          <p className="text-xs text-muted-foreground">Pacote de horas praticas</p>
+                          <p className="text-xs text-muted-foreground">Habilitar botao de agendamento via WhatsApp</p>
                         </div>
                         <Switch
                           checked={editStudentForm.clinicalPracticeAccess}
                           onCheckedChange={(checked) => setEditStudentForm(f => ({ ...f, clinicalPracticeAccess: checked }))}
                         />
                       </div>
-                      {editStudentForm.clinicalPracticeAccess && (
-                        <div className="space-y-2 pl-4 border-l-2 border-gold/20">
-                          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Horas disponiveis</Label>
-                          <Input type="number" min={0} value={editStudentForm.clinicalPracticeHours} onChange={e => setEditStudentForm(f => ({ ...f, clinicalPracticeHours: parseInt(e.target.value) || 0 }))} className="bg-background/50 border-border/40" />
-                        </div>
-                      )}
                     </div>
                   </div>
 
@@ -1445,7 +1438,6 @@ export default function AdminDashboard() {
                       data.supportAccess = editStudentForm.supportAccess;
                       data.supportExpiresAt = editStudentForm.supportExpiresAt ? new Date(editStudentForm.supportExpiresAt).toISOString() : null;
                       data.clinicalPracticeAccess = editStudentForm.clinicalPracticeAccess;
-                      data.clinicalPracticeHours = editStudentForm.clinicalPracticeHours;
                       data.materialsAccess = editStudentForm.materialsAccess;
 
                       // Build user modules data (only entries that were explicitly set)
