@@ -121,7 +121,7 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS materials_access BOOLEAN NOT NULL DEFAULT false`);
     await db.execute(`ALTER TABLE users ALTER COLUMN materials_access SET DEFAULT false`);
     // Grant materials access to all existing users — runs only once (skips if any user already has access)
-    await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false AND NOT EXISTS (SELECT 1 FROM users WHERE materials_access = true)`);
+    await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false`);
     // Mentorship date columns
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mentorship_start_date TEXT`);
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mentorship_end_date TEXT`);
@@ -458,17 +458,24 @@ export async function registerRoutes(server: Server, app: Express) {
 
     // Fallback to plan-based material access
     if (!user.planId) {
-      return res.json({ accessAll: false, topics: [] });
+      // materialsAccess is true but no per-user categories and no plan — grant full access
+      return res.json({ accessAll: true, topics: [] });
     }
     const plan = await storage.getPlan(user.planId);
     if (!plan || !plan.materialTopics) {
-      return res.json({ accessAll: false, topics: [] });
+      // materialsAccess is true but plan has no specific topics — grant full access
+      return res.json({ accessAll: true, topics: [] });
     }
     try {
       const topics: string[] = JSON.parse(plan.materialTopics);
+      if (topics.length === 0) {
+        // materialsAccess is true but plan topics are empty — grant full access
+        return res.json({ accessAll: true, topics: [] });
+      }
       return res.json({ accessAll: false, topics });
     } catch {
-      return res.json({ accessAll: false, topics: [] });
+      // materialsAccess is true but parse failed — grant full access
+      return res.json({ accessAll: true, topics: [] });
     }
   });
 
@@ -1116,7 +1123,7 @@ export async function registerRoutes(server: Server, app: Express) {
       await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS materials_access BOOLEAN NOT NULL DEFAULT false`);
       await db.execute(`ALTER TABLE users ALTER COLUMN materials_access SET DEFAULT false`);
       // Grant materials access to existing users — only if no user already has access (one-time migration)
-      await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false AND NOT EXISTS (SELECT 1 FROM users WHERE materials_access = true)`);
+      await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false`);
       results.push("materials_access column ensured");
     } catch (e: any) { results.push(`materials_access: ${e.message}`); }
     // Audit logs table
