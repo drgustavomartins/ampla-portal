@@ -62,6 +62,7 @@ export default function StudentDashboard() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "" });
   const carouselRef = useRef<HTMLDivElement>(null);
+  const materiaisRef = useRef<HTMLDivElement>(null);
 
   const { data: modules = [] } = useQuery<Module[]>({ queryKey: ["/api/modules"] });
   const { data: lessons = [] } = useQuery<Lesson[]>({ queryKey: ["/api/lessons"] });
@@ -660,7 +661,7 @@ export default function StudentDashboard() {
           {/* ===== RECURSOS EXCLUSIVOS ===== */}
           <section className="space-y-5">
             <h2 className="font-serif text-2xl font-semibold text-foreground">Recursos Exclusivos</h2>
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Comunidade — Lifetime access (respects communityAccess toggle) */}
               {communityEnabled ? (
                 <a
@@ -779,11 +780,30 @@ export default function StudentDashboard() {
                   </span>
                 </div>
               )}
+              {/* Materiais Complementares shortcut card */}
+              <button
+                onClick={() => materiaisRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 text-left transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
+                  <Layers className="w-5 h-5 text-gold" />
+                </div>
+                <h3 className="font-semibold text-sm text-foreground">Materiais Complementares</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">Artigos, compilados e materiais de apoio organizados por tema.</p>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center rounded-full bg-gold/15 border border-gold/30 px-2 py-0.5 text-[10px] font-semibold text-gold uppercase tracking-wider">
+                    Biblioteca
+                  </span>
+                </div>
+                <span className="inline-flex items-center text-xs font-medium text-gold group-hover:underline">
+                  Ver materiais <ChevronRight className="w-3 h-3 ml-1" />
+                </span>
+              </button>
             </div>
           </section>
 
           {/* ===== MATERIAIS COMPLEMENTARES (inline) ===== */}
-          <section className="space-y-4">
+          <section ref={materiaisRef} className="space-y-4 scroll-mt-20">
             <MateriaisComplementares />
           </section>
 
