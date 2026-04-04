@@ -598,7 +598,7 @@ export async function registerRoutes(server: Server, app: Express) {
     const auth = requireAdmin(req, res);
     if (!auth) return;
     const allowedFields = ['name', 'email', 'phone', 'planId', 'approved', 'accessExpiresAt',
-      'communityAccess', 'supportAccess', 'supportExpiresAt', 'clinicalPracticeAccess', 'clinicalPracticeHours',
+      'communityAccess', 'supportAccess', 'supportExpiresAt', 'clinicalPracticeAccess',
       'materialsAccess', 'mentorshipStartDate', 'mentorshipEndDate'];
     const updateData: any = {};
     for (const key of allowedFields) {
