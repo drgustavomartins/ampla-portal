@@ -6,16 +6,15 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft, FileText, Headphones, FileIcon, Download, ChevronDown, ChevronUp, ExternalLink, Eye, X,
+  ArrowLeft, FileText, FileIcon, Download, ChevronDown, ChevronUp, ExternalLink, Eye, X,
 } from "lucide-react";
 
 /* ───────── Types ───────── */
 
 type FileEntry = {
   name: string;
-  type: "pdf" | "mp3" | "docx";
+  type: "pdf" | "docx";
   driveId: string;
-  youtubeId?: string;
 };
 
 type Subcategory = {
@@ -36,15 +35,13 @@ const THEMES: Theme[] = [
   {
     title: "Toxina Botulínica",
     cover: "/images/covers/cover_toxina_botulinica.png?v=2",
-    fileCount: 24,
+    fileCount: 22,
     subcategories: [
       {
         name: "Compilados e Resumos",
         files: [
           { name: "Compilado Toxina Botulínica — Ampla Facial", type: "pdf", driveId: "1AURBQNKIsduh6EBJV1uUfsgkaipm2qry" },
-          { name: "Resumo em áudio: Toxina Botulínica", type: "mp3", driveId: "1g7S0Z3zAyyzWHGTXQ4vg7rndu-3q7m_6", youtubeId: "9ub9xEPJ268" },
           { name: "Apostila Ampla Facial — Outros mecanismos de ação", type: "pdf", driveId: "1vdMtVZhkNHRK8u86RY7Nk5JzF9zP_QEh" },
-          { name: "Resumo em áudio: Apostila Outros Mecanismos", type: "mp3", driveId: "12r-XaTfIQFvGb9qVfj5ZxOd7R0jKP-hG", youtubeId: "W6VMqzXmdNY" },
         ],
       },
       {
@@ -82,27 +79,19 @@ const THEMES: Theme[] = [
   {
     title: "Preenchedores Faciais",
     cover: "/images/covers/cover_preenchedores_faciais.png?v=2",
-    fileCount: 53,
+    fileCount: 45,
     subcategories: [
       {
         name: "Compilados e Resumos",
         files: [
           { name: "Revisão sobre reticulação dos AH com comparativos reológicos", type: "pdf", driveId: "1kU7T9IvhGjndK332K7P-qoFk9KFRhkW_" },
-          { name: "Resumo em áudio: Reticulação dos Ácidos Hialurônicos", type: "mp3", driveId: "1nAywFOIYYiSVW-ACisMnu5g88YHTpOmD", youtubeId: "nnHL__HTmOc" },
           { name: "Compilado CPM e Belotero — Ampla Facial", type: "pdf", driveId: "1JD6WGYvuKqLzQZRyLiqTUwKm75965Kt7" },
-          { name: "Resumo em áudio: CPM e Belotero", type: "mp3", driveId: "1uyp0eELLiihZV60eziV9pb6qPNn656ox", youtubeId: "fwr8VqV8Z-g" },
           { name: "Compilado Crosslinkers (DVS, BDDE e PEG) — Ampla Facial", type: "pdf", driveId: "1W_uZQD_T1sdNWsHmVY5KxUiVxUDGNJuI" },
-          { name: "Resumo em áudio: Crosslinkers", type: "mp3", driveId: "1WSODDQ-qTd-g2Fsk5bVDGtQuNTKwlX6X", youtubeId: "w3lA943qAJs" },
           { name: "Compilado Processo de Fabricação — Ampla Facial", type: "pdf", driveId: "1L8i8gdiPPkJWV9QaTdy_zhgDhWoqsPJo" },
-          { name: "Resumo em áudio: Processo de Fabricação", type: "mp3", driveId: "153fH77VoiUQI50AMQTc5W2JprQ2L2JKQ", youtubeId: "w9JR9UcRPyk" },
           { name: "Compilado Reologia e Propriedades Físicas — Ampla Facial", type: "pdf", driveId: "1iM3ozs7b2R-86dXns70RvaUEFq7JPkF7" },
-          { name: "Resumo em áudio: Reologia e Propriedades Físicas", type: "mp3", driveId: "1BcIUfUoC7Lr-0pvrq6zx4gmoee9Z6T8u", youtubeId: "IX54t62_LjI" },
           { name: "Compilado Degradação e Longevidade — Ampla Facial", type: "pdf", driveId: "1IvmnMPSu4iVCBlnF06NcryKeKIo5OG8w" },
-          { name: "Resumo em áudio: Degradação e Longevidade", type: "mp3", driveId: "1iGTPVrNWFFVsM0o7A8Y5pjDMRU8cT2qY", youtubeId: "7fYUg9piG24" },
           { name: "Compilado Segurança e Complicações — Ampla Facial", type: "pdf", driveId: "1dSgYgEWiCjZD_a54yYt-Vv_0IvznoKWq" },
-          { name: "Resumo em áudio: Segurança e Complicações", type: "mp3", driveId: "1Hfmi1tdieyYKUbCZ_RckVtKjOaYs4ewr", youtubeId: "qM4BxkpoiVc" },
           { name: "Compilado Revisões Gerais e Perspectivas — Ampla Facial", type: "pdf", driveId: "1N6RU6wlN2PG7s1oB9ObWboSsVDwxa4rS" },
-          { name: "Resumo em áudio: Revisões Gerais e Perspectivas", type: "mp3", driveId: "12WpA-n0ROmTN63rbNlp1ObzMJORWFsnx", youtubeId: "GrkQ0UPQ7I0" },
         ],
       },
       {
@@ -182,17 +171,14 @@ const THEMES: Theme[] = [
   {
     title: "Bioestimuladores de Colágeno",
     cover: "/images/covers/cover_bioestimuladores.png?v=2",
-    fileCount: 6,
+    fileCount: 3,
     subcategories: [
       {
         name: "Compilados e Resumos",
         files: [
           { name: "Compilado Anti-inflamatórios x Bioestimuladores", type: "pdf", driveId: "1Svq0RTDq0cbgI1U6b5m-OXBN-I1Gv46t" },
-          { name: "Resumo em áudio: Anti-inflamatórios x Bioestimuladores", type: "mp3", driveId: "1kHqq2DvI8g2Olz33JHt91-aBL4kK_Ev6" },
           { name: "Compilado Radiesse Plus (CaHA-CMC) — Bioestimulação e Mecanotransdução", type: "pdf", driveId: "1bBdy6huD7m6cvi785AFawivDTPNcIjbr" },
-          { name: "Resumo em áudio: Radiesse Plus — Bioestimulação e Mecanotransdução", type: "mp3", driveId: "1JASqeIBL2y0KnsZQPCKo6nHfnmj-nl0-" },
           { name: "Compilado Mecanismos de Neocolagênese — Evidências sobre Bioestimuladores", type: "pdf", driveId: "1gaM22jyoyEdk_huTiyAiKS10g0M6VdC6" },
-          { name: "Resumo em áudio: Mecanismos de Neocolagênese", type: "mp3", driveId: "1JASqeIBL2y0KnsZQPCKo6nHfnmj-nl0-" },
         ],
       },
     ],
@@ -206,13 +192,12 @@ const THEMES: Theme[] = [
   {
     title: "Método NaturalUp®",
     cover: "/images/covers/cover_metodo_naturalup.png?v=2",
-    fileCount: 2,
+    fileCount: 1,
     subcategories: [
       {
         name: "Compilados e Resumos",
         files: [
           { name: "Compilado Full Face — Ampla Facial", type: "pdf", driveId: "1wi4rZ7s6bxJHMfpVefo33gaC-Au7roYp" },
-          { name: "Resumo em áudio: Full Face", type: "mp3", driveId: "1ZeeeKTVPWMwv1j9jyANFyPqcEyElac4H" },
         ],
       },
     ],
@@ -220,13 +205,12 @@ const THEMES: Theme[] = [
   {
     title: "IA na Medicina",
     cover: "/images/covers/cover_ia_medicina.png?v=2",
-    fileCount: 2,
+    fileCount: 1,
     subcategories: [
       {
         name: "Compilados e Resumos",
         files: [
           { name: "Compilado IA na Medicina — Ampla Facial", type: "pdf", driveId: "1ZszH0IrVrbh4eW6rdhckEHc4veA0avkN" },
-          { name: "Resumo em áudio: IA na Medicina", type: "mp3", driveId: "1S5zoXRX2CWhsja_uTAkhIx_LApAAknpK" },
         ],
       },
     ],
@@ -244,24 +228,20 @@ function driveDownloadUrl(id: string) {
 function drivePreviewUrl(id: string) {
   return `https://drive.google.com/file/d/${id}/preview`;
 }
-const driveAudioUrl = drivePreviewUrl;
 
 function FileTypeIcon({ type }: { type: FileEntry["type"] }) {
   switch (type) {
     case "pdf":
       return <FileText className="w-4 h-4 text-red-400 shrink-0" />;
-    case "mp3":
-      return <Headphones className="w-4 h-4 text-emerald-400 shrink-0" />;
     case "docx":
       return <FileIcon className="w-4 h-4 text-blue-400 shrink-0" />;
   }
 }
 
 function TypeLabel({ type }: { type: FileEntry["type"] }) {
-  const labels: Record<FileEntry["type"], string> = { pdf: "PDF", mp3: "MP3", docx: "DOCX" };
+  const labels: Record<FileEntry["type"], string> = { pdf: "PDF", docx: "DOCX" };
   const colors: Record<FileEntry["type"], string> = {
     pdf: "bg-red-500/15 text-red-400 border-red-500/20",
-    mp3: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
     docx: "bg-blue-500/15 text-blue-400 border-blue-500/20",
   };
   return (
@@ -275,7 +255,7 @@ function TypeLabel({ type }: { type: FileEntry["type"] }) {
 
 function FileRow({ file }: { file: FileEntry }) {
   const [pdfOpen, setPdfOpen] = useState(false);
-  const showDownload = !(file.type === "mp3" && file.youtubeId);
+  const showDownload = true;
 
   return (
     <div className="group py-3 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
@@ -286,25 +266,7 @@ function FileRow({ file }: { file: FileEntry }) {
             <span className="text-sm text-foreground/90 leading-snug">{file.name}</span>
             <TypeLabel type={file.type} />
           </div>
-          {file.type === "mp3" && file.youtubeId ? (
-            <div className="relative w-full mt-1 rounded-lg overflow-hidden border border-border/20" style={{ paddingBottom: "56.25%", maxWidth: "28rem" }}>
-              <iframe
-                src={`https://www.youtube.com/embed/${file.youtubeId}`}
-                className="absolute inset-0 w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                frameBorder="0"
-                title={file.name}
-              />
-            </div>
-          ) : file.type === "mp3" ? (
-            <iframe
-              src={driveAudioUrl(file.driveId)}
-              className="w-full max-w-md h-20 mt-1 rounded-lg border border-border/20"
-              allow="autoplay"
-              sandbox="allow-same-origin allow-scripts allow-popups"
-            />
-          ) : null}
+
         </div>
         <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
           {file.type === "pdf" && (
