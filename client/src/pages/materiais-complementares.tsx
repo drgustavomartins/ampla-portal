@@ -99,11 +99,13 @@ const THEMES: Theme[] = [
   {
     title: "Preenchedores Faciais",
     cover: "/images/covers/cover_preenchedores_faciais.png?v=2",
-    fileCount: 88,
+    fileCount: 90,
     subcategories: [
       {
         name: "Compilados e Resumos",
         files: [
+          { name: "Revisão sobre reticulação dos AH com comparativos reológicos", type: "pdf", driveId: "1kU7T9IvhGjndK332K7P-qoFk9KFRhkW_" },
+          { name: "Resumo em áudio: Reticulação dos Ácidos Hialurônicos", type: "mp3", driveId: "1nAywFOIYYiSVW-ACisMnu5g88YHTpOmD" },
           { name: "Compilado CPM e Belotero — Ampla Facial", type: "pdf", driveId: "1JD6WGYvuKqLzQZRyLiqTUwKm75965Kt7" },
           { name: "Resumo em áudio: CPM e Belotero", type: "mp3", driveId: "1uyp0eELLiihZV60eziV9pb6qPNn656ox" },
           { name: "Compilado Crosslinkers (DVS, BDDE e PEG) — Ampla Facial", type: "pdf", driveId: "1W_uZQD_T1sdNWsHmVY5KxUiVxUDGNJuI" },
