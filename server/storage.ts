@@ -2,6 +2,7 @@ import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 import {
   plans, users, modules, lessons, lessonProgress, passwordResets, auditLogs, planModules,
+  userModules, userMaterialCategories,
   type Plan, type InsertPlan,
   type User, type InsertUser,
   type Module, type InsertModule,
@@ -10,6 +11,7 @@ import {
   type PasswordReset,
   type PlanModule,
   type AuditLog, type InsertAuditLog,
+  type UserModule, type UserMaterialCategory,
 } from "@shared/schema";
 
 export const storage = {
@@ -206,5 +208,37 @@ export const storage = {
       .where(eq(auditLogs.adminId, adminId))
       .orderBy(desc(auditLogs.createdAt))
       .limit(200);
+  },
+
+  // ===== USER MODULES =====
+  async getUserModules(userId: number): Promise<UserModule[]> {
+    return db.select().from(userModules).where(eq(userModules.userId, userId));
+  },
+  async setUserModules(userId: number, entries: { moduleId: number; enabled: boolean; startDate: string | null; endDate: string | null }[]): Promise<void> {
+    await db.delete(userModules).where(eq(userModules.userId, userId));
+    if (entries.length > 0) {
+      await db.insert(userModules).values(entries.map(e => ({
+        userId,
+        moduleId: e.moduleId,
+        enabled: e.enabled,
+        startDate: e.startDate,
+        endDate: e.endDate,
+      })));
+    }
+  },
+
+  // ===== USER MATERIAL CATEGORIES =====
+  async getUserMaterialCategories(userId: number): Promise<UserMaterialCategory[]> {
+    return db.select().from(userMaterialCategories).where(eq(userMaterialCategories.userId, userId));
+  },
+  async setUserMaterialCategories(userId: number, entries: { categoryTitle: string; enabled: boolean }[]): Promise<void> {
+    await db.delete(userMaterialCategories).where(eq(userMaterialCategories.userId, userId));
+    if (entries.length > 0) {
+      await db.insert(userMaterialCategories).values(entries.map(e => ({
+        userId,
+        categoryTitle: e.categoryTitle,
+        enabled: e.enabled,
+      })));
+    }
   },
 };

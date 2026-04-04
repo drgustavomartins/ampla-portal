@@ -34,6 +34,9 @@ export const users = pgTable("users", {
   clinicalPracticeAccess: boolean("clinical_practice_access").notNull().default(true),
   clinicalPracticeHours: integer("clinical_practice_hours").notNull().default(0),
   materialsAccess: boolean("materials_access").notNull().default(false),
+  // Mentorship date range
+  mentorshipStartDate: text("mentorship_start_date"), // ISO date string
+  mentorshipEndDate: text("mentorship_end_date"), // ISO date string
 });
 
 // Modules
@@ -82,6 +85,24 @@ export const planModules = pgTable("plan_modules", {
   moduleId: integer("module_id").notNull(),
 });
 
+// User-Module permissions (per-student module access with optional date range)
+export const userModules = pgTable("user_modules", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  moduleId: integer("module_id").notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+  startDate: text("start_date"), // ISO date string, null = immediate
+  endDate: text("end_date"), // ISO date string, null = no expiry
+});
+
+// User-Material Category permissions (per-student material category access)
+export const userMaterialCategories = pgTable("user_material_categories", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  categoryTitle: text("category_title").notNull(), // matches THEMES[].title
+  enabled: boolean("enabled").notNull().default(true),
+});
+
 // Audit Logs
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
@@ -103,6 +124,8 @@ export const insertLessonSchema = createInsertSchema(lessons).omit({ id: true })
 export const insertLessonProgressSchema = createInsertSchema(lessonProgress).omit({ id: true });
 export const insertPlanModuleSchema = createInsertSchema(planModules).omit({ id: true });
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true });
+export const insertUserModuleSchema = createInsertSchema(userModules).omit({ id: true });
+export const insertUserMaterialCategorySchema = createInsertSchema(userMaterialCategories).omit({ id: true });
 
 export const registerSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -132,3 +155,7 @@ export type PlanModule = typeof planModules.$inferSelect;
 export type InsertPlanModule = z.infer<typeof insertPlanModuleSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type UserModule = typeof userModules.$inferSelect;
+export type InsertUserModule = z.infer<typeof insertUserModuleSchema>;
+export type UserMaterialCategory = typeof userMaterialCategories.$inferSelect;
+export type InsertUserMaterialCategory = z.infer<typeof insertUserMaterialCategorySchema>;
