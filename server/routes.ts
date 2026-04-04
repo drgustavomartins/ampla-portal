@@ -201,7 +201,7 @@ export async function registerRoutes(server: Server, app: Express) {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const ip = req.ip || req.socket.remoteAddress || "unknown";
-      if (!rateLimit(`login:${ip}`, 10, 15 * 60 * 1000)) {
+      if (!rateLimit(`login:${ip}`, 5, 60 * 1000)) {
         return res.status(429).json({ message: "Muitas tentativas de login. Tente novamente mais tarde." });
       }
       const data = loginSchema.parse(req.body);
@@ -480,20 +480,36 @@ export async function registerRoutes(server: Server, app: Express) {
   });
 
   // ==================== LESSONS ====================
-  app.get("/api/lessons", async (_req, res) => {
+  app.get("/api/lessons", async (req, res) => {
+    const auth = authenticateRequest(req);
     const l = await storage.getLessons();
-    res.json(l);
+    if (!auth) {
+      res.json(l.map(({ videoUrl, ...rest }) => rest));
+    } else {
+      res.json(l);
+    }
   });
 
   app.get("/api/modules/:id/lessons", async (req, res) => {
+    const auth = authenticateRequest(req);
     const l = await storage.getLessonsByModule(parseInt(req.params.id));
-    res.json(l);
+    if (!auth) {
+      res.json(l.map(({ videoUrl, ...rest }) => rest));
+    } else {
+      res.json(l);
+    }
   });
 
   app.get("/api/lessons/:id", async (req, res) => {
     const lesson = await storage.getLesson(parseInt(req.params.id));
     if (!lesson) return res.status(404).json({ message: "Aula não encontrada" });
-    res.json(lesson);
+    const auth = authenticateRequest(req);
+    if (!auth) {
+      const { videoUrl, ...rest } = lesson;
+      res.json(rest);
+    } else {
+      res.json(lesson);
+    }
   });
 
   // ==================== PROGRESS ====================
