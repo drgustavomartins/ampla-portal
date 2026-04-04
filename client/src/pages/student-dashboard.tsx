@@ -82,6 +82,15 @@ export default function StudentDashboard() {
     },
     enabled: !!user?.id,
   });
+  // Per-user module overrides (admin-configured via Edit Student)
+  const { data: myUserModules = [] } = useQuery<{ id: number; userId: number; moduleId: number; enabled: boolean; startDate: string | null; endDate: string | null }[]>({
+    queryKey: ["/api/my-user-modules"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/my-user-modules");
+      return res.json();
+    },
+    enabled: !!user?.id,
+  });
   const [purchaseModule, setPurchaseModule] = useState<Module | null>(null);
 
   const completeMutation = useMutation({
@@ -149,6 +158,16 @@ export default function StudentDashboard() {
   const hasModuleAccess = (mod: Module) => {
     // "Boas Vindas" is always accessible
     if (mod.order === 1 || mod.title.toLowerCase().includes("boas vindas") || mod.title.toLowerCase().includes("boas-vindas")) return true;
+    // Check per-user module overrides first (admin-configured)
+    if (myUserModules.length > 0) {
+      const override = myUserModules.find(um => um.moduleId === mod.id);
+      if (override) {
+        if (!override.enabled) return false;
+        const now = new Date().toISOString().slice(0, 10);
+        if (override.startDate && now < override.startDate) return false;
+        if (override.endDate && now > override.endDate) return false;
+      }
+    }
     // If no access data yet or accessAll, grant access
     if (!myModules || myModules.accessAll) return true;
     // Check if module is in the plan's module list

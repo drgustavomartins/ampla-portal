@@ -122,7 +122,14 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`ALTER TABLE users ALTER COLUMN materials_access SET DEFAULT false`);
     // Grant materials access to all existing users — runs only once (skips if any user already has access)
     await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false AND NOT EXISTS (SELECT 1 FROM users WHERE materials_access = true)`);
-    console.log("[auto-migrate] material_topics, order, and materials_access columns ensured");
+    // Mentoring date fields
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mentoring_start_date TEXT`);
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mentoring_end_date TEXT`);
+    // User-module per-user overrides table
+    await db.execute(`CREATE TABLE IF NOT EXISTS user_modules (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, module_id INTEGER NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, start_date TEXT, end_date TEXT, UNIQUE(user_id, module_id))`);
+    // User-material-category per-user overrides table
+    await db.execute(`CREATE TABLE IF NOT EXISTS user_material_categories (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, category_name TEXT NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, UNIQUE(user_id, category_name))`);
+    console.log("[auto-migrate] material_topics, order, materials_access, mentoring dates, user_modules, user_material_categories ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
@@ -400,6 +407,40 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   });
 
+  // ==================== USER MODULES (per-user overrides) ====================
+  app.get("/api/admin/user-modules/:userId", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const userId = safeParseInt(req.params.userId);
+    if (!userId) return res.status(400).json({ message: "ID inválido" });
+    const um = await storage.getUserModules(userId);
+    res.json(um);
+  });
+
+  // ==================== USER MATERIAL CATEGORIES (per-user overrides) ====================
+  app.get("/api/admin/user-material-categories/:userId", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const userId = safeParseInt(req.params.userId);
+    if (!userId) return res.status(400).json({ message: "ID inválido" });
+    const umc = await storage.getUserMaterialCategories(userId);
+    res.json(umc);
+  });
+
+  // ==================== MY MODULES (with per-user overrides) ====================
+  app.get("/api/my-user-modules", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    const um = await storage.getUserModules(auth.userId);
+    res.json(um);
+  });
+
+  // ==================== MY MATERIAL CATEGORIES (per-user overrides) ====================
+  app.get("/api/my-user-material-categories", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    const umc = await storage.getUserMaterialCategories(auth.userId);
+    res.json(umc);
+  });
+
   // ==================== LESSONS ====================
   app.get("/api/lessons", async (_req, res) => {
     const l = await storage.getLessons();
@@ -519,25 +560,43 @@ export async function registerRoutes(server: Server, app: Express) {
     const auth = requireAdmin(req, res);
     if (!auth) return;
     const allowedFields = ['name', 'email', 'phone', 'planId', 'approved', 'accessExpiresAt',
+      'mentoringStartDate', 'mentoringEndDate',
       'communityAccess', 'supportAccess', 'supportExpiresAt', 'clinicalPracticeAccess', 'clinicalPracticeHours',
       'materialsAccess'];
+    const dateFields = ['accessExpiresAt', 'supportExpiresAt', 'mentoringStartDate', 'mentoringEndDate'];
     const updateData: any = {};
     for (const key of allowedFields) {
       if (req.body[key] !== undefined) {
-        // Sanitize string values
-        if (typeof req.body[key] === "string" && !['accessExpiresAt', 'supportExpiresAt', 'email'].includes(key)) {
+        if (typeof req.body[key] === "string" && !dateFields.includes(key) && key !== 'email') {
           updateData[key] = sanitize(req.body[key]);
         } else {
           updateData[key] = req.body[key];
         }
       }
     }
-    const student = await storage.getUser(parseInt(req.params.id));
-    const updated = await storage.updateUser(parseInt(req.params.id), updateData);
+    const studentId = parseInt(req.params.id);
+    const student = await storage.getUser(studentId);
+    const updated = await storage.updateUser(studentId, updateData);
     if (!updated) return res.status(404).json({ message: "Aluno não encontrado" });
+    // Save per-user module overrides if provided
+    if (Array.isArray(req.body.userModules)) {
+      await storage.setUserModules(studentId, req.body.userModules.map((m: any) => ({
+        moduleId: Number(m.moduleId),
+        enabled: !!m.enabled,
+        startDate: m.startDate || null,
+        endDate: m.endDate || null,
+      })));
+    }
+    // Save per-user material category overrides if provided
+    if (Array.isArray(req.body.userMaterialCategories)) {
+      await storage.setUserMaterialCategories(studentId, req.body.userMaterialCategories.map((c: any) => ({
+        categoryName: String(c.categoryName),
+        enabled: !!c.enabled,
+      })));
+    }
     const { password, ...safe } = updated;
     const admin = await storage.getUser(auth.userId);
-    await logAction(auth.userId, admin?.name || "Admin", "student_updated", "student", parseInt(req.params.id), student?.name || "?", updateData);
+    await logAction(auth.userId, admin?.name || "Admin", "student_updated", "student", studentId, student?.name || "?", updateData);
     res.json(safe);
   });
 
@@ -958,6 +1017,22 @@ export async function registerRoutes(server: Server, app: Express) {
       await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false AND NOT EXISTS (SELECT 1 FROM users WHERE materials_access = true)`);
       results.push("materials_access column ensured");
     } catch (e: any) { results.push(`materials_access: ${e.message}`); }
+    // Mentoring date columns
+    try {
+      await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mentoring_start_date TEXT`);
+      await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mentoring_end_date TEXT`);
+      results.push("mentoring date columns ensured");
+    } catch (e: any) { results.push(`mentoring_dates: ${e.message}`); }
+    // User-module per-user overrides table
+    try {
+      await db.execute(`CREATE TABLE IF NOT EXISTS user_modules (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, module_id INTEGER NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, start_date TEXT, end_date TEXT, UNIQUE(user_id, module_id))`);
+      results.push("user_modules table ensured");
+    } catch (e: any) { results.push(`user_modules: ${e.message}`); }
+    // User-material-category per-user overrides table
+    try {
+      await db.execute(`CREATE TABLE IF NOT EXISTS user_material_categories (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, category_name TEXT NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, UNIQUE(user_id, category_name))`);
+      results.push("user_material_categories table ensured");
+    } catch (e: any) { results.push(`user_material_categories: ${e.message}`); }
     // Audit logs table
     try {
       await db.execute(`CREATE TABLE IF NOT EXISTS audit_logs (id SERIAL PRIMARY KEY, admin_id INTEGER NOT NULL, admin_name TEXT NOT NULL, action TEXT NOT NULL, target_type TEXT, target_id INTEGER, target_name TEXT, details TEXT, created_at TEXT NOT NULL)`);

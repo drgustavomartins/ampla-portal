@@ -314,15 +314,34 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
     enabled: !!user,
   });
 
+  // Per-user material category overrides (admin-configured via Edit Student)
+  const { data: myUserMaterialCats = [] } = useQuery<{ id: number; userId: number; categoryName: string; enabled: boolean }[]>({
+    queryKey: ["/api/my-user-material-categories"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/my-user-material-categories");
+      return res.json();
+    },
+    enabled: !!user,
+  });
+
   // Filter themes based on access: admins see all, students see only allowed topics
-  const allowedThemes = myMaterials?.accessAll
+  // Then apply per-user category overrides
+  const baseThemes = myMaterials?.accessAll
     ? THEMES
     : myMaterials && myMaterials.topics.length > 0
       ? THEMES.filter(t => myMaterials.topics.includes(t.title))
       : [];
 
+  // Apply per-user category-level overrides: if overrides exist, filter out disabled categories
+  const allowedThemes = myUserMaterialCats.length > 0
+    ? baseThemes.filter(t => {
+        const override = myUserMaterialCats.find(c => c.categoryName === t.title);
+        return !override || override.enabled;
+      })
+    : baseThemes;
+
   // Don't render anything if no materials are accessible
-  if (!myMaterials?.accessAll && (!myMaterials || myMaterials.topics.length === 0)) {
+  if (!myMaterials?.accessAll && allowedThemes.length === 0) {
     return null;
   }
 

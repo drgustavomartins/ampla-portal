@@ -24,6 +24,8 @@ export const users = pgTable("users", {
   planId: integer("plan_id"),
   approved: boolean("approved").notNull().default(false),
   accessExpiresAt: text("access_expires_at"),
+  mentoringStartDate: text("mentoring_start_date"), // Mentoring start date (ISO)
+  mentoringEndDate: text("mentoring_end_date"), // Mentoring end date (ISO)
   createdAt: text("created_at").notNull(),
   loginAttempts: integer("login_attempts").notNull().default(0),
   lockedUntil: text("locked_until"),
@@ -82,6 +84,24 @@ export const planModules = pgTable("plan_modules", {
   moduleId: integer("module_id").notNull(),
 });
 
+// User-Module per-user access overrides
+export const userModules = pgTable("user_modules", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  moduleId: integer("module_id").notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+  startDate: text("start_date"), // optional start date (ISO)
+  endDate: text("end_date"), // optional end date (ISO)
+});
+
+// User-Material-Category per-user access overrides
+export const userMaterialCategories = pgTable("user_material_categories", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  categoryName: text("category_name").notNull(), // matches THEMES[].title
+  enabled: boolean("enabled").notNull().default(true),
+});
+
 // Audit Logs
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
@@ -102,6 +122,8 @@ export const insertModuleSchema = createInsertSchema(modules).omit({ id: true })
 export const insertLessonSchema = createInsertSchema(lessons).omit({ id: true });
 export const insertLessonProgressSchema = createInsertSchema(lessonProgress).omit({ id: true });
 export const insertPlanModuleSchema = createInsertSchema(planModules).omit({ id: true });
+export const insertUserModuleSchema = createInsertSchema(userModules).omit({ id: true });
+export const insertUserMaterialCategorySchema = createInsertSchema(userMaterialCategories).omit({ id: true });
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true });
 
 export const registerSchema = z.object({
@@ -130,5 +152,9 @@ export type InsertLessonProgress = z.infer<typeof insertLessonProgressSchema>;
 export type PasswordReset = typeof passwordResets.$inferSelect;
 export type PlanModule = typeof planModules.$inferSelect;
 export type InsertPlanModule = z.infer<typeof insertPlanModuleSchema>;
+export type UserModule = typeof userModules.$inferSelect;
+export type InsertUserModule = z.infer<typeof insertUserModuleSchema>;
+export type UserMaterialCategory = typeof userMaterialCategories.$inferSelect;
+export type InsertUserMaterialCategory = z.infer<typeof insertUserMaterialCategorySchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
