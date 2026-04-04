@@ -424,22 +424,6 @@ export async function registerRoutes(server: Server, app: Express) {
       return res.json({ accessAll: false, moduleIds: [] });
     }
 
-    // Check per-user module overrides first
-    const userMods = await storage.getUserModules(auth.userId);
-    if (userMods.length > 0) {
-      const now = new Date().toISOString();
-      const activeModuleIds = userMods
-        .filter(um => {
-          if (!um.enabled) return false;
-          if (um.startDate && now < um.startDate) return false;
-          if (um.endDate && now > um.endDate) return false;
-          return true;
-        })
-        .map(um => um.moduleId);
-      return res.json({ accessAll: false, moduleIds: activeModuleIds });
-    }
-
-    // Fallback to plan-based access
     const pm = await storage.getPlanModules(user.planId);
     // No plan_modules records = access to all (backwards compatible)
     if (pm.length === 0) {
