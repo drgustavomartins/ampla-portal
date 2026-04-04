@@ -1,0 +1,90 @@
+name: "✨ Feature Request"
+description: "Solicitar uma nova funcionalidade para a plataforma Ampla Facial"
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Solicitação de Funcionalidade — Ampla Facial Portal
+        Preencha as seções abaixo para documentar a nova funcionalidade de forma padronizada.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Problema"
+      description: "Qual problema essa funcionalidade resolve? Descreva a dor ou limitação atual."
+      placeholder: |
+        Ex: Atualmente não é possível reordenar os planos no painel admin. A ordem fica fixa por data de criação, dificultando a organização visual para os alunos.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: "Solução proposta"
+      description: "Como a funcionalidade deve funcionar? Seja específico sobre comportamento e interface."
+      placeholder: |
+        Ex: Implementar drag and drop na lista de planos do painel admin, permitindo reordenar livremente. A nova ordem deve ser salva automaticamente no banco e refletida na área do aluno.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: "Critérios de aceite"
+      description: "O que precisa estar funcionando para considerar a feature como concluída?"
+      placeholder: |
+        - [ ] Admin consegue reordenar planos via drag and drop
+        - [ ] A ordem é persistida no banco de dados
+        - [ ] A área do aluno exibe os planos na nova ordem
+        - [ ] Funciona em mobile e desktop
+    validations:
+      required: true
+
+  - type: textarea
+    id: security
+    attributes:
+      label: "Checklist de segurança"
+      description: "Verificações de segurança obrigatórias antes do deploy."
+      value: |
+        - [ ] Endpoints novos exigem autenticação
+        - [ ] Dados sensíveis não são expostos na API pública
+        - [ ] Inputs do usuário são validados/sanitizados
+        - [ ] Nenhuma informação de aluno é acessível sem permissão
+        - [ ] Rate limiting aplicado em endpoints novos (se aplicável)
+        - [ ] Sem dependências com vulnerabilidades conhecidas (`npm audit`)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: "Prioridade"
+      options:
+        - "🔴 Alta — Bloqueia operação ou alunos"
+        - "🟠 Média — Melhoria importante"
+        - "🟢 Baixa — Nice to have"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: "Área afetada"
+      options:
+        - "Painel Admin"
+        - "Área do Aluno"
+        - "API / Backend"
+        - "Login / Autenticação"
+        - "SEO / Marketing"
+        - "Deploy / Infra"
+        - "Outro"
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: "Observações adicionais"
+      description: "Screenshots, referências, links ou qualquer contexto extra (opcional)."
