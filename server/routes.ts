@@ -122,13 +122,13 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`ALTER TABLE users ALTER COLUMN materials_access SET DEFAULT false`);
     // Grant materials access to all existing users — runs only once (skips if any user already has access)
     await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false AND NOT EXISTS (SELECT 1 FROM users WHERE materials_access = true)`);
-    // Mentorship validity dates
+    // Mentorship date columns
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mentorship_start_date TEXT`);
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mentorship_end_date TEXT`);
-    // User-Module overrides table
+    // User-Module permissions table
     await db.execute(`CREATE TABLE IF NOT EXISTS user_modules (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, module_id INTEGER NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, start_date TEXT, end_date TEXT, UNIQUE(user_id, module_id))`);
-    // User-Material-Category overrides table
-    await db.execute(`CREATE TABLE IF NOT EXISTS user_material_categories (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, category_name TEXT NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, UNIQUE(user_id, category_name))`);
+    // User-Material Category permissions table
+    await db.execute(`CREATE TABLE IF NOT EXISTS user_material_categories (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, category_title TEXT NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, UNIQUE(user_id, category_title))`);
     console.log("[auto-migrate] material_topics, order, materials_access, mentorship dates, user_modules, user_material_categories ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
@@ -423,6 +423,23 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!user.planId) {
       return res.json({ accessAll: false, moduleIds: [] });
     }
+
+    // Check per-user module overrides first
+    const userMods = await storage.getUserModules(auth.userId);
+    if (userMods.length > 0) {
+      const now = new Date().toISOString();
+      const activeModuleIds = userMods
+        .filter(um => {
+          if (!um.enabled) return false;
+          if (um.startDate && now < um.startDate) return false;
+          if (um.endDate && now > um.endDate) return false;
+          return true;
+        })
+        .map(um => um.moduleId);
+      return res.json({ accessAll: false, moduleIds: activeModuleIds });
+    }
+
+    // Fallback to plan-based access
     const pm = await storage.getPlanModules(user.planId);
     // No plan_modules records = access to all (backwards compatible)
     if (pm.length === 0) {
@@ -448,14 +465,14 @@ export async function registerRoutes(server: Server, app: Express) {
       return res.json({ accessAll: false, topics: [] });
     }
 
-    // Check for per-user material category overrides first
+    // Check per-user material category overrides first
     const userCats = await storage.getUserMaterialCategories(auth.userId);
     if (userCats.length > 0) {
-      const enabledTopics = userCats.filter(c => c.enabled).map(c => c.categoryName);
+      const enabledTopics = userCats.filter(c => c.enabled).map(c => c.categoryTitle);
       return res.json({ accessAll: false, topics: enabledTopics });
     }
 
-    // Fallback to plan-based access
+    // Fallback to plan-based material access
     if (!user.planId) {
       return res.json({ accessAll: false, topics: [] });
     }
@@ -971,6 +988,64 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json({ success: true });
   });
 
+  // ==================== ADMIN: User Module Permissions ====================
+  app.get("/api/admin/students/:id/modules", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const userId = safeParseInt(req.params.id);
+    if (!userId) return res.status(400).json({ message: "ID inválido" });
+    const entries = await storage.getUserModules(userId);
+    res.json(entries);
+  });
+
+  app.put("/api/admin/students/:id/modules", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    const userId = safeParseInt(req.params.id);
+    if (!userId) return res.status(400).json({ message: "ID inválido" });
+    const { modules: moduleEntries } = req.body;
+    if (!Array.isArray(moduleEntries)) {
+      return res.status(400).json({ message: "modules array obrigatório" });
+    }
+    await storage.setUserModules(userId, moduleEntries.map((e: any) => ({
+      moduleId: Number(e.moduleId),
+      enabled: Boolean(e.enabled),
+      startDate: e.startDate || null,
+      endDate: e.endDate || null,
+    })));
+    const admin = await storage.getUser(auth.userId);
+    const student = await storage.getUser(userId);
+    await logAction(auth.userId, admin?.name || "Admin", "student_updated", "student", userId, student?.name || "?", { userModulesUpdated: true });
+    res.json({ success: true });
+  });
+
+  // ==================== ADMIN: User Material Category Permissions ====================
+  app.get("/api/admin/students/:id/material-categories", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const userId = safeParseInt(req.params.id);
+    if (!userId) return res.status(400).json({ message: "ID inválido" });
+    const entries = await storage.getUserMaterialCategories(userId);
+    res.json(entries);
+  });
+
+  app.put("/api/admin/students/:id/material-categories", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    const userId = safeParseInt(req.params.id);
+    if (!userId) return res.status(400).json({ message: "ID inválido" });
+    const { categories } = req.body;
+    if (!Array.isArray(categories)) {
+      return res.status(400).json({ message: "categories array obrigatório" });
+    }
+    await storage.setUserMaterialCategories(userId, categories.map((e: any) => ({
+      categoryTitle: String(e.categoryTitle),
+      enabled: Boolean(e.enabled),
+    })));
+    const admin = await storage.getUser(auth.userId);
+    const student = await storage.getUser(userId);
+    await logAction(auth.userId, admin?.name || "Admin", "student_updated", "student", userId, student?.name || "?", { userMaterialCategoriesUpdated: true });
+    res.json({ success: true });
+  });
+
   // ==================== ADMIN: Audit Logs ====================
   app.get("/api/admin/audit-logs", async (req, res) => {
     const auth = requireAdmin(req, res);
@@ -1143,20 +1218,20 @@ export async function registerRoutes(server: Server, app: Express) {
       const adminRows = Array.isArray(adminResult) ? adminResult : (adminResult as any).rows || [];
       results.push(`current_admins: ${JSON.stringify(adminRows)}`);
     } catch (e: any) { results.push(`admin_check: ${e.message}`); }
-    // Mentorship validity dates on users
+    // Mentorship date columns
     try {
       await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mentorship_start_date TEXT`);
       await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mentorship_end_date TEXT`);
       results.push("mentorship date columns ensured");
     } catch (e: any) { results.push(`mentorship_dates: ${e.message}`); }
-    // User-Module overrides table
+    // User-Module permissions table
     try {
       await db.execute(`CREATE TABLE IF NOT EXISTS user_modules (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, module_id INTEGER NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, start_date TEXT, end_date TEXT, UNIQUE(user_id, module_id))`);
       results.push("user_modules table ensured");
     } catch (e: any) { results.push(`user_modules: ${e.message}`); }
-    // User-Material-Category overrides table
+    // User-Material Category permissions table
     try {
-      await db.execute(`CREATE TABLE IF NOT EXISTS user_material_categories (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, category_name TEXT NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, UNIQUE(user_id, category_name))`);
+      await db.execute(`CREATE TABLE IF NOT EXISTS user_material_categories (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, category_title TEXT NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, UNIQUE(user_id, category_title))`);
       results.push("user_material_categories table ensured");
     } catch (e: any) { results.push(`user_material_categories: ${e.message}`); }
     // Migrate video URLs from Google Drive to YouTube (parameterized queries)

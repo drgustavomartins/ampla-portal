@@ -11,8 +11,7 @@ import {
   type PasswordReset,
   type PlanModule,
   type AuditLog, type InsertAuditLog,
-  type UserModule,
-  type UserMaterialCategory,
+  type UserModule, type UserMaterialCategory,
 } from "@shared/schema";
 
 export const storage = {
@@ -232,12 +231,12 @@ export const storage = {
   async getUserMaterialCategories(userId: number): Promise<UserMaterialCategory[]> {
     return db.select().from(userMaterialCategories).where(eq(userMaterialCategories.userId, userId));
   },
-  async setUserMaterialCategories(userId: number, entries: { categoryName: string; enabled: boolean }[]): Promise<void> {
+  async setUserMaterialCategories(userId: number, entries: { categoryTitle: string; enabled: boolean }[]): Promise<void> {
     await db.delete(userMaterialCategories).where(eq(userMaterialCategories.userId, userId));
     if (entries.length > 0) {
       await db.insert(userMaterialCategories).values(entries.map(e => ({
         userId,
-        categoryName: e.categoryName,
+        categoryTitle: e.categoryTitle,
         enabled: e.enabled,
       })));
     }

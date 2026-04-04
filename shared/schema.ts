@@ -34,9 +34,9 @@ export const users = pgTable("users", {
   clinicalPracticeAccess: boolean("clinical_practice_access").notNull().default(true),
   clinicalPracticeHours: integer("clinical_practice_hours").notNull().default(0),
   materialsAccess: boolean("materials_access").notNull().default(false),
-  // Mentorship validity dates
+  // Mentorship date range
   mentorshipStartDate: text("mentorship_start_date"), // ISO date string
-  mentorshipEndDate: text("mentorship_end_date"),     // ISO date string
+  mentorshipEndDate: text("mentorship_end_date"), // ISO date string
 });
 
 // Modules
@@ -85,21 +85,21 @@ export const planModules = pgTable("plan_modules", {
   moduleId: integer("module_id").notNull(),
 });
 
-// User-Module overrides (per-user module access)
+// User-Module permissions (per-student module access with optional date range)
 export const userModules = pgTable("user_modules", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   moduleId: integer("module_id").notNull(),
   enabled: boolean("enabled").notNull().default(true),
-  startDate: text("start_date"), // ISO date string, null = no restriction
-  endDate: text("end_date"),     // ISO date string, null = no restriction
+  startDate: text("start_date"), // ISO date string, null = immediate
+  endDate: text("end_date"), // ISO date string, null = no expiry
 });
 
-// User-Material-Category overrides (per-user material category access)
+// User-Material Category permissions (per-student material category access)
 export const userMaterialCategories = pgTable("user_material_categories", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
-  categoryName: text("category_name").notNull(), // matches material topic title
+  categoryTitle: text("category_title").notNull(), // matches THEMES[].title
   enabled: boolean("enabled").notNull().default(true),
 });
 
