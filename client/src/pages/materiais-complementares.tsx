@@ -102,6 +102,32 @@ const THEMES: Theme[] = [
     subcategories: [],
   },
   {
+    title: "Preenchedores à base de Ácido Hialurônico",
+    cover: "/images/covers/cover_preenchedores_faciais.png?v=2",
+    fileCount: 14,
+    subcategories: [
+      {
+        name: "Compilados e Resumos",
+        files: [
+          { name: "Compilado CPM e Belotero — Ampla Facial", type: "pdf", driveId: "1JD6WGYvuKqLzQZRyLiqTUwKm75965Kt7" },
+          { name: "Resumo em áudio: CPM e Belotero", type: "mp3", driveId: "1uyp0eELLiihZV60eziV9pb6qPNn656ox" },
+          { name: "Compilado Crosslinkers (DVS, BDDE e PEG) — Ampla Facial", type: "pdf", driveId: "1W_uZQD_T1sdNWsHmVY5KxUiVxUDGNJuI" },
+          { name: "Resumo em áudio: Crosslinkers", type: "mp3", driveId: "1WSODDQ-qTd-g2Fsk5bVDGtQuNTKwlX6X" },
+          { name: "Compilado Processo de Fabricação — Ampla Facial", type: "pdf", driveId: "1L8i8gdiPPkJWV9QaTdy_zhgDhWoqsPJo" },
+          { name: "Resumo em áudio: Processo de Fabricação", type: "mp3", driveId: "153fH77VoiUQI50AMQTc5W2JprQ2L2JKQ" },
+          { name: "Compilado Reologia e Propriedades Físicas — Ampla Facial", type: "pdf", driveId: "1iM3ozs7b2R-86dXns70RvaUEFq7JPkF7" },
+          { name: "Resumo em áudio: Reologia e Propriedades Físicas", type: "mp3", driveId: "1BcIUfUoC7Lr-0pvrq6zx4gmoee9Z6T8u" },
+          { name: "Compilado Degradação e Longevidade — Ampla Facial", type: "pdf", driveId: "1IvmnMPSu4iVCBlnF06NcryKeKIo5OG8w" },
+          { name: "Resumo em áudio: Degradação e Longevidade", type: "mp3", driveId: "1iGTPVrNWFFVsM0o7A8Y5pjDMRU8cT2qY" },
+          { name: "Compilado Segurança e Complicações — Ampla Facial", type: "pdf", driveId: "1dSgYgEWiCjZD_a54yYt-Vv_0IvznoKWq" },
+          { name: "Resumo em áudio: Segurança e Complicações", type: "mp3", driveId: "1Hfmi1tdieyYKUbCZ_RckVtKjOaYs4ewr" },
+          { name: "Compilado Revisões Gerais e Perspectivas — Ampla Facial", type: "pdf", driveId: "1N6RU6wlN2PG7s1oB9ObWboSsVDwxa4rS" },
+          { name: "Resumo em áudio: Revisões Gerais e Perspectivas", type: "mp3", driveId: "12WpA-n0ROmTN63rbNlp1ObzMJORWFsnx" },
+        ],
+      },
+    ],
+  },
+  {
     title: "Bioestimuladores de Colágeno",
     cover: "/images/covers/cover_bioestimuladores.png?v=2",
     fileCount: 6,
