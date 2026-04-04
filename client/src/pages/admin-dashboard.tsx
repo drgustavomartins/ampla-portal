@@ -709,7 +709,9 @@ export default function AdminDashboard() {
   const [logFilterAdmin, setLogFilterAdmin] = useState<string>("all");
   const [logFilterAction, setLogFilterAction] = useState<string>("all");
 
-  const approvedStudents = students.filter(s => s.approved);
+  const sortedStudents = [...students].sort((a, b) => a.name.localeCompare(b.name));
+  const sortedPendingStudents = [...pendingStudents].sort((a, b) => a.name.localeCompare(b.name));
+  const approvedStudents = sortedStudents.filter(s => s.approved);
 
   // Progress helpers
   const getStudentProgress = (studentId: number) => {
@@ -939,11 +941,11 @@ export default function AdminDashboard() {
             {(() => {
               const searchQuery = studentSearch.trim().toLowerCase();
               const filteredPending = searchQuery
-                ? pendingStudents.filter((s) => s.name.toLowerCase().includes(searchQuery))
-                : pendingStudents;
+                ? sortedPendingStudents.filter((s) => s.name.toLowerCase().includes(searchQuery))
+                : sortedPendingStudents;
               const filteredStudents = searchQuery
-                ? students.filter((s) => s.name.toLowerCase().includes(searchQuery))
-                : students;
+                ? sortedStudents.filter((s) => s.name.toLowerCase().includes(searchQuery))
+                : sortedStudents;
               const noResults = searchQuery && filteredPending.length === 0 && filteredStudents.length === 0;
 
               return (
@@ -1027,7 +1029,7 @@ export default function AdminDashboard() {
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">
                 Todos os alunos ({filteredStudents.length})
               </h3>
-              {students.length === 0 ? (
+              {filteredStudents.length === 0 ? (
                 <Card className="border-border/30 bg-card/40">
                   <CardContent className="p-12 text-center">
                     <div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4">
