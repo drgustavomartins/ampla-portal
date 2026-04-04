@@ -1,0 +1,88 @@
+name: "🐛 Bug Report"
+description: "Reportar um bug na plataforma Ampla Facial"
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Reporte de Bug — Ampla Facial Portal
+        Preencha as seções abaixo para documentar o bug de forma padronizada.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "Contexto"
+      description: "Descreva o problema encontrado, onde ocorre e qual o impacto."
+      placeholder: |
+        **Onde:** (ex: painel admin, área do aluno, API pública)
+        **Problema:** O que está acontecendo de errado
+        **Impacto:** (ex: CRÍTICO — dados expostos / MÉDIO — UX prejudicada / BAIXO — visual)
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: "Passos para reproduzir"
+      description: "Como reproduzir o bug passo a passo."
+      placeholder: |
+        1. Acessar ...
+        2. Clicar em ...
+        3. Observar que ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Comportamento esperado"
+      description: "O que deveria acontecer."
+    validations:
+      required: true
+
+  - type: textarea
+    id: fix
+    attributes:
+      label: "Correção aplicada"
+      description: "Descreva a correção técnica implementada (preencher após resolver)."
+      placeholder: |
+        **Arquivo(s) alterado(s):**
+        **O que foi feito:**
+        **PR:** #
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: "Verificação pós-deploy"
+      description: "Como confirmar que a correção está funcionando em produção."
+      placeholder: |
+        - [ ] Verificação 1
+        - [ ] Verificação 2
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: "Prioridade"
+      options:
+        - "🔴 Crítico — Segurança ou dados expostos"
+        - "🟠 Alto — Funcionalidade quebrada"
+        - "🟡 Médio — UX prejudicada"
+        - "🟢 Baixo — Visual ou melhoria"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: "Área afetada"
+      options:
+        - "API / Backend"
+        - "Painel Admin"
+        - "Área do Aluno"
+        - "Login / Autenticação"
+        - "SEO / Indexação"
+        - "Deploy / Infra"
+        - "Outro"
+    validations:
+      required: true
