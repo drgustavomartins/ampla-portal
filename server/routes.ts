@@ -1239,6 +1239,29 @@ export async function registerRoutes(server: Server, app: Express) {
       } catch (e: any) { results.push(`desc migration ${dm.title}: ${e.message}`); }
     }
 
+    // Migrate lesson descriptions for preenchimento and toxina_revisao modules (by ID)
+    const lessonDescUpdates = [
+      // Preenchimento module (9 lessons)
+      { id: 34, desc: "Boas-vindas ao módulo de preenchedores faciais full face com a metodologia NaturalUp. Visão geral sobre o cenário atual do mercado de preenchimento, a busca por resultados mais naturais e duradouros, e como os preenchedores se encaixam como pilar do protocolo NaturalUp. Apresentação de casos clínicos incluindo mento, lábios, full face e reconstrução labial." },
+      { id: 35, desc: "Entenda a fundo as tecnologias de reticulação dos preenchedores à base de ácido hialurônico. Aprenda sobre agentes reticuladores (BDDE, DVS, PEG), diferenças entre cadeias de alto, médio e baixo peso molecular, a importância da pureza do gel e como cada marca (Restylane Nasha, Skinbooster, entre outras) constrói seus preenchedores com características únicas de G Prime e estabilidade." },
+      { id: 36, desc: "Classificação dos preenchedores por capacidade de volumização — de não reticulados a altíssima volumização. Entenda os conceitos de G Prime (módulo elástico), G Double Prime (módulo viscoso) e Swelling Factor (potencial hidrofílico) e como essas propriedades influenciam a escolha do preenchedor ideal para cada região da face e cada resultado desejado." },
+      { id: 37, desc: "Como o gel de ácido hialurônico se comporta no organismo após a aplicação: cronologia do edema, efeito scaffold do gel de carboximetilcelulose (CMC), estabilidade do resultado ao longo dos meses e o temido ETIP (edema tardio intermitente persistente). Contraindicações absolutas e relativas do preenchimento, incluindo PMMA, gravidez, infecções ativas, uso de isotretinoína e cuidados com a mistura de tecnologias de reticulação diferentes." },
+      { id: 38, desc: "Conheça a seringa de ácido hialurônico: graduação, marcações, tipos de agulhas e cânulas que acompanham cada marca. Durabilidade esperada do preenchedor (6 a 12 meses) e fatores que influenciam essa variação, como tecnologia de reticulação, região aplicada e metabolismo individual." },
+      { id: 39, desc: "Anatomia aplicada ao preenchimento facial: camadas da face (osso, músculo, gordura, pele), ligamentos verdadeiros e pseudoligamentos, e a divisão entre face estática e dinâmica. Entenda o padrão das sete quedas faciais, a reabsorção óssea progressiva (maxila, órbita, cavidade piriforme, temporal) e como os coxins de gordura se conectam, fundamentando o raciocínio clínico para reestruturação facial com preenchedores." },
+      { id: 40, desc: "Ferramentas essenciais para o planejamento da harmonização: visagismo (perfil psicológico, personalidade, como o paciente quer ser percebido) e análise facial (terços da face, proporções verticais e horizontais, distância bizigomática vs bigoníaca). Estudo dos perfis faciais braquifacial, mesofacial e dólicofacial, avaliação de simetria, e casos clínicos demonstrando como personalizar o tratamento respeitando as proporções individuais." },
+      { id: 41, desc: "Continuação da análise facial com foco em perfil lateral: avaliação de maxila e mandíbula, deficiência de projeção maxilar, uso de radiografia cefalométrica como referência. Casos clínicos de reestruturação maxilar, arco zigomático (top model look), mento e mandíbula. Como o preenchedor de ácido hialurônico serve de andaime para a reestruturação facial, entregando resultados personalizados com raciocínio crítico — não apenas técnica, mas pensamento clínico." },
+      { id: 42, desc: "Fundamentos práticos do procedimento de preenchimento com ácido hialurônico: os dois grandes planos de injeção (subcutâneo superficial e supraperiosteal), quando usar cada abordagem, diferenças entre aplicação com agulha e cânula, e substituição de gorduras profundas e superficiais. Protocolo de biossegurança e antissepsia pré-procedimento — higienização da pele, uso de clorexidina e álcool 70." },
+      // Toxina revisão module (2 lessons) — uses "revised" descriptions
+      { id: 8,  desc: "Visão geral sobre a toxina botulínica e sua importância na prática clínica estética. Artigos complementares disponíveis nos slides do Drive." },
+      { id: 33, desc: "Encerramento do módulo de toxina botulínica com considerações finais, revisão dos pontos-chave abordados ao longo das aulas e orientações práticas para aplicação segura e eficiente na rotina clínica." },
+    ];
+    for (const ld of lessonDescUpdates) {
+      try {
+        await db.execute(sql`UPDATE lessons SET description = ${ld.desc} WHERE id = ${ld.id}`);
+        results.push(`lesson_desc_by_id ${ld.id}: updated`);
+      } catch (e: any) { results.push(`lesson_desc_by_id ${ld.id}: ${e.message}`); }
+    }
+
     return res.json({ message: "Migração concluída", results });
   });
 }
