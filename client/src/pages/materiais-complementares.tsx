@@ -98,12 +98,6 @@ const THEMES: Theme[] = [
   {
     title: "Preenchedores Faciais",
     cover: "/images/covers/cover_preenchedores_faciais.png?v=2",
-    fileCount: 0,
-    subcategories: [],
-  },
-  {
-    title: "Preenchedores à base de Ácido Hialurônico",
-    cover: "/images/covers/cover_preenchedores_faciais.png?v=2",
     fileCount: 14,
     subcategories: [
       {
