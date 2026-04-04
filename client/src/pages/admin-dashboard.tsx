@@ -506,6 +506,7 @@ export default function AdminDashboard() {
   const MATERIAL_TOPIC_OPTIONS = [
     "Toxina Botulínica",
     "Preenchedores Faciais",
+    "Preenchedores à base de Ácido Hialurônico",
     "Bioestimuladores de Colágeno",
     "Moduladores de Matriz Extracelular",
     "Método NaturalUp®",
@@ -575,8 +576,9 @@ export default function AdminDashboard() {
   const [editUserMaterialCats, setEditUserMaterialCats] = useState<Record<string, boolean>>({});
 
   const MATERIAL_CATEGORY_TITLES = [
-    "Toxina Botulínica", "Preenchedores Faciais", "Bioestimuladores de Colágeno",
-    "Moduladores de Matriz Extracelular", "Método NaturalUp®", "IA na Medicina",
+    "Toxina Botulínica", "Preenchedores Faciais", "Preenchedores à base de Ácido Hialurônico",
+    "Bioestimuladores de Colágeno", "Moduladores de Matriz Extracelular", "Método NaturalUp®",
+    "IA na Medicina",
   ];
 
   const updateStudentMutation = useMutation({
