@@ -434,48 +434,58 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // ==================== MY ACCESSIBLE MATERIAL TOPICS ====================
   app.get("/api/my-materials", async (req, res) => {
-    const auth = authenticateRequest(req);
-    if (!auth) return res.status(401).json({ message: "Não autorizado" });
-    // Admins see all material topics
-    if (auth.role === "admin" || auth.role === "super_admin") {
-      return res.json({ accessAll: true, topics: [] });
-    }
-    const user = await storage.getUser(auth.userId);
-    if (!user) {
-      return res.json({ accessAll: false, topics: [] });
-    }
-    // User-level materialsAccess gate: if false/missing, no access
-    if (!user.materialsAccess) {
-      return res.json({ accessAll: false, topics: [] });
-    }
-
-    // Check per-user material category overrides first
-    const userCats = await storage.getUserMaterialCategories(auth.userId);
-    if (userCats.length > 0) {
-      const enabledTopics = userCats.filter(c => c.enabled).map(c => c.categoryTitle);
-      return res.json({ accessAll: false, topics: enabledTopics });
-    }
-
-    // Fallback to plan-based material access
-    if (!user.planId) {
-      // materialsAccess is true but no per-user categories and no plan — grant full access
-      return res.json({ accessAll: true, topics: [] });
-    }
-    const plan = await storage.getPlan(user.planId);
-    if (!plan || !plan.materialTopics) {
-      // materialsAccess is true but plan has no specific topics — grant full access
-      return res.json({ accessAll: true, topics: [] });
-    }
     try {
-      const topics: string[] = JSON.parse(plan.materialTopics);
-      if (topics.length === 0) {
-        // materialsAccess is true but plan topics are empty — grant full access
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+      // Admins see all material topics
+      if (auth.role === "admin" || auth.role === "super_admin") {
         return res.json({ accessAll: true, topics: [] });
       }
-      return res.json({ accessAll: false, topics });
-    } catch {
-      // materialsAccess is true but parse failed — grant full access
-      return res.json({ accessAll: true, topics: [] });
+      const user = await storage.getUser(auth.userId);
+      if (!user) {
+        return res.json({ accessAll: false, topics: [] });
+      }
+      // User-level materialsAccess gate: if false/missing, no access
+      if (!user.materialsAccess) {
+        return res.json({ accessAll: false, topics: [] });
+      }
+
+      // Check per-user material category overrides first
+      let userCats: Awaited<ReturnType<typeof storage.getUserMaterialCategories>> = [];
+      try {
+        userCats = await storage.getUserMaterialCategories(auth.userId);
+      } catch {
+        // Table may not exist yet — skip per-user categories
+      }
+      if (userCats.length > 0) {
+        const enabledTopics = userCats.filter(c => c.enabled).map(c => c.categoryTitle);
+        return res.json({ accessAll: false, topics: enabledTopics });
+      }
+
+      // Fallback to plan-based material access
+      if (!user.planId) {
+        // materialsAccess is true but no per-user categories and no plan — grant full access
+        return res.json({ accessAll: true, topics: [] });
+      }
+      const plan = await storage.getPlan(user.planId);
+      if (!plan || !plan.materialTopics) {
+        // materialsAccess is true but plan has no specific topics — grant full access
+        return res.json({ accessAll: true, topics: [] });
+      }
+      try {
+        const topics: string[] = JSON.parse(plan.materialTopics);
+        if (topics.length === 0) {
+          // materialsAccess is true but plan topics are empty — grant full access
+          return res.json({ accessAll: true, topics: [] });
+        }
+        return res.json({ accessAll: false, topics });
+      } catch {
+        // materialsAccess is true but parse failed — grant full access
+        return res.json({ accessAll: true, topics: [] });
+      }
+    } catch (err) {
+      console.error("Error in /api/my-materials:", err);
+      return res.status(500).json({ message: "Erro interno do servidor" });
     }
   });
 
