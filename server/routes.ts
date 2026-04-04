@@ -122,7 +122,14 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`ALTER TABLE users ALTER COLUMN materials_access SET DEFAULT false`);
     // Grant materials access to all existing users — runs only once (skips if any user already has access)
     await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false AND NOT EXISTS (SELECT 1 FROM users WHERE materials_access = true)`);
-    console.log("[auto-migrate] material_topics, order, and materials_access columns ensured");
+    // Mentorship validity dates
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mentorship_start_date TEXT`);
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mentorship_end_date TEXT`);
+    // User-Module overrides table
+    await db.execute(`CREATE TABLE IF NOT EXISTS user_modules (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, module_id INTEGER NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, start_date TEXT, end_date TEXT, UNIQUE(user_id, module_id))`);
+    // User-Material-Category overrides table
+    await db.execute(`CREATE TABLE IF NOT EXISTS user_material_categories (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, category_name TEXT NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, UNIQUE(user_id, category_name))`);
+    console.log("[auto-migrate] material_topics, order, materials_access, mentorship dates, user_modules, user_material_categories ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
@@ -357,7 +364,27 @@ export async function registerRoutes(server: Server, app: Express) {
       return res.json({ accessAll: true, moduleIds: [] });
     }
     const user = await storage.getUser(auth.userId);
-    if (!user || !user.planId) {
+    if (!user) {
+      return res.json({ accessAll: false, moduleIds: [] });
+    }
+
+    // Check for per-user module overrides first
+    const userMods = await storage.getUserModules(auth.userId);
+    if (userMods.length > 0) {
+      const now = new Date().toISOString();
+      const enabledModuleIds = userMods
+        .filter(um => {
+          if (!um.enabled) return false;
+          if (um.startDate && now < um.startDate) return false;
+          if (um.endDate && now > um.endDate) return false;
+          return true;
+        })
+        .map(um => um.moduleId);
+      return res.json({ accessAll: false, moduleIds: enabledModuleIds });
+    }
+
+    // Fallback to plan-based access
+    if (!user.planId) {
       return res.json({ accessAll: false, moduleIds: [] });
     }
     const pm = await storage.getPlanModules(user.planId);
@@ -384,12 +411,20 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!user.materialsAccess) {
       return res.json({ accessAll: false, topics: [] });
     }
+
+    // Check for per-user material category overrides first
+    const userCats = await storage.getUserMaterialCategories(auth.userId);
+    if (userCats.length > 0) {
+      const enabledTopics = userCats.filter(c => c.enabled).map(c => c.categoryName);
+      return res.json({ accessAll: false, topics: enabledTopics });
+    }
+
+    // Fallback to plan-based access
     if (!user.planId) {
       return res.json({ accessAll: false, topics: [] });
     }
     const plan = await storage.getPlan(user.planId);
     if (!plan || !plan.materialTopics) {
-      // No materialTopics set = no access to materials (inverse of modules logic)
       return res.json({ accessAll: false, topics: [] });
     }
     try {
@@ -520,12 +555,12 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!auth) return;
     const allowedFields = ['name', 'email', 'phone', 'planId', 'approved', 'accessExpiresAt',
       'communityAccess', 'supportAccess', 'supportExpiresAt', 'clinicalPracticeAccess', 'clinicalPracticeHours',
-      'materialsAccess'];
+      'materialsAccess', 'mentorshipStartDate', 'mentorshipEndDate'];
     const updateData: any = {};
     for (const key of allowedFields) {
       if (req.body[key] !== undefined) {
         // Sanitize string values
-        if (typeof req.body[key] === "string" && !['accessExpiresAt', 'supportExpiresAt', 'email'].includes(key)) {
+        if (typeof req.body[key] === "string" && !['accessExpiresAt', 'supportExpiresAt', 'mentorshipStartDate', 'mentorshipEndDate', 'email'].includes(key)) {
           updateData[key] = sanitize(req.body[key]);
         } else {
           updateData[key] = req.body[key];
@@ -539,6 +574,64 @@ export async function registerRoutes(server: Server, app: Express) {
     const admin = await storage.getUser(auth.userId);
     await logAction(auth.userId, admin?.name || "Admin", "student_updated", "student", parseInt(req.params.id), student?.name || "?", updateData);
     res.json(safe);
+  });
+
+  // ==================== ADMIN: User Modules ====================
+  app.get("/api/admin/students/:id/modules", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const id = safeParseInt(req.params.id);
+    if (!id) return res.status(400).json({ message: "ID inválido" });
+    const um = await storage.getUserModules(id);
+    res.json(um);
+  });
+
+  app.put("/api/admin/students/:id/modules", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    const id = safeParseInt(req.params.id);
+    if (!id) return res.status(400).json({ message: "ID inválido" });
+    const { modules: moduleEntries } = req.body;
+    if (!Array.isArray(moduleEntries)) {
+      return res.status(400).json({ message: "modules array obrigatório" });
+    }
+    await storage.setUserModules(id, moduleEntries.map((e: any) => ({
+      moduleId: Number(e.moduleId),
+      enabled: Boolean(e.enabled),
+      startDate: e.startDate || null,
+      endDate: e.endDate || null,
+    })));
+    const admin = await storage.getUser(auth.userId);
+    const student = await storage.getUser(id);
+    await logAction(auth.userId, admin?.name || "Admin", "student_modules_updated", "student", id, student?.name || "?", { moduleCount: moduleEntries.length });
+    res.json({ success: true });
+  });
+
+  // ==================== ADMIN: User Material Categories ====================
+  app.get("/api/admin/students/:id/material-categories", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const id = safeParseInt(req.params.id);
+    if (!id) return res.status(400).json({ message: "ID inválido" });
+    const umc = await storage.getUserMaterialCategories(id);
+    res.json(umc);
+  });
+
+  app.put("/api/admin/students/:id/material-categories", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    const id = safeParseInt(req.params.id);
+    if (!id) return res.status(400).json({ message: "ID inválido" });
+    const { categories } = req.body;
+    if (!Array.isArray(categories)) {
+      return res.status(400).json({ message: "categories array obrigatório" });
+    }
+    await storage.setUserMaterialCategories(id, categories.map((e: any) => ({
+      categoryName: String(e.categoryName),
+      enabled: Boolean(e.enabled),
+    })));
+    const admin = await storage.getUser(auth.userId);
+    const student = await storage.getUser(id);
+    await logAction(auth.userId, admin?.name || "Admin", "student_material_categories_updated", "student", id, student?.name || "?", { categoryCount: categories.length });
+    res.json({ success: true });
   });
 
   // Reorder modules
@@ -1014,6 +1107,22 @@ export async function registerRoutes(server: Server, app: Express) {
       const adminRows = Array.isArray(adminResult) ? adminResult : (adminResult as any).rows || [];
       results.push(`current_admins: ${JSON.stringify(adminRows)}`);
     } catch (e: any) { results.push(`admin_check: ${e.message}`); }
+    // Mentorship validity dates on users
+    try {
+      await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mentorship_start_date TEXT`);
+      await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mentorship_end_date TEXT`);
+      results.push("mentorship date columns ensured");
+    } catch (e: any) { results.push(`mentorship_dates: ${e.message}`); }
+    // User-Module overrides table
+    try {
+      await db.execute(`CREATE TABLE IF NOT EXISTS user_modules (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, module_id INTEGER NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, start_date TEXT, end_date TEXT, UNIQUE(user_id, module_id))`);
+      results.push("user_modules table ensured");
+    } catch (e: any) { results.push(`user_modules: ${e.message}`); }
+    // User-Material-Category overrides table
+    try {
+      await db.execute(`CREATE TABLE IF NOT EXISTS user_material_categories (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, category_name TEXT NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, UNIQUE(user_id, category_name))`);
+      results.push("user_material_categories table ensured");
+    } catch (e: any) { results.push(`user_material_categories: ${e.message}`); }
     // Migrate video URLs from Google Drive to YouTube (parameterized queries)
     const ytMigrations = [
       { id: 7,  url: "https://youtu.be/UlrX0ZigQUc" },

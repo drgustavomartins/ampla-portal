@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
@@ -26,7 +26,7 @@ import {
   Users, BookOpen, Layers, LogOut, Plus, Trash2, Check, X,
   Clock, Video, Shield, GraduationCap, Eye, Pencil,
   CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library,
-  GripVertical
+  GripVertical, CalendarDays, FolderOpen
 } from "lucide-react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -36,7 +36,7 @@ import {
   arrayMove, SortableContext, useSortable, verticalListSortingStrategy
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { Module, Lesson, Plan, User, AuditLog } from "@shared/schema";
+import type { Module, Lesson, Plan, User, AuditLog, UserModule, UserMaterialCategory } from "@shared/schema";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 import MateriaisComplementares from "./materiais-complementares";
 
@@ -567,11 +567,69 @@ export default function AdminDashboard() {
     communityAccess: true, supportAccess: true, supportExpiresAt: "",
     clinicalPracticeAccess: true, clinicalPracticeHours: 0,
     materialsAccess: false,
+    mentorshipStartDate: "", mentorshipEndDate: "",
   });
+  // Per-user module overrides: { [moduleId]: { enabled, startDate, endDate } }
+  const [editUserModules, setEditUserModules] = useState<Record<number, { enabled: boolean; startDate: string; endDate: string }>>({});
+  const [userModulesLoaded, setUserModulesLoaded] = useState(false);
+  // Per-user material category overrides: { [categoryName]: enabled }
+  const [editUserMaterialCategories, setEditUserMaterialCategories] = useState<Record<string, boolean>>({});
+  const [userMaterialCategoriesLoaded, setUserMaterialCategoriesLoaded] = useState(false);
+
+  // Fetch user modules when editing student changes
+  useEffect(() => {
+    if (!editingStudent) {
+      setUserModulesLoaded(false);
+      setUserMaterialCategoriesLoaded(false);
+      return;
+    }
+    // Load user modules
+    apiRequest("GET", `/api/admin/students/${editingStudent.id}/modules`)
+      .then(r => r.json())
+      .then((data: UserModule[]) => {
+        const map: Record<number, { enabled: boolean; startDate: string; endDate: string }> = {};
+        data.forEach(um => {
+          map[um.moduleId] = {
+            enabled: um.enabled,
+            startDate: um.startDate ? um.startDate.slice(0, 10) : "",
+            endDate: um.endDate ? um.endDate.slice(0, 10) : "",
+          };
+        });
+        setEditUserModules(map);
+        setUserModulesLoaded(true);
+      })
+      .catch(() => {
+        setEditUserModules({});
+        setUserModulesLoaded(true);
+      });
+    // Load user material categories
+    apiRequest("GET", `/api/admin/students/${editingStudent.id}/material-categories`)
+      .then(r => r.json())
+      .then((data: UserMaterialCategory[]) => {
+        const map: Record<string, boolean> = {};
+        data.forEach(umc => { map[umc.categoryName] = umc.enabled; });
+        setEditUserMaterialCategories(map);
+        setUserMaterialCategoriesLoaded(true);
+      })
+      .catch(() => {
+        setEditUserMaterialCategories({});
+        setUserMaterialCategoriesLoaded(true);
+      });
+  }, [editingStudent]);
 
   const updateStudentMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+    mutationFn: async ({ id, data, userModules, materialCategories }: {
+      id: number; data: any;
+      userModules?: { moduleId: number; enabled: boolean; startDate: string | null; endDate: string | null }[];
+      materialCategories?: { categoryName: string; enabled: boolean }[];
+    }) => {
       await apiRequest("PATCH", `/api/admin/students/${id}`, data);
+      if (userModules) {
+        await apiRequest("PUT", `/api/admin/students/${id}/modules`, { modules: userModules });
+      }
+      if (materialCategories) {
+        await apiRequest("PUT", `/api/admin/students/${id}/material-categories`, { categories: materialCategories });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
@@ -1032,6 +1090,8 @@ export default function AdminDashboard() {
                                     clinicalPracticeAccess: s.clinicalPracticeAccess ?? true,
                                     clinicalPracticeHours: s.clinicalPracticeHours ?? 0,
                                     materialsAccess: s.materialsAccess ?? false,
+                                    mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
+                                    mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
                                   });
                                 }}
                                 title="Editar aluno"
@@ -1177,52 +1237,221 @@ export default function AdminDashboard() {
               </DialogContent>
             </Dialog>
 
-            {/* Student Edit Dialog — now with granular access control */}
+            {/* Student Edit Dialog — redesigned with sections */}
             <Dialog open={!!editingStudent} onOpenChange={(open) => !open && setEditingStudent(null)}>
-              <DialogContent className="bg-card border-border/40 max-w-md max-h-[90vh] overflow-y-auto">
+              <DialogContent className="bg-card border-border/40 max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle className="text-lg">Editar Aluno</DialogTitle>
+                  <DialogTitle className="text-lg flex items-center gap-2">
+                    <GraduationCap className="w-5 h-5 text-gold" />
+                    Editar Aluno
+                  </DialogTitle>
                   <DialogDescription className="text-muted-foreground">{editingStudent?.name} — {editingStudent?.email}</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 pt-2">
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label>
-                    <Input value={editStudentForm.name} onChange={e => setEditStudentForm(f => ({ ...f, name: e.target.value }))} className="bg-background/50 border-border/40" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Telefone</Label>
-                    <Input type="tel" placeholder="+55 (11) 99999-9999" value={editStudentForm.phone} onChange={e => setEditStudentForm(f => ({ ...f, phone: e.target.value }))} className="bg-background/50 border-border/40" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Plano</Label>
-                    <Select value={editStudentForm.planId ? String(editStudentForm.planId) : ""} onValueChange={(v) => setEditStudentForm(f => ({ ...f, planId: parseInt(v) }))}>
-                      <SelectTrigger className="bg-background/50 border-border/40"><SelectValue placeholder="Selecione o plano" /></SelectTrigger>
-                      <SelectContent>
-                        {plans.map((p) => (<SelectItem key={p.id} value={String(p.id)}>{p.name} ({p.durationDays} dias)</SelectItem>))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Data de expiração</Label>
-                    <Input type="datetime-local" value={editStudentForm.accessExpiresAt} onChange={e => setEditStudentForm(f => ({ ...f, accessExpiresAt: e.target.value }))} className="bg-background/50 border-border/40" />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Status</Label>
-                    <Button
-                      size="sm"
-                      variant={editStudentForm.approved ? "default" : "outline"}
-                      className={editStudentForm.approved ? "bg-emerald-600 hover:bg-emerald-700 text-white text-xs" : "border-border/40 text-xs"}
-                      onClick={() => setEditStudentForm(f => ({ ...f, approved: !f.approved }))}
-                    >
-                      {editStudentForm.approved ? "Aprovado" : "Pendente"}
-                    </Button>
-                  </div>
+                <div className="space-y-5 pt-2">
 
-                  {/* ── Granular Access Control ── */}
-                  <div className="w-full h-px bg-border/30" />
-                  <h4 className="text-xs font-semibold text-gold uppercase tracking-brand">Controle de Acessos</h4>
-
+                  {/* ══════ SECTION 1: Dados do Aluno ══════ */}
                   <div className="space-y-3">
+                    <h4 className="text-xs font-semibold text-gold uppercase tracking-brand flex items-center gap-2">
+                      <Users className="w-3.5 h-3.5" /> Dados do Aluno
+                    </h4>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label>
+                      <Input value={editStudentForm.name} onChange={e => setEditStudentForm(f => ({ ...f, name: e.target.value }))} className="bg-background/50 border-border/40" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Telefone</Label>
+                      <Input type="tel" placeholder="+55 (11) 99999-9999" value={editStudentForm.phone} onChange={e => setEditStudentForm(f => ({ ...f, phone: e.target.value }))} className="bg-background/50 border-border/40" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Status</Label>
+                      <Button
+                        size="sm"
+                        variant={editStudentForm.approved ? "default" : "outline"}
+                        className={editStudentForm.approved ? "bg-emerald-600 hover:bg-emerald-700 text-white text-xs" : "border-border/40 text-xs"}
+                        onClick={() => setEditStudentForm(f => ({ ...f, approved: !f.approved }))}
+                      >
+                        {editStudentForm.approved ? "Aprovado" : "Pendente"}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="w-full h-px bg-border/30" />
+
+                  {/* ══════ SECTION 2: Plano e Vigência ══════ */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-semibold text-gold uppercase tracking-brand flex items-center gap-2">
+                      <CalendarDays className="w-3.5 h-3.5" /> Plano e Vigência
+                    </h4>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Plano</Label>
+                      <Select value={editStudentForm.planId ? String(editStudentForm.planId) : ""} onValueChange={(v) => setEditStudentForm(f => ({ ...f, planId: parseInt(v) }))}>
+                        <SelectTrigger className="bg-background/50 border-border/40"><SelectValue placeholder="Selecione o plano" /></SelectTrigger>
+                        <SelectContent>
+                          {plans.map((p) => (<SelectItem key={p.id} value={String(p.id)}>{p.name} ({p.durationDays} dias)</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Início da Mentoria</Label>
+                        <Input type="date" value={editStudentForm.mentorshipStartDate} onChange={e => setEditStudentForm(f => ({ ...f, mentorshipStartDate: e.target.value }))} className="bg-background/50 border-border/40" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Fim da Mentoria</Label>
+                        <Input type="date" value={editStudentForm.mentorshipEndDate} onChange={e => setEditStudentForm(f => ({ ...f, mentorshipEndDate: e.target.value }))} className="bg-background/50 border-border/40" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Expiração do Acesso (plataforma)</Label>
+                      <Input type="datetime-local" value={editStudentForm.accessExpiresAt} onChange={e => setEditStudentForm(f => ({ ...f, accessExpiresAt: e.target.value }))} className="bg-background/50 border-border/40" />
+                      <p className="text-xs text-muted-foreground">Após esta data, o aluno não consegue fazer login.</p>
+                    </div>
+                  </div>
+
+                  <div className="w-full h-px bg-border/30" />
+
+                  {/* ══════ SECTION 3: Módulos ══════ */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-semibold text-gold uppercase tracking-brand flex items-center gap-2">
+                      <BookOpen className="w-3.5 h-3.5" /> Acesso por Módulo
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      {Object.keys(editUserModules).length === 0
+                        ? "Sem overrides — o acesso segue o plano do aluno. Ative módulos abaixo para personalizar."
+                        : "Overrides ativos — o acesso do aluno segue as configurações abaixo."}
+                    </p>
+                    <div className="space-y-2 max-h-60 overflow-y-auto border border-border/30 rounded-lg p-3">
+                      {[...modules].sort((a, b) => a.order - b.order).map(mod => {
+                        const override = editUserModules[mod.id];
+                        const isEnabled = override?.enabled ?? false;
+                        return (
+                          <div key={mod.id} className="space-y-1.5">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <Checkbox
+                                checked={isEnabled}
+                                onCheckedChange={(checked) => {
+                                  setEditUserModules(prev => {
+                                    const next = { ...prev };
+                                    if (checked) {
+                                      next[mod.id] = { enabled: true, startDate: override?.startDate || "", endDate: override?.endDate || "" };
+                                    } else if (override) {
+                                      next[mod.id] = { ...override, enabled: false };
+                                    } else {
+                                      next[mod.id] = { enabled: false, startDate: "", endDate: "" };
+                                    }
+                                    return next;
+                                  });
+                                }}
+                              />
+                              <span className={`text-sm ${isEnabled ? "text-foreground" : "text-muted-foreground"}`}>{mod.title}</span>
+                            </label>
+                            {isEnabled && (
+                              <div className="grid grid-cols-2 gap-2 pl-7">
+                                <div className="space-y-1">
+                                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Início</Label>
+                                  <Input
+                                    type="date"
+                                    value={override?.startDate || ""}
+                                    onChange={e => setEditUserModules(prev => ({
+                                      ...prev,
+                                      [mod.id]: { ...prev[mod.id], startDate: e.target.value },
+                                    }))}
+                                    className="bg-background/50 border-border/40 h-8 text-xs"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Fim</Label>
+                                  <Input
+                                    type="date"
+                                    value={override?.endDate || ""}
+                                    onChange={e => setEditUserModules(prev => ({
+                                      ...prev,
+                                      [mod.id]: { ...prev[mod.id], endDate: e.target.value },
+                                    }))}
+                                    className="bg-background/50 border-border/40 h-8 text-xs"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {Object.keys(editUserModules).length > 0 && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => setEditUserModules({})}
+                      >
+                        Limpar overrides (usar plano)
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="w-full h-px bg-border/30" />
+
+                  {/* ══════ SECTION 4: Materiais Complementares ══════ */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-semibold text-gold uppercase tracking-brand flex items-center gap-2">
+                      <FolderOpen className="w-3.5 h-3.5" /> Materiais Complementares
+                    </h4>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm font-medium">Acesso a Materiais</Label>
+                        <p className="text-xs text-muted-foreground">Habilita a seção de materiais complementares</p>
+                      </div>
+                      <Switch
+                        checked={editStudentForm.materialsAccess}
+                        onCheckedChange={(checked) => setEditStudentForm(f => ({ ...f, materialsAccess: checked }))}
+                      />
+                    </div>
+                    {editStudentForm.materialsAccess && (
+                      <div className="space-y-2 border border-border/30 rounded-lg p-3">
+                        <p className="text-xs text-muted-foreground">
+                          {Object.keys(editUserMaterialCategories).length === 0
+                            ? "Sem overrides — acesso segue o plano. Ative categorias abaixo para personalizar."
+                            : "Overrides ativos — o acesso segue as configurações abaixo."}
+                        </p>
+                        {MATERIAL_TOPIC_OPTIONS.map(topic => {
+                          const isEnabled = editUserMaterialCategories[topic] ?? false;
+                          return (
+                            <label key={topic} className="flex items-center gap-2 cursor-pointer">
+                              <Checkbox
+                                checked={isEnabled}
+                                onCheckedChange={(checked) => {
+                                  setEditUserMaterialCategories(prev => ({
+                                    ...prev,
+                                    [topic]: Boolean(checked),
+                                  }));
+                                }}
+                              />
+                              <span className={`text-sm ${isEnabled ? "text-foreground" : "text-muted-foreground"}`}>{topic}</span>
+                            </label>
+                          );
+                        })}
+                        {Object.keys(editUserMaterialCategories).length > 0 && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs text-muted-foreground hover:text-foreground"
+                            onClick={() => setEditUserMaterialCategories({})}
+                          >
+                            Limpar overrides (usar plano)
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="w-full h-px bg-border/30" />
+
+                  {/* ══════ SECTION 5: Features (WhatsApp, Suporte, Clínicas) ══════ */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-semibold text-gold uppercase tracking-brand flex items-center gap-2">
+                      <Shield className="w-3.5 h-3.5" /> Features
+                    </h4>
+
                     <div className="flex items-center justify-between">
                       <div>
                         <Label className="text-sm font-medium">Comunidade WhatsApp</Label>
@@ -1247,7 +1476,7 @@ export default function AdminDashboard() {
                     {editStudentForm.supportAccess && (
                       <div className="space-y-2 pl-4 border-l-2 border-gold/20">
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground">Prazo do suporte (opcional)</Label>
-                        <Input type="datetime-local" value={editStudentForm.supportExpiresAt} onChange={e => setEditStudentForm(f => ({ ...f, supportExpiresAt: e.target.value }))} className="bg-background/50 border-border/40" placeholder="Usar expiração do plano" />
+                        <Input type="datetime-local" value={editStudentForm.supportExpiresAt} onChange={e => setEditStudentForm(f => ({ ...f, supportExpiresAt: e.target.value }))} className="bg-background/50 border-border/40" />
                         <p className="text-xs text-muted-foreground">Deixe vazio para usar a expiração do plano</p>
                       </div>
                     )}
@@ -1268,19 +1497,11 @@ export default function AdminDashboard() {
                         <Input type="number" min={0} value={editStudentForm.clinicalPracticeHours} onChange={e => setEditStudentForm(f => ({ ...f, clinicalPracticeHours: parseInt(e.target.value) || 0 }))} className="bg-background/50 border-border/40" />
                       </div>
                     )}
-
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-sm font-medium">Materiais Complementares</Label>
-                        <p className="text-xs text-muted-foreground">Acesso aos materiais de estudo</p>
-                      </div>
-                      <Switch
-                        checked={editStudentForm.materialsAccess}
-                        onCheckedChange={(checked) => setEditStudentForm(f => ({ ...f, materialsAccess: checked }))}
-                      />
-                    </div>
                   </div>
 
+                  <div className="w-full h-px bg-border/30" />
+
+                  {/* ══════ SECTION 6: Salvar ══════ */}
                   <Button
                     className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
                     onClick={() => {
@@ -1291,6 +1512,9 @@ export default function AdminDashboard() {
                       if (editStudentForm.planId) data.planId = editStudentForm.planId;
                       if (editStudentForm.accessExpiresAt) data.accessExpiresAt = new Date(editStudentForm.accessExpiresAt).toISOString();
                       data.approved = editStudentForm.approved;
+                      // Mentorship dates
+                      data.mentorshipStartDate = editStudentForm.mentorshipStartDate || null;
+                      data.mentorshipEndDate = editStudentForm.mentorshipEndDate || null;
                       // Access control fields
                       data.communityAccess = editStudentForm.communityAccess;
                       data.supportAccess = editStudentForm.supportAccess;
@@ -1298,7 +1522,24 @@ export default function AdminDashboard() {
                       data.clinicalPracticeAccess = editStudentForm.clinicalPracticeAccess;
                       data.clinicalPracticeHours = editStudentForm.clinicalPracticeHours;
                       data.materialsAccess = editStudentForm.materialsAccess;
-                      updateStudentMutation.mutate({ id: editingStudent.id, data });
+                      // Build user module overrides
+                      const userModuleEntries = Object.entries(editUserModules).map(([moduleId, val]) => ({
+                        moduleId: Number(moduleId),
+                        enabled: val.enabled,
+                        startDate: val.startDate || null,
+                        endDate: val.endDate || null,
+                      }));
+                      // Build user material category overrides
+                      const materialCategoryEntries = Object.entries(editUserMaterialCategories).map(([categoryName, enabled]) => ({
+                        categoryName,
+                        enabled,
+                      }));
+                      updateStudentMutation.mutate({
+                        id: editingStudent.id,
+                        data,
+                        userModules: userModuleEntries.length > 0 ? userModuleEntries : undefined,
+                        materialCategories: materialCategoryEntries.length > 0 ? materialCategoryEntries : undefined,
+                      });
                     }}
                     disabled={updateStudentMutation.isPending}
                   >
