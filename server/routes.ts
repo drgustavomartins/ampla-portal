@@ -134,6 +134,42 @@ export async function registerRoutes(server: Server, app: Express) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
 
+  // ==================== ONE-TIME: Grant all materials access to existing users ====================
+  // This migration sets materials_access = true and inserts user_material_categories rows
+  // for ALL 6 categories with enabled = true, for every existing user that doesn't already
+  // have them. Uses a migrations_applied table to ensure it runs only once — subsequent
+  // restarts will skip it, so admin overrides (disabling access) are never reverted.
+  try {
+    const { db } = await import("./db");
+    await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
+    const migrationName = "grant_all_materials_access_2026_04";
+    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    const alreadyRows = Array.isArray(already) ? already : (already as any).rows || [];
+    if (alreadyRows.length === 0) {
+      // 1. Enable materials_access for all existing users who still have it as false
+      await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false`);
+      // 2. Insert user_material_categories for all users × all 6 categories (skip existing)
+      const categories = [
+        "Toxina Botulínica",
+        "Preenchedores Faciais",
+        "Bioestimuladores de Colágeno",
+        "Moduladores de Matriz Extracelular",
+        "Método NaturalUp®",
+        "IA na Medicina",
+      ];
+      for (const cat of categories) {
+        await db.execute(`INSERT INTO user_material_categories (user_id, category_name, enabled) SELECT id, '${cat.replace(/'/g, "''")}', true FROM users WHERE NOT EXISTS (SELECT 1 FROM user_material_categories WHERE user_material_categories.user_id = users.id AND user_material_categories.category_name = '${cat.replace(/'/g, "''")}')`);
+      }
+      // 3. Mark migration as applied
+      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+      console.log("[one-time-migrate] Granted all materials access to existing users");
+    } else {
+      console.log("[one-time-migrate] grant_all_materials_access already applied, skipping");
+    }
+  } catch (e: any) {
+    console.error("[one-time-migrate] Failed to grant materials access:", e.message);
+  }
+
   // ==================== AUTH ====================
 
   app.post("/api/auth/register", async (req, res) => {
@@ -364,7 +400,27 @@ export async function registerRoutes(server: Server, app: Express) {
       return res.json({ accessAll: true, moduleIds: [] });
     }
     const user = await storage.getUser(auth.userId);
-    if (!user || !user.planId) {
+    if (!user) {
+      return res.json({ accessAll: false, moduleIds: [] });
+    }
+
+    // Check for per-user module overrides first
+    const userMods = await storage.getUserModules(auth.userId);
+    if (userMods.length > 0) {
+      const now = new Date().toISOString();
+      const enabledModuleIds = userMods
+        .filter(um => {
+          if (!um.enabled) return false;
+          if (um.startDate && now < um.startDate) return false;
+          if (um.endDate && now > um.endDate) return false;
+          return true;
+        })
+        .map(um => um.moduleId);
+      return res.json({ accessAll: false, moduleIds: enabledModuleIds });
+    }
+
+    // Fallback to plan-based access
+    if (!user.planId) {
       return res.json({ accessAll: false, moduleIds: [] });
     }
 
@@ -571,6 +627,64 @@ export async function registerRoutes(server: Server, app: Express) {
     const admin = await storage.getUser(auth.userId);
     await logAction(auth.userId, admin?.name || "Admin", "student_updated", "student", parseInt(req.params.id), student?.name || "?", updateData);
     res.json(safe);
+  });
+
+  // ==================== ADMIN: User Modules ====================
+  app.get("/api/admin/students/:id/modules", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const id = safeParseInt(req.params.id);
+    if (!id) return res.status(400).json({ message: "ID inválido" });
+    const um = await storage.getUserModules(id);
+    res.json(um);
+  });
+
+  app.put("/api/admin/students/:id/modules", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    const id = safeParseInt(req.params.id);
+    if (!id) return res.status(400).json({ message: "ID inválido" });
+    const { modules: moduleEntries } = req.body;
+    if (!Array.isArray(moduleEntries)) {
+      return res.status(400).json({ message: "modules array obrigatório" });
+    }
+    await storage.setUserModules(id, moduleEntries.map((e: any) => ({
+      moduleId: Number(e.moduleId),
+      enabled: Boolean(e.enabled),
+      startDate: e.startDate || null,
+      endDate: e.endDate || null,
+    })));
+    const admin = await storage.getUser(auth.userId);
+    const student = await storage.getUser(id);
+    await logAction(auth.userId, admin?.name || "Admin", "student_modules_updated", "student", id, student?.name || "?", { moduleCount: moduleEntries.length });
+    res.json({ success: true });
+  });
+
+  // ==================== ADMIN: User Material Categories ====================
+  app.get("/api/admin/students/:id/material-categories", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const id = safeParseInt(req.params.id);
+    if (!id) return res.status(400).json({ message: "ID inválido" });
+    const umc = await storage.getUserMaterialCategories(id);
+    res.json(umc);
+  });
+
+  app.put("/api/admin/students/:id/material-categories", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    const id = safeParseInt(req.params.id);
+    if (!id) return res.status(400).json({ message: "ID inválido" });
+    const { categories } = req.body;
+    if (!Array.isArray(categories)) {
+      return res.status(400).json({ message: "categories array obrigatório" });
+    }
+    await storage.setUserMaterialCategories(id, categories.map((e: any) => ({
+      categoryName: String(e.categoryName),
+      enabled: Boolean(e.enabled),
+    })));
+    const admin = await storage.getUser(auth.userId);
+    const student = await storage.getUser(id);
+    await logAction(auth.userId, admin?.name || "Admin", "student_material_categories_updated", "student", id, student?.name || "?", { categoryCount: categories.length });
+    res.json({ success: true });
   });
 
   // Reorder modules

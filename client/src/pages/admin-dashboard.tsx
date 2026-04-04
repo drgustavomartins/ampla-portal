@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
@@ -26,7 +26,7 @@ import {
   Users, BookOpen, Layers, LogOut, Plus, Trash2, Check, X,
   Clock, Video, Shield, GraduationCap, Eye, Pencil, Calendar, Settings,
   CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library,
-  GripVertical
+  GripVertical, CalendarDays, FolderOpen
 } from "lucide-react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -36,7 +36,7 @@ import {
   arrayMove, SortableContext, useSortable, verticalListSortingStrategy
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { Module, Lesson, Plan, User, AuditLog } from "@shared/schema";
+import type { Module, Lesson, Plan, User, AuditLog, UserModule, UserMaterialCategory } from "@shared/schema";
 import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 import MateriaisComplementares from "./materiais-complementares";
 
@@ -1221,7 +1221,10 @@ export default function AdminDashboard() {
             <Dialog open={!!editingStudent} onOpenChange={(open) => !open && setEditingStudent(null)}>
               <DialogContent className="bg-card border-border/40 max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle className="text-lg">Editar Aluno</DialogTitle>
+                  <DialogTitle className="text-lg flex items-center gap-2">
+                    <GraduationCap className="w-5 h-5 text-gold" />
+                    Editar Aluno
+                  </DialogTitle>
                   <DialogDescription className="text-muted-foreground">{editingStudent?.name} — {editingStudent?.email}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-6 pt-2">
