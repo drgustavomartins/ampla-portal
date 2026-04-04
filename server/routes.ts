@@ -158,7 +158,7 @@ export async function registerRoutes(server: Server, app: Express) {
         "IA na Medicina",
       ];
       for (const cat of categories) {
-        await db.execute(`INSERT INTO user_material_categories (user_id, category_name, enabled) SELECT id, '${cat.replace(/'/g, "''")}', true FROM users WHERE NOT EXISTS (SELECT 1 FROM user_material_categories WHERE user_material_categories.user_id = users.id AND user_material_categories.category_name = '${cat.replace(/'/g, "''")}')`);
+        await db.execute(`INSERT INTO user_material_categories (user_id, category_title, enabled) SELECT id, '${cat.replace(/'/g, "''")}', true FROM users WHERE NOT EXISTS (SELECT 1 FROM user_material_categories WHERE user_material_categories.user_id = users.id AND user_material_categories.category_title = '${cat.replace(/'/g, "''")}')`);
       }
       // 3. Mark migration as applied
       await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
@@ -678,7 +678,7 @@ export async function registerRoutes(server: Server, app: Express) {
       return res.status(400).json({ message: "categories array obrigatório" });
     }
     await storage.setUserMaterialCategories(id, categories.map((e: any) => ({
-      categoryName: String(e.categoryName),
+      categoryTitle: String(e.categoryTitle),
       enabled: Boolean(e.enabled),
     })));
     const admin = await storage.getUser(auth.userId);
@@ -1018,33 +1018,6 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json({ success: true });
   });
 
-  // ==================== ADMIN: User Material Category Permissions ====================
-  app.get("/api/admin/students/:id/material-categories", async (req, res) => {
-    if (!requireAdmin(req, res)) return;
-    const userId = safeParseInt(req.params.id);
-    if (!userId) return res.status(400).json({ message: "ID inválido" });
-    const entries = await storage.getUserMaterialCategories(userId);
-    res.json(entries);
-  });
-
-  app.put("/api/admin/students/:id/material-categories", async (req, res) => {
-    const auth = requireAdmin(req, res);
-    if (!auth) return;
-    const userId = safeParseInt(req.params.id);
-    if (!userId) return res.status(400).json({ message: "ID inválido" });
-    const { categories } = req.body;
-    if (!Array.isArray(categories)) {
-      return res.status(400).json({ message: "categories array obrigatório" });
-    }
-    await storage.setUserMaterialCategories(userId, categories.map((e: any) => ({
-      categoryTitle: String(e.categoryTitle),
-      enabled: Boolean(e.enabled),
-    })));
-    const admin = await storage.getUser(auth.userId);
-    const student = await storage.getUser(userId);
-    await logAction(auth.userId, admin?.name || "Admin", "student_updated", "student", userId, student?.name || "?", { userMaterialCategoriesUpdated: true });
-    res.json({ success: true });
-  });
 
   // ==================== ADMIN: Audit Logs ====================
   app.get("/api/admin/audit-logs", async (req, res) => {
