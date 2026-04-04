@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+Disallow: /api/
+Disallow: /admin
+Disallow: /reset-password
+
+Sitemap: https://portal.amplafacial.com.br/sitemap.xml

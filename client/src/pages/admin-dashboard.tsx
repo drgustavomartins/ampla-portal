@@ -37,7 +37,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Module, Lesson, Plan, User, AuditLog, UserModule, UserMaterialCategory } from "@shared/schema";
-import { PerplexityAttribution } from "@/components/PerplexityAttribution";
+
 import MateriaisComplementares from "./materiais-complementares";
 
 type SafeUser = Omit<User, "password">;
@@ -145,7 +145,7 @@ function SortablePlanCard({
               <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center shrink-0"><CreditCard className="w-5 h-5 text-gold" /></div>
               <div className="min-w-0">
                 <p className="font-medium text-foreground truncate">{plan.name}</p>
-                {plan.price && <p className="text-sm text-gold font-medium">{plan.price}</p>}
+                {plan.price && <p className="text-sm text-gold font-medium">R$ {plan.price.replace(/^R\$\s?/, '')}</p>}
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
@@ -2054,7 +2054,7 @@ export default function AdminDashboard() {
               <Label className="text-xs uppercase tracking-wider text-muted-foreground">Plano de mentoria</Label>
               <Select value={approvePlanId} onValueChange={setApprovePlanId}>
                 <SelectTrigger className="bg-background/50 border-border/50"><SelectValue placeholder="Selecione um plano" /></SelectTrigger>
-                <SelectContent>{plans.map((p) => (<SelectItem key={p.id} value={String(p.id)}>{p.name}{p.price ? ` — ${p.price}` : ""} ({p.durationDays} dias)</SelectItem>))}</SelectContent>
+                <SelectContent>{plans.map((p) => (<SelectItem key={p.id} value={String(p.id)}>{p.name}{p.price ? ` — R$ ${p.price.replace(/^R\$\s?/, '')}` : ""} ({p.durationDays} dias)</SelectItem>))}</SelectContent>
               </Select>
             </div>
             <div className="flex justify-end gap-2 pt-2">
@@ -2069,8 +2069,8 @@ export default function AdminDashboard() {
       </Dialog>
 
       <footer className="border-t border-border/20 mt-8 py-5">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <PerplexityAttribution />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center text-xs text-muted-foreground">
+          Ampla Facial — Portal de Aulas
         </div>
       </footer>
     </div>
