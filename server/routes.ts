@@ -158,7 +158,7 @@ export async function registerRoutes(server: Server, app: Express) {
         "IA na Medicina",
       ];
       for (const cat of categories) {
-        await db.execute(`INSERT INTO user_material_categories (user_id, category_name, enabled) SELECT id, '${cat.replace(/'/g, "''")}', true FROM users WHERE NOT EXISTS (SELECT 1 FROM user_material_categories WHERE user_material_categories.user_id = users.id AND user_material_categories.category_name = '${cat.replace(/'/g, "''")}')`);
+        await db.execute(`INSERT INTO user_material_categories (user_id, category_title, enabled) SELECT id, '${cat.replace(/'/g, "''")}', true FROM users WHERE NOT EXISTS (SELECT 1 FROM user_material_categories WHERE user_material_categories.user_id = users.id AND user_material_categories.category_title = '${cat.replace(/'/g, "''")}')`);
       }
       // 3. Mark migration as applied
       await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
@@ -168,6 +168,37 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   } catch (e: any) {
     console.error("[one-time-migrate] Failed to grant materials access:", e.message);
+  }
+
+  // ==================== ONE-TIME: Fix corrupted user_material_categories rows ====================
+  // The previous migration used wrong column name (category_name instead of category_title),
+  // and the admin PUT endpoint mapped categoryName instead of categoryTitle, storing "undefined"
+  // as the category_title. This migration cleans up corrupted rows and backfills correct ones.
+  try {
+    const { db } = await import("./db");
+    const fixMigrationName = "fix_material_categories_column_2026_04";
+    const fixAlready = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${fixMigrationName}' LIMIT 1`);
+    const fixAlreadyRows = Array.isArray(fixAlready) ? fixAlready : (fixAlready as any).rows || [];
+    if (fixAlreadyRows.length === 0) {
+      // 1. Delete corrupted rows where category_title is 'undefined' or empty
+      await db.execute(`DELETE FROM user_material_categories WHERE category_title = 'undefined' OR category_title = ''`);
+      // 2. Backfill all 6 categories for all users with materials_access enabled
+      const categories = [
+        "Toxina Botulínica",
+        "Preenchedores Faciais",
+        "Bioestimuladores de Colágeno",
+        "Moduladores de Matriz Extracelular",
+        "Método NaturalUp®",
+        "IA na Medicina",
+      ];
+      for (const cat of categories) {
+        await db.execute(`INSERT INTO user_material_categories (user_id, category_title, enabled) SELECT id, '${cat.replace(/'/g, "''")}', true FROM users WHERE materials_access = true AND NOT EXISTS (SELECT 1 FROM user_material_categories WHERE user_material_categories.user_id = users.id AND user_material_categories.category_title = '${cat.replace(/'/g, "''")}')`);
+      }
+      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${fixMigrationName}', '${new Date().toISOString()}')`);
+      console.log("[one-time-migrate] Fixed corrupted material categories and backfilled");
+    }
+  } catch (e: any) {
+    console.error("[one-time-migrate] Failed to fix material categories:", e.message);
   }
 
   // ==================== AUTH ====================
@@ -678,7 +709,7 @@ export async function registerRoutes(server: Server, app: Express) {
       return res.status(400).json({ message: "categories array obrigatório" });
     }
     await storage.setUserMaterialCategories(id, categories.map((e: any) => ({
-      categoryName: String(e.categoryName),
+      categoryTitle: String(e.categoryTitle),
       enabled: Boolean(e.enabled),
     })));
     const admin = await storage.getUser(auth.userId);
