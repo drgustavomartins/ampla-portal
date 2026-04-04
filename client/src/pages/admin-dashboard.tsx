@@ -26,7 +26,7 @@ import {
   Users, BookOpen, Layers, LogOut, Plus, Trash2, Check, X,
   Clock, Video, Shield, GraduationCap, Eye, Pencil, Calendar, Settings,
   CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library,
-  GripVertical, CalendarDays, FolderOpen
+  GripVertical, CalendarDays, FolderOpen, Search
 } from "lucide-react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -264,6 +264,9 @@ export default function AdminDashboard() {
     queryKey: ["/api/admin/admins"],
     enabled: isSuperAdmin,
   });
+
+  // Student search
+  const [studentSearch, setStudentSearch] = useState("");
 
   // Student detail view
   const [selectedStudent, setSelectedStudent] = useState<SafeUser | null>(null);
@@ -921,16 +924,51 @@ export default function AdminDashboard() {
 
           {/* ========== STUDENTS TAB ========== */}
           <TabsContent value="students" className="space-y-6 mt-0">
-            {pendingStudents.length > 0 && (
+            {/* Search input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <Input
+                type="text"
+                placeholder="Buscar aluno por nome..."
+                value={studentSearch}
+                onChange={(e) => setStudentSearch(e.target.value)}
+                className="pl-9 bg-card/50 border-border/40 placeholder:text-muted-foreground/60"
+              />
+            </div>
+
+            {(() => {
+              const searchQuery = studentSearch.trim().toLowerCase();
+              const filteredPending = searchQuery
+                ? pendingStudents.filter((s) => s.name.toLowerCase().includes(searchQuery))
+                : pendingStudents;
+              const filteredStudents = searchQuery
+                ? students.filter((s) => s.name.toLowerCase().includes(searchQuery))
+                : students;
+              const noResults = searchQuery && filteredPending.length === 0 && filteredStudents.length === 0;
+
+              return (
+                <>
+                  {noResults && (
+                    <Card className="border-border/30 bg-card/40">
+                      <CardContent className="p-12 text-center">
+                        <div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4">
+                          <Search className="w-7 h-7 text-muted-foreground/40" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">Nenhum aluno encontrado</p>
+                      </CardContent>
+                    </Card>
+                  )}
+
+            {filteredPending.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                   <h3 className="text-xs font-semibold text-amber-400 uppercase tracking-brand">
-                    Aguardando aprovação ({pendingStudents.length})
+                    Aguardando aprovação ({filteredPending.length})
                   </h3>
                 </div>
                 <div className="space-y-2">
-                  {pendingStudents.map((s) => (
+                  {filteredPending.map((s) => (
                     <Card key={s.id} className="border-amber-500/20 bg-card/50">
                       <CardContent className="p-4 space-y-3">
                         <div className="min-w-0">
@@ -987,7 +1025,7 @@ export default function AdminDashboard() {
 
             <div className="space-y-3">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">
-                Todos os alunos ({students.length})
+                Todos os alunos ({filteredStudents.length})
               </h3>
               {students.length === 0 ? (
                 <Card className="border-border/30 bg-card/40">
@@ -1000,7 +1038,7 @@ export default function AdminDashboard() {
                 </Card>
               ) : (
                 <div className="space-y-2">
-                  {students.map((s) => {
+                  {filteredStudents.map((s) => {
                     const plan = plans.find(p => p.id === s.planId);
                     const daysLeft = s.accessExpiresAt
                       ? Math.max(0, Math.ceil((new Date(s.accessExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
@@ -1162,6 +1200,9 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
+                </>
+              );
+            })()}
 
             {/* Student Progress Detail Dialog */}
             <Dialog open={!!selectedStudent} onOpenChange={(open) => !open && setSelectedStudent(null)}>
