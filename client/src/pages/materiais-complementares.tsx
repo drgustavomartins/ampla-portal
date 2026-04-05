@@ -87,17 +87,26 @@ function FileRow({ file }: { file: FileEntry }) {
             <span className="text-sm text-foreground/90 leading-snug">{file.name}</span>
             <TypeLabel type={file.type} />
           </div>
-          {file.type === "mp3" && (
+          {file.type === "mp3" && file.youtubeId ? (
             <div className="relative w-full mt-1 rounded-lg overflow-hidden border border-border/20" style={{ paddingBottom: "56.25%", maxWidth: "28rem" }}>
               <iframe
-                src={drivePreviewUrl(file.driveId)}
+                src={`https://www.youtube.com/embed/${file.youtubeId}`}
                 className="absolute inset-0 w-full h-full"
-                allow="autoplay"
-                sandbox="allow-same-origin allow-scripts allow-popups"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                frameBorder="0"
                 title={file.name}
               />
             </div>
-          )}
+          ) : file.type === "mp3" ? (
+            <iframe
+              src={drivePreviewUrl(file.driveId)}
+              className="w-full max-w-md h-20 mt-1 rounded-lg border border-border/20"
+              allow="autoplay"
+              sandbox="allow-same-origin allow-scripts allow-popups"
+              title={file.name}
+            />
+          ) : null}
         </div>
         <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
           {file.type === "pdf" && (
