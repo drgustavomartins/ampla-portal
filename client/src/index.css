@@ -150,9 +150,33 @@
     letter-spacing: 0.15em;
   }
 
-  /* Course grid card — premium hover glow */
-  .course-grid-card {
+  /* Shelf scroll — horizontal product shelf */
+  .shelf-scroll {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    scroll-behavior: smooth;
+  }
+  .shelf-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .shelf-card {
+    scroll-snap-align: start;
     will-change: transform;
+    width: 300px;
+    min-width: 300px;
+  }
+  @media (min-width: 768px) {
+    .shelf-card {
+      width: 320px;
+      min-width: 320px;
+    }
+  }
+  @media (max-width: 640px) {
+    .shelf-card {
+      width: 260px;
+      min-width: 260px;
+    }
   }
 
   .no-default-hover-elevate {}

@@ -15,7 +15,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
-  ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle,
+  ChevronLeft, ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle,
   Users, MessageCircle, Lock, ShoppingCart, ExternalLink, Paperclip
 } from "lucide-react";
 import MateriaisComplementares from "./materiais-complementares";
@@ -62,6 +62,16 @@ export default function StudentDashboard() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "" });
   const materiaisRef = useRef<HTMLDivElement>(null);
+  const shelfRef = useRef<HTMLDivElement>(null);
+
+  const scrollShelf = (direction: "left" | "right") => {
+    if (!shelfRef.current) return;
+    const cardWidth = shelfRef.current.querySelector(".shelf-card")?.clientWidth || 280;
+    shelfRef.current.scrollBy({
+      left: direction === "left" ? -(cardWidth + 20) : (cardWidth + 20),
+      behavior: "smooth",
+    });
+  };
 
   const { data: modules = [] } = useQuery<Module[]>({ queryKey: ["/api/modules"] });
   const { data: lessons = [] } = useQuery<Lesson[]>({ queryKey: ["/api/lessons"] });
@@ -533,14 +543,33 @@ export default function StudentDashboard() {
             </section>
           )}
 
-          {/* ===== SEUS CURSOS — PREMIUM GRID ===== */}
+          {/* ===== SEUS CURSOS — SHELF CAROUSEL ===== */}
           <section className="space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="font-serif text-2xl font-semibold text-foreground">Seus Cursos</h2>
-              <span className="text-xs text-muted-foreground">{courseModules.length} cursos</span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground">{courseModules.length} cursos</span>
+                <div className="hidden sm:flex items-center gap-1.5">
+                  <button
+                    onClick={() => scrollShelf("left")}
+                    className="w-8 h-8 rounded-full border border-border/40 bg-card/80 backdrop-blur-sm flex items-center justify-center text-muted-foreground hover:text-gold hover:border-gold/40 transition-all"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => scrollShelf("right")}
+                    className="w-8 h-8 rounded-full border border-border/40 bg-card/80 backdrop-blur-sm flex items-center justify-center text-muted-foreground hover:text-gold hover:border-gold/40 transition-all"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div
+              ref={shelfRef}
+              className="shelf-scroll flex gap-5 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6"
+            >
               {courseModules.map((mod, idx) => {
                 const modLessons = getLessonsForModule(mod.id);
                 const allLessons = idx === 0 ? [...introLessons, ...modLessons] : modLessons;
@@ -557,7 +586,7 @@ export default function StudentDashboard() {
                 return (
                   <div
                     key={mod.id}
-                    className={`course-grid-card group relative rounded-2xl overflow-hidden border transition-all duration-300 ${
+                    className={`shelf-card shrink-0 group relative rounded-2xl overflow-hidden border transition-all duration-300 ${
                       isUnlocked
                         ? "border-border/30 bg-card/60 cursor-pointer hover:-translate-y-1 hover:border-gold/40 hover:shadow-[0_12px_32px_rgba(212,168,67,0.08)]"
                         : isPurchasable
