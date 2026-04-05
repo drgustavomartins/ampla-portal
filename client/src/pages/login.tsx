@@ -35,7 +35,7 @@ export default function LoginPage() {
       return res.json();
     },
     onSuccess: (data) => {
-      login(data.user);
+      login(data.user, data.token);
     },
     onError: (error: any) => {
       toast({ title: "Erro", description: error.message, variant: "destructive" });

@@ -21,9 +21,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SafeUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const login = useCallback((u: SafeUser) => {
+  const login = useCallback((u: SafeUser, token?: string) => {
     setUser(u);
-    // Token is now stored in httpOnly cookie by the server — no localStorage needed
+    // Store token in localStorage as fallback (httpOnly cookie is primary)
+    if (token) {
+      localStorage.setItem("ampla_token", token);
+    }
   }, []);
 
   const logout = useCallback(async () => {
