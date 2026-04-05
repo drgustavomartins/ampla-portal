@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft, FileText, FileIcon, Headphones, Download, ChevronDown, ChevronUp, ExternalLink, Eye, X, Loader2,
+  ArrowLeft, FileText, FileIcon, Headphones, Download, ChevronDown, ChevronUp, ExternalLink, Eye, X, Loader2, Lock,
 } from "lucide-react";
 
 /* ───────── Types ───────── */
@@ -272,7 +272,7 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between">
+      <div className="flex items-end justify-between">
         <div className="flex items-center gap-3">
           {onBack && (
             <button
@@ -283,54 +283,56 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
             </button>
           )}
           <div>
-            <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
+            <h2 className="text-[22px] font-semibold text-foreground tracking-tight">
               Materiais Complementares
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Artigos, compilados e materiais de apoio organizados por tema
+            </h2>
+            <p className="text-[13px] text-muted-foreground/50 mt-0.5">
+              Artigos, compilados e áudios organizados por tema
             </p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="shelf-scroll flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6">
         {allowedThemes.map((theme) => (
-          <button
+          <div
             key={theme.id}
-            onClick={() => theme.fileCount > 0 && setSelectedTheme(theme)}
-            className={`group relative rounded-xl overflow-hidden border border-border/30 text-left transition-all duration-200 ${
-              theme.fileCount > 0
-                ? "cursor-pointer hover:border-gold/40 hover:shadow-lg hover:shadow-gold/5"
-                : "cursor-default opacity-80"
+            className={`shelf-card shrink-0 group transition-all duration-500 ${
+              theme.fileCount > 0 ? "cursor-pointer" : "cursor-default"
             }`}
+            onClick={() => theme.fileCount > 0 && setSelectedTheme(theme)}
           >
-            {/* Cover image */}
-            <div className="relative h-56 sm:h-64">
+            {/* Book cover image */}
+            <div className="relative rounded-[20px] overflow-hidden transition-all duration-500 group-hover:-translate-y-1.5 group-hover:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.5)]" style={{ aspectRatio: "4/5" }}>
               <img
                 src={theme.coverUrl}
                 alt={theme.title}
-                className="w-full h-full object-cover object-top"
+                className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.03]"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628] via-[#0A1628]/50 to-[#0A1628]/20" />
 
-              {/* File count badge */}
-              {theme.fileCount > 0 && (
-                <Badge className="absolute top-3 right-3 bg-gold/90 text-background border-0 text-xs font-medium">
-                  {theme.fileCount} {theme.fileCount === 1 ? "arquivo" : "arquivos"}
-                </Badge>
+              {/* Soft vignette */}
+              <div className="absolute inset-0 bg-gradient-to-t from-white/[0.06] via-transparent to-transparent" />
+
+              {/* Lock overlay for empty */}
+              {theme.fileCount === 0 && (
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-[3px] flex items-center justify-center">
+                  <Lock className="w-5 h-5 text-white/20" />
+                </div>
               )}
             </div>
 
-            {/* Title area */}
-            <div className="absolute bottom-0 left-0 right-0 p-4">
-              <h3 className="text-base sm:text-lg font-semibold text-foreground group-hover:text-gold transition-colors">
+            {/* Text below — Apple-style minimal */}
+            <div className="pt-4 pb-1 space-y-1.5">
+              <span className={`text-[10px] font-medium uppercase tracking-[0.12em] ${
+                theme.fileCount > 0 ? "text-emerald-400/90" : "text-white/30"
+              }`}>
+                {theme.fileCount > 0 ? `${theme.fileCount} arquivos` : "Em breve"}
+              </span>
+              <h3 className="font-semibold text-[15px] text-foreground/90 leading-snug line-clamp-2 tracking-[-0.01em]">
                 {theme.title}
               </h3>
-              {theme.fileCount === 0 && (
-                <p className="text-sm italic text-gold/70 mt-1">Conteúdo em breve</p>
-              )}
             </div>
-          </button>
+          </div>
         ))}
       </div>
     </div>
