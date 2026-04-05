@@ -15,7 +15,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
-  ChevronRight, ChevronLeft, Calendar, Layers, Settings, Loader2, AlertTriangle,
+  ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle,
   Users, MessageCircle, Lock, ShoppingCart, ExternalLink, Paperclip
 } from "lucide-react";
 import MateriaisComplementares from "./materiais-complementares";
@@ -61,7 +61,6 @@ export default function StudentDashboard() {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "" });
-  const carouselRef = useRef<HTMLDivElement>(null);
   const materiaisRef = useRef<HTMLDivElement>(null);
 
   const { data: modules = [] } = useQuery<Module[]>({ queryKey: ["/api/modules"] });
@@ -365,14 +364,16 @@ export default function StudentDashboard() {
   const daysUsed = Math.max(0, planDurationDays - daysLeft);
   const dayProgressPercent = Math.min(100, Math.round((daysUsed / planDurationDays) * 100));
 
-  // Carousel scroll handlers
-  const scrollCarousel = (direction: "left" | "right") => {
-    if (!carouselRef.current) return;
-    const scrollAmount = 300;
-    carouselRef.current.scrollBy({
-      left: direction === "left" ? -scrollAmount : scrollAmount,
-      behavior: "smooth",
-    });
+  // Course card description fallback
+  const getCourseDescription = (mod: Module): string => {
+    if (mod.description) return mod.description;
+    const title = mod.title.toLowerCase();
+    if (title.includes("toxina")) return "Técnicas e protocolos de aplicação de toxina botulínica";
+    if (title.includes("preenchedores") || title.includes("ácido")) return "Preenchimentos e volumização com ácido hialurônico";
+    if (title.includes("bioestimulador")) return "Bioestimuladores de colágeno e neocolagênese";
+    if (title.includes("modulador") || title.includes("matriz")) return "Moduladores de matriz extracelular";
+    if (title.includes("naturalup") || title.includes("método")) return "Protocolo integrado completo NaturalUp®";
+    return "Conteúdo exclusivo da mentoria Ampla Facial";
   };
 
   return (
@@ -532,36 +533,14 @@ export default function StudentDashboard() {
             </section>
           )}
 
-          {/* ===== SEUS CURSOS — BOOK COVER CAROUSEL ===== */}
-          <section className="space-y-4">
+          {/* ===== SEUS CURSOS — PREMIUM GRID ===== */}
+          <section className="space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="font-serif text-2xl font-semibold text-foreground">Seus Cursos</h2>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground">{courseModules.length} cursos</span>
-                <div className="hidden sm:flex items-center gap-1.5">
-                  <button
-                    onClick={() => scrollCarousel("left")}
-                    className="w-7 h-7 rounded-full border border-border/40 bg-card/60 flex items-center justify-center text-muted-foreground hover:text-gold hover:border-gold/30 transition-colors"
-                    aria-label="Rolar para esquerda"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => scrollCarousel("right")}
-                    className="w-7 h-7 rounded-full border border-border/40 bg-card/60 flex items-center justify-center text-muted-foreground hover:text-gold hover:border-gold/30 transition-colors"
-                    aria-label="Rolar para direita"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
+              <span className="text-xs text-muted-foreground">{courseModules.length} cursos</span>
             </div>
 
-            {/* Book cover carousel */}
-            <div
-              ref={carouselRef}
-              className="carousel-shelf flex gap-3 sm:gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6"
-            >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {courseModules.map((mod, idx) => {
                 const modLessons = getLessonsForModule(mod.id);
                 const allLessons = idx === 0 ? [...introLessons, ...modLessons] : modLessons;
@@ -569,87 +548,114 @@ export default function StudentDashboard() {
                 const accessible = hasModuleAccess(mod);
                 const isUnlocked = hasContent && accessible;
                 const isPurchasable = hasContent && !accessible;
+                const isLocked = !hasContent;
                 const courseImage = getCourseImage(mod);
                 const courseNumber = String(idx + 1).padStart(2, "0");
+                const completedInModule = allLessons.filter(l => completedIds.has(l.id)).length;
+                const moduleProgressPercent = allLessons.length > 0 ? Math.round((completedInModule / allLessons.length) * 100) : 0;
 
                 return (
-                  <div key={mod.id} className="carousel-card shrink-0 flex flex-col">
-                    {/* Book cover card */}
-                    <div
-                      className="relative rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(0,0,0,0.35)] group"
-                      style={{ aspectRatio: "3/4" }}
-                      onClick={() => {
-                        if (isPurchasable) {
-                          setPurchaseModule(mod);
-                        } else if (isUnlocked) {
-                          setLocation(`/module/${mod.id}`);
-                        }
-                      }}
-                      data-testid={`button-module-${mod.id}`}
-                    >
-                      {/* Cover image */}
+                  <div
+                    key={mod.id}
+                    className={`course-grid-card group relative rounded-2xl overflow-hidden border transition-all duration-300 ${
+                      isUnlocked
+                        ? "border-border/30 bg-card/60 cursor-pointer hover:-translate-y-1 hover:border-gold/40 hover:shadow-[0_12px_32px_rgba(212,168,67,0.08)]"
+                        : isPurchasable
+                          ? "border-gold/20 bg-card/60 cursor-pointer hover:-translate-y-1 hover:border-gold/40"
+                          : "border-border/20 bg-card/40 cursor-default"
+                    }`}
+                    onClick={() => {
+                      if (isPurchasable) {
+                        setPurchaseModule(mod);
+                      } else if (isUnlocked) {
+                        setLocation(`/module/${mod.id}`);
+                      }
+                    }}
+                    data-testid={`button-module-${mod.id}`}
+                  >
+                    {/* Image section */}
+                    <div className="relative h-[200px] overflow-hidden">
+                      {/* Background image */}
                       <div
-                        className="absolute inset-0 bg-cover bg-center"
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
                         style={courseImage
                           ? { backgroundImage: `url(${courseImage})` }
                           : { background: "linear-gradient(135deg, hsl(200 45% 12%), hsl(200 55% 8%))" }
                         }
                       />
 
-                      {/* Dark gradient at bottom for title */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      {/* Gradient overlays */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent" />
 
-                      {/* Module number badge top-left */}
-                      <span className="absolute top-2 left-2 w-6 h-6 rounded-md bg-black/50 backdrop-blur-sm flex items-center justify-center text-[9px] font-bold text-white/70 tracking-wider">
+                      {/* Course number — large elegant overlay */}
+                      <span className="absolute bottom-3 left-4 font-serif text-[3.5rem] font-bold leading-none text-white/[0.08] select-none">
                         {courseNumber}
                       </span>
 
-                      {/* Status badge top-right */}
-                      <div className="absolute top-2 right-2">
+                      {/* Status badge */}
+                      <div className="absolute top-3 right-3">
                         {isUnlocked ? (
-                          <span className="inline-flex items-center rounded-md bg-emerald-500/25 backdrop-blur-sm border border-emerald-500/30 px-1.5 py-0.5 text-[8px] font-bold text-emerald-300 uppercase tracking-wider">
+                          <span className="inline-flex items-center rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 px-2.5 py-1 text-[10px] font-bold text-emerald-300 uppercase tracking-wider">
                             Liberado
                           </span>
                         ) : isPurchasable ? (
-                          <span className="inline-flex items-center gap-0.5 rounded-md bg-gold/25 backdrop-blur-sm border border-gold/40 px-1.5 py-0.5 text-[8px] font-bold text-gold uppercase tracking-wider">
-                            <ShoppingCart className="w-2.5 h-2.5" />
+                          <span className="inline-flex items-center gap-1 rounded-full bg-gold/20 backdrop-blur-md border border-gold/40 px-2.5 py-1 text-[10px] font-bold text-gold uppercase tracking-wider">
+                            <ShoppingCart className="w-3 h-3" />
                             Adquirir
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-0.5 rounded-md bg-black/40 backdrop-blur-sm border border-white/10 px-1.5 py-0.5 text-[8px] font-bold text-white/60 uppercase tracking-wider">
-                            <Lock className="w-2.5 h-2.5" />
+                          <span className="inline-flex items-center gap-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 px-2.5 py-1 text-[10px] font-bold text-white/50 uppercase tracking-wider">
+                            <Lock className="w-3 h-3" />
                             Em breve
                           </span>
                         )}
                       </div>
 
-                      {/* Locked overlay for purchasable */}
-                      {isPurchasable && (
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex items-center justify-center">
-                          <Lock className="w-8 h-8 text-gold/50" />
+                      {/* Frosted lock overlay for locked/purchasable */}
+                      {(isPurchasable || isLocked) && (
+                        <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
+                          <div className="w-14 h-14 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 flex items-center justify-center">
+                            <Lock className={`w-6 h-6 ${isPurchasable ? "text-gold/60" : "text-white/30"}`} />
+                          </div>
                         </div>
                       )}
-
-                      {/* Locked overlay for no content */}
-                      {!hasContent && (
-                        <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center">
-                          <Lock className="w-7 h-7 text-white/30" />
-                        </div>
-                      )}
-
-                      {/* Title overlaid on gradient */}
-                      <div className="absolute bottom-0 left-0 right-0 p-2.5 sm:p-3">
-                        <h3 className="text-white font-bold text-[11px] sm:text-[13px] leading-tight line-clamp-2 drop-shadow-md">
-                          {mod.title}
-                        </h3>
-                      </div>
                     </div>
 
-                    {/* Lesson count below card */}
-                    <div className="mt-1.5 px-0.5">
-                      <span className="text-[10px] sm:text-[11px] text-muted-foreground">
-                        {allLessons.length} {allLessons.length === 1 ? "aula" : "aulas"}
-                      </span>
+                    {/* Content section */}
+                    <div className="p-4 space-y-3">
+                      {/* Title */}
+                      <h3 className="font-serif font-bold text-foreground text-base leading-snug line-clamp-2">
+                        {mod.title}
+                      </h3>
+
+                      {/* Description */}
+                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+                        {getCourseDescription(mod)}
+                      </p>
+
+                      {/* Progress bar — only for unlocked modules */}
+                      {isUnlocked && (
+                        <div className="h-[3px] w-full rounded-full bg-border/30 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gold transition-all duration-500"
+                            style={{ width: `${moduleProgressPercent}%` }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Bottom row: lesson count + completion */}
+                      <div className="flex items-center justify-between text-xs text-muted-foreground pt-0.5">
+                        <span className="flex items-center gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5" />
+                          {allLessons.length} {allLessons.length === 1 ? "aula" : "aulas"}
+                        </span>
+                        {isUnlocked && allLessons.length > 0 && (
+                          <span className="font-medium text-gold/80">
+                            {moduleProgressPercent}%
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
