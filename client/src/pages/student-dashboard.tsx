@@ -545,31 +545,32 @@ export default function StudentDashboard() {
 
           {/* ===== SEUS CURSOS — APPLE-STYLE SHELF ===== */}
           <section className="space-y-6">
-            <div className="flex items-end justify-between">
-              <div>
-                <h2 className="text-[22px] font-semibold text-foreground tracking-tight">Seus Cursos</h2>
-                <p className="text-[13px] text-muted-foreground/50 mt-0.5">{courseModules.length} módulos disponíveis</p>
-              </div>
-              <div className="hidden sm:flex items-center gap-2">
-                <button
-                  onClick={() => scrollShelf("left")}
-                  className="w-9 h-9 rounded-full bg-white/[0.04] flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.08] transition-all duration-300"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => scrollShelf("right")}
-                  className="w-9 h-9 rounded-full bg-white/[0.04] flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.08] transition-all duration-300"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
+            <div>
+              <h2 className="text-[22px] font-semibold text-foreground tracking-tight">Seus Cursos</h2>
+              <p className="text-[13px] text-muted-foreground/50 mt-0.5">{courseModules.length} módulos disponíveis</p>
             </div>
 
-            <div
-              ref={shelfRef}
-              className="shelf-scroll flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6"
-            >
+            <div className="relative group/shelf">
+              {/* Left arrow */}
+              <button
+                onClick={() => scrollShelf("left")}
+                className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-300 opacity-0 group-hover/shelf:opacity-100 -translate-x-1/2"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+
+              {/* Right arrow */}
+              <button
+                onClick={() => scrollShelf("right")}
+                className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-300 opacity-0 group-hover/shelf:opacity-100 translate-x-1/2"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+
+              <div
+                ref={shelfRef}
+                className="shelf-scroll flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6"
+              >
               {courseModules.map((mod, idx) => {
                 const modLessons = getLessonsForModule(mod.id);
                 const allLessons = idx === 0 ? [...introLessons, ...modLessons] : modLessons;
@@ -667,6 +668,7 @@ export default function StudentDashboard() {
                   </div>
                 );
               })}
+              </div>
             </div>
           </section>
 
