@@ -543,32 +543,32 @@ export default function StudentDashboard() {
             </section>
           )}
 
-          {/* ===== SEUS CURSOS — SHELF CAROUSEL ===== */}
-          <section className="space-y-5">
-            <div className="flex items-center justify-between">
-              <h2 className="font-serif text-2xl font-semibold text-foreground">Seus Cursos</h2>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground">{courseModules.length} cursos</span>
-                <div className="hidden sm:flex items-center gap-1.5">
-                  <button
-                    onClick={() => scrollShelf("left")}
-                    className="w-8 h-8 rounded-full border border-border/40 bg-card/80 backdrop-blur-sm flex items-center justify-center text-muted-foreground hover:text-gold hover:border-gold/40 transition-all"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => scrollShelf("right")}
-                    className="w-8 h-8 rounded-full border border-border/40 bg-card/80 backdrop-blur-sm flex items-center justify-center text-muted-foreground hover:text-gold hover:border-gold/40 transition-all"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+          {/* ===== SEUS CURSOS — APPLE-STYLE SHELF ===== */}
+          <section className="space-y-6">
+            <div className="flex items-end justify-between">
+              <div>
+                <h2 className="text-[22px] font-semibold text-foreground tracking-tight">Seus Cursos</h2>
+                <p className="text-[13px] text-muted-foreground/50 mt-0.5">{courseModules.length} módulos disponíveis</p>
+              </div>
+              <div className="hidden sm:flex items-center gap-2">
+                <button
+                  onClick={() => scrollShelf("left")}
+                  className="w-9 h-9 rounded-full bg-white/[0.04] flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.08] transition-all duration-300"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => scrollShelf("right")}
+                  className="w-9 h-9 rounded-full bg-white/[0.04] flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.08] transition-all duration-300"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
             <div
               ref={shelfRef}
-              className="shelf-scroll flex gap-5 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6"
+              className="shelf-scroll flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6"
             >
               {courseModules.map((mod, idx) => {
                 const modLessons = getLessonsForModule(mod.id);
@@ -586,12 +586,8 @@ export default function StudentDashboard() {
                 return (
                   <div
                     key={mod.id}
-                    className={`shelf-card shrink-0 group relative rounded-2xl overflow-hidden border transition-all duration-300 ${
-                      isUnlocked
-                        ? "border-border/30 bg-card/60 cursor-pointer hover:-translate-y-1 hover:border-gold/40 hover:shadow-[0_12px_32px_rgba(212,168,67,0.08)]"
-                        : isPurchasable
-                          ? "border-gold/20 bg-card/60 cursor-pointer hover:-translate-y-1 hover:border-gold/40"
-                          : "border-border/20 bg-card/40 cursor-default"
+                    className={`shelf-card shrink-0 group transition-all duration-500 ${
+                      isUnlocked || isPurchasable ? "cursor-pointer" : "cursor-default"
                     }`}
                     onClick={() => {
                       if (isPurchasable) {
@@ -602,89 +598,71 @@ export default function StudentDashboard() {
                     }}
                     data-testid={`button-module-${mod.id}`}
                   >
-                    {/* Image section */}
-                    <div className="relative h-[200px] overflow-hidden">
+                    {/* Image — rounded, floating, Apple-style */}
+                    <div className="relative rounded-[20px] overflow-hidden transition-all duration-500 group-hover:-translate-y-1.5 group-hover:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.5)]" style={{ aspectRatio: "4/5" }}>
                       {/* Background image */}
                       <div
-                        className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-[1.03]"
                         style={courseImage
                           ? { backgroundImage: `url(${courseImage})` }
-                          : { background: "linear-gradient(135deg, hsl(200 45% 12%), hsl(200 55% 8%))" }
+                          : { background: "linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)" }
                         }
                       />
 
-                      {/* Gradient overlays */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent" />
+                      {/* Soft white vignette at bottom */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-white/[0.06] via-transparent to-transparent" />
 
-                      {/* Course number — large elegant overlay */}
-                      <span className="absolute bottom-3 left-4 font-serif text-[3.5rem] font-bold leading-none text-white/[0.08] select-none">
+                      {/* Course number — ultra-thin, Apple SF style */}
+                      <span className="absolute bottom-4 left-5 text-[4rem] font-extralight leading-none text-white/[0.07] select-none tracking-tight" style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}>
                         {courseNumber}
                       </span>
 
-                      {/* Status badge */}
-                      <div className="absolute top-3 right-3">
+                      {/* Frosted lock overlay */}
+                      {(isPurchasable || isLocked) && (
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-[3px] flex items-center justify-center">
+                          <Lock className={`w-5 h-5 ${isPurchasable ? "text-white/40" : "text-white/20"}`} />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Text below image — clean, minimal */}
+                    <div className="pt-4 pb-1 space-y-1.5">
+                      {/* Status line */}
+                      <div className="flex items-center gap-2">
                         {isUnlocked ? (
-                          <span className="inline-flex items-center rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 px-2.5 py-1 text-[10px] font-bold text-emerald-300 uppercase tracking-wider">
-                            Liberado
+                          <span className="text-[10px] font-medium text-emerald-400/90 uppercase tracking-[0.12em]">
+                            Disponível
                           </span>
                         ) : isPurchasable ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-gold/20 backdrop-blur-md border border-gold/40 px-2.5 py-1 text-[10px] font-bold text-gold uppercase tracking-wider">
-                            <ShoppingCart className="w-3 h-3" />
-                            Adquirir
+                          <span className="text-[10px] font-medium text-gold/70 uppercase tracking-[0.12em]">
+                            Adquirir acesso
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 px-2.5 py-1 text-[10px] font-bold text-white/50 uppercase tracking-wider">
-                            <Lock className="w-3 h-3" />
+                          <span className="text-[10px] font-medium text-white/30 uppercase tracking-[0.12em]">
                             Em breve
                           </span>
                         )}
                       </div>
 
-                      {/* Frosted lock overlay for locked/purchasable */}
-                      {(isPurchasable || isLocked) && (
-                        <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center">
-                          <div className="w-14 h-14 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 flex items-center justify-center">
-                            <Lock className={`w-6 h-6 ${isPurchasable ? "text-gold/60" : "text-white/30"}`} />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Content section */}
-                    <div className="p-4 space-y-3">
                       {/* Title */}
-                      <h3 className="font-serif font-bold text-foreground text-base leading-snug line-clamp-2">
+                      <h3 className="font-semibold text-[15px] text-foreground/90 leading-snug line-clamp-2 tracking-[-0.01em]">
                         {mod.title}
                       </h3>
 
-                      {/* Description */}
-                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                        {getCourseDescription(mod)}
+                      {/* Subtitle */}
+                      <p className="text-[12px] text-muted-foreground/60 leading-relaxed line-clamp-1">
+                        {allLessons.length} {allLessons.length === 1 ? "aula" : "aulas"}{isUnlocked && allLessons.length > 0 ? ` · ${moduleProgressPercent}% concluído` : ""}
                       </p>
 
-                      {/* Progress bar — only for unlocked modules */}
-                      {isUnlocked && (
-                        <div className="h-[3px] w-full rounded-full bg-border/30 overflow-hidden">
+                      {/* Minimal progress bar */}
+                      {isUnlocked && allLessons.length > 0 && (
+                        <div className="h-[2px] w-full rounded-full bg-white/[0.06] overflow-hidden mt-1">
                           <div
-                            className="h-full rounded-full bg-gold transition-all duration-500"
-                            style={{ width: `${moduleProgressPercent}%` }}
+                            className="h-full rounded-full bg-gold/60 transition-all duration-700"
+                            style={{ width: `${Math.max(moduleProgressPercent, 2)}%` }}
                           />
                         </div>
                       )}
-
-                      {/* Bottom row: lesson count + completion */}
-                      <div className="flex items-center justify-between text-xs text-muted-foreground pt-0.5">
-                        <span className="flex items-center gap-1.5">
-                          <BookOpen className="w-3.5 h-3.5" />
-                          {allLessons.length} {allLessons.length === 1 ? "aula" : "aulas"}
-                        </span>
-                        {isUnlocked && allLessons.length > 0 && (
-                          <span className="font-medium text-gold/80">
-                            {moduleProgressPercent}%
-                          </span>
-                        )}
-                      </div>
                     </div>
                   </div>
                 );

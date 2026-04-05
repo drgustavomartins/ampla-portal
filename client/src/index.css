@@ -150,12 +150,13 @@
     letter-spacing: 0.15em;
   }
 
-  /* Shelf scroll — horizontal product shelf */
+  /* Shelf scroll — Apple-style horizontal product shelf */
   .shelf-scroll {
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     scroll-behavior: smooth;
+    scroll-padding-left: 1.5rem;
   }
   .shelf-scroll::-webkit-scrollbar {
     display: none;
@@ -163,19 +164,25 @@
   .shelf-card {
     scroll-snap-align: start;
     will-change: transform;
-    width: 300px;
-    min-width: 300px;
+    width: 240px;
+    min-width: 240px;
   }
   @media (min-width: 768px) {
     .shelf-card {
-      width: 320px;
-      min-width: 320px;
+      width: 260px;
+      min-width: 260px;
+    }
+  }
+  @media (min-width: 1024px) {
+    .shelf-card {
+      width: 280px;
+      min-width: 280px;
     }
   }
   @media (max-width: 640px) {
     .shelf-card {
-      width: 260px;
-      min-width: 260px;
+      width: 200px;
+      min-width: 200px;
     }
   }
 
