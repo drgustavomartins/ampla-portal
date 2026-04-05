@@ -140,6 +140,7 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`CREATE TABLE IF NOT EXISTS material_subcategories (id SERIAL PRIMARY KEY, theme_id INTEGER NOT NULL, name TEXT NOT NULL, "order" INTEGER NOT NULL DEFAULT 0)`);
     await db.execute(`CREATE TABLE IF NOT EXISTS material_files (id SERIAL PRIMARY KEY, subcategory_id INTEGER NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, drive_id TEXT NOT NULL, "order" INTEGER NOT NULL DEFAULT 0)`);
     await db.execute(`ALTER TABLE material_files ADD COLUMN IF NOT EXISTS youtube_id TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE material_themes ADD COLUMN IF NOT EXISTS visible BOOLEAN NOT NULL DEFAULT true`).catch(() => {});
     console.log("[auto-migrate] material_topics, order, materials_access, mentorship dates, user_modules, user_material_categories, material_themes/subcategories/files ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
@@ -1218,10 +1219,13 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // ==================== MATERIALS (DB-driven) ====================
   // Public endpoint: get all themes with nested subcategories and files
-  app.get("/api/materials", async (_req, res) => {
+  app.get("/api/materials", async (req, res) => {
     // Public endpoint — materials catalog is visible to all (files are PDFs/links, not sensitive)
     try {
-      const themes = await storage.getMaterialThemes();
+      const auth = authenticateRequest(req);
+      const isAdmin = auth && (auth.role === "admin" || auth.role === "super_admin");
+      const allThemes = await storage.getMaterialThemes();
+      const themes = isAdmin ? allThemes : allThemes.filter(t => t.visible !== false);
       const result = await Promise.all(themes.map(async (theme) => {
         const subcategories = await storage.getMaterialSubcategories(theme.id);
         const subsWithFiles = await Promise.all(subcategories.map(async (sub) => {
@@ -1259,11 +1263,12 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!auth) return;
     const id = safeParseInt(req.params.id);
     if (!id) return res.status(400).json({ message: "ID inválido" });
-    const { title, coverUrl, order } = req.body;
+    const { title, coverUrl, order, visible } = req.body;
     const updateData: any = {};
     if (title !== undefined) updateData.title = sanitize(title);
     if (coverUrl !== undefined) updateData.coverUrl = sanitize(coverUrl);
     if (order !== undefined) updateData.order = order;
+    if (visible !== undefined) updateData.visible = visible;
     const updated = await storage.updateMaterialTheme(id, updateData);
     if (!updated) return res.status(404).json({ message: "Tema não encontrado" });
     const admin = await storage.getUser(auth.userId);

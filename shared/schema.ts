@@ -109,6 +109,7 @@ export const materialThemes = pgTable("material_themes", {
   title: text("title").notNull(),
   coverUrl: text("cover_url").notNull(),
   order: integer("order").notNull().default(0),
+  visible: boolean("visible").notNull().default(true),
 });
 
 // Material Subcategories
