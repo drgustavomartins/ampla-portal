@@ -45,6 +45,19 @@ function getFirstDescLine(desc: string): string | null {
   return firstLine;
 }
 
+// Extract YouTube video ID from a URL for thumbnail generation
+function getYouTubeId(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
+
+function getLessonThumbnail(lesson: Lesson): string | null {
+  const ytId = getYouTubeId(lesson.videoUrl);
+  if (ytId) return `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`;
+  return null;
+}
+
 // Module theme colors
 const MODULE_THEMES: Record<string, { accent: string; accentRgb: string; gradient: string; progressBg: string; activeBg: string; accentText: string }> = {
   toxina: {
@@ -206,11 +219,17 @@ export default function ModulePage() {
     return `https://wa.me/5521976310365?text=${msg}`;
   };
 
+  // Scroll to top when entering the module page
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [moduleId]);
+
   const videoRef = useRef<HTMLDivElement>(null);
   const leftPanelRef = useRef<HTMLDivElement>(null);
 
-  const handleSelectLesson = useCallback((lesson: Lesson) => {
+  const handleSelectLesson = useCallback((lesson: Lesson | null) => {
     setSelectedLesson(lesson);
+    if (!lesson) window.scrollTo(0, 0);
   }, []);
 
   // Auto-scroll to video when a lesson is selected
@@ -251,7 +270,7 @@ export default function ModulePage() {
         <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm shrink-0 z-10">
           <div className="max-w-[1400px] mx-auto px-4 h-14 flex items-center justify-between">
             <button
-              onClick={() => setSelectedLesson(null)}
+              onClick={() => handleSelectLesson(null)}
               className="text-sm text-muted-foreground hover:text-gold flex items-center gap-1 transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -350,27 +369,41 @@ export default function ModulePage() {
                   const isActive = lesson.id === selectedLesson.id;
                   const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
                   const supportUrl = getLessonSupportUrl(lesson);
+                  const sidebarThumb = getLessonThumbnail(lesson);
                   return (
                     <button
                       key={lesson.id}
                       onClick={() => handleSelectLesson(lesson)}
-                      className={`w-full text-left p-3 rounded-lg transition-colors flex items-start gap-3 ${
+                      className={`w-full text-left p-3 rounded-lg transition-colors flex items-start gap-3 group ${
                         isActive
                           ? theme.activeBg + " border"
-                          : "hover:bg-card/80"
+                          : done
+                            ? "bg-card/30"
+                            : "hover:bg-card/80"
                       }`}
                     >
-                      <div className="mt-0.5 shrink-0">
-                        {done ? (
-                          <CheckCircle2 className="w-4 h-4" style={{ color: theme.accent }} />
-                        ) : (
-                          <span className="w-4 h-4 flex items-center justify-center text-xs text-muted-foreground font-medium">
-                            {i + 1}
-                          </span>
-                        )}
-                      </div>
+                      {sidebarThumb ? (
+                        <div className="mt-0.5 shrink-0 w-12 h-8 rounded overflow-hidden ring-1 ring-border/20 relative">
+                          <img src={sidebarThumb} alt="" className="w-full h-full object-cover" loading="lazy" />
+                          {done && (
+                            <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: `rgba(${theme.accentRgb}, 0.3)` }}>
+                              <CheckCircle2 className="w-3.5 h-3.5 drop-shadow-md" style={{ color: theme.accent }} />
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="mt-0.5 shrink-0">
+                          {done ? (
+                            <CheckCircle2 className="w-4 h-4" style={{ color: theme.accent }} />
+                          ) : (
+                            <span className="w-4 h-4 flex items-center justify-center text-xs text-muted-foreground font-medium">
+                              {i + 1}
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <div className="min-w-0">
-                        <p className={`text-sm font-medium truncate ${isActive ? theme.accentText : ""}`}>
+                        <p className={`text-sm font-medium truncate ${isActive ? theme.accentText : done ? "text-foreground/70" : ""}`}>
                           {lesson.title}
                         </p>
                         {descLine && (
@@ -488,27 +521,41 @@ export default function ModulePage() {
                 const isActive = lesson.id === selectedLesson.id;
                 const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
                 const supportUrl = getLessonSupportUrl(lesson);
+                const mobileThumb = getLessonThumbnail(lesson);
                 return (
                   <button
                     key={lesson.id}
                     onClick={() => handleSelectLesson(lesson)}
-                    className={`w-full text-left p-3 rounded-lg transition-colors flex items-start gap-3 ${
+                    className={`w-full text-left p-3 rounded-lg transition-colors flex items-start gap-3 group ${
                       isActive
                         ? theme.activeBg + " border"
-                        : "hover:bg-card/80"
+                        : done
+                          ? "bg-card/30"
+                          : "hover:bg-card/80"
                     }`}
                   >
-                    <div className="mt-0.5 shrink-0">
-                      {done ? (
-                        <CheckCircle2 className="w-4 h-4" style={{ color: theme.accent }} />
-                      ) : (
-                        <span className="w-4 h-4 flex items-center justify-center text-xs text-muted-foreground font-medium">
-                          {i + 1}
-                        </span>
-                      )}
-                    </div>
+                    {mobileThumb ? (
+                      <div className="mt-0.5 shrink-0 w-12 h-8 rounded overflow-hidden ring-1 ring-border/20 relative">
+                        <img src={mobileThumb} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        {done && (
+                          <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: `rgba(${theme.accentRgb}, 0.3)` }}>
+                            <CheckCircle2 className="w-3.5 h-3.5 drop-shadow-md" style={{ color: theme.accent }} />
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="mt-0.5 shrink-0">
+                        {done ? (
+                          <CheckCircle2 className="w-4 h-4" style={{ color: theme.accent }} />
+                        ) : (
+                          <span className="w-4 h-4 flex items-center justify-center text-xs text-muted-foreground font-medium">
+                            {i + 1}
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <div className="min-w-0">
-                      <p className={`text-sm font-medium truncate ${isActive ? theme.accentText : ""}`}>
+                      <p className={`text-sm font-medium truncate ${isActive ? theme.accentText : done ? "text-foreground/70" : ""}`}>
                         {lesson.title}
                       </p>
                       {descLine && (
@@ -652,6 +699,7 @@ export default function ModulePage() {
               const done = completedIds.has(lesson.id);
               const supportUrl = getLessonSupportUrl(lesson);
               const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
+              const thumbnail = getLessonThumbnail(lesson);
 
               return (
                 <div
@@ -659,15 +707,36 @@ export default function ModulePage() {
                   onClick={() => !isLocked && setSelectedLesson(lesson)}
                   className={`w-full text-left group ${isLocked ? "cursor-default opacity-60" : "cursor-pointer"}`}
                 >
-                  <div className={`flex items-center gap-4 px-4 py-4 rounded-xl transition-all duration-200 border border-transparent ${!isLocked ? "hover:bg-card/60 hover:border-border/30" : ""}`}>
+                  <div
+                    className={`flex items-center gap-4 px-4 py-4 rounded-xl transition-all duration-200 border ${
+                      done && !isLocked
+                        ? "border-transparent bg-card/40"
+                        : "border-transparent"
+                    } ${!isLocked ? "hover:bg-card/60 hover:border-border/30" : ""}`}
+                    style={done && !isLocked ? { borderLeft: `3px solid ${theme.accent}` } : undefined}
+                  >
                     {/* Lesson number */}
-                    <span className="w-8 text-center text-sm font-medium text-muted-foreground shrink-0">
+                    <span className={`w-8 text-center text-sm font-medium shrink-0 ${done ? "" : "text-muted-foreground"}`} style={done ? { color: theme.accent } : undefined}>
                       {String(i + 1).padStart(2, "0")}
                     </span>
 
-                    {/* Play icon */}
-                    <div className="shrink-0">
-                      {isLocked ? (
+                    {/* Thumbnail or play icon */}
+                    <div className="shrink-0 relative">
+                      {thumbnail && !isLocked ? (
+                        <div className="w-16 h-10 rounded-md overflow-hidden ring-1 ring-border/30 relative">
+                          <img src={thumbnail} alt="" className="w-full h-full object-cover" loading="lazy" />
+                          {done && (
+                            <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: `rgba(${theme.accentRgb}, 0.25)` }}>
+                              <CheckCircle2 className="w-5 h-5 drop-shadow-md" style={{ color: theme.accent }} />
+                            </div>
+                          )}
+                          {!done && (
+                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Play className="w-4 h-4 text-white ml-0.5 drop-shadow-md" />
+                            </div>
+                          )}
+                        </div>
+                      ) : isLocked ? (
                         <div className="w-10 h-10 rounded-full bg-card border border-border/40 flex items-center justify-center">
                           <Lock className="w-4 h-4 text-muted-foreground/50" />
                         </div>
