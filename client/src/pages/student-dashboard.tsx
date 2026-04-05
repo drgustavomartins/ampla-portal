@@ -554,7 +554,7 @@ export default function StudentDashboard() {
               {/* Left arrow */}
               <button
                 onClick={() => scrollShelf("left")}
-                className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-300 opacity-0 group-hover/shelf:opacity-100 -translate-x-1/2"
+                className="hidden sm:flex absolute left-0 top-[35%] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-300 opacity-0 group-hover/shelf:opacity-100 -translate-x-1/2"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -562,7 +562,7 @@ export default function StudentDashboard() {
               {/* Right arrow */}
               <button
                 onClick={() => scrollShelf("right")}
-                className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-300 opacity-0 group-hover/shelf:opacity-100 translate-x-1/2"
+                className="hidden sm:flex absolute right-0 top-[35%] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-300 opacity-0 group-hover/shelf:opacity-100 translate-x-1/2"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
