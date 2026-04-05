@@ -1218,9 +1218,8 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // ==================== MATERIALS (DB-driven) ====================
   // Public endpoint: get all themes with nested subcategories and files
-  app.get("/api/materials", async (req, res) => {
-    const auth = authenticateRequest(req);
-    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+  app.get("/api/materials", async (_req, res) => {
+    // Public endpoint — materials catalog is visible to all (files are PDFs/links, not sensitive)
     try {
       const themes = await storage.getMaterialThemes();
       const result = await Promise.all(themes.map(async (theme) => {
