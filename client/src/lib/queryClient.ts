@@ -9,12 +9,20 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Fallback: send Bearer token from localStorage if cookie not yet set
+function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem("ampla_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = {
+    ...getAuthHeaders(),
+  };
   if (data) {
     headers["Content-Type"] = "application/json";
   }
@@ -38,6 +46,7 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     const res = await fetch(`${API_BASE}${queryKey.join("/")}`, {
       credentials: "include",
+      headers: getAuthHeaders(),
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

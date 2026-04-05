@@ -236,27 +236,8 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
     enabled: !!user,
   });
 
-  const { data: myMaterials } = useQuery<{ accessAll: boolean; topics: string[] }>({
-    queryKey: ["/api/my-materials"],
-    queryFn: async () => {
-      try {
-        const res = await apiRequest("GET", "/api/my-materials");
-        return res.json();
-      } catch {
-        // Fallback: if auth fails, assume access (admin/super_admin see all)
-        return { accessAll: true, topics: [] };
-      }
-    },
-    enabled: !!user,
-  });
-
-  // Filter themes based on access: admins see all, students see only allowed topics
-  // If user is logged in and we have themes, show them (accessAll fallback)
-  const allowedThemes = !myMaterials || myMaterials.accessAll
-    ? allThemes
-    : myMaterials.topics.length > 0
-      ? allThemes.filter(t => myMaterials.topics.includes(t.title))
-      : allThemes; // Show all if no specific restrictions
+  // All users have access to all materials — no filtering needed
+  const allowedThemes = allThemes;
 
   // Loading state
   if (themesLoading) {
@@ -267,8 +248,8 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
     );
   }
 
-  // Don't render if no themes loaded at all
-  if (allThemes.length === 0) {
+  // Don't render if no themes loaded
+  if (allowedThemes.length === 0) {
     return null;
   }
 
