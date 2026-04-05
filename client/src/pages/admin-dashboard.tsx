@@ -26,7 +26,7 @@ import {
   Users, BookOpen, Layers, LogOut, Plus, Trash2, Check, X,
   Clock, Video, Shield, GraduationCap, Eye, Pencil, Calendar, Settings,
   CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library,
-  GripVertical, CalendarDays, FolderOpen, Search
+  GripVertical, CalendarDays, FolderOpen, Search, FileText, FileIcon, ChevronDown, ChevronUp
 } from "lucide-react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -36,9 +36,7 @@ import {
   arrayMove, SortableContext, useSortable, verticalListSortingStrategy
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { Module, Lesson, Plan, User, AuditLog, UserModule, UserMaterialCategory } from "@shared/schema";
-
-import MateriaisComplementares from "./materiais-complementares";
+import type { Module, Lesson, Plan, User, AuditLog, UserModule, UserMaterialCategory, MaterialTheme, MaterialSubcategory, MaterialFile } from "@shared/schema";
 
 type SafeUser = Omit<User, "password">;
 type LessonProgress = { id: number; userId: number; lessonId: number; completed: boolean; completedAt: string | null };
@@ -263,6 +261,81 @@ export default function AdminDashboard() {
   const { data: admins = [] } = useQuery<SafeUser[]>({
     queryKey: ["/api/admin/admins"],
     enabled: isSuperAdmin,
+  });
+
+  // Materials CRUD
+  type MaterialThemeWithNested = MaterialTheme & { subcategories: (MaterialSubcategory & { files: MaterialFile[] })[]; fileCount: number };
+  const { data: materialThemes = [] } = useQuery<MaterialThemeWithNested[]>({
+    queryKey: ["/api/materials"],
+    queryFn: async () => { const res = await apiRequest("GET", "/api/materials"); return res.json(); },
+  });
+  const [expandedThemeId, setExpandedThemeId] = useState<number | null>(null);
+  const [expandedSubcatId, setExpandedSubcatId] = useState<number | null>(null);
+  // Theme dialogs
+  const [themeDialogOpen, setThemeDialogOpen] = useState(false);
+  const [themeForm, setThemeForm] = useState({ title: "", coverUrl: "", order: 0 });
+  const [editingTheme, setEditingTheme] = useState<MaterialTheme | null>(null);
+  const [editThemeForm, setEditThemeForm] = useState({ title: "", coverUrl: "", order: 0 });
+  // Subcategory dialogs
+  const [subcatDialogOpen, setSubcatDialogOpen] = useState(false);
+  const [subcatForm, setSubcatForm] = useState({ name: "", order: 0 });
+  const [editingSubcat, setEditingSubcat] = useState<MaterialSubcategory | null>(null);
+  const [editSubcatForm, setEditSubcatForm] = useState({ name: "", order: 0 });
+  // File dialogs
+  const [fileDialogOpen, setFileDialogOpen] = useState(false);
+  const [fileForm, setFileForm] = useState({ name: "", type: "pdf" as string, driveId: "", order: 0 });
+  const [editingFile, setEditingFile] = useState<MaterialFile | null>(null);
+  const [editFileForm, setEditFileForm] = useState({ name: "", type: "pdf" as string, driveId: "", order: 0 });
+
+  // Theme mutations
+  const createThemeMutation = useMutation({
+    mutationFn: async () => { await apiRequest("POST", "/api/admin/materials/themes", themeForm); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/materials"] }); queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] }); setThemeForm({ title: "", coverUrl: "", order: 0 }); setThemeDialogOpen(false); toast({ title: "Tema criado" }); },
+    onError: (error: any) => { toast({ title: "Erro ao criar tema", description: error.message, variant: "destructive" }); },
+  });
+  const updateThemeMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => { await apiRequest("PUT", `/api/admin/materials/themes/${id}`, data); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/materials"] }); queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] }); setEditingTheme(null); toast({ title: "Tema atualizado" }); },
+    onError: (error: any) => { toast({ title: "Erro ao atualizar tema", description: error.message, variant: "destructive" }); },
+  });
+  const deleteThemeMutation = useMutation({
+    mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/admin/materials/themes/${id}`); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/materials"] }); queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] }); toast({ title: "Tema excluído" }); },
+    onError: (error: any) => { toast({ title: "Erro ao excluir tema", description: error.message, variant: "destructive" }); },
+  });
+
+  // Subcategory mutations
+  const createSubcatMutation = useMutation({
+    mutationFn: async (themeId: number) => { await apiRequest("POST", "/api/admin/materials/subcategories", { ...subcatForm, themeId }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/materials"] }); queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] }); setSubcatForm({ name: "", order: 0 }); setSubcatDialogOpen(false); toast({ title: "Subcategoria criada" }); },
+    onError: (error: any) => { toast({ title: "Erro ao criar subcategoria", description: error.message, variant: "destructive" }); },
+  });
+  const updateSubcatMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => { await apiRequest("PUT", `/api/admin/materials/subcategories/${id}`, data); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/materials"] }); queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] }); setEditingSubcat(null); toast({ title: "Subcategoria atualizada" }); },
+    onError: (error: any) => { toast({ title: "Erro ao atualizar subcategoria", description: error.message, variant: "destructive" }); },
+  });
+  const deleteSubcatMutation = useMutation({
+    mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/admin/materials/subcategories/${id}`); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/materials"] }); queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] }); toast({ title: "Subcategoria excluída" }); },
+    onError: (error: any) => { toast({ title: "Erro ao excluir subcategoria", description: error.message, variant: "destructive" }); },
+  });
+
+  // File mutations
+  const createFileMutation = useMutation({
+    mutationFn: async (subcategoryId: number) => { await apiRequest("POST", "/api/admin/materials/files", { ...fileForm, subcategoryId }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/materials"] }); queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] }); setFileForm({ name: "", type: "pdf", driveId: "", order: 0 }); setFileDialogOpen(false); toast({ title: "Arquivo criado" }); },
+    onError: (error: any) => { toast({ title: "Erro ao criar arquivo", description: error.message, variant: "destructive" }); },
+  });
+  const updateFileMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => { await apiRequest("PUT", `/api/admin/materials/files/${id}`, data); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/materials"] }); queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] }); setEditingFile(null); toast({ title: "Arquivo atualizado" }); },
+    onError: (error: any) => { toast({ title: "Erro ao atualizar arquivo", description: error.message, variant: "destructive" }); },
+  });
+  const deleteFileMutation = useMutation({
+    mutationFn: async (id: number) => { await apiRequest("DELETE", `/api/admin/materials/files/${id}`); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/materials"] }); queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] }); toast({ title: "Arquivo excluído" }); },
+    onError: (error: any) => { toast({ title: "Erro ao excluir arquivo", description: error.message, variant: "destructive" }); },
   });
 
   // Student search
@@ -1870,7 +1943,223 @@ export default function AdminDashboard() {
 
           {/* ========== MATERIAIS TAB ========== */}
           <TabsContent value="materiais" className="space-y-6 mt-0">
-            <MateriaisComplementares />
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Materiais Complementares ({materialThemes.length} temas)</h3>
+              <Dialog open={themeDialogOpen} onOpenChange={setThemeDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="bg-gold text-background hover:bg-gold/90 font-medium">
+                    <Plus className="w-4 h-4 mr-1.5" /> Novo tema
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-card border-border/40">
+                  <DialogHeader>
+                    <DialogTitle className="text-lg">Novo tema</DialogTitle>
+                    <DialogDescription className="text-muted-foreground">Adicione um novo tema de materiais complementares</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Título</Label><Input value={themeForm.title} onChange={e => setThemeForm(f => ({ ...f, title: e.target.value }))} placeholder="Ex: Toxina Botulínica" className="bg-background/50 border-border/40" /></div>
+                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">URL da Capa</Label><Input value={themeForm.coverUrl} onChange={e => setThemeForm(f => ({ ...f, coverUrl: e.target.value }))} placeholder="/images/covers/cover_nome.png" className="bg-background/50 border-border/40" /></div>
+                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Ordem</Label><Input type="number" value={themeForm.order} onChange={e => setThemeForm(f => ({ ...f, order: parseInt(e.target.value) || 0 }))} className="bg-background/50 border-border/40" /></div>
+                    <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createThemeMutation.mutate()} disabled={!themeForm.title || !themeForm.coverUrl || createThemeMutation.isPending}>{createThemeMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar tema</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Edit Theme Dialog */}
+            <Dialog open={!!editingTheme} onOpenChange={(open) => { if (!open) setEditingTheme(null); }}>
+              <DialogContent className="bg-card border-border/40">
+                <DialogHeader>
+                  <DialogTitle className="text-lg">Editar tema</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">Altere os dados do tema</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Título</Label><Input value={editThemeForm.title} onChange={e => setEditThemeForm(f => ({ ...f, title: e.target.value }))} className="bg-background/50 border-border/40" /></div>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">URL da Capa</Label><Input value={editThemeForm.coverUrl} onChange={e => setEditThemeForm(f => ({ ...f, coverUrl: e.target.value }))} className="bg-background/50 border-border/40" /></div>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Ordem</Label><Input type="number" value={editThemeForm.order} onChange={e => setEditThemeForm(f => ({ ...f, order: parseInt(e.target.value) || 0 }))} className="bg-background/50 border-border/40" /></div>
+                  <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => editingTheme && updateThemeMutation.mutate({ id: editingTheme.id, data: editThemeForm })} disabled={!editThemeForm.title || !editThemeForm.coverUrl || updateThemeMutation.isPending}>{updateThemeMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar alterações</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit Subcategory Dialog */}
+            <Dialog open={!!editingSubcat} onOpenChange={(open) => { if (!open) setEditingSubcat(null); }}>
+              <DialogContent className="bg-card border-border/40">
+                <DialogHeader>
+                  <DialogTitle className="text-lg">Editar subcategoria</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">Altere os dados da subcategoria</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label><Input value={editSubcatForm.name} onChange={e => setEditSubcatForm(f => ({ ...f, name: e.target.value }))} className="bg-background/50 border-border/40" /></div>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Ordem</Label><Input type="number" value={editSubcatForm.order} onChange={e => setEditSubcatForm(f => ({ ...f, order: parseInt(e.target.value) || 0 }))} className="bg-background/50 border-border/40" /></div>
+                  <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => editingSubcat && updateSubcatMutation.mutate({ id: editingSubcat.id, data: editSubcatForm })} disabled={!editSubcatForm.name || updateSubcatMutation.isPending}>{updateSubcatMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar alterações</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit File Dialog */}
+            <Dialog open={!!editingFile} onOpenChange={(open) => { if (!open) setEditingFile(null); }}>
+              <DialogContent className="bg-card border-border/40">
+                <DialogHeader>
+                  <DialogTitle className="text-lg">Editar arquivo</DialogTitle>
+                  <DialogDescription className="text-muted-foreground">Altere os dados do arquivo</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label><Input value={editFileForm.name} onChange={e => setEditFileForm(f => ({ ...f, name: e.target.value }))} className="bg-background/50 border-border/40" /></div>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Tipo</Label><Select value={editFileForm.type} onValueChange={(v) => setEditFileForm(f => ({ ...f, type: v }))}><SelectTrigger className="bg-background/50 border-border/40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pdf">PDF</SelectItem><SelectItem value="docx">DOCX</SelectItem></SelectContent></Select></div>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Google Drive ID</Label><Input value={editFileForm.driveId} onChange={e => setEditFileForm(f => ({ ...f, driveId: e.target.value }))} className="bg-background/50 border-border/40" /></div>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Ordem</Label><Input type="number" value={editFileForm.order} onChange={e => setEditFileForm(f => ({ ...f, order: parseInt(e.target.value) || 0 }))} className="bg-background/50 border-border/40" /></div>
+                  <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => editingFile && updateFileMutation.mutate({ id: editingFile.id, data: editFileForm })} disabled={!editFileForm.name || !editFileForm.driveId || updateFileMutation.isPending}>{updateFileMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar alterações</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* Themes list */}
+            <div className="space-y-3">
+              {materialThemes.map((theme) => (
+                <Card key={theme.id} className="border-border/30 bg-card/50 overflow-hidden">
+                  <CardContent className="p-0">
+                    {/* Theme header */}
+                    <div className="flex items-center gap-3 p-4">
+                      <img src={theme.coverUrl} alt={theme.title} className="w-12 h-16 object-cover rounded-lg shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-foreground truncate">{theme.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{theme.fileCount} {theme.fileCount === 1 ? "arquivo" : "arquivos"} &middot; {theme.subcategories.length} {theme.subcategories.length === 1 ? "subcategoria" : "subcategorias"} &middot; Ordem: {theme.order}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0" onClick={() => { setExpandedThemeId(expandedThemeId === theme.id ? null : theme.id); setExpandedSubcatId(null); }}>
+                          {expandedThemeId === theme.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0" onClick={() => { setEditingTheme(theme); setEditThemeForm({ title: theme.title, coverUrl: theme.coverUrl, order: theme.order }); }}>
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"><Trash2 className="w-3.5 h-3.5" /></Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-card border-border/40">
+                            <AlertDialogHeader><AlertDialogTitle>Confirmar exclusão</AlertDialogTitle><AlertDialogDescription>Excluir o tema "{theme.title}" e todos os seus arquivos? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteThemeMutation.mutate(theme.id)}>Excluir</AlertDialogAction></AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+
+                    {/* Expanded: subcategories */}
+                    {expandedThemeId === theme.id && (
+                      <div className="border-t border-border/20 bg-background/30 px-4 py-3 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Subcategorias</span>
+                          <Dialog open={subcatDialogOpen} onOpenChange={setSubcatDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button size="sm" variant="outline" className="h-7 text-xs border-gold/30 text-gold hover:bg-gold/10"><Plus className="w-3 h-3 mr-1" />Nova subcategoria</Button>
+                            </DialogTrigger>
+                            <DialogContent className="bg-card border-border/40">
+                              <DialogHeader>
+                                <DialogTitle className="text-lg">Nova subcategoria</DialogTitle>
+                                <DialogDescription className="text-muted-foreground">Adicione uma subcategoria a "{theme.title}"</DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4 pt-2">
+                                <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label><Input value={subcatForm.name} onChange={e => setSubcatForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Artigos Científicos" className="bg-background/50 border-border/40" /></div>
+                                <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Ordem</Label><Input type="number" value={subcatForm.order} onChange={e => setSubcatForm(f => ({ ...f, order: parseInt(e.target.value) || 0 }))} className="bg-background/50 border-border/40" /></div>
+                                <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createSubcatMutation.mutate(theme.id)} disabled={!subcatForm.name || createSubcatMutation.isPending}>{createSubcatMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar subcategoria</Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+
+                        {theme.subcategories.length === 0 && (
+                          <p className="text-xs text-muted-foreground italic py-2">Nenhuma subcategoria</p>
+                        )}
+
+                        {theme.subcategories.map((sub) => (
+                          <div key={sub.id} className="rounded-lg border border-border/20 bg-card/40 overflow-hidden">
+                            {/* Subcategory header */}
+                            <div className="flex items-center gap-2 px-3 py-2">
+                              <FolderOpen className="w-4 h-4 text-gold shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground truncate">{sub.name}</p>
+                                <p className="text-[11px] text-muted-foreground">{sub.files.length} {sub.files.length === 1 ? "arquivo" : "arquivos"} &middot; Ordem: {sub.order}</p>
+                              </div>
+                              <div className="flex items-center gap-0.5 shrink-0">
+                                <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-7 w-7 p-0" onClick={() => setExpandedSubcatId(expandedSubcatId === sub.id ? null : sub.id)}>
+                                  {expandedSubcatId === sub.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                </Button>
+                                <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-7 w-7 p-0" onClick={() => { setEditingSubcat(sub); setEditSubcatForm({ name: sub.name, order: sub.order }); }}>
+                                  <Pencil className="w-3 h-3" />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-7 w-7 p-0"><Trash2 className="w-3 h-3" /></Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent className="bg-card border-border/40">
+                                    <AlertDialogHeader><AlertDialogTitle>Confirmar exclusão</AlertDialogTitle><AlertDialogDescription>Excluir a subcategoria "{sub.name}" e todos os seus arquivos?</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogFooter><AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteSubcatMutation.mutate(sub.id)}>Excluir</AlertDialogAction></AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </div>
+
+                            {/* Expanded: files */}
+                            {expandedSubcatId === sub.id && (
+                              <div className="border-t border-border/10 bg-background/20 px-3 py-2 space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Arquivos</span>
+                                  <Dialog open={fileDialogOpen} onOpenChange={setFileDialogOpen}>
+                                    <DialogTrigger asChild>
+                                      <Button size="sm" variant="outline" className="h-6 text-[11px] border-gold/30 text-gold hover:bg-gold/10"><Plus className="w-3 h-3 mr-1" />Novo arquivo</Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="bg-card border-border/40">
+                                      <DialogHeader>
+                                        <DialogTitle className="text-lg">Novo arquivo</DialogTitle>
+                                        <DialogDescription className="text-muted-foreground">Adicione um arquivo a "{sub.name}"</DialogDescription>
+                                      </DialogHeader>
+                                      <div className="space-y-4 pt-2">
+                                        <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label><Input value={fileForm.name} onChange={e => setFileForm(f => ({ ...f, name: e.target.value }))} placeholder="Nome do arquivo" className="bg-background/50 border-border/40" /></div>
+                                        <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Tipo</Label><Select value={fileForm.type} onValueChange={(v) => setFileForm(f => ({ ...f, type: v }))}><SelectTrigger className="bg-background/50 border-border/40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pdf">PDF</SelectItem><SelectItem value="docx">DOCX</SelectItem></SelectContent></Select></div>
+                                        <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Google Drive ID</Label><Input value={fileForm.driveId} onChange={e => setFileForm(f => ({ ...f, driveId: e.target.value }))} placeholder="ID do arquivo no Google Drive" className="bg-background/50 border-border/40" /></div>
+                                        <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Ordem</Label><Input type="number" value={fileForm.order} onChange={e => setFileForm(f => ({ ...f, order: parseInt(e.target.value) || 0 }))} className="bg-background/50 border-border/40" /></div>
+                                        <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createFileMutation.mutate(sub.id)} disabled={!fileForm.name || !fileForm.driveId || createFileMutation.isPending}>{createFileMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar arquivo</Button>
+                                      </div>
+                                    </DialogContent>
+                                  </Dialog>
+                                </div>
+
+                                {sub.files.length === 0 && (
+                                  <p className="text-[11px] text-muted-foreground italic py-1">Nenhum arquivo</p>
+                                )}
+
+                                {sub.files.map((file) => (
+                                  <div key={file.id} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-white/[0.03] group">
+                                    {file.type === "pdf" ? <FileText className="w-3.5 h-3.5 text-red-400 shrink-0" /> : <FileIcon className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
+                                    <span className="text-xs text-foreground/80 flex-1 min-w-0 truncate">{file.name}</span>
+                                    <Badge variant="outline" className={`text-[9px] px-1 py-0 shrink-0 ${file.type === "pdf" ? "bg-red-500/15 text-red-400 border-red-500/20" : "bg-blue-500/15 text-blue-400 border-blue-500/20"}`}>{file.type.toUpperCase()}</Badge>
+                                    <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-6 w-6 p-0" onClick={() => { setEditingFile(file); setEditFileForm({ name: file.name, type: file.type, driveId: file.driveId, order: file.order }); }}>
+                                        <Pencil className="w-2.5 h-2.5" />
+                                      </Button>
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-6 w-6 p-0"><Trash2 className="w-2.5 h-2.5" /></Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent className="bg-card border-border/40">
+                                          <AlertDialogHeader><AlertDialogTitle>Confirmar exclusão</AlertDialogTitle><AlertDialogDescription>Excluir o arquivo "{file.name}"?</AlertDialogDescription></AlertDialogHeader>
+                                          <AlertDialogFooter><AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteFileMutation.mutate(file.id)}>Excluir</AlertDialogAction></AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </TabsContent>
 
           {/* ========== ADMINS TAB (super_admin only) ========== */}

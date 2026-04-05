@@ -3,6 +3,7 @@ import { eq, and, asc, desc } from "drizzle-orm";
 import {
   plans, users, modules, lessons, lessonProgress, passwordResets, auditLogs, planModules,
   userModules, userMaterialCategories,
+  materialThemes, materialSubcategories, materialFiles,
   type Plan, type InsertPlan,
   type User, type InsertUser,
   type Module, type InsertModule,
@@ -12,6 +13,9 @@ import {
   type PlanModule,
   type AuditLog, type InsertAuditLog,
   type UserModule, type UserMaterialCategory,
+  type MaterialTheme, type InsertMaterialTheme,
+  type MaterialSubcategory, type InsertMaterialSubcategory,
+  type MaterialFile, type InsertMaterialFile,
 } from "@shared/schema";
 
 export const storage = {
@@ -240,5 +244,67 @@ export const storage = {
         enabled: e.enabled,
       })));
     }
+  },
+
+  // ===== MATERIAL THEMES =====
+  async getMaterialThemes(): Promise<MaterialTheme[]> {
+    return db.select().from(materialThemes).orderBy(materialThemes.order);
+  },
+  async getMaterialTheme(id: number): Promise<MaterialTheme | undefined> {
+    const [t] = await db.select().from(materialThemes).where(eq(materialThemes.id, id));
+    return t;
+  },
+  async createMaterialTheme(data: InsertMaterialTheme): Promise<MaterialTheme> {
+    const [t] = await db.insert(materialThemes).values(data).returning();
+    return t;
+  },
+  async updateMaterialTheme(id: number, data: Partial<InsertMaterialTheme>): Promise<MaterialTheme | undefined> {
+    const [t] = await db.update(materialThemes).set(data).where(eq(materialThemes.id, id)).returning();
+    return t;
+  },
+  async deleteMaterialTheme(id: number): Promise<boolean> {
+    // Cascade: delete files of all subcategories, then subcategories, then theme
+    const subs = await db.select().from(materialSubcategories).where(eq(materialSubcategories.themeId, id));
+    for (const sub of subs) {
+      await db.delete(materialFiles).where(eq(materialFiles.subcategoryId, sub.id));
+    }
+    await db.delete(materialSubcategories).where(eq(materialSubcategories.themeId, id));
+    await db.delete(materialThemes).where(eq(materialThemes.id, id));
+    return true;
+  },
+
+  // ===== MATERIAL SUBCATEGORIES =====
+  async getMaterialSubcategories(themeId: number): Promise<MaterialSubcategory[]> {
+    return db.select().from(materialSubcategories).where(eq(materialSubcategories.themeId, themeId)).orderBy(materialSubcategories.order);
+  },
+  async createMaterialSubcategory(data: InsertMaterialSubcategory): Promise<MaterialSubcategory> {
+    const [s] = await db.insert(materialSubcategories).values(data).returning();
+    return s;
+  },
+  async updateMaterialSubcategory(id: number, data: Partial<InsertMaterialSubcategory>): Promise<MaterialSubcategory | undefined> {
+    const [s] = await db.update(materialSubcategories).set(data).where(eq(materialSubcategories.id, id)).returning();
+    return s;
+  },
+  async deleteMaterialSubcategory(id: number): Promise<boolean> {
+    await db.delete(materialFiles).where(eq(materialFiles.subcategoryId, id));
+    await db.delete(materialSubcategories).where(eq(materialSubcategories.id, id));
+    return true;
+  },
+
+  // ===== MATERIAL FILES =====
+  async getMaterialFiles(subcategoryId: number): Promise<MaterialFile[]> {
+    return db.select().from(materialFiles).where(eq(materialFiles.subcategoryId, subcategoryId)).orderBy(materialFiles.order);
+  },
+  async createMaterialFile(data: InsertMaterialFile): Promise<MaterialFile> {
+    const [f] = await db.insert(materialFiles).values(data).returning();
+    return f;
+  },
+  async updateMaterialFile(id: number, data: Partial<InsertMaterialFile>): Promise<MaterialFile | undefined> {
+    const [f] = await db.update(materialFiles).set(data).where(eq(materialFiles.id, id)).returning();
+    return f;
+  },
+  async deleteMaterialFile(id: number): Promise<boolean> {
+    await db.delete(materialFiles).where(eq(materialFiles.id, id));
+    return true;
   },
 };

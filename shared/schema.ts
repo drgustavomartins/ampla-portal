@@ -103,6 +103,32 @@ export const userMaterialCategories = pgTable("user_material_categories", {
   enabled: boolean("enabled").notNull().default(true),
 });
 
+// Material Themes
+export const materialThemes = pgTable("material_themes", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  coverUrl: text("cover_url").notNull(),
+  order: integer("order").notNull().default(0),
+});
+
+// Material Subcategories
+export const materialSubcategories = pgTable("material_subcategories", {
+  id: serial("id").primaryKey(),
+  themeId: integer("theme_id").notNull(),
+  name: text("name").notNull(),
+  order: integer("order").notNull().default(0),
+});
+
+// Material Files
+export const materialFiles = pgTable("material_files", {
+  id: serial("id").primaryKey(),
+  subcategoryId: integer("subcategory_id").notNull(),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // 'pdf' or 'docx'
+  driveId: text("drive_id").notNull(),
+  order: integer("order").notNull().default(0),
+});
+
 // Audit Logs
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
@@ -126,6 +152,9 @@ export const insertPlanModuleSchema = createInsertSchema(planModules).omit({ id:
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true });
 export const insertUserModuleSchema = createInsertSchema(userModules).omit({ id: true });
 export const insertUserMaterialCategorySchema = createInsertSchema(userMaterialCategories).omit({ id: true });
+export const insertMaterialThemeSchema = createInsertSchema(materialThemes).omit({ id: true });
+export const insertMaterialSubcategorySchema = createInsertSchema(materialSubcategories).omit({ id: true });
+export const insertMaterialFileSchema = createInsertSchema(materialFiles).omit({ id: true });
 
 export const registerSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -159,3 +188,9 @@ export type UserModule = typeof userModules.$inferSelect;
 export type InsertUserModule = z.infer<typeof insertUserModuleSchema>;
 export type UserMaterialCategory = typeof userMaterialCategories.$inferSelect;
 export type InsertUserMaterialCategory = z.infer<typeof insertUserMaterialCategorySchema>;
+export type MaterialTheme = typeof materialThemes.$inferSelect;
+export type InsertMaterialTheme = z.infer<typeof insertMaterialThemeSchema>;
+export type MaterialSubcategory = typeof materialSubcategories.$inferSelect;
+export type InsertMaterialSubcategory = z.infer<typeof insertMaterialSubcategorySchema>;
+export type MaterialFile = typeof materialFiles.$inferSelect;
+export type InsertMaterialFile = z.infer<typeof insertMaterialFileSchema>;

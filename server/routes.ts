@@ -129,7 +129,11 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`CREATE TABLE IF NOT EXISTS user_modules (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, module_id INTEGER NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, start_date TEXT, end_date TEXT, UNIQUE(user_id, module_id))`);
     // User-Material Category permissions table
     await db.execute(`CREATE TABLE IF NOT EXISTS user_material_categories (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, category_title TEXT NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, UNIQUE(user_id, category_title))`);
-    console.log("[auto-migrate] material_topics, order, materials_access, mentorship dates, user_modules, user_material_categories ensured");
+    // Material Themes / Subcategories / Files tables
+    await db.execute(`CREATE TABLE IF NOT EXISTS material_themes (id SERIAL PRIMARY KEY, title TEXT NOT NULL, cover_url TEXT NOT NULL, "order" INTEGER NOT NULL DEFAULT 0)`);
+    await db.execute(`CREATE TABLE IF NOT EXISTS material_subcategories (id SERIAL PRIMARY KEY, theme_id INTEGER NOT NULL, name TEXT NOT NULL, "order" INTEGER NOT NULL DEFAULT 0)`);
+    await db.execute(`CREATE TABLE IF NOT EXISTS material_files (id SERIAL PRIMARY KEY, subcategory_id INTEGER NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, drive_id TEXT NOT NULL, "order" INTEGER NOT NULL DEFAULT 0)`);
+    console.log("[auto-migrate] material_topics, order, materials_access, mentorship dates, user_modules, user_material_categories, material_themes/subcategories/files ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
@@ -168,6 +172,163 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   } catch (e: any) {
     console.error("[one-time-migrate] Failed to grant materials access:", e.message);
+  }
+
+  // ==================== ONE-TIME: Seed materials into DB ====================
+  try {
+    const { db } = await import("./db");
+    await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
+    const migrationName = "seed_materials_db_2026_04";
+    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    const alreadyRows = Array.isArray(already) ? already : (already as any).rows || [];
+    if (alreadyRows.length === 0) {
+      const themesData = [
+        {
+          title: "Toxina Botulínica", coverUrl: "/images/covers/cover_toxina_botulinica.png?v=2", order: 1,
+          subcategories: [
+            { name: "Compilados e Resumos", order: 1, files: [
+              { name: "Compilado Toxina Botulínica — Ampla Facial", type: "pdf", driveId: "1AURBQNKIsduh6EBJV1uUfsgkaipm2qry", order: 1 },
+              { name: "Apostila Ampla Facial — Outros mecanismos de ação", type: "pdf", driveId: "1vdMtVZhkNHRK8u86RY7Nk5JzF9zP_QEh", order: 2 },
+            ]},
+            { name: "Artigos Científicos", order: 2, files: [
+              { name: "A Review of Complications Due to the Use of Botulinum Toxin A for Cosmetic Indications", type: "pdf", driveId: "1-HNxeYGn1JJm8NijtxtaiaZPzSiFmOv4", order: 1 },
+              { name: "Anatomia e avaliação funcional do músculo frontal", type: "pdf", driveId: "1-X7PiWBjt6n8XrAGIVRvSe88_j9GASRX", order: 2 },
+              { name: "Botulinum Toxin in Aesthetic Medicine — Myths and Realities", type: "pdf", driveId: "1-O1GXXgI0DC9t5mbvnsGlF586g_KXZzY", order: 3 },
+              { name: "Botulinum toxin in the treatment of myofascial pain syndrome", type: "pdf", driveId: "1-UQQMgpAqgR_hy3A4xA8LlbgHXHklq9l", order: 4 },
+              { name: "Botulinum Toxin Injection for Facial Wrinkles", type: "pdf", driveId: "1-8x40NvTVS6M4XS3DQsMvO4X2awaY-Cw", order: 5 },
+              { name: "Botulinum toxin type A wear-off phenomenon in chronic migraine patients", type: "pdf", driveId: "1-p-5k1NPV5aMZGwG2PPXbWGfFKN5hVqI", order: 6 },
+              { name: "Efecto de la toxina botulínica tipo A en la funcionalidad, las sincinesias y la calidad de vida", type: "pdf", driveId: "1-vBlawZ8iWEJKQb-RQP2WeVpgreDtB25", order: 7 },
+              { name: "Estudo piloto dos padrões de contração do músculo frontal", type: "pdf", driveId: "1-3D7_dNgTPFUP6kEkNv0_ekXSAK9VyR8", order: 8 },
+              { name: "Evaluación de la duración del efecto de la toxina botulínica en la práctica clínica", type: "pdf", driveId: "1-vv12MpHUwOJbdWTr5pr1uRQFzGR3qnb", order: 9 },
+              { name: "Global Aesthetics Consensus — Botulinum Toxin Type A — Evidence-Based Review", type: "pdf", driveId: "1-ObpBZgHXtv4R4aA7VQ94WNaWaHJqVIm", order: 10 },
+              { name: "Global Aesthetics Consensus — Hyaluronic Acid Fillers and Botulinum Toxin Type A", type: "pdf", driveId: "1-7D1W2BwPOLJWDZwcMtakQpM9k4zloL7", order: 11 },
+              { name: "Hipertrofia maseterina unilateral idiopática", type: "pdf", driveId: "1-d7o5bOTy_ywxq2__EkNSB1-P8QhftMD", order: 12 },
+              { name: "La toxina botulínica como adyuvante en el tratamiento de la sonrisa gingival", type: "pdf", driveId: "1-BzZt4_jqBzPCWy1tnh2c4MX0zHBPpEu", order: 13 },
+              { name: "The history of botulinum toxin in Brazil", type: "pdf", driveId: "1-3Y1n4HJLdp778ycX53_XS979ENA78uy", order: 14 },
+              { name: "Tolerancia inmune al tratamiento con toxina botulínica tipo A", type: "pdf", driveId: "1-BEciSjBVSoLSyAblqRT2dRmsjqwXlzU", order: 15 },
+              { name: "Toxina Botulínica para el Tratamiento de los Desórdenes Temporomandibulares", type: "pdf", driveId: "1-fYuESlLoSKc4Itx3Q6n4-6N82aE1gZZ", order: 16 },
+              { name: "Treatment of Various Types of Gummy Smile With Botulinum Toxin-A", type: "pdf", driveId: "1-bEx9GhpxFAhpSQaYs4WKDUSOqrJXPO2", order: 17 },
+              { name: "Use of botulinum toxin type A in temporomandibular disorder", type: "pdf", driveId: "1-TAMpJ5Dk2OtxSwOhECjDgaGnGGQ7B2k", order: 18 },
+            ]},
+            { name: "Materiais para Pacientes", order: 3, files: [
+              { name: "Contrato toxina botulínica", type: "docx", driveId: "1S4j3kicp9FrWBjgL5rUUeKy_wwmrwRs9", order: 1 },
+              { name: "Ficha para Toxina", type: "pdf", driveId: "1K3s2R2Q5dTG3Uma0z6WoJEJ6BX7vCONJ", order: 2 },
+            ]},
+          ],
+        },
+        {
+          title: "Preenchedores Faciais", coverUrl: "/images/covers/cover_preenchedores_faciais.png?v=2", order: 2,
+          subcategories: [
+            { name: "Compilados e Resumos", order: 1, files: [
+              { name: "Revisão sobre reticulação dos AH com comparativos reológicos", type: "pdf", driveId: "1kU7T9IvhGjndK332K7P-qoFk9KFRhkW_", order: 1 },
+              { name: "Compilado CPM e Belotero — Ampla Facial", type: "pdf", driveId: "1JD6WGYvuKqLzQZRyLiqTUwKm75965Kt7", order: 2 },
+              { name: "Compilado Crosslinkers (DVS, BDDE e PEG) — Ampla Facial", type: "pdf", driveId: "1W_uZQD_T1sdNWsHmVY5KxUiVxUDGNJuI", order: 3 },
+              { name: "Compilado Processo de Fabricação — Ampla Facial", type: "pdf", driveId: "1L8i8gdiPPkJWV9QaTdy_zhgDhWoqsPJo", order: 4 },
+              { name: "Compilado Reologia e Propriedades Físicas — Ampla Facial", type: "pdf", driveId: "1iM3ozs7b2R-86dXns70RvaUEFq7JPkF7", order: 5 },
+              { name: "Compilado Degradação e Longevidade — Ampla Facial", type: "pdf", driveId: "1IvmnMPSu4iVCBlnF06NcryKeKIo5OG8w", order: 6 },
+              { name: "Compilado Segurança e Complicações — Ampla Facial", type: "pdf", driveId: "1dSgYgEWiCjZD_a54yYt-Vv_0IvznoKWq", order: 7 },
+              { name: "Compilado Revisões Gerais e Perspectivas — Ampla Facial", type: "pdf", driveId: "1N6RU6wlN2PG7s1oB9ObWboSsVDwxa4rS", order: 8 },
+            ]},
+            { name: "Artigos — Tecnologia CPM e Belotero", order: 2, files: [
+              { name: "Sattler 2025 — CPM-HA Adverse Events NLF", type: "pdf", driveId: "1uRyWVE3c14d7GheeDDdzM0WbsIFKruXS", order: 1 },
+              { name: "Gauglitz 2021 — CPM-HA20G Skin Revitalization", type: "pdf", driveId: "151iu1JQHZFKgsGkEjKGWfZ5JyaHTrFuK", order: 2 },
+              { name: "Nikolis 2016 — CPM Literature Review", type: "pdf", driveId: "1LTyOmAhTPplFtf0jLQa8FWSZj0xF3gQq", order: 3 },
+              { name: "Hanschmann 2019 — CPM-HA20G Early Intervention", type: "pdf", driveId: "1Sp5CH6uNuJpddKbaYhPD16xrxkvj_56G", order: 4 },
+              { name: "Vandeputte 2018 — CPM Volume RealWorld", type: "pdf", driveId: "10vUqe9aCvazhpDOwaZisLmx9PejT14Ah", order: 5 },
+            ]},
+            { name: "Artigos — Crosslinkers (DVS, BDDE e PEG)", order: 3, files: [
+              { name: "Chen 2025 — HA Crosslinking Modalities Review", type: "pdf", driveId: "1moLMZOyBFTawLjllz1cbX0QwCO2BvSRY", order: 1 },
+              { name: "Wojtkiewicz 2024 — BDDE Harms Scoping Review", type: "pdf", driveId: "1Yoc8-YFUXk-PbNDHiDSYoHdmlIqLns5r", order: 2 },
+              { name: "Hinsenkamp 2022 — DVS vs BDDE InVivo", type: "pdf", driveId: "1SUjG-wimVZyUnPRtJD-tcVWqt0jT8TYa", order: 3 },
+              { name: "Vilas-Vilela 2019 — DVS BDDE PEG Nanogels", type: "pdf", driveId: "16m__Hz59KskuEZSvy5L4I3H0TNPqNZqE", order: 4 },
+              { name: "Zerbinati 2021 — PEG Crosslinked HA Fillers", type: "pdf", driveId: "13Ft5QgkFQ13qezLBwJUkoNZR4WBUrzuG", order: 5 },
+              { name: "Tezel 2013 — BDDE Metabolism Review", type: "pdf", driveId: "1zcYt08Y4hymhBF8p3XJZk2IDXnb01Hqu", order: 6 },
+              { name: "Luu 2025 — Crosslinker Length Density Skin", type: "pdf", driveId: "1MMhbIha-Dr6CpJJlOqFafmONq5btkUSs", order: 7 },
+            ]},
+            { name: "Artigos — Processo de Fabricação", order: 4, files: [
+              { name: "Hong 2024 — Manufacturing Process HA Fillers", type: "pdf", driveId: "1F2w7IkdUmU6i7a3WgMzFg04coRQzmkJu", order: 1 },
+              { name: "Borzacchiello 2024 — HA CMC Composite Hydrogel", type: "pdf", driveId: "1m4T6-mM285PZVULH0QL369m4lmRJGMYJ", order: 2 },
+              { name: "Rashid 2024 — Residual Crosslinker GC Analysis", type: "pdf", driveId: "1V1g7xgT7gRnEHwFA4QbzrAf9NJAqRt8z", order: 3 },
+              { name: "Cho 2024 — Dispersion Process BDDE Quality", type: "pdf", driveId: "1lHDOy0x18sx8EflFEwVxfCvQhiulqqrL", order: 4 },
+              { name: "Yang & Lee 2024 — NMR Structural Analysis HA", type: "pdf", driveId: "1NJ0mV--01y3TqgW1jBoBk-TC8OJejFqy", order: 5 },
+            ]},
+            { name: "Artigos — Reologia e Propriedades Físicas", order: 5, files: [
+              { name: "Soares 2025 — Filler Rheology Future", type: "pdf", driveId: "1z_gh9z_fv_1FfyX6R4Wo6EI06gJlCztc", order: 1 },
+              { name: "Micheels 2024 — Injectability 28 Fillers", type: "pdf", driveId: "15V0QXuXJ49RwX95FQoah9T3mUBwb6aS5", order: 2 },
+              { name: "Bernardin 2022 — Rheologic Physicochemical Overview", type: "pdf", driveId: "17-Hc5fez-FTzFQJ9r7JBkyGUzlJ7Sawv", order: 3 },
+              { name: "Malgapo 2022 — Rheology Clinical Implications", type: "pdf", driveId: "1MBKrtjQ05iLfBKMSpzsO5zoN45cHco-p", order: 4 },
+              { name: "Zerbinati 2021 — BDDE Comparative Physicochemical", type: "pdf", driveId: "1VPoXzGGhFec4eE35Vm08uLR_aekgF7IS", order: 5 },
+              { name: "Hong 2025 — Conditions Choosing Fillers", type: "pdf", driveId: "1KKZX1D-BGf8tJaXZ4SpMXhfJtitNltHX", order: 6 },
+            ]},
+            { name: "Artigos — Degradação e Longevidade", order: 6, files: [
+              { name: "Hong 2024 — Decomposition InVivo Post HA", type: "pdf", driveId: "1vqLieDBRKo9WZntRVB7Zel9LK4U97ATm", order: 1 },
+              { name: "Gallagher 2024 — Hyaluronidase Degradation Kinetics", type: "pdf", driveId: "1Umk9ulBzeLTp1zF5w93W2jRCMcif7SX3", order: 2 },
+              { name: "Wollina & Goldman 2023 — Spontaneous Degradation", type: "pdf", driveId: "1ifyTQd8t6roq7MF_Kajy2sOralmyBezj", order: 3 },
+              { name: "Foster 2023 — 21 Fillers Hyaluronidase", type: "pdf", driveId: "1VDQpOMQFKYf4fgt7QI-OUKzCl01amWWN", order: 4 },
+            ]},
+            { name: "Artigos — Segurança e Complicações", order: 7, files: [
+              { name: "Arrigoni 2025 — Hyaluronidase Aesthetic Medicine", type: "pdf", driveId: "1BhJzCBysmr_-AN3s3xekOfSxlsUYJOMr", order: 1 },
+              { name: "Chakhachiro 2025 — Vascular Occlusion MetaAnalysis", type: "pdf", driveId: "1lTPiPyQVDrTAxz2FEdoFNL6ZkIwaQur7", order: 2 },
+              { name: "Baranska 2024 — Late Onset Reactions", type: "pdf", driveId: "17vjlmDgNuLJVWujRefSlgaCyJsfFI71B", order: 3 },
+              { name: "Soares 2022 — FIVO Pathophysiology", type: "pdf", driveId: "17tfjc6bhrWqy8Jz8e9qCD_QE7DUXodXi", order: 4 },
+              { name: "De Boulle 2016 — Global Consensus Complications", type: "pdf", driveId: "1ip2pcXyk5UumY7-vHl4H7iqyfsHCquAP", order: 5 },
+              { name: "Swift 2018 — 10-Point Plan Complications", type: "pdf", driveId: "1qoq_TxREPmIfPhwnF1vKALqw1AWlIcxg", order: 6 },
+            ]},
+            { name: "Artigos — Revisões Gerais e Perspectivas", order: 8, files: [
+              { name: "Schiraldi 2021 — Soft Tissue Fillers Overview", type: "pdf", driveId: "11RPJo52UCFPEZo-GO0WlM_vlecoMHq9I", order: 1 },
+              { name: "Guarise 2023 — Crosslinking Parameters Design", type: "pdf", driveId: "1rTzUdOFjJ-qSQn6gwVfCDRKsFib-Y-qs", order: 2 },
+              { name: "Akinbiyi 2020 — Better Results Facial Rejuvenation", type: "pdf", driveId: "1Rhsu93o5uOV-XQvyxmb4CfmhYY79G2x0", order: 3 },
+              { name: "Peng 2023 — Hydrogel Structure InVivo Performance", type: "pdf", driveId: "1qZDCur848qyaDJvDQG3AQVIJ3x63foAK", order: 4 },
+            ]},
+          ],
+        },
+        {
+          title: "Bioestimuladores de Colágeno", coverUrl: "/images/covers/cover_bioestimuladores.png?v=2", order: 3,
+          subcategories: [
+            { name: "Compilados e Resumos", order: 1, files: [
+              { name: "Compilado Anti-inflamatórios x Bioestimuladores", type: "pdf", driveId: "1Svq0RTDq0cbgI1U6b5m-OXBN-I1Gv46t", order: 1 },
+              { name: "Compilado Radiesse Plus (CaHA-CMC) — Bioestimulação e Mecanotransdução", type: "pdf", driveId: "1bBdy6huD7m6cvi785AFawivDTPNcIjbr", order: 2 },
+              { name: "Compilado Mecanismos de Neocolagênese — Evidências sobre Bioestimuladores", type: "pdf", driveId: "1gaM22jyoyEdk_huTiyAiKS10g0M6VdC6", order: 3 },
+            ]},
+          ],
+        },
+        {
+          title: "Moduladores de Matriz Extracelular", coverUrl: "/images/covers/cover_moduladores_matriz.png?v=2", order: 4,
+          subcategories: [],
+        },
+        {
+          title: "Método NaturalUp®", coverUrl: "/images/covers/cover_metodo_naturalup.png?v=2", order: 5,
+          subcategories: [
+            { name: "Compilados e Resumos", order: 1, files: [
+              { name: "Compilado Full Face — Ampla Facial", type: "pdf", driveId: "1wi4rZ7s6bxJHMfpVefo33gaC-Au7roYp", order: 1 },
+            ]},
+          ],
+        },
+        {
+          title: "IA na Medicina", coverUrl: "/images/covers/cover_ia_medicina.png?v=2", order: 6,
+          subcategories: [
+            { name: "Compilados e Resumos", order: 1, files: [
+              { name: "Compilado IA na Medicina — Ampla Facial", type: "pdf", driveId: "1ZszH0IrVrbh4eW6rdhckEHc4veA0avkN", order: 1 },
+            ]},
+          ],
+        },
+      ];
+      for (const theme of themesData) {
+        const t = await storage.createMaterialTheme({ title: theme.title, coverUrl: theme.coverUrl, order: theme.order });
+        for (const sub of theme.subcategories) {
+          const s = await storage.createMaterialSubcategory({ themeId: t.id, name: sub.name, order: sub.order });
+          for (const file of sub.files) {
+            await storage.createMaterialFile({ subcategoryId: s.id, name: file.name, type: file.type, driveId: file.driveId, order: file.order });
+          }
+        }
+      }
+      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+      console.log("[one-time-migrate] Seeded materials into DB");
+    } else {
+      console.log("[one-time-migrate] seed_materials_db already applied, skipping");
+    }
+  } catch (e: any) {
+    console.error("[one-time-migrate] Failed to seed materials:", e.message);
   }
 
   // ==================== AUTH ====================
@@ -1035,6 +1196,166 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json({ success: true });
   });
 
+
+  // ==================== MATERIALS (DB-driven) ====================
+  // Public endpoint: get all themes with nested subcategories and files
+  app.get("/api/materials", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const themes = await storage.getMaterialThemes();
+      const result = await Promise.all(themes.map(async (theme) => {
+        const subcategories = await storage.getMaterialSubcategories(theme.id);
+        const subsWithFiles = await Promise.all(subcategories.map(async (sub) => {
+          const files = await storage.getMaterialFiles(sub.id);
+          return { ...sub, files };
+        }));
+        const fileCount = subsWithFiles.reduce((acc, sub) => acc + sub.files.length, 0);
+        return { ...theme, subcategories: subsWithFiles, fileCount };
+      }));
+      res.json(result);
+    } catch (e: any) {
+      console.error("GET /api/materials error:", e?.message || e);
+      res.status(500).json({ message: "Erro ao carregar materiais" });
+    }
+  });
+
+  // Admin CRUD: Themes
+  app.post("/api/admin/materials/themes", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { title, coverUrl, order } = req.body;
+      if (!title || !coverUrl) return res.status(400).json({ message: "Título e URL da capa são obrigatórios" });
+      const theme = await storage.createMaterialTheme({ title: sanitize(title), coverUrl: sanitize(coverUrl), order: order ?? 0 });
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || "Admin", "material_theme_created", "material_theme", theme.id, theme.title);
+      res.json(theme);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.put("/api/admin/materials/themes/:id", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    const id = safeParseInt(req.params.id);
+    if (!id) return res.status(400).json({ message: "ID inválido" });
+    const { title, coverUrl, order } = req.body;
+    const updateData: any = {};
+    if (title !== undefined) updateData.title = sanitize(title);
+    if (coverUrl !== undefined) updateData.coverUrl = sanitize(coverUrl);
+    if (order !== undefined) updateData.order = order;
+    const updated = await storage.updateMaterialTheme(id, updateData);
+    if (!updated) return res.status(404).json({ message: "Tema não encontrado" });
+    const admin = await storage.getUser(auth.userId);
+    await logAction(auth.userId, admin?.name || "Admin", "material_theme_updated", "material_theme", updated.id, updated.title);
+    res.json(updated);
+  });
+
+  app.delete("/api/admin/materials/themes/:id", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    const id = safeParseInt(req.params.id);
+    if (!id) return res.status(400).json({ message: "ID inválido" });
+    const theme = await storage.getMaterialTheme(id);
+    await storage.deleteMaterialTheme(id);
+    const admin = await storage.getUser(auth.userId);
+    await logAction(auth.userId, admin?.name || "Admin", "material_theme_deleted", "material_theme", id, theme?.title || "?");
+    res.json({ success: true });
+  });
+
+  // Admin CRUD: Subcategories
+  app.post("/api/admin/materials/subcategories", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { themeId, name, order } = req.body;
+      if (!themeId || !name) return res.status(400).json({ message: "themeId e nome são obrigatórios" });
+      const sub = await storage.createMaterialSubcategory({ themeId, name: sanitize(name), order: order ?? 0 });
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || "Admin", "material_subcategory_created", "material_subcategory", sub.id, sub.name);
+      res.json(sub);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.put("/api/admin/materials/subcategories/:id", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    const id = safeParseInt(req.params.id);
+    if (!id) return res.status(400).json({ message: "ID inválido" });
+    const { name, order } = req.body;
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = sanitize(name);
+    if (order !== undefined) updateData.order = order;
+    const updated = await storage.updateMaterialSubcategory(id, updateData);
+    if (!updated) return res.status(404).json({ message: "Subcategoria não encontrada" });
+    const admin = await storage.getUser(auth.userId);
+    await logAction(auth.userId, admin?.name || "Admin", "material_subcategory_updated", "material_subcategory", updated.id, updated.name);
+    res.json(updated);
+  });
+
+  app.delete("/api/admin/materials/subcategories/:id", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    const id = safeParseInt(req.params.id);
+    if (!id) return res.status(400).json({ message: "ID inválido" });
+    await storage.deleteMaterialSubcategory(id);
+    const admin = await storage.getUser(auth.userId);
+    await logAction(auth.userId, admin?.name || "Admin", "material_subcategory_deleted", "material_subcategory", id);
+    res.json({ success: true });
+  });
+
+  // Admin CRUD: Files
+  app.post("/api/admin/materials/files", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { subcategoryId, name, type, driveId, order } = req.body;
+      if (!subcategoryId || !name || !type || !driveId) return res.status(400).json({ message: "subcategoryId, nome, tipo e driveId são obrigatórios" });
+      if (type !== "pdf" && type !== "docx") return res.status(400).json({ message: "Tipo deve ser 'pdf' ou 'docx'" });
+      const file = await storage.createMaterialFile({ subcategoryId, name: sanitize(name), type, driveId: sanitize(driveId), order: order ?? 0 });
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || "Admin", "material_file_created", "material_file", file.id, file.name);
+      res.json(file);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.put("/api/admin/materials/files/:id", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    const id = safeParseInt(req.params.id);
+    if (!id) return res.status(400).json({ message: "ID inválido" });
+    const { name, type, driveId, order } = req.body;
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = sanitize(name);
+    if (type !== undefined) {
+      if (type !== "pdf" && type !== "docx") return res.status(400).json({ message: "Tipo deve ser 'pdf' ou 'docx'" });
+      updateData.type = type;
+    }
+    if (driveId !== undefined) updateData.driveId = sanitize(driveId);
+    if (order !== undefined) updateData.order = order;
+    const updated = await storage.updateMaterialFile(id, updateData);
+    if (!updated) return res.status(404).json({ message: "Arquivo não encontrado" });
+    const admin = await storage.getUser(auth.userId);
+    await logAction(auth.userId, admin?.name || "Admin", "material_file_updated", "material_file", updated.id, updated.name);
+    res.json(updated);
+  });
+
+  app.delete("/api/admin/materials/files/:id", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    const id = safeParseInt(req.params.id);
+    if (!id) return res.status(400).json({ message: "ID inválido" });
+    await storage.deleteMaterialFile(id);
+    const admin = await storage.getUser(auth.userId);
+    await logAction(auth.userId, admin?.name || "Admin", "material_file_deleted", "material_file", id);
+    res.json({ success: true });
+  });
 
   // ==================== ADMIN: Audit Logs ====================
   app.get("/api/admin/audit-logs", async (req, res) => {
