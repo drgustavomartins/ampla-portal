@@ -237,7 +237,7 @@ export default function StudentDashboard() {
                 <div className="aspect-video bg-card rounded-lg flex items-center justify-center ring-1 ring-border/30">
                   <div className="text-center space-y-2 text-muted-foreground">
                     <Play className="w-12 h-12 mx-auto opacity-30" />
-                    <p className="text-sm">Video sera adicionado em breve</p>
+                    <p className="text-sm">Vídeo será adicionado em breve</p>
                   </div>
                 </div>
               )}
@@ -267,9 +267,9 @@ export default function StudentDashboard() {
                     data-testid="button-toggle-complete"
                   >
                     {isCompleted ? (
-                      <><CheckCircle2 className="w-4 h-4 mr-1.5" />Concluida</>
+                      <><CheckCircle2 className="w-4 h-4 mr-1.5" />Concluída</>
                     ) : (
-                      <><Circle className="w-4 h-4 mr-1.5" />Marcar como concluida</>
+                      <><Circle className="w-4 h-4 mr-1.5" />Marcar como concluída</>
                     )}
                   </Button>
 
@@ -282,7 +282,7 @@ export default function StudentDashboard() {
                   )}
                   {nextLesson && (
                     <Button size="sm" className="bg-gold text-background hover:bg-gold/90" onClick={() => setSelectedLesson(nextLesson)}>
-                      Proxima
+                      Próxima
                     </Button>
                   )}
                 </div>
@@ -292,7 +292,7 @@ export default function StudentDashboard() {
             {/* Lesson list sidebar */}
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-gold-muted uppercase tracking-brand mb-3">
-                Aulas do modulo
+                Aulas do módulo
               </h3>
               {moduleLessons.map((lesson, i) => {
                 const done = completedIds.has(lesson.id);
@@ -422,7 +422,7 @@ export default function StudentDashboard() {
                 setProfileOpen(true);
               }}
               data-testid="button-settings"
-              title="Configuracoes"
+              title="Configurações"
             >
               <Settings className="w-4 h-4" />
             </Button>
@@ -456,7 +456,7 @@ export default function StudentDashboard() {
                   Seu acesso expira em {rawDaysLeft} {rawDaysLeft === 1 ? "dia" : "dias"}
                 </p>
                 <p className="text-sm text-amber-500/80 mt-1">
-                  Entre em contato para renovacao.
+                  Entre em contato para renovação.
                 </p>
               </div>
             </div>
@@ -467,8 +467,8 @@ export default function StudentDashboard() {
             {/* Background image */}
             <div className="absolute inset-0">
               <img src="/images/hero-dashboard.png" alt="" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-r from-background/85 via-background/60 to-background/30" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/50 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/50 sm:from-background/85 sm:via-background/60 sm:to-background/30" />
+              <div className="absolute inset-0 bg-gradient-to-t from-background/70 to-transparent sm:from-background/50" />
             </div>
             <div className="relative grid lg:grid-cols-[1fr_340px] gap-6 items-start p-6 sm:p-8 lg:p-10">
             <div className="space-y-3">
@@ -480,7 +480,7 @@ export default function StudentDashboard() {
               </p>
             </div>
             {/* Plan card */}
-            <div className="rounded-2xl border border-border/40 bg-card/90 backdrop-blur-sm p-5 space-y-4">
+            <div className="mt-4 lg:mt-0 rounded-2xl border border-border/40 bg-card/90 backdrop-blur-sm p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-gold-muted uppercase tracking-brand">Seu Plano</span>
                 <Badge variant="secondary" className="text-xs bg-gold/10 text-gold border-0">{userPlan?.name || "\u2014"}</Badge>
@@ -490,14 +490,14 @@ export default function StudentDashboard() {
                   <span className="text-muted-foreground">Progresso do plano</span>
                   <span className="font-medium text-gold">{daysUsed}/{planDurationDays} dias</span>
                 </div>
-                <Progress value={dayProgressPercent} className="h-1.5 bg-border/30" />
+                <Progress value={dayProgressPercent} className="h-2 bg-border/30" />
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Dias restantes</span>
                 <span className="font-semibold text-foreground">{daysLeft}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Aulas concluidas</span>
+                <span className="text-muted-foreground">Aulas concluídas</span>
                 <span className="font-medium text-gold">{completedCount}/{totalLessons}</span>
               </div>
             </div>
@@ -688,13 +688,13 @@ export default function StudentDashboard() {
                     <Users className="w-5 h-5 text-gold" />
                   </div>
                   <h3 className="font-semibold text-sm text-foreground">Comunidade NaturalUp&reg;</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">Conecte-se com outros profissionais, troque experiencias e evolua junto com a comunidade.</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">Conecte-se com outros profissionais, troque experiências e evolua junto com a comunidade.</p>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">
-                      Acesso Vitalicio
+                      Acesso Vitalício
                     </span>
                   </div>
-                  <span className="inline-flex items-center text-xs font-medium text-gold group-hover:underline">
+                  <span className="inline-flex items-center min-h-[44px] py-2 text-xs font-medium text-gold group-hover:underline">
                     Acessar comunidade <ChevronRight className="w-3 h-3 ml-1" />
                   </span>
                 </a>
@@ -704,13 +704,13 @@ export default function StudentDashboard() {
                     <Users className="w-5 h-5 text-gold" />
                   </div>
                   <h3 className="font-semibold text-sm text-foreground">Comunidade NaturalUp&reg;</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">Conecte-se com outros profissionais, troque experiencias e evolua junto com a comunidade.</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">Conecte-se com outros profissionais, troque experiências e evolua junto com a comunidade.</p>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center rounded-full bg-destructive/15 border border-destructive/30 px-2 py-0.5 text-[10px] font-semibold text-destructive uppercase tracking-wider">
                       Acesso Desabilitado
                     </span>
                   </div>
-                  <span className="inline-flex items-center text-xs font-medium text-muted-foreground">
+                  <span className="inline-flex items-center min-h-[44px] py-2 text-xs font-medium text-muted-foreground">
                     Acessar comunidade <ChevronRight className="w-3 h-3 ml-1" />
                   </span>
                 </div>
@@ -721,15 +721,15 @@ export default function StudentDashboard() {
                   <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
                     <MessageCircle className="w-5 h-5 text-gold" />
                   </div>
-                  <h3 className="font-semibold text-sm text-foreground">Tire Duvidas com Dr. Gustavo</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">Envie suas perguntas diretamente e receba orientacoes personalizadas do mentor.</p>
+                  <h3 className="font-semibold text-sm text-foreground">Tire Dúvidas com Dr. Gustavo</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">Envie suas perguntas diretamente e receba orientações personalizadas do mentor.</p>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center rounded-full bg-destructive/15 border border-destructive/30 px-2 py-0.5 text-[10px] font-semibold text-destructive uppercase tracking-wider">
                       {!supportEnabled ? "Acesso Desabilitado" : "Acesso Expirado"}
                     </span>
                   </div>
-                  <span className="inline-flex items-center text-xs font-medium text-muted-foreground">
-                    Enviar duvida <ChevronRight className="w-3 h-3 ml-1" />
+                  <span className="inline-flex items-center min-h-[44px] py-2 text-xs font-medium text-muted-foreground">
+                    Enviar dúvida <ChevronRight className="w-3 h-3 ml-1" />
                   </span>
                 </div>
               ) : (
@@ -742,15 +742,15 @@ export default function StudentDashboard() {
                   <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
                     <MessageCircle className="w-5 h-5 text-gold" />
                   </div>
-                  <h3 className="font-semibold text-sm text-foreground">Tire Duvidas com Dr. Gustavo</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">Envie suas perguntas diretamente e receba orientacoes personalizadas do mentor.</p>
+                  <h3 className="font-semibold text-sm text-foreground">Tire Dúvidas com Dr. Gustavo</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">Envie suas perguntas diretamente e receba orientações personalizadas do mentor.</p>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center rounded-full bg-gold/15 border border-gold/30 px-2 py-0.5 text-[10px] font-semibold text-gold uppercase tracking-wider">
                       {supportDaysLeft === 1 ? "Resta 1 dia" : `Restam ${supportDaysLeft} dias`}
                     </span>
                   </div>
-                  <span className="inline-flex items-center text-xs font-medium text-gold group-hover:underline">
-                    Enviar duvida <ChevronRight className="w-3 h-3 ml-1" />
+                  <span className="inline-flex items-center min-h-[44px] py-2 text-xs font-medium text-gold group-hover:underline">
+                    Enviar dúvida <ChevronRight className="w-3 h-3 ml-1" />
                   </span>
                 </a>
               )}
@@ -767,14 +767,14 @@ export default function StudentDashboard() {
                       <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                     </svg>
                   </div>
-                  <h3 className="font-semibold text-sm text-foreground">Agendar Sessao Presencial</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">Consulte suas horas presenciais disponiveis e agende sua sessao pelo WhatsApp.</p>
+                  <h3 className="font-semibold text-sm text-foreground">Agendar Sessão Presencial</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">Consulte suas horas presenciais disponíveis e agende sua sessão pelo WhatsApp.</p>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center rounded-full bg-green-500/15 border border-green-500/30 px-2 py-0.5 text-[10px] font-semibold text-green-500 uppercase tracking-wider">
                       WhatsApp
                     </span>
                   </div>
-                  <span className="inline-flex items-center text-xs font-medium text-green-500 group-hover:underline">
+                  <span className="inline-flex items-center min-h-[44px] py-2 text-xs font-medium text-green-500 group-hover:underline">
                     Consultar horas presenciais <ChevronRight className="w-3 h-3 ml-1" />
                   </span>
                 </a>
@@ -794,7 +794,7 @@ export default function StudentDashboard() {
                     Biblioteca
                   </span>
                 </div>
-                <span className="inline-flex items-center text-xs font-medium text-gold group-hover:underline">
+                <span className="inline-flex items-center min-h-[44px] py-2 text-xs font-medium text-gold group-hover:underline">
                   Ver materiais <ChevronRight className="w-3 h-3 ml-1" />
                 </span>
               </button>
@@ -863,7 +863,7 @@ export default function StudentDashboard() {
           <DialogHeader>
             <DialogTitle className="text-lg">Editar Perfil</DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              Altere suas informacoes pessoais
+              Altere suas informações pessoais
             </DialogDescription>
           </DialogHeader>
           <form
@@ -874,7 +874,7 @@ export default function StudentDashboard() {
                 return;
               }
               if (profileForm.newPassword && profileForm.newPassword !== profileForm.confirmNewPassword) {
-                toast({ title: "Erro", description: "As novas senhas nao coincidem", variant: "destructive" });
+                toast({ title: "Erro", description: "As novas senhas não coincidem", variant: "destructive" });
                 return;
               }
               if (profileForm.newPassword && profileForm.newPassword.length < 6) {
@@ -951,7 +951,7 @@ export default function StudentDashboard() {
               disabled={profileMutation.isPending}
             >
               {profileMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Salvar alteracoes
+              Salvar alterações
             </Button>
           </form>
         </DialogContent>
