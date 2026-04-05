@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft, FileText, FileIcon, Download, ChevronDown, ChevronUp, ExternalLink, Eye, X, Loader2,
+  ArrowLeft, FileText, FileIcon, Headphones, Download, ChevronDown, ChevronUp, ExternalLink, Eye, X, Loader2,
 } from "lucide-react";
 
 /* ───────── Types ───────── */
@@ -13,8 +13,9 @@ import {
 type FileEntry = {
   id: number;
   name: string;
-  type: "pdf" | "docx";
+  type: "pdf" | "docx" | "mp3";
   driveId: string;
+  youtubeId?: string | null;
   order: number;
 };
 
@@ -50,15 +51,18 @@ function FileTypeIcon({ type }: { type: FileEntry["type"] }) {
   switch (type) {
     case "pdf":
       return <FileText className="w-4 h-4 text-red-400 shrink-0" />;
+    case "mp3":
+      return <Headphones className="w-4 h-4 text-emerald-400 shrink-0" />;
     case "docx":
       return <FileIcon className="w-4 h-4 text-blue-400 shrink-0" />;
   }
 }
 
 function TypeLabel({ type }: { type: FileEntry["type"] }) {
-  const labels: Record<FileEntry["type"], string> = { pdf: "PDF", docx: "DOCX" };
+  const labels: Record<FileEntry["type"], string> = { pdf: "PDF", mp3: "MP3", docx: "DOCX" };
   const colors: Record<FileEntry["type"], string> = {
     pdf: "bg-red-500/15 text-red-400 border-red-500/20",
+    mp3: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
     docx: "bg-blue-500/15 text-blue-400 border-blue-500/20",
   };
   return (
@@ -72,7 +76,7 @@ function TypeLabel({ type }: { type: FileEntry["type"] }) {
 
 function FileRow({ file }: { file: FileEntry }) {
   const [pdfOpen, setPdfOpen] = useState(false);
-  const showDownload = true;
+  const showDownload = file.type !== "mp3";
 
   return (
     <div className="group py-3 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
@@ -83,7 +87,17 @@ function FileRow({ file }: { file: FileEntry }) {
             <span className="text-sm text-foreground/90 leading-snug">{file.name}</span>
             <TypeLabel type={file.type} />
           </div>
-
+          {file.type === "mp3" && (
+            <div className="relative w-full mt-1 rounded-lg overflow-hidden border border-border/20" style={{ paddingBottom: "56.25%", maxWidth: "28rem" }}>
+              <iframe
+                src={drivePreviewUrl(file.driveId)}
+                className="absolute inset-0 w-full h-full"
+                allow="autoplay"
+                sandbox="allow-same-origin allow-scripts allow-popups"
+                title={file.name}
+              />
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
           {file.type === "pdf" && (

@@ -124,8 +124,9 @@ export const materialFiles = pgTable("material_files", {
   id: serial("id").primaryKey(),
   subcategoryId: integer("subcategory_id").notNull(),
   name: text("name").notNull(),
-  type: text("type").notNull(), // 'pdf' or 'docx'
+  type: text("type").notNull(), // 'pdf', 'docx', or 'mp3'
   driveId: text("drive_id").notNull(),
+  youtubeId: text("youtube_id"),
   order: integer("order").notNull().default(0),
 });
 

@@ -133,6 +133,7 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`CREATE TABLE IF NOT EXISTS material_themes (id SERIAL PRIMARY KEY, title TEXT NOT NULL, cover_url TEXT NOT NULL, "order" INTEGER NOT NULL DEFAULT 0)`);
     await db.execute(`CREATE TABLE IF NOT EXISTS material_subcategories (id SERIAL PRIMARY KEY, theme_id INTEGER NOT NULL, name TEXT NOT NULL, "order" INTEGER NOT NULL DEFAULT 0)`);
     await db.execute(`CREATE TABLE IF NOT EXISTS material_files (id SERIAL PRIMARY KEY, subcategory_id INTEGER NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, drive_id TEXT NOT NULL, "order" INTEGER NOT NULL DEFAULT 0)`);
+    await db.execute(`ALTER TABLE material_files ADD COLUMN IF NOT EXISTS youtube_id TEXT`).catch(() => {});
     console.log("[auto-migrate] material_topics, order, materials_access, mentorship dates, user_modules, user_material_categories, material_themes/subcategories/files ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
@@ -1315,8 +1316,9 @@ export async function registerRoutes(server: Server, app: Express) {
     try {
       const { subcategoryId, name, type, driveId, order } = req.body;
       if (!subcategoryId || !name || !type || !driveId) return res.status(400).json({ message: "subcategoryId, nome, tipo e driveId são obrigatórios" });
-      if (type !== "pdf" && type !== "docx") return res.status(400).json({ message: "Tipo deve ser 'pdf' ou 'docx'" });
-      const file = await storage.createMaterialFile({ subcategoryId, name: sanitize(name), type, driveId: sanitize(driveId), order: order ?? 0 });
+      if (type !== "pdf" && type !== "docx" && type !== "mp3") return res.status(400).json({ message: "Tipo deve ser 'pdf', 'docx' ou 'mp3'" });
+      const { youtubeId } = req.body;
+      const file = await storage.createMaterialFile({ subcategoryId, name: sanitize(name), type, driveId: sanitize(driveId), youtubeId: youtubeId ? sanitize(youtubeId) : null, order: order ?? 0 });
       const admin = await storage.getUser(auth.userId);
       await logAction(auth.userId, admin?.name || "Admin", "material_file_created", "material_file", file.id, file.name);
       res.json(file);
@@ -1330,14 +1332,15 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!auth) return;
     const id = safeParseInt(req.params.id);
     if (!id) return res.status(400).json({ message: "ID inválido" });
-    const { name, type, driveId, order } = req.body;
+    const { name, type, driveId, youtubeId, order } = req.body;
     const updateData: any = {};
     if (name !== undefined) updateData.name = sanitize(name);
     if (type !== undefined) {
-      if (type !== "pdf" && type !== "docx") return res.status(400).json({ message: "Tipo deve ser 'pdf' ou 'docx'" });
+      if (type !== "pdf" && type !== "docx" && type !== "mp3") return res.status(400).json({ message: "Tipo deve ser 'pdf', 'docx' ou 'mp3'" });
       updateData.type = type;
     }
     if (driveId !== undefined) updateData.driveId = sanitize(driveId);
+    if (youtubeId !== undefined) updateData.youtubeId = youtubeId ? sanitize(youtubeId) : null;
     if (order !== undefined) updateData.order = order;
     const updated = await storage.updateMaterialFile(id, updateData);
     if (!updated) return res.status(404).json({ message: "Arquivo não encontrado" });

@@ -26,7 +26,7 @@ import {
   Users, BookOpen, Layers, LogOut, Plus, Trash2, Check, X,
   Clock, Video, Shield, GraduationCap, Eye, Pencil, Calendar, Settings,
   CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library,
-  GripVertical, CalendarDays, FolderOpen, Search, FileText, FileIcon, ChevronDown, ChevronUp
+  GripVertical, CalendarDays, FolderOpen, Search, FileText, FileIcon, Headphones, ChevronDown, ChevronUp
 } from "lucide-react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -2006,7 +2006,7 @@ export default function AdminDashboard() {
                 </DialogHeader>
                 <div className="space-y-4 pt-2">
                   <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label><Input value={editFileForm.name} onChange={e => setEditFileForm(f => ({ ...f, name: e.target.value }))} className="bg-background/50 border-border/40" /></div>
-                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Tipo</Label><Select value={editFileForm.type} onValueChange={(v) => setEditFileForm(f => ({ ...f, type: v }))}><SelectTrigger className="bg-background/50 border-border/40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pdf">PDF</SelectItem><SelectItem value="docx">DOCX</SelectItem></SelectContent></Select></div>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Tipo</Label><Select value={editFileForm.type} onValueChange={(v) => setEditFileForm(f => ({ ...f, type: v }))}><SelectTrigger className="bg-background/50 border-border/40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pdf">PDF</SelectItem><SelectItem value="mp3">MP3</SelectItem><SelectItem value="docx">DOCX</SelectItem></SelectContent></Select></div>
                   <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Google Drive ID</Label><Input value={editFileForm.driveId} onChange={e => setEditFileForm(f => ({ ...f, driveId: e.target.value }))} className="bg-background/50 border-border/40" /></div>
                   <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Ordem</Label><Input type="number" value={editFileForm.order} onChange={e => setEditFileForm(f => ({ ...f, order: parseInt(e.target.value) || 0 }))} className="bg-background/50 border-border/40" /></div>
                   <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => editingFile && updateFileMutation.mutate({ id: editingFile.id, data: editFileForm })} disabled={!editFileForm.name || !editFileForm.driveId || updateFileMutation.isPending}>{updateFileMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar alterações</Button>
@@ -2116,7 +2116,7 @@ export default function AdminDashboard() {
                                       </DialogHeader>
                                       <div className="space-y-4 pt-2">
                                         <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label><Input value={fileForm.name} onChange={e => setFileForm(f => ({ ...f, name: e.target.value }))} placeholder="Nome do arquivo" className="bg-background/50 border-border/40" /></div>
-                                        <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Tipo</Label><Select value={fileForm.type} onValueChange={(v) => setFileForm(f => ({ ...f, type: v }))}><SelectTrigger className="bg-background/50 border-border/40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pdf">PDF</SelectItem><SelectItem value="docx">DOCX</SelectItem></SelectContent></Select></div>
+                                        <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Tipo</Label><Select value={fileForm.type} onValueChange={(v) => setFileForm(f => ({ ...f, type: v }))}><SelectTrigger className="bg-background/50 border-border/40"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="pdf">PDF</SelectItem><SelectItem value="mp3">MP3</SelectItem><SelectItem value="docx">DOCX</SelectItem></SelectContent></Select></div>
                                         <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Google Drive ID</Label><Input value={fileForm.driveId} onChange={e => setFileForm(f => ({ ...f, driveId: e.target.value }))} placeholder="ID do arquivo no Google Drive" className="bg-background/50 border-border/40" /></div>
                                         <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Ordem</Label><Input type="number" value={fileForm.order} onChange={e => setFileForm(f => ({ ...f, order: parseInt(e.target.value) || 0 }))} className="bg-background/50 border-border/40" /></div>
                                         <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createFileMutation.mutate(sub.id)} disabled={!fileForm.name || !fileForm.driveId || createFileMutation.isPending}>{createFileMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar arquivo</Button>
@@ -2131,9 +2131,9 @@ export default function AdminDashboard() {
 
                                 {sub.files.map((file) => (
                                   <div key={file.id} className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-white/[0.03] group">
-                                    {file.type === "pdf" ? <FileText className="w-3.5 h-3.5 text-red-400 shrink-0" /> : <FileIcon className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
+                                    {file.type === "pdf" ? <FileText className="w-3.5 h-3.5 text-red-400 shrink-0" /> : file.type === "mp3" ? <Headphones className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> : <FileIcon className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
                                     <span className="text-xs text-foreground/80 flex-1 min-w-0 truncate">{file.name}</span>
-                                    <Badge variant="outline" className={`text-[9px] px-1 py-0 shrink-0 ${file.type === "pdf" ? "bg-red-500/15 text-red-400 border-red-500/20" : "bg-blue-500/15 text-blue-400 border-blue-500/20"}`}>{file.type.toUpperCase()}</Badge>
+                                    <Badge variant="outline" className={`text-[9px] px-1 py-0 shrink-0 ${file.type === "pdf" ? "bg-red-500/15 text-red-400 border-red-500/20" : file.type === "mp3" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" : "bg-blue-500/15 text-blue-400 border-blue-500/20"}`}>{file.type.toUpperCase()}</Badge>
                                     <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                                       <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-6 w-6 p-0" onClick={() => { setEditingFile(file); setEditFileForm({ name: file.name, type: file.type, driveId: file.driveId, order: file.order }); }}>
                                         <Pencil className="w-2.5 h-2.5" />
