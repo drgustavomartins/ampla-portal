@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft, FileText, FileIcon, Headphones, Download, ChevronDown, ChevronUp, ExternalLink, Eye, X, Loader2, Lock,
+  ArrowLeft, FileText, FileIcon, Headphones, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink, Eye, X, Loader2, Lock,
 } from "lucide-react";
 
 /* ───────── Types ───────── */
@@ -222,6 +222,14 @@ function ThemeDetail({ theme, onBack }: { theme: Theme; onBack: () => void }) {
 export default function MateriaisComplementares({ onBack }: { onBack?: () => void }) {
   const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
   const { user } = useAuth();
+  const matShelfRef = useRef<HTMLDivElement>(null);
+
+  const scrollMatShelf = (direction: "left" | "right") => {
+    if (!matShelfRef.current) return;
+    const card = matShelfRef.current.querySelector(".shelf-card");
+    const w = card?.clientWidth || 280;
+    matShelfRef.current.scrollBy({ left: direction === "left" ? -(w + 24) : (w + 24), behavior: "smooth" });
+  };
 
   const { data: allThemes = [], isLoading: themesLoading } = useQuery<Theme[]>({
     queryKey: ["/api/materials"],
@@ -284,7 +292,23 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
         </div>
       </div>
 
-      <div className="shelf-scroll flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6">
+      <div className="relative group/matshelf">
+        {/* Left arrow */}
+        <button
+          onClick={() => scrollMatShelf("left")}
+          className="hidden sm:flex absolute left-0 top-[35%] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-300 opacity-0 group-hover/matshelf:opacity-100 -translate-x-1/2"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        {/* Right arrow */}
+        <button
+          onClick={() => scrollMatShelf("right")}
+          className="hidden sm:flex absolute right-0 top-[35%] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-300 opacity-0 group-hover/matshelf:opacity-100 translate-x-1/2"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+
+        <div ref={matShelfRef} className="shelf-scroll flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6">
         {allowedThemes.map((theme) => (
           <div
             key={theme.id}
@@ -325,6 +349,7 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
             </div>
           </div>
         ))}
+        </div>
       </div>
     </div>
   );
