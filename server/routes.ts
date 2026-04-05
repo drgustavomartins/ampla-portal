@@ -124,9 +124,9 @@ export async function registerRoutes(server: Server, app: Express) {
     const { db } = await import("./db");
     await db.execute(`ALTER TABLE plans ADD COLUMN IF NOT EXISTS material_topics TEXT`);
     await db.execute(`ALTER TABLE plans ADD COLUMN IF NOT EXISTS "order" INTEGER NOT NULL DEFAULT 0`);
-    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS materials_access BOOLEAN NOT NULL DEFAULT false`);
-    await db.execute(`ALTER TABLE users ALTER COLUMN materials_access SET DEFAULT false`);
-    // Grant materials access to all existing users — runs only once (skips if any user already has access)
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS materials_access BOOLEAN NOT NULL DEFAULT true`);
+    await db.execute(`ALTER TABLE users ALTER COLUMN materials_access SET DEFAULT true`);
+    // Ensure all users have materials access
     await db.execute(`UPDATE users SET materials_access = true WHERE materials_access = false`);
     // Mentorship date columns
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mentorship_start_date TEXT`);
@@ -627,10 +627,8 @@ export async function registerRoutes(server: Server, app: Express) {
       if (!user) {
         return res.json({ accessAll: false, topics: [] });
       }
-      // User-level materialsAccess gate: if false/missing, no access
-      if (!user.materialsAccess) {
-        return res.json({ accessAll: false, topics: [] });
-      }
+      // All logged-in users have access to materiais complementares
+      // (materialsAccess gate removed — open to all students)
 
       // Check per-user material category overrides first
       let userCats: Awaited<ReturnType<typeof storage.getUserMaterialCategories>> = [];
