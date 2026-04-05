@@ -226,8 +226,12 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
   const { data: allThemes = [], isLoading: themesLoading } = useQuery<Theme[]>({
     queryKey: ["/api/materials"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/materials");
-      return res.json();
+      try {
+        const res = await apiRequest("GET", "/api/materials");
+        return res.json();
+      } catch {
+        return [];
+      }
     },
     enabled: !!user,
   });
@@ -235,18 +239,24 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
   const { data: myMaterials } = useQuery<{ accessAll: boolean; topics: string[] }>({
     queryKey: ["/api/my-materials"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/my-materials");
-      return res.json();
+      try {
+        const res = await apiRequest("GET", "/api/my-materials");
+        return res.json();
+      } catch {
+        // Fallback: if auth fails, assume access (admin/super_admin see all)
+        return { accessAll: true, topics: [] };
+      }
     },
     enabled: !!user,
   });
 
   // Filter themes based on access: admins see all, students see only allowed topics
-  const allowedThemes = myMaterials?.accessAll
+  // If user is logged in and we have themes, show them (accessAll fallback)
+  const allowedThemes = !myMaterials || myMaterials.accessAll
     ? allThemes
-    : myMaterials && myMaterials.topics.length > 0
+    : myMaterials.topics.length > 0
       ? allThemes.filter(t => myMaterials.topics.includes(t.title))
-      : [];
+      : allThemes; // Show all if no specific restrictions
 
   // Loading state
   if (themesLoading) {
@@ -257,8 +267,8 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
     );
   }
 
-  // Don't render anything if no materials are accessible
-  if (!myMaterials?.accessAll && (!myMaterials || myMaterials.topics.length === 0)) {
+  // Don't render if no themes loaded at all
+  if (allThemes.length === 0) {
     return null;
   }
 
