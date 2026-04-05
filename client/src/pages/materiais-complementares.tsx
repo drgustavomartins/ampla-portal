@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft, FileText, FileIcon, Headphones, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink, Eye, X, Loader2, Lock,
+  ArrowLeft, FileText, FileIcon, Headphones, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink, Eye, X, Loader2, Lock, Play,
 } from "lucide-react";
 
 /* ───────── Types ───────── */
@@ -72,6 +72,44 @@ function TypeLabel({ type }: { type: FileEntry["type"] }) {
   );
 }
 
+/* ───────── Thumbnail helper ───────── */
+
+function getFileThumbnail(file: FileEntry): string | null {
+  if (file.type === "mp3" && file.youtubeId) {
+    return `https://img.youtube.com/vi/${file.youtubeId}/mqdefault.jpg`;
+  }
+  if (file.type === "pdf") {
+    return `https://lh3.googleusercontent.com/d/${file.driveId}=w200`;
+  }
+  return null;
+}
+
+function FileThumbnail({ file }: { file: FileEntry }) {
+  const thumb = getFileThumbnail(file);
+  const [imgError, setImgError] = useState(false);
+
+  if (!thumb || imgError) {
+    return <FileTypeIcon type={file.type} />;
+  }
+
+  return (
+    <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden ring-1 ring-border/20 bg-card/60 relative group/thumb">
+      <img
+        src={thumb}
+        alt=""
+        className="w-full h-full object-cover"
+        loading="lazy"
+        onError={() => setImgError(true)}
+      />
+      {file.type === "mp3" && (
+        <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity">
+          <Play className="w-3.5 h-3.5 text-white ml-0.5 drop-shadow-md" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ───────── Components ───────── */
 
 function FileRow({ file }: { file: FileEntry }) {
@@ -81,7 +119,7 @@ function FileRow({ file }: { file: FileEntry }) {
   return (
     <div className="group py-3 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
       <div className="flex items-start gap-3">
-        <FileTypeIcon type={file.type} />
+        <FileThumbnail file={file} />
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-foreground/90 leading-snug">{file.name}</span>
