@@ -58,6 +58,46 @@ function getLessonThumbnail(lesson: Lesson): string | null {
   return null;
 }
 
+// Thumbnail component with error fallback
+function LessonThumb({ lesson, size = "md", done, theme, index }: {
+  lesson: Lesson; size?: "sm" | "md"; done: boolean;
+  theme: { accent: string; accentRgb: string }; index: number;
+}) {
+  const [imgError, setImgError] = useState(false);
+  const thumb = getLessonThumbnail(lesson);
+  const isMd = size === "md";
+  const w = isMd ? "w-16 h-10" : "w-12 h-8";
+
+  if (!thumb || imgError) {
+    return (
+      <div className={`shrink-0 ${isMd ? "w-10 h-10" : "w-8 h-8"} rounded-full flex items-center justify-center ${done ? "" : "bg-card border border-border/40"}`}
+        style={done ? { backgroundColor: `rgba(${theme.accentRgb}, 0.15)` } : undefined}>
+        {done ? (
+          <CheckCircle2 className={`${isMd ? "w-5 h-5" : "w-4 h-4"}`} style={{ color: theme.accent }} />
+        ) : (
+          <span className={`${isMd ? "text-xs" : "text-[10px]"} text-muted-foreground font-medium`}>{index + 1}</span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`shrink-0 ${w} rounded-md overflow-hidden ring-1 ring-border/30 relative`}>
+      <img src={thumb} alt="" className="w-full h-full object-cover" loading="lazy" onError={() => setImgError(true)} />
+      {done && (
+        <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: `rgba(${theme.accentRgb}, 0.25)` }}>
+          <CheckCircle2 className={`${isMd ? "w-5 h-5" : "w-3.5 h-3.5"} drop-shadow-md`} style={{ color: theme.accent }} />
+        </div>
+      )}
+      {!done && isMd && (
+        <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <Play className="w-4 h-4 text-white ml-0.5 drop-shadow-md" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Module theme colors
 const MODULE_THEMES: Record<string, { accent: string; accentRgb: string; gradient: string; progressBg: string; activeBg: string; accentText: string }> = {
   toxina: {
@@ -369,7 +409,6 @@ export default function ModulePage() {
                   const isActive = lesson.id === selectedLesson.id;
                   const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
                   const supportUrl = getLessonSupportUrl(lesson);
-                  const sidebarThumb = getLessonThumbnail(lesson);
                   return (
                     <button
                       key={lesson.id}
@@ -382,26 +421,9 @@ export default function ModulePage() {
                             : "hover:bg-card/80"
                       }`}
                     >
-                      {sidebarThumb ? (
-                        <div className="mt-0.5 shrink-0 w-12 h-8 rounded overflow-hidden ring-1 ring-border/20 relative">
-                          <img src={sidebarThumb} alt="" className="w-full h-full object-cover" loading="lazy" />
-                          {done && (
-                            <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: `rgba(${theme.accentRgb}, 0.3)` }}>
-                              <CheckCircle2 className="w-3.5 h-3.5 drop-shadow-md" style={{ color: theme.accent }} />
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="mt-0.5 shrink-0">
-                          {done ? (
-                            <CheckCircle2 className="w-4 h-4" style={{ color: theme.accent }} />
-                          ) : (
-                            <span className="w-4 h-4 flex items-center justify-center text-xs text-muted-foreground font-medium">
-                              {i + 1}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                      <div className="mt-0.5">
+                        <LessonThumb lesson={lesson} size="sm" done={done} theme={theme} index={i} />
+                      </div>
                       <div className="min-w-0">
                         <p className={`text-sm font-medium truncate ${isActive ? theme.accentText : done ? "text-foreground/70" : ""}`}>
                           {lesson.title}
@@ -521,7 +543,6 @@ export default function ModulePage() {
                 const isActive = lesson.id === selectedLesson.id;
                 const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
                 const supportUrl = getLessonSupportUrl(lesson);
-                const mobileThumb = getLessonThumbnail(lesson);
                 return (
                   <button
                     key={lesson.id}
@@ -534,26 +555,9 @@ export default function ModulePage() {
                           : "hover:bg-card/80"
                     }`}
                   >
-                    {mobileThumb ? (
-                      <div className="mt-0.5 shrink-0 w-12 h-8 rounded overflow-hidden ring-1 ring-border/20 relative">
-                        <img src={mobileThumb} alt="" className="w-full h-full object-cover" loading="lazy" />
-                        {done && (
-                          <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: `rgba(${theme.accentRgb}, 0.3)` }}>
-                            <CheckCircle2 className="w-3.5 h-3.5 drop-shadow-md" style={{ color: theme.accent }} />
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="mt-0.5 shrink-0">
-                        {done ? (
-                          <CheckCircle2 className="w-4 h-4" style={{ color: theme.accent }} />
-                        ) : (
-                          <span className="w-4 h-4 flex items-center justify-center text-xs text-muted-foreground font-medium">
-                            {i + 1}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    <div className="mt-0.5">
+                      <LessonThumb lesson={lesson} size="sm" done={done} theme={theme} index={i} />
+                    </div>
                     <div className="min-w-0">
                       <p className={`text-sm font-medium truncate ${isActive ? theme.accentText : done ? "text-foreground/70" : ""}`}>
                         {lesson.title}
@@ -699,8 +703,6 @@ export default function ModulePage() {
               const done = completedIds.has(lesson.id);
               const supportUrl = getLessonSupportUrl(lesson);
               const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
-              const thumbnail = getLessonThumbnail(lesson);
-
               return (
                 <div
                   key={lesson.id}
@@ -722,32 +724,12 @@ export default function ModulePage() {
 
                     {/* Thumbnail or play icon */}
                     <div className="shrink-0 relative">
-                      {thumbnail && !isLocked ? (
-                        <div className="w-16 h-10 rounded-md overflow-hidden ring-1 ring-border/30 relative">
-                          <img src={thumbnail} alt="" className="w-full h-full object-cover" loading="lazy" />
-                          {done && (
-                            <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: `rgba(${theme.accentRgb}, 0.25)` }}>
-                              <CheckCircle2 className="w-5 h-5 drop-shadow-md" style={{ color: theme.accent }} />
-                            </div>
-                          )}
-                          {!done && (
-                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Play className="w-4 h-4 text-white ml-0.5 drop-shadow-md" />
-                            </div>
-                          )}
-                        </div>
-                      ) : isLocked ? (
+                      {isLocked ? (
                         <div className="w-10 h-10 rounded-full bg-card border border-border/40 flex items-center justify-center">
                           <Lock className="w-4 h-4 text-muted-foreground/50" />
                         </div>
-                      ) : done ? (
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `rgba(${theme.accentRgb}, 0.15)` }}>
-                          <CheckCircle2 className="w-5 h-5" style={{ color: theme.accent }} />
-                        </div>
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-card border border-border/40 flex items-center justify-center group-hover:border-border/60 transition-colors">
-                          <Play className="w-4 h-4 text-muted-foreground ml-0.5" />
-                        </div>
+                        <LessonThumb lesson={lesson} size="md" done={done} theme={theme} index={i} />
                       )}
                     </div>
 

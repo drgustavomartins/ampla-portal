@@ -627,7 +627,7 @@ export default function StudentDashboard() {
                     </div>
 
                     {/* Text below image — clean, minimal */}
-                    <div className="pt-4 pb-1 space-y-1.5">
+                    <div className="pt-4 pb-1 space-y-1.5 min-h-[90px]">
                       {/* Status line */}
                       <div className="flex items-center gap-2">
                         {isUnlocked ? (
