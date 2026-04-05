@@ -381,7 +381,7 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
               }`}>
                 {theme.fileCount > 0 ? `${theme.fileCount} arquivos` : "Em breve"}
               </span>
-              <h3 className="font-semibold text-[15px] text-foreground/90 leading-snug line-clamp-2 tracking-[-0.01em]">
+              <h3 className="font-semibold text-[15px] text-foreground/90 leading-snug line-clamp-2 tracking-[-0.01em] min-h-[2.6em]">
                 {theme.title}
               </h3>
             </div>

@@ -646,7 +646,7 @@ export default function StudentDashboard() {
                       </div>
 
                       {/* Title */}
-                      <h3 className="font-semibold text-[15px] text-foreground/90 leading-snug line-clamp-2 tracking-[-0.01em]">
+                      <h3 className="font-semibold text-[15px] text-foreground/90 leading-snug line-clamp-2 tracking-[-0.01em] min-h-[2.6em]">
                         {mod.title}
                       </h3>
 
