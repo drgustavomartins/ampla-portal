@@ -5,7 +5,7 @@ type SafeUser = Omit<User, "password">;
 
 interface AuthContextType {
   user: SafeUser | null;
-  login: (user: SafeUser, token?: string) => void;
+  login: (user: SafeUser) => void;
   logout: () => void;
   isAdmin: boolean;
   isSuperAdmin: boolean;
@@ -21,28 +21,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SafeUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const login = useCallback((u: SafeUser, token?: string) => {
+  const login = useCallback((u: SafeUser) => {
     setUser(u);
-    if (token) {
-      localStorage.setItem("ampla_token", token);
-    }
+    // Token is now stored in httpOnly cookie by the server — no localStorage needed
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     setUser(null);
+    // Clear legacy localStorage token if present
     localStorage.removeItem("ampla_token");
+    try {
+      await fetch(`${API_BASE}/api/auth/logout`, { method: "POST", credentials: "include" });
+    } catch {}
   }, []);
 
-  // Restore session on mount
+  // Restore session on mount via httpOnly cookie
   useEffect(() => {
-    const token = localStorage.getItem("ampla_token");
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
-
     fetch(`${API_BASE}/api/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+      credentials: "include",
+      headers: {
+        // Fallback: send legacy Bearer token if cookie not yet set (transition period)
+        ...(localStorage.getItem("ampla_token")
+          ? { Authorization: `Bearer ${localStorage.getItem("ampla_token")}` }
+          : {}),
+      },
     })
       .then((res) => {
         if (!res.ok) throw new Error("Invalid token");
@@ -51,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((data) => {
         if (data.user) {
           setUser(data.user);
-        } else {
+          // Clean up legacy localStorage token
           localStorage.removeItem("ampla_token");
         }
       })

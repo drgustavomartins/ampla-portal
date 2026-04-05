@@ -2,14 +2,6 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 const API_BASE = "__PORT_5000__".startsWith("__") ? "" : "__PORT_5000__";
 
-function getAuthHeaders(): Record<string, string> {
-  const token = localStorage.getItem("ampla_token");
-  if (token) {
-    return { Authorization: `Bearer ${token}` };
-  }
-  return {};
-}
-
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -22,9 +14,7 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const headers: Record<string, string> = {
-    ...getAuthHeaders(),
-  };
+  const headers: Record<string, string> = {};
   if (data) {
     headers["Content-Type"] = "application/json";
   }
@@ -32,6 +22,7 @@ export async function apiRequest(
   const res = await fetch(`${API_BASE}${url}`, {
     method,
     headers,
+    credentials: "include",
     body: data ? JSON.stringify(data) : undefined,
   });
 
@@ -46,7 +37,7 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const res = await fetch(`${API_BASE}${queryKey.join("/")}`, {
-      headers: getAuthHeaders(),
+      credentials: "include",
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

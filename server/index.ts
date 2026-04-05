@@ -1,4 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cookieParser from "cookie-parser";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -22,6 +24,24 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false, limit: "1mb" }));
+app.use(cookieParser());
+
+// CORS — restrict to production domain
+const ALLOWED_ORIGINS = [
+  "https://portal.amplafacial.com.br",
+  "https://ampla-portal.vercel.app",
+  ...(process.env.NODE_ENV !== "production" ? ["http://localhost:5000", "http://localhost:3000"] : []),
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
+  credentials: true,
+}));
 
 // Security headers middleware
 app.use((_req, res, next) => {

@@ -54,9 +54,15 @@ if (!JWT_SECRET) {
 }
 
 function authenticateRequest(req: Request): { userId: number; role: string } | null {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
-  const token = authHeader.slice(7);
+  // Try httpOnly cookie first, then fallback to Bearer header
+  let token = (req as any).cookies?.ampla_token;
+  if (!token) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.slice(7);
+    }
+  }
+  if (!token) return null;
   try {
     const payload = jwt.verify(token, JWT_SECRET) as { userId: number; role: string };
     return payload;
@@ -428,6 +434,15 @@ export async function registerRoutes(server: Server, app: Express) {
         await logAction(user.id, user.name, "admin_login");
       }
 
+      // Set httpOnly cookie
+      res.cookie("ampla_token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: "/",
+      });
+
       return res.json({ user: safeUser, token });
     } catch (e: any) {
       return res.status(400).json({ message: e.message || "Erro no login" });
@@ -435,6 +450,11 @@ export async function registerRoutes(server: Server, app: Express) {
   });
 
   // ==================== AUTH: Me ====================
+  app.post("/api/auth/logout", (_req, res) => {
+    res.clearCookie("ampla_token", { path: "/" });
+    res.json({ message: "Logout realizado" });
+  });
+
   app.get("/api/auth/me", async (req, res) => {
     const auth = authenticateRequest(req);
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
@@ -1422,13 +1442,15 @@ export async function registerRoutes(server: Server, app: Express) {
   // ==================== MIGRATE ====================
   app.post("/api/admin/migrate", async (req, res) => {
     const migrateKey = req.headers["x-migrate-key"] || req.body?.migrateKey;
-    const auth = authenticateRequest(req);
     const expectedKey = process.env.MIGRATE_KEY;
-    if (!migrateKey && (!auth || (auth.role !== "admin" && auth.role !== "super_admin"))) {
-      return res.status(401).json({ message: "Não autorizado" });
-    }
-    if (migrateKey && (!expectedKey || migrateKey !== expectedKey)) {
-      return res.status(401).json({ message: "Chave inválida" });
+    // Auth: require either valid MIGRATE_KEY or super_admin JWT
+    if (migrateKey) {
+      if (!expectedKey || migrateKey !== expectedKey) {
+        return res.status(401).json({ message: "Chave inválida" });
+      }
+    } else {
+      const auth = requireSuperAdmin(req, res);
+      if (!auth) return;
     }
     const db = (await import("./db")).db;
     const results: string[] = [];
@@ -1501,37 +1523,8 @@ export async function registerRoutes(server: Server, app: Express) {
       await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'student'`);
       results.push("role column ensured");
     } catch (e: any) { results.push(`role: ${e.message}`); }
-    // Set the known super_admin by email
-    try {
-      await db.execute(`UPDATE users SET role = 'super_admin' WHERE email = 'gustavo.m.martins@outlook.com'`);
-      results.push("email-based super_admin ensured");
-    } catch (e: any) { results.push(`email_super_admin: ${e.message}`); }
-    // Upgrade existing admin(s) to super_admin — multiple strategies
-    try {
-      await db.execute(`UPDATE users SET role = 'super_admin' WHERE role = 'admin'`);
-      results.push("strategy1: upgraded role='admin' users");
-    } catch (e: any) { results.push(`strategy1: ${e.message}`); }
-    try {
-      await db.execute(`UPDATE users SET role = 'super_admin' WHERE id = 1 AND role != 'student'`);
-      results.push("strategy2: ensured first user is super_admin");
-    } catch (e: any) { results.push(`strategy2: ${e.message}`); }
-    try {
-      const checkResult = await db.execute(`SELECT COUNT(*) as cnt FROM users WHERE role = 'super_admin'`);
-      const rows = Array.isArray(checkResult) ? checkResult : (checkResult as any).rows || [];
-      const firstRow = rows[0] || {};
-      const count = Number(firstRow.cnt || firstRow.count || 0);
-      if (count === 0) {
-        await db.execute(`UPDATE users SET role = 'super_admin' WHERE id = (SELECT MIN(id) FROM users WHERE role != 'student') AND role != 'student'`);
-        results.push("strategy3: promoted first non-student to super_admin (no super_admin existed)");
-      } else {
-        results.push(`strategy3: skipped (${count} super_admin(s) already exist)`);
-      }
-    } catch (e: any) { results.push(`strategy3: ${e.message}`); }
-    try {
-      const adminResult = await db.execute(`SELECT id, name, email, role FROM users WHERE role IN ('admin', 'super_admin')`);
-      const adminRows = Array.isArray(adminResult) ? adminResult : (adminResult as any).rows || [];
-      results.push(`current_admins: ${JSON.stringify(adminRows)}`);
-    } catch (e: any) { results.push(`admin_check: ${e.message}`); }
+    // Role escalation removed for security — manage roles via admin dashboard only
+    results.push("role_management: use admin dashboard to manage roles (escalation SQL removed)");
     // Mentorship date columns
     try {
       await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS mentorship_start_date TEXT`);
