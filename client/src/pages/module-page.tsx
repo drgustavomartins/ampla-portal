@@ -438,9 +438,9 @@ export default function ModulePage() {
                             {descLine}
                           </p>
                         )}
-                        {supportUrl && (
+                        {supportLink && (
                           <a
-                            href={supportUrl}
+                            href={supportLink.url}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
@@ -448,7 +448,7 @@ export default function ModulePage() {
                             style={{ color: theme.accent }}
                           >
                             <Paperclip className="w-3 h-3" />
-                            Material de apoio
+                            {supportLink.label}
                           </a>
                         )}
                         {lesson.duration && (
@@ -572,16 +572,16 @@ export default function ModulePage() {
                           {descLine}
                         </p>
                       )}
-                      {supportUrl && (
+                      {supportLink && (
                         <a
-                          href={supportUrl}
+                          href={supportLink.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
                           className="inline-flex items-center gap-1 text-[11px] mt-0.5 hover:underline text-gold"
                         >
                           <Paperclip className="w-3 h-3" />
-                          Material de apoio
+                          {supportLink.label}
                         </a>
                       )}
                       {lesson.duration && (
@@ -748,9 +748,9 @@ export default function ModulePage() {
                           {descLine}
                         </p>
                       )}
-                      {!isLocked && supportUrl && (
+                      {!isLocked && supportLink && (
                         <a
-                          href={supportUrl}
+                          href={supportLink.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
@@ -758,7 +758,7 @@ export default function ModulePage() {
                           style={{ color: theme.accent }}
                         >
                           <Paperclip className="w-3 h-3" />
-                          Material de apoio
+                          {supportLink.label}
                         </a>
                       )}
                     </div>
