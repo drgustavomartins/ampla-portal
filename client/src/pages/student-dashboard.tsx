@@ -31,7 +31,7 @@ function linkifyText(text: string) {
         href={part}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-gold underline hover:text-gold/80"
+        className="text-gold underline hover:text-gold/80 break-all"
       >
         {part}
       </a>
@@ -203,7 +203,7 @@ export default function StudentDashboard() {
     const prevLesson = moduleLessons[currentIdx - 1];
 
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background overflow-x-hidden">
         {/* Top bar */}
         <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm sticky top-0 z-10">
           <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
@@ -244,10 +244,10 @@ export default function StudentDashboard() {
 
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-4">
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <h2 className="text-lg font-semibold text-foreground">{selectedLesson.title}</h2>
                     {selectedLesson.description && (
-                      <p className="text-sm text-muted-foreground mt-1">{linkifyText(selectedLesson.description)}</p>
+                      <p className="text-sm text-muted-foreground mt-1 break-words overflow-hidden">{linkifyText(selectedLesson.description)}</p>
                     )}
                   </div>
                   {selectedLesson.duration && (
@@ -387,7 +387,7 @@ export default function StudentDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       {/* ===== HEADER ===== */}
       <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
