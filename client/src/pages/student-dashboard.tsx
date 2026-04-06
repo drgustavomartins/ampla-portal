@@ -41,9 +41,14 @@ function linkifyText(text: string) {
   );
 }
 
-function extractFirstUrl(text: string): string | null {
-  const match = text.match(/https?:\/\/[^\s]+/);
-  return match ? match[0] : null;
+function extractFirstLink(text: string): { url: string; label: string } | null {
+  for (const line of text.split("\n")) {
+    const m = line.match(/^([^:]+):\s*(https?:\/\/\S+)\s*$/);
+    if (m) return { label: m[1].trim(), url: m[2].trim() };
+  }
+  const plain = text.match(/https?:\/\/\S+/);
+  if (plain) return { url: plain[0], label: "Link" };
+  return null;
 }
 
 function getFirstDescLine(desc: string): string | null {
@@ -206,16 +211,17 @@ export default function StudentDashboard() {
       <div className="min-h-screen bg-background overflow-x-hidden">
         {/* Top bar */}
         <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm sticky top-0 z-10">
-          <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-2">
             <button
               onClick={() => setSelectedLesson(null)}
-              className="text-sm text-muted-foreground hover:text-gold flex items-center gap-1 transition-colors"
+              className="shrink-0 text-sm text-muted-foreground hover:text-gold flex items-center gap-1 transition-colors"
               data-testid="button-back-to-modules"
             >
               <ChevronRight className="w-4 h-4 rotate-180" />
               Voltar
             </button>
-            <span className="text-xs font-medium text-gold-muted uppercase tracking-wider">{currentModule?.title}</span>
+            <span className="flex-1 text-center text-xs font-medium text-gold-muted uppercase tracking-wider truncate px-1">{currentModule?.title}</span>
+            <div className="shrink-0 w-14" />
           </div>
         </header>
 
@@ -298,7 +304,7 @@ export default function StudentDashboard() {
                 const done = completedIds.has(lesson.id);
                 const isActive = lesson.id === selectedLesson.id;
                 const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
-                const supportUrl = lesson.description ? extractFirstUrl(lesson.description) : null;
+                const supportLink = lesson.description ? extractFirstLink(lesson.description) : null;
                 return (
                   <button
                     key={lesson.id}
@@ -328,16 +334,16 @@ export default function StudentDashboard() {
                           {descLine}
                         </p>
                       )}
-                      {supportUrl && (
+                      {supportLink && (
                         <a
-                          href={supportUrl}
+                          href={supportLink.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
                           className="inline-flex items-center gap-1 text-[11px] mt-0.5 hover:underline text-gold"
                         >
                           <Paperclip className="w-3 h-3" />
-                          Material de apoio
+                          {supportLink.label}
                         </a>
                       )}
                       {lesson.duration && (

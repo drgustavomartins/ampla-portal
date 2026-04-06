@@ -33,9 +33,16 @@ function linkifyText(text: string) {
   );
 }
 
-function extractFirstUrl(text: string): string | null {
-  const match = text.match(/https?:\/\/[^\s]+/);
-  return match ? match[0] : null;
+function extractFirstLink(text: string): { url: string; label: string } | null {
+  // Look for "Label: URL" on a single line
+  for (const line of text.split("\n")) {
+    const m = line.match(/^([^:]+):\s*(https?:\/\/\S+)\s*$/);
+    if (m) return { label: m[1].trim(), url: m[2].trim() };
+  }
+  // Plain URL — no label
+  const plain = text.match(/https?:\/\/\S+/);
+  if (plain) return { url: plain[0], label: "Link" };
+  return null;
 }
 
 function getFirstDescLine(desc: string): string | null {
@@ -290,8 +297,8 @@ export default function ModulePage() {
   }, [selectedLesson]);
 
   // Get support URL for a lesson, falling back to any URL found in the module's lessons
-  const getLessonSupportUrl = useCallback((lesson: Lesson): string | null => {
-    return lesson.description ? extractFirstUrl(lesson.description) : null;
+  const getLessonSupportUrl = useCallback((lesson: Lesson): { url: string; label: string } | null => {
+    return lesson.description ? extractFirstLink(lesson.description) : null;
   }, []);
 
   // ========== LESSON VIEW ==========
@@ -305,15 +312,16 @@ export default function ModulePage() {
     return (
       <div className="lg:h-screen lg:overflow-hidden min-h-screen bg-background flex flex-col overflow-x-hidden">
         <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm shrink-0 z-10">
-          <div className="max-w-[1400px] mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="max-w-[1400px] mx-auto px-4 h-14 flex items-center gap-2">
             <button
               onClick={() => handleSelectLesson(null)}
-              className="text-sm text-muted-foreground hover:text-gold flex items-center gap-1 transition-colors"
+              className="shrink-0 text-sm text-muted-foreground hover:text-gold flex items-center gap-1 transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
               Voltar
             </button>
-            <span className="text-xs font-medium uppercase tracking-wider" style={{ color: theme.accent }}>{currentModule.title}</span>
+            <span className="flex-1 text-center text-xs font-medium uppercase tracking-wider truncate px-1" style={{ color: theme.accent }}>{currentModule.title}</span>
+            <div className="shrink-0 w-14" />
           </div>
         </header>
 
@@ -405,7 +413,7 @@ export default function ModulePage() {
                   const done = completedIds.has(lesson.id);
                   const isActive = lesson.id === selectedLesson.id;
                   const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
-                  const supportUrl = getLessonSupportUrl(lesson);
+                  const supportLink = getLessonSupportUrl(lesson);
                   return (
                     <button
                       key={lesson.id}
@@ -539,7 +547,7 @@ export default function ModulePage() {
                 const done = completedIds.has(lesson.id);
                 const isActive = lesson.id === selectedLesson.id;
                 const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
-                const supportUrl = getLessonSupportUrl(lesson);
+                const supportLink = getLessonSupportUrl(lesson);
                 return (
                   <button
                     key={lesson.id}
@@ -698,7 +706,7 @@ export default function ModulePage() {
           <div className="space-y-1">
             {moduleLessons.map((lesson, i) => {
               const done = completedIds.has(lesson.id);
-              const supportUrl = getLessonSupportUrl(lesson);
+              const supportLink = getLessonSupportUrl(lesson);
               const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
               return (
                 <div
