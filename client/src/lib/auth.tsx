@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { User } from "@shared/schema";
+import { queryClient } from "./queryClient";
 
 type SafeUser = Omit<User, "password">;
 
 interface AuthContextType {
   user: SafeUser | null;
-  login: (user: SafeUser) => void;
+  login: (user: SafeUser, token?: string) => void;
   logout: () => void;
   isAdmin: boolean;
   isSuperAdmin: boolean;
@@ -17,55 +18,104 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const API_BASE = "__PORT_5000__".startsWith("__") ? "" : "__PORT_5000__";
 
+function getStoredToken(): string | null {
+  return localStorage.getItem("ampla_token");
+}
+
+function saveToken(token: string) {
+  localStorage.setItem("ampla_token", token);
+}
+
+function clearToken() {
+  localStorage.removeItem("ampla_token");
+}
+
+async function fetchMe(): Promise<{ user: SafeUser; token?: string } | null> {
+  try {
+    const headers: Record<string, string> = {};
+    const stored = getStoredToken();
+    if (stored) headers["Authorization"] = `Bearer ${stored}`;
+
+    const res = await fetch(`${API_BASE}/api/auth/me`, {
+      credentials: "include",
+      headers,
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SafeUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const login = useCallback((u: SafeUser, token?: string) => {
     setUser(u);
-    // Store token in localStorage as fallback (httpOnly cookie is primary)
-    if (token) {
-      localStorage.setItem("ampla_token", token);
-    }
+    if (token) saveToken(token);
   }, []);
 
   const logout = useCallback(async () => {
     setUser(null);
-    // Clear legacy localStorage token if present
-    localStorage.removeItem("ampla_token");
+    clearToken();
+    queryClient.clear();
     try {
       await fetch(`${API_BASE}/api/auth/logout`, { method: "POST", credentials: "include" });
     } catch {}
   }, []);
 
-  // Restore session on mount via httpOnly cookie
+  // Initial session restore on mount
   useEffect(() => {
-    fetch(`${API_BASE}/api/auth/me`, {
-      credentials: "include",
-      headers: {
-        // Fallback: send legacy Bearer token if cookie not yet set (transition period)
-        ...(localStorage.getItem("ampla_token")
-          ? { Authorization: `Bearer ${localStorage.getItem("ampla_token")}` }
-          : {}),
-      },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Invalid token");
-        return res.json();
-      })
+    fetchMe()
       .then((data) => {
-        if (data.user) {
+        if (data?.user) {
           setUser(data.user);
-          // Clean up legacy localStorage token
-          localStorage.removeItem("ampla_token");
+          // Keep token fresh in localStorage (primary iOS PWA auth)
+          if (data.token) saveToken(data.token);
+        } else {
+          clearToken();
         }
       })
-      .catch(() => {
-        localStorage.removeItem("ampla_token");
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  // Re-validate session when app comes back to foreground (critical for iOS PWA)
+  useEffect(() => {
+    let lastCheck = Date.now();
+
+    const revalidate = async () => {
+      // Throttle: no more than once every 10 seconds
+      if (Date.now() - lastCheck < 10_000) return;
+      lastCheck = Date.now();
+
+      const data = await fetchMe();
+      if (!data?.user) {
+        // Session expired — clear everything so user sees login screen
+        setUser(null);
+        clearToken();
+        queryClient.clear();
+      } else {
+        // Session still valid — update token to keep it fresh
+        if (data.token) saveToken(data.token);
+        // Refresh lesson/module data with valid auth
+        queryClient.invalidateQueries({ queryKey: ["/api/lessons"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/modules"] });
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") revalidate();
+    };
+    const onFocus = () => revalidate();
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", onFocus);
+    };
   }, []);
 
   const isSuperAdmin = user?.role === "super_admin";

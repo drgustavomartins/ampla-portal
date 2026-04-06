@@ -428,7 +428,7 @@ export async function registerRoutes(server: Server, app: Express) {
       }
 
       const { password, lockedUntil: _l, loginAttempts: _a, ...safeUser } = user;
-      const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
+      const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "30d" });
 
       // Log admin login
       if (user.role === "admin" || user.role === "super_admin") {
@@ -440,7 +440,7 @@ export async function registerRoutes(server: Server, app: Express) {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         path: "/",
       });
 
@@ -462,7 +462,18 @@ export async function registerRoutes(server: Server, app: Express) {
     const user = await storage.getUser(auth.userId);
     if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
     const { password, loginAttempts, lockedUntil, ...safeUser } = user;
-    res.json({ user: safeUser });
+
+    // Sliding session: issue a fresh token on every auth check
+    // This keeps iOS PWA sessions alive across app restarts
+    const freshToken = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "30d" });
+    res.cookie("ampla_token", freshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      path: "/",
+    });
+    res.json({ user: safeUser, token: freshToken });
   });
 
   // ==================== PLANS ====================
