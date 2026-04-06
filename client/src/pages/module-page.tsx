@@ -291,11 +291,8 @@ export default function ModulePage() {
 
   // Get support URL for a lesson, falling back to any URL found in the module's lessons
   const getLessonSupportUrl = useCallback((lesson: Lesson): string | null => {
-    const url = lesson.description ? extractFirstUrl(lesson.description) : null;
-    if (url) return url;
-    const fallback = moduleLessons.find(l => l.description && extractFirstUrl(l.description));
-    return fallback ? extractFirstUrl(fallback.description!) : null;
-  }, [moduleLessons]);
+    return lesson.description ? extractFirstUrl(lesson.description) : null;
+  }, []);
 
   // ========== LESSON VIEW ==========
   if (selectedLesson && !isLocked) {
