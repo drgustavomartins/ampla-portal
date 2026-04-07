@@ -171,11 +171,12 @@ function getCourseImage(mod: Module): string | null {
 }
 
 export default function ModulePage() {
-  const { user } = useAuth();
+  const { user, isTrial, trialDaysLeft } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [, params] = useRoute("/module/:id");
   const moduleId = params?.id ? parseInt(params.id) : null;
+  const TRIAL_FREE_LESSONS = 2; // trial users can access first N lessons per module
 
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
 
@@ -261,6 +262,13 @@ export default function ModulePage() {
   const isUnlocked = hasContent && hasAccess;
   const isLocked = hasContent && !hasAccess;
 
+  // Trial: check if a lesson is accessible (only first TRIAL_FREE_LESSONS)
+  const isLessonTrialLocked = (lesson: Lesson) => {
+    if (!isTrial) return false;
+    const idx = moduleLessons.findIndex(l => l.id === lesson.id);
+    return idx >= TRIAL_FREE_LESSONS;
+  };
+
   const getWhatsAppUrl = () => {
     const msg = encodeURIComponent(`Olá! Tenho interesse em adquirir o módulo ${currentModule.title} da mentoria Ampla Facial. Meu email de acesso é ${user?.email || ""}.`);
     return `https://wa.me/5521976310365?text=${msg}`;
@@ -275,9 +283,17 @@ export default function ModulePage() {
   const leftPanelRef = useRef<HTMLDivElement>(null);
 
   const handleSelectLesson = useCallback((lesson: Lesson | null) => {
+    if (lesson && isLessonTrialLocked(lesson)) {
+      toast({
+        title: "Aula bloqueada no trial",
+        description: "Assine a plataforma para desbloquear todas as aulas.",
+        variant: "destructive",
+      });
+      return;
+    }
     setSelectedLesson(lesson);
     if (!lesson) window.scrollTo(0, 0);
-  }, []);
+  }, [moduleLessons, isTrial]);
 
   // Auto-scroll to video when a lesson is selected
   useEffect(() => {
@@ -412,6 +428,7 @@ export default function ModulePage() {
                 {moduleLessons.map((lesson, i) => {
                   const done = completedIds.has(lesson.id);
                   const isActive = lesson.id === selectedLesson.id;
+                  const trialLocked = isLessonTrialLocked(lesson);
                   const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
                   const supportLink = getLessonSupportUrl(lesson);
                   return (
@@ -427,10 +444,12 @@ export default function ModulePage() {
                       }`}
                     >
                       <div className="mt-0.5">
-                        <LessonThumb lesson={lesson} size="sm" done={done} theme={theme} index={i} />
+                        {trialLocked
+                          ? <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-card border border-border/40"><Lock className="w-3.5 h-3.5 text-white/30" /></div>
+                          : <LessonThumb lesson={lesson} size="sm" done={done} theme={theme} index={i} />}
                       </div>
                       <div className="min-w-0">
-                        <p className={`text-sm font-medium truncate ${isActive ? theme.accentText : done ? "text-foreground/70" : ""}`}>
+                        <p className={`text-sm font-medium truncate ${trialLocked ? "text-white/30" : isActive ? theme.accentText : done ? "text-foreground/70" : ""}`}>
                           {lesson.title}
                         </p>
                         {descLine && (
@@ -546,6 +565,7 @@ export default function ModulePage() {
               {moduleLessons.map((lesson, i) => {
                 const done = completedIds.has(lesson.id);
                 const isActive = lesson.id === selectedLesson.id;
+                const trialLocked = isLessonTrialLocked(lesson);
                 const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
                 const supportLink = getLessonSupportUrl(lesson);
                 return (
@@ -561,10 +581,12 @@ export default function ModulePage() {
                     }`}
                   >
                     <div className="mt-0.5">
-                      <LessonThumb lesson={lesson} size="sm" done={done} theme={theme} index={i} />
+                      {trialLocked
+                        ? <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-card border border-border/40"><Lock className="w-3.5 h-3.5 text-white/30" /></div>
+                        : <LessonThumb lesson={lesson} size="sm" done={done} theme={theme} index={i} />}
                     </div>
                     <div className="min-w-0">
-                      <p className={`text-sm font-medium truncate ${isActive ? theme.accentText : done ? "text-foreground/70" : ""}`}>
+                      <p className={`text-sm font-medium truncate ${trialLocked ? "text-white/30" : isActive ? theme.accentText : done ? "text-foreground/70" : ""}`}>
                         {lesson.title}
                       </p>
                       {descLine && (
@@ -599,8 +621,32 @@ export default function ModulePage() {
   }
 
   // ========== MODULE PAGE (HERO + LESSON LIST) ==========
+  const whatsappTrialUrl = `https://wa.me/5521976310365?text=${encodeURIComponent(`Olá Dr. Gustavo! Estou no período de teste gratuito da Ampla Facial e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Trial Banner */}
+      {isTrial && (
+        <div className="w-full bg-gold/10 border-b border-gold/20 px-4 py-2.5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-gold font-semibold">
+              {trialDaysLeft !== null && trialDaysLeft > 0
+                ? `Teste gratuito — ${trialDaysLeft} dia${trialDaysLeft === 1 ? "" : "s"} restante${trialDaysLeft === 1 ? "" : "s"}`
+                : "Seu período de teste encerrou"}
+            </span>
+            <span className="text-white/50 hidden sm:inline">Primeiras 2 aulas de cada módulo liberadas</span>
+          </div>
+          <a
+            href={whatsappTrialUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 text-xs font-semibold bg-gold text-background px-3 py-1.5 rounded-full hover:bg-gold/90 transition-colors"
+          >
+            Assinar agora
+          </a>
+        </div>
+      )}
+
       {/* Hero Section */}
       <div className="relative">
         {/* Background image */}
@@ -706,13 +752,14 @@ export default function ModulePage() {
           <div className="space-y-1">
             {moduleLessons.map((lesson, i) => {
               const done = completedIds.has(lesson.id);
+              const trialLocked = isLessonTrialLocked(lesson);
               const supportLink = getLessonSupportUrl(lesson);
               const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
               return (
                 <div
                   key={lesson.id}
-                  onClick={() => !isLocked && setSelectedLesson(lesson)}
-                  className={`w-full text-left group ${isLocked ? "cursor-default opacity-60" : "cursor-pointer"}`}
+                  onClick={() => !isLocked && !trialLocked && setSelectedLesson(lesson)}
+                  className={`w-full text-left group ${isLocked || trialLocked ? "cursor-default" : "cursor-pointer"} ${trialLocked ? "opacity-50" : ""}`}
                 >
                   <div
                     className={`flex items-center gap-4 px-4 py-4 rounded-xl transition-all duration-200 border ${
@@ -729,7 +776,7 @@ export default function ModulePage() {
 
                     {/* Thumbnail or play icon */}
                     <div className="shrink-0 relative">
-                      {isLocked ? (
+                      {isLocked || trialLocked ? (
                         <div className="w-10 h-10 rounded-full bg-card border border-border/40 flex items-center justify-center">
                           <Lock className="w-4 h-4 text-muted-foreground/50" />
                         </div>

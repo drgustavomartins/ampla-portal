@@ -401,6 +401,48 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   });
 
+  // ==================== AUTH: Trial Register ====================
+  // Auto-approves the user with role='trial' and 7-day expiry. No admin needed.
+  app.post("/api/auth/register-trial", async (req, res) => {
+    try {
+      const ip = req.ip || req.socket.remoteAddress || "unknown";
+      if (!rateLimit(`register:${ip}`, 5, 15 * 60 * 1000)) {
+        return res.status(429).json({ message: "Muitas tentativas. Tente novamente mais tarde." });
+      }
+      const data = registerSchema.parse(req.body);
+      const existing = await storage.getUserByEmail(data.email);
+      if (existing) {
+        return res.status(400).json({ message: "Email já cadastrado" });
+      }
+      const hashedPassword = await bcrypt.hash(data.password, 10);
+      const trialExpires = new Date();
+      trialExpires.setDate(trialExpires.getDate() + 7);
+
+      const user = await storage.createUser({
+        name: sanitize(data.name),
+        email: data.email.trim().toLowerCase(),
+        phone: sanitize(data.phone),
+        password: hashedPassword,
+        planId: null,
+        createdAt: new Date().toISOString(),
+      });
+
+      // Auto-approve as trial with 7-day expiry
+      await storage.updateUser(user.id, {
+        role: "trial",
+        approved: true,
+        accessExpiresAt: trialExpires.toISOString(),
+      });
+
+      // Notify admin (non-blocking)
+      notifyNewRegistration({ name: user.name, email: user.email, phone: user.phone ?? undefined });
+
+      return res.json({ message: "Seu teste gratuito de 7 dias foi ativado!", user: { id: user.id, name: user.name, email: user.email } });
+    } catch (e: any) {
+      return res.status(400).json({ message: e.message || "Erro no cadastro" });
+    }
+  });
+
   app.post("/api/auth/login", async (req, res) => {
     try {
       const ip = req.ip || req.socket.remoteAddress || "unknown";
@@ -458,6 +500,14 @@ export async function registerRoutes(server: Server, app: Express) {
         const expires = new Date(user.accessExpiresAt);
         if (now > expires) {
           return res.status(403).json({ message: "Seu acesso expirou. Entre em contato com o administrador." });
+        }
+      }
+      // Trial users: check expiry with a specific message
+      if (user.role === "trial" && user.accessExpiresAt) {
+        const now = new Date();
+        const expires = new Date(user.accessExpiresAt);
+        if (now > expires) {
+          return res.status(403).json({ message: "Seu período de teste gratuito encerrou. Assine a plataforma para continuar acessando." });
         }
       }
 
@@ -626,6 +676,10 @@ export async function registerRoutes(server: Server, app: Express) {
     // Admins see all modules
     if (auth.role === "admin" || auth.role === "super_admin") {
       return res.json({ accessAll: true, moduleIds: [] });
+    }
+    // Trial users see all modules (lesson restriction handled on frontend)
+    if (auth.role === "trial") {
+      return res.json({ accessAll: true, moduleIds: [], isTrial: true });
     }
     const user = await storage.getUser(auth.userId);
     if (!user) {

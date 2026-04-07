@@ -9,13 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import type { z } from "zod";
 
+type Mode = "login" | "register" | "trial";
+
 export default function LoginPage() {
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<Mode>("login");
   const [confirmEmail, setConfirmEmail] = useState("");
   const [confirmEmailError, setConfirmEmailError] = useState("");
+  const [trialConfirmEmail, setTrialConfirmEmail] = useState("");
+  const [trialConfirmEmailError, setTrialConfirmEmailError] = useState("");
   const { login } = useAuth();
   const { toast } = useToast();
 
@@ -25,6 +29,11 @@ export default function LoginPage() {
   });
 
   const registerForm = useForm<z.infer<typeof registerSchema>>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { name: "", email: "", phone: "", password: "" },
+  });
+
+  const trialForm = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
     defaultValues: { name: "", email: "", phone: "", password: "" },
   });
@@ -59,8 +68,32 @@ export default function LoginPage() {
     },
   });
 
+  const trialMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof registerSchema>) => {
+      const res = await apiRequest("POST", "/api/auth/register-trial", data);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      // Automatically log in after trial registration
+      loginMutation.mutate({
+        email: trialForm.getValues("email"),
+        password: trialForm.getValues("password"),
+      });
+    },
+    onError: (error: any) => {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const modeLabels: Record<Mode, { title: string; subtitle: string }> = {
+    login: { title: "Entrar", subtitle: "Acesse suas aulas da mentoria" },
+    register: { title: "Criar Conta", subtitle: "Cadastre-se para solicitar acesso" },
+    trial: { title: "Teste Gratuito", subtitle: "7 dias de acesso sem cartão de crédito" },
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start p-4 pt-12 sm:pt-16 md:justify-center md:pt-4"
+    <div
+      className="min-h-screen flex flex-col items-center justify-start p-4 pt-12 sm:pt-16 md:justify-center md:pt-4"
       style={{
         background: "radial-gradient(ellipse at 30% 20%, hsl(216 60% 14%) 0%, hsl(216 60% 7%) 70%)",
       }}
@@ -84,20 +117,33 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* Trial CTA banner — only shown on login/register modes */}
+        {mode !== "trial" && (
+          <button
+            type="button"
+            onClick={() => setMode("trial")}
+            className="w-full flex items-center justify-between gap-3 rounded-xl border border-gold/30 bg-gold/5 hover:bg-gold/10 px-4 py-3 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="w-4 h-4 text-gold shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-gold leading-tight">Teste grátis por 7 dias</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Sem cartão de crédito</p>
+              </div>
+            </div>
+            <span className="text-xs text-gold/70 shrink-0">Começar &rarr;</span>
+          </button>
+        )}
+
         {/* Form Card */}
         <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-6 space-y-5">
           <div className="space-y-1">
-            <h2 className="text-lg font-medium text-foreground">
-              {mode === "login" ? "Entrar" : "Criar Conta"}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {mode === "login"
-                ? "Acesse suas aulas da mentoria"
-                : "Cadastre-se para solicitar acesso"}
-            </p>
+            <h2 className="text-lg font-medium text-foreground">{modeLabels[mode].title}</h2>
+            <p className="text-sm text-muted-foreground">{modeLabels[mode].subtitle}</p>
           </div>
 
-          {mode === "login" ? (
+          {/* ===== LOGIN FORM ===== */}
+          {mode === "login" && (
             <form
               onSubmit={loginForm.handleSubmit((data) => loginMutation.mutate(data))}
               className="space-y-4"
@@ -140,7 +186,10 @@ export default function LoginPage() {
                 Entrar
               </Button>
             </form>
-          ) : (
+          )}
+
+          {/* ===== REGISTER FORM ===== */}
+          {mode === "register" && (
             <form
               onSubmit={registerForm.handleSubmit((data) => {
                 if (data.email !== confirmEmail) {
@@ -238,15 +287,122 @@ export default function LoginPage() {
             </form>
           )}
 
-          <div className="text-center pt-1">
-            <button
-              type="button"
-              className="text-sm text-gold-muted hover:text-gold transition-colors"
-              onClick={() => setMode(mode === "login" ? "register" : "login")}
-              data-testid="button-toggle-mode"
+          {/* ===== TRIAL FORM ===== */}
+          {mode === "trial" && (
+            <form
+              onSubmit={trialForm.handleSubmit((data) => {
+                if (data.email !== trialConfirmEmail) {
+                  setTrialConfirmEmailError("Os emails não coincidem");
+                  return;
+                }
+                setTrialConfirmEmailError("");
+                trialMutation.mutate(data);
+              })}
+              className="space-y-4"
             >
-              {mode === "login" ? "Não tem conta? Cadastre-se" : "Já tem conta? Entre aqui"}
-            </button>
+              <div className="rounded-lg border border-gold/20 bg-gold/5 px-3 py-2.5 text-xs text-gold/80 flex items-start gap-2">
+                <Sparkles className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <span>Acesso imediato. Primeiras 2 aulas de cada módulo liberadas por 7 dias.</span>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="trial-name" className="text-xs uppercase tracking-wider text-muted-foreground">Nome completo</Label>
+                <Input
+                  id="trial-name"
+                  placeholder="Dr. João Silva"
+                  className="bg-background/50 border-border/50 focus:border-primary"
+                  {...trialForm.register("name")}
+                />
+                {trialForm.formState.errors.name && (
+                  <p className="text-sm text-destructive">{trialForm.formState.errors.name.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="trial-email" className="text-xs uppercase tracking-wider text-muted-foreground">Email</Label>
+                <Input
+                  id="trial-email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  className="bg-background/50 border-border/50 focus:border-primary"
+                  {...trialForm.register("email")}
+                />
+                {trialForm.formState.errors.email && (
+                  <p className="text-sm text-destructive">{trialForm.formState.errors.email.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="trial-confirm-email" className="text-xs uppercase tracking-wider text-muted-foreground">Confirmar email</Label>
+                <Input
+                  id="trial-confirm-email"
+                  type="email"
+                  placeholder="Repita seu email"
+                  className="bg-background/50 border-border/50 focus:border-primary"
+                  value={trialConfirmEmail}
+                  onChange={(e) => {
+                    setTrialConfirmEmail(e.target.value);
+                    if (trialConfirmEmailError) setTrialConfirmEmailError("");
+                  }}
+                  onPaste={(e) => e.preventDefault()}
+                />
+                {trialConfirmEmailError && (
+                  <p className="text-sm text-destructive">{trialConfirmEmailError}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="trial-phone" className="text-xs uppercase tracking-wider text-muted-foreground">Telefone</Label>
+                <Input
+                  id="trial-phone"
+                  type="tel"
+                  placeholder="+55 (11) 99999-9999"
+                  className="bg-background/50 border-border/50 focus:border-primary"
+                  {...trialForm.register("phone")}
+                />
+                {trialForm.formState.errors.phone && (
+                  <p className="text-sm text-destructive">{trialForm.formState.errors.phone.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="trial-password" className="text-xs uppercase tracking-wider text-muted-foreground">Crie uma senha</Label>
+                <Input
+                  id="trial-password"
+                  type="password"
+                  placeholder="Mínimo 6 caracteres"
+                  className="bg-background/50 border-border/50 focus:border-primary"
+                  {...trialForm.register("password")}
+                />
+                {trialForm.formState.errors.password && (
+                  <p className="text-sm text-destructive">{trialForm.formState.errors.password.message}</p>
+                )}
+              </div>
+              <Button
+                type="submit"
+                className="w-full bg-gold text-background hover:bg-gold/90 font-medium tracking-wide"
+                disabled={trialMutation.isPending || loginMutation.isPending}
+              >
+                {(trialMutation.isPending || loginMutation.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Ativar teste gratuito
+              </Button>
+            </form>
+          )}
+
+          <div className="text-center pt-1 space-y-2">
+            {mode === "trial" ? (
+              <button
+                type="button"
+                className="text-sm text-gold-muted hover:text-gold transition-colors"
+                onClick={() => setMode("login")}
+              >
+                Já tem conta? Entre aqui
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="text-sm text-gold-muted hover:text-gold transition-colors"
+                onClick={() => setMode(mode === "login" ? "register" : "login")}
+                data-testid="button-toggle-mode"
+              >
+                {mode === "login" ? "Não tem conta? Cadastre-se" : "Já tem conta? Entre aqui"}
+              </button>
+            )}
           </div>
         </div>
       </div>

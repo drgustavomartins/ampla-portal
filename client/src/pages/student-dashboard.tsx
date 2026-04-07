@@ -59,7 +59,7 @@ function getFirstDescLine(desc: string): string | null {
 }
 
 export default function StudentDashboard() {
-  const { user, logout, login } = useAuth();
+  const { user, logout, login, isTrial, trialDaysLeft } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [selectedModule, setSelectedModule] = useState<number | null>(null);
@@ -392,8 +392,32 @@ export default function StudentDashboard() {
     return "Conteúdo exclusivo da mentoria Ampla Facial";
   };
 
+  const whatsappTrialUrl = `https://wa.me/5521976310365?text=${encodeURIComponent(`Olá Dr. Gustavo! Estou no período de teste gratuito da Ampla Facial e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
+
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
+      {/* ===== TRIAL BANNER ===== */}
+      {isTrial && (
+        <div className="w-full bg-gold/10 border-b border-gold/20 px-4 py-2.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-gold font-semibold text-sm shrink-0">
+              {trialDaysLeft !== null && trialDaysLeft > 0
+                ? `Teste gratuito — ${trialDaysLeft} dia${trialDaysLeft === 1 ? "" : "s"} restante${trialDaysLeft === 1 ? "" : "s"}`
+                : "Teste gratuito encerrado"}
+            </span>
+            <span className="text-white/40 text-xs hidden sm:inline truncate">Acesso às 2 primeiras aulas de cada módulo</span>
+          </div>
+          <a
+            href={whatsappTrialUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 text-xs font-semibold bg-gold text-background px-3 py-1.5 rounded-full hover:bg-gold/90 transition-colors"
+          >
+            Assinar
+          </a>
+        </div>
+      )}
+
       {/* ===== HEADER ===== */}
       <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
