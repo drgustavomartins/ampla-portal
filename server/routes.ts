@@ -6,6 +6,37 @@ import jwt from "jsonwebtoken";
 import { sql } from "drizzle-orm";
 import { storage } from "./storage";
 import { registerSchema, loginSchema, insertModuleSchema, insertLessonSchema } from "@shared/schema";
+import { Resend } from "resend";
+
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+async function notifyNewRegistration(user: { name: string; email: string; phone?: string }) {
+  if (!resend) return; // silently skip if API key not configured
+  try {
+    await resend.emails.send({
+      from: "Ampla Facial Portal <onboarding@resend.dev>",
+      to: "gustavo.m.martins@outlook.com",
+      subject: `🔔 Novo cadastro: ${user.name}`,
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0A1628;color:#fff;padding:32px;border-radius:12px">
+          <div style="color:#D4A843;font-size:20px;font-weight:bold;margin-bottom:24px">Ampla Facial — Novo Cadastro</div>
+          <p style="margin:0 0 16px">Um novo aluno solicitou acesso à plataforma:</p>
+          <table style="width:100%;border-collapse:collapse">
+            <tr><td style="padding:8px 0;color:#999">Nome</td><td style="padding:8px 0;font-weight:bold">${user.name}</td></tr>
+            <tr><td style="padding:8px 0;color:#999">Email</td><td style="padding:8px 0">${user.email}</td></tr>
+            <tr><td style="padding:8px 0;color:#999">Telefone</td><td style="padding:8px 0">${user.phone || "—"}</td></tr>
+          </table>
+          <div style="margin-top:24px">
+            <a href="https://portal.amplafacial.com.br/#/admin" style="background:#D4A843;color:#0A1628;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">Aprovar no painel admin</a>
+          </div>
+          <p style="margin-top:24px;font-size:12px;color:#666">portal.amplafacial.com.br</p>
+        </div>
+      `,
+    });
+  } catch (err) {
+    console.error("[email] Erro ao enviar notificação de cadastro:", err);
+  }
+}
 
 // In-memory rate limiter for IP-based throttling
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
@@ -361,6 +392,9 @@ export async function registerRoutes(server: Server, app: Express) {
         planId: null,
         createdAt: new Date().toISOString(),
       });
+      // Notify admin via email (non-blocking)
+      notifyNewRegistration({ name: user.name, email: user.email, phone: user.phone ?? undefined });
+
       return res.json({ message: "Cadastro realizado! Aguarde a aprovação do administrador.", user: { id: user.id, name: user.name, email: user.email } });
     } catch (e: any) {
       return res.status(400).json({ message: e.message || "Erro no cadastro" });
