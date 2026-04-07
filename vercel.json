@@ -2,9 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "framework": null,
-  "buildCommand": "npm run build",
+  "buildCommand": "echo 'using pre-built assets'",
   "outputDirectory": "dist/public",
-  "installCommand": "npm install",
+  "installCommand": "echo 'skip install'",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" }
   ],
