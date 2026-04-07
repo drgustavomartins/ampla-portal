@@ -43,7 +43,7 @@
   ],
   "build": {
     "env": {
-      "FORCE_REBUILD": "v8"
+      "FORCE_REBUILD": "v9-trial"
     }
   }
 }
