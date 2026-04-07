@@ -36,3 +36,5 @@ Follow all instructions and conventions found in these files. They define the pr
 ## Output Persistence
 
 IMPORTANT: Before finishing, you MUST write your complete final response to `/tmp/claude_code_output.md` using the Write tool. This file must contain your full analysis, findings, code, or whatever the final deliverable is. This is a hard requirement — do not skip it.
+
+
