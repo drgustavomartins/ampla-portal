@@ -4,7 +4,7 @@
   "framework": null,
   "buildCommand": "echo 'using pre-built assets'",
   "outputDirectory": "dist/public",
-  "installCommand": "echo 'skip install'",
+  "installCommand": "npm install --ignore-scripts",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" }
   ],
