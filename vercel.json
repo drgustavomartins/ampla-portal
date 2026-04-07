@@ -79,5 +79,7 @@
     "env": {
       "FORCE_REBUILD": "v9-trial"
     }
-  }
+  },
+  "buildCommand": "npm run build",
+  "installCommand": "npm install"
 }
