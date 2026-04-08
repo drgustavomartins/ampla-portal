@@ -188,7 +188,7 @@ export default function LoginPage() {
 
           {/* Credenciais */}
           <div className="mt-6 flex flex-wrap gap-2">
-            {["Protocolo NaturalUp® registrado", "Artigo em publicação", "Mestre em HOF"].map((c) => (
+            {["Protocolo NaturalUp® registrado", "Técnica exclusiva — acesso restrito a alunos selecionados", "Mestre em HOF"].map((c) => (
               <span key={c} className="text-[11px] border border-gold/20 text-gold/60 rounded-full px-2.5 py-1">{c}</span>
             ))}
           </div>
