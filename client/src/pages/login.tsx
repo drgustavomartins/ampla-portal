@@ -166,8 +166,7 @@ export default function LoginPage() {
           <p className="text-xs uppercase tracking-widest text-gold/50 mb-4">O que você vai aprender</p>
           <div className="space-y-3">
             {MODULES.map((m) => (
-              <div key={m.title} className="flex items-center gap-4">
-                <div className="w-px h-8 bg-gold/30 shrink-0" />
+              <div key={m.title} className="flex items-center gap-4" style={{ borderLeft: "1px solid rgba(184,152,80,0.3)", paddingLeft: "1rem" }}>
                 <div>
                   <p className="text-sm font-medium text-white/90">{m.title}</p>
                   <p className="text-xs text-white/35">{m.lessons}</p>
@@ -187,9 +186,12 @@ export default function LoginPage() {
           </div>
 
           {/* Credenciais */}
-          <div className="mt-6 flex flex-wrap gap-2">
+          <div className="mt-6 flex flex-col gap-1.5">
             {["Protocolo NaturalUp® registrado", "Técnica exclusiva — acesso restrito a alunos selecionados", "Mestre em HOF"].map((c) => (
-              <span key={c} className="text-[11px] border border-gold/20 text-gold/60 rounded-full px-2.5 py-1">{c}</span>
+              <span key={c} className="flex items-center gap-2 text-[11px] text-white/35">
+                <span className="w-3 h-px bg-gold/40 shrink-0" />
+                {c}
+              </span>
             ))}
           </div>
         </div>
