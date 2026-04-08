@@ -844,7 +844,18 @@ export async function registerRoutes(server: Server, app: Express) {
   app.get("/api/admin/students/trial", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const result = await db.execute(`SELECT id, name, email, phone, role, approved, created_at, access_expires_at FROM users WHERE role = 'trial' ORDER BY created_at DESC`);
-    res.json(result.rows);
+    const rows = Array.isArray(result) ? result : (result as any).rows || [];
+    const mapped = rows.map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      email: r.email,
+      phone: r.phone,
+      role: r.role,
+      approved: r.approved,
+      createdAt: r.created_at,
+      accessExpiresAt: r.access_expires_at,
+    }));
+    res.json(mapped);
   });
 
   app.get("/api/admin/students/pending", async (req, res) => {
