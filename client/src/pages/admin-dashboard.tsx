@@ -358,6 +358,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/students/trial"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       setApprovingStudent(null);
       setApprovePlanId("");
@@ -1333,19 +1334,29 @@ export default function AdminDashboard() {
                                 </p>
                               )}
                             </div>
-                            {s.phone && (
-                              <a
-                                href={`https://wa.me/55${s.phone.replace(/\D/g, "")}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="shrink-0"
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <Button
+                                size="sm"
+                                className="bg-gold text-background hover:bg-gold/90 text-xs h-8 gap-1.5"
+                                onClick={() => { setApprovingStudent(s); setApprovePlanId(""); }}
+                                title="Converter para pacote pago"
                               >
-                                <Button size="sm" variant="outline" className="border-green-500/30 text-green-400 hover:bg-green-500/10 text-xs h-8 gap-1.5">
-                                  <MessageCircle className="w-3.5 h-3.5" />
-                                  WhatsApp
-                                </Button>
-                              </a>
-                            )}
+                                <Check className="w-3.5 h-3.5" />
+                                Converter
+                              </Button>
+                              {s.phone && (
+                                <a
+                                  href={`https://wa.me/55${s.phone.replace(/\D/g, "")}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <Button size="sm" variant="outline" className="border-green-500/30 text-green-400 hover:bg-green-500/10 text-xs h-8 w-8 p-0">
+                                    <MessageCircle className="w-3.5 h-3.5" />
+                                  </Button>
+
+                                </a>
+                              )}
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -2295,6 +2306,15 @@ export default function AdminDashboard() {
                             )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
+                            <Button
+                              size="sm"
+                              className="bg-gold text-background hover:bg-gold/90 text-xs h-8 gap-1.5"
+                              onClick={() => { setApprovingStudent(student); setApprovePlanId(""); }}
+                              title="Converter para pacote pago"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              Converter
+                            </Button>
                             {waLink && (
                               <a
                                 href={waLink}
@@ -2490,8 +2510,12 @@ export default function AdminDashboard() {
       <Dialog open={!!approvingStudent} onOpenChange={(open) => { if (!open) { setApprovingStudent(null); setApprovePlanId(""); } }}>
         <DialogContent className="bg-card border-border/40 sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Aprovar aluno</DialogTitle>
-            <DialogDescription>Selecione o plano de mentoria para <span className="font-medium text-foreground">{approvingStudent?.name}</span></DialogDescription>
+            <DialogTitle>{approvingStudent?.role === "trial" ? "Converter para pacote pago" : "Aprovar aluno"}</DialogTitle>
+            <DialogDescription>
+              {approvingStudent?.role === "trial"
+                ? <>Selecione o pacote para converter o trial de <span className="font-medium text-foreground">{approvingStudent?.name}</span> em aluno ativo.</>  
+                : <>Selecione o plano de mentoria para <span className="font-medium text-foreground">{approvingStudent?.name}</span></>}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
@@ -2505,7 +2529,7 @@ export default function AdminDashboard() {
               <Button variant="outline" className="border-border/40" onClick={() => { setApprovingStudent(null); setApprovePlanId(""); }}>Cancelar</Button>
               <Button className="bg-gold text-background hover:bg-gold/90 font-medium" disabled={!approvePlanId || approveMutation.isPending} onClick={() => { if (approvingStudent && approvePlanId) { approveMutation.mutate({ id: approvingStudent.id, planId: parseInt(approvePlanId) }); } }} data-testid="button-confirm-approve">
                 {approveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Aprovar
+                {approvingStudent?.role === "trial" ? "Converter" : "Aprovar"}
               </Button>
             </div>
           </div>
