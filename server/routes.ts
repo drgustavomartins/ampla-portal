@@ -173,7 +173,13 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`CREATE TABLE IF NOT EXISTS material_files (id SERIAL PRIMARY KEY, subcategory_id INTEGER NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, drive_id TEXT NOT NULL, "order" INTEGER NOT NULL DEFAULT 0)`);
     await db.execute(`ALTER TABLE material_files ADD COLUMN IF NOT EXISTS youtube_id TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE material_themes ADD COLUMN IF NOT EXISTS visible BOOLEAN NOT NULL DEFAULT true`).catch(() => {});
-    console.log("[auto-migrate] material_topics, order, materials_access, mentorship dates, user_modules, user_material_categories, material_themes/subcategories/files ensured");
+    // Stripe & payment columns
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_payment_intent_id TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_key TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_paid_at TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_started_at TEXT`).catch(() => {});
+    console.log("[auto-migrate] material_topics, order, materials_access, mentorship dates, user_modules, user_material_categories, material_themes/subcategories/files, stripe columns ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
@@ -369,6 +375,34 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   } catch (e: any) {
     console.error("[one-time-migrate] Failed to seed materials:", e.message);
+  }
+
+  // ==================== ONE-TIME: Seed Bioestimuladores lessons ====================
+  try {
+    const { db } = await import("./db");
+    await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
+    const migrationName = "seed_bioestimuladores_lessons_2026_04";
+    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    if (already.rows.length === 0) {
+      // Module 5 = Bioestimuladores de Colágeno
+      const moduleId = 5;
+      // Check if lessons already exist for this module
+      const existing = await db.execute(`SELECT id FROM lessons WHERE module_id = ${moduleId} LIMIT 1`);
+      if (existing.rows.length === 0) {
+        await db.execute(`INSERT INTO lessons (module_id, title, description, video_url, duration, "order") VALUES
+          (${moduleId}, 'Demonstração de aplicação do Radiesse', 'Demonstração prática da técnica de aplicação do Radiesse (Hidroxiapatita de Cálcio — CaHA), um bioestimulador de colágeno. O vídeo aborda a técnica de aplicação clínica, pontos anatômicos de referência e cuidados durante o procedimento para resultados seguros e progressivos.', 'https://youtu.be/fcSqss0OwuE', NULL, 1),
+          (${moduleId}, 'Radiesse Duo vs Radiesse Plus: qual a diferença?', 'Explicação objetiva das diferenças entre as duas apresentações do Radiesse disponíveis no mercado: o Radiesse Duo (com lidocaína) e o Radiesse Plus (formulação concentrada com maior quantidade de CaHA). Aborda indicações clínicas, consistência do produto, comportamento reológico e como escolher a formulação ideal para cada caso.', 'https://youtube.com/shorts/X8DSLPTTdyU', '2:34', 2)
+        `);
+        console.log("[one-time-migrate] Seeded Bioestimuladores lessons");
+      } else {
+        console.log("[one-time-migrate] Bioestimuladores module already has lessons, skipping insert");
+      }
+      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+    } else {
+      console.log("[one-time-migrate] seed_bioestimuladores_lessons already applied, skipping");
+    }
+  } catch (e: any) {
+    console.error("[one-time-migrate] Failed to seed Bioestimuladores lessons:", e.message);
   }
 
   // ==================== AUTH ====================
