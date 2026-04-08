@@ -4,6 +4,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { useLocation, Link } from "wouter";
 import { UpgradeBanner } from "@/components/UpgradeBanner";
+import { TrialPlansToast } from "@/components/TrialPlansToast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -984,6 +985,9 @@ export default function StudentDashboard() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Toast de planos para alunos em trial */}
+      <TrialPlansToast isTrial={isTrial} />
     </div>
   );
 }
