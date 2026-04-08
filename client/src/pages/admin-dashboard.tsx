@@ -385,6 +385,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/students/trial"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       toast({ title: "Aluno removido" });
     },
@@ -1368,6 +1369,23 @@ export default function AdminDashboard() {
                               >
                                 <Pencil className="w-3.5 h-3.5" />
                               </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="bg-card border-border/40">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                    <AlertDialogDescription>Tem certeza que deseja excluir {s.name}? Esta ação não pode ser desfeita.</AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteStudentMutation.mutate(s.id)}>Excluir</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                               {s.phone && (
                                 <a
                                   href={`https://wa.me/55${s.phone.replace(/\D/g, "")}`}
@@ -2361,6 +2379,23 @@ export default function AdminDashboard() {
                             >
                               <Pencil className="w-3.5 h-3.5" />
                             </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="bg-card border-border/40">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                  <AlertDialogDescription>Tem certeza que deseja excluir {student.name}? Esta ação não pode ser desfeita.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteStudentMutation.mutate(student.id)}>Excluir</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                             {waLink && (
                               <a
                                 href={waLink}
