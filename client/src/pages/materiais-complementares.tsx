@@ -112,9 +112,34 @@ function FileThumbnail({ file }: { file: FileEntry }) {
 
 /* ───────── Components ───────── */
 
-function FileRow({ file }: { file: FileEntry }) {
+const TRIAL_FREE_MATERIAL_DRIVE_ID = "1AURBQNKIsduh6EBJV1uUfsgkaipm2qry"; // Compilado Toxina Botulínica — Ampla Facial
+
+function FileRow({ file, trialLocked = false }: { file: FileEntry; trialLocked?: boolean }) {
   const [pdfOpen, setPdfOpen] = useState(false);
   const showDownload = file.type !== "mp3";
+
+  if (trialLocked) {
+    return (
+      <div className="group py-3 px-3 rounded-lg opacity-50">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+            <Lock className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="text-sm text-muted-foreground leading-snug">{file.name}</span>
+          </div>
+          <a
+            href="https://wa.me/5521976310365"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-yellow-500 hover:text-yellow-400 shrink-0 font-medium"
+          >
+            Assinar
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="group py-3 px-3 rounded-lg hover:bg-white/[0.03] transition-colors">
@@ -192,7 +217,7 @@ function FileRow({ file }: { file: FileEntry }) {
   );
 }
 
-function ThemeDetail({ theme, onBack }: { theme: Theme; onBack: () => void }) {
+function ThemeDetail({ theme, onBack, isTrial = false }: { theme: Theme; onBack: () => void; isTrial?: boolean }) {
   const [openSubs, setOpenSubs] = useState<Record<number, boolean>>(
     () => Object.fromEntries(theme.subcategories.map((_, i) => [i, true]))
   );
@@ -224,6 +249,13 @@ function ThemeDetail({ theme, onBack }: { theme: Theme; onBack: () => void }) {
         </div>
       </div>
 
+      {isTrial && (
+        <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-4 py-2.5">
+          <Lock className="w-4 h-4 text-yellow-500 shrink-0" />
+          <p className="text-xs text-yellow-500">Você está no período de teste — apenas o primeiro material está disponível. <a href="https://wa.me/5521976310365" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Assine para liberar tudo.</a></p>
+        </div>
+      )}
+
       {theme.subcategories.map((sub, i) => (
         <div key={sub.id} className="rounded-xl border border-border/30 bg-card/40 overflow-hidden">
           <button
@@ -245,7 +277,11 @@ function ThemeDetail({ theme, onBack }: { theme: Theme; onBack: () => void }) {
           {openSubs[i] && (
             <div className="px-2 pb-2 divide-y divide-border/20">
               {sub.files.map((file) => (
-                <FileRow key={file.id} file={file} />
+                <FileRow
+                  key={file.id}
+                  file={file}
+                  trialLocked={isTrial && file.driveId !== TRIAL_FREE_MATERIAL_DRIVE_ID}
+                />
               ))}
             </div>
           )}
@@ -285,31 +321,6 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
   // All users have access to all materials — no filtering needed
   const allowedThemes = allThemes;
 
-  // Trial users cannot access materiais complementares
-  if (isTrial) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-yellow-500/10 flex items-center justify-center">
-          <Lock className="w-7 h-7 text-yellow-500" />
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-foreground">Materiais exclusivos para assinantes</h3>
-          <p className="text-sm text-muted-foreground mt-1 max-w-xs">
-            Os materiais complementares não estão disponíveis no período de teste. Assine para ter acesso completo.
-          </p>
-        </div>
-        <a
-          href="https://wa.me/5521976310365"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black font-semibold text-sm px-5 py-2.5 rounded-lg transition-colors"
-        >
-          Quero assinar
-        </a>
-      </div>
-    );
-  }
-
   // Loading state
   if (themesLoading) {
     return (
@@ -324,10 +335,15 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
     return null;
   }
 
+  // Trial: only allow access to Toxina Botulínica theme
+  const visibleThemes = isTrial
+    ? allowedThemes.filter((t) => t.title === "Toxina Botulínica")
+    : allowedThemes;
+
   if (selectedTheme) {
     return (
       <div className="max-w-4xl mx-auto">
-        <ThemeDetail theme={selectedTheme} onBack={() => setSelectedTheme(null)} />
+        <ThemeDetail theme={selectedTheme} onBack={() => setSelectedTheme(null)} isTrial={isTrial} />
       </div>
     );
   }
@@ -355,6 +371,13 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
         </div>
       </div>
 
+      {isTrial && (
+        <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-4 py-2.5">
+          <Lock className="w-4 h-4 text-yellow-500 shrink-0" />
+          <p className="text-xs text-yellow-500">Período de teste — apenas 1 material disponível. <a href="https://wa.me/5521976310365" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Assine para liberar tudo.</a></p>
+        </div>
+      )}
+
       <div className="relative group/matshelf">
         {/* Left arrow */}
         <button
@@ -372,7 +395,7 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
         </button>
 
         <div ref={matShelfRef} className="shelf-scroll flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6">
-        {allowedThemes.map((theme) => (
+        {visibleThemes.map((theme) => (
           <div
             key={theme.id}
             className={`shelf-card shrink-0 group transition-all duration-500 ${
