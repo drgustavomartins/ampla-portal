@@ -46,7 +46,7 @@ function PlanCard({
 
   return (
     <div
-      className={`relative flex flex-col rounded-2xl border transition-all duration-200 hover:scale-[1.01] ${
+      className={`relative flex h-full flex-col rounded-2xl border transition-all duration-200 hover:scale-[1.01] ${
         isDestaque
           ? "border-[#D4A843] bg-gradient-to-b from-[#1a2d4d] to-[#0D1E35] shadow-[0_0_24px_rgba(212,168,67,0.12)]"
           : "border-[#1e3a5f] bg-[#0D1E35] hover:border-[#D4A843]/30"
@@ -113,9 +113,9 @@ function PlanCard({
         )}
       </ul>
 
-      {/* CTA */}
+      {/* CTA — sempre na base do card */}
       {isNegociacao ? (
-        <div className="space-y-2">
+        <div className="mt-auto space-y-2">
           <p className="text-center text-xs text-[#D4A843]/70">
             {plan.practiceHours > 0
               ? "Inclui prática com paciente modelo — requer entrevista prévia."
@@ -137,7 +137,7 @@ function PlanCard({
         <button
           onClick={() => onPagar(plan.key)}
           disabled={isLoading}
-          className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-all disabled:opacity-50 ${
+          className={`mt-auto flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-all disabled:opacity-50 ${
             isDestaque
               ? "bg-[#D4A843] text-[#0A1628] hover:bg-[#e8b84d]"
               : "border border-[#D4A843] text-[#D4A843] hover:bg-[#D4A843] hover:text-[#0A1628]"
@@ -245,7 +245,7 @@ export default function PlanosPublicos() {
                 </div>
                 <p className="mt-2 text-sm text-gray-500">{GROUP_DESCRIPTIONS[group]}</p>
               </div>
-              <div className={`grid gap-6 ${
+              <div className={`grid items-stretch gap-6 ${
                 groupPlans.length <= 2 ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto" :
                 "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
               }`}>
@@ -275,7 +275,7 @@ export default function PlanosPublicos() {
               </div>
               <div className="h-px flex-1 bg-[#1e3a5f]" />
             </div>
-            <div className={`grid gap-6 ${
+            <div className={`grid items-stretch gap-6 ${
               planosNegociacao.length <= 2 ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto" :
               "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
             }`}>
