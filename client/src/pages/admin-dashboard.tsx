@@ -671,6 +671,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/students/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/students/trial"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
       setEditingStudent(null);
       toast({ title: "Aluno atualizado" });
@@ -1344,6 +1345,29 @@ export default function AdminDashboard() {
                                 <Check className="w-3.5 h-3.5" />
                                 Converter
                               </Button>
+                              <Button
+                                size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
+                                title="Editar aluno trial"
+                                onClick={() => {
+                                  setEditingStudent(s);
+                                  setEditStudentForm({
+                                    name: s.name,
+                                    phone: s.phone || "",
+                                    planId: s.planId || 0,
+                                    accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
+                                    approved: s.approved,
+                                    communityAccess: s.communityAccess ?? true,
+                                    supportAccess: s.supportAccess ?? true,
+                                    supportExpiresAt: s.supportExpiresAt ? s.supportExpiresAt.slice(0, 16) : "",
+                                    clinicalPracticeAccess: s.clinicalPracticeAccess ?? true,
+                                    materialsAccess: s.materialsAccess ?? false,
+                                    mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
+                                    mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
+                                  });
+                                }}
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
                               {s.phone && (
                                 <a
                                   href={`https://wa.me/55${s.phone.replace(/\D/g, "")}`}
@@ -1353,7 +1377,6 @@ export default function AdminDashboard() {
                                   <Button size="sm" variant="outline" className="border-green-500/30 text-green-400 hover:bg-green-500/10 text-xs h-8 w-8 p-0">
                                     <MessageCircle className="w-3.5 h-3.5" />
                                   </Button>
-
                                 </a>
                               )}
                             </div>
@@ -2314,6 +2337,29 @@ export default function AdminDashboard() {
                             >
                               <Check className="w-3.5 h-3.5" />
                               Converter
+                            </Button>
+                            <Button
+                              size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
+                              title="Editar aluno trial"
+                              onClick={() => {
+                                setEditingStudent(student);
+                                setEditStudentForm({
+                                  name: student.name,
+                                  phone: student.phone || "",
+                                  planId: student.planId || 0,
+                                  accessExpiresAt: student.accessExpiresAt ? student.accessExpiresAt.slice(0, 16) : "",
+                                  approved: student.approved,
+                                  communityAccess: student.communityAccess ?? true,
+                                  supportAccess: student.supportAccess ?? true,
+                                  supportExpiresAt: student.supportExpiresAt ? student.supportExpiresAt.slice(0, 16) : "",
+                                  clinicalPracticeAccess: student.clinicalPracticeAccess ?? true,
+                                  materialsAccess: student.materialsAccess ?? false,
+                                  mentorshipStartDate: (student as any).mentorshipStartDate ? (student as any).mentorshipStartDate.slice(0, 10) : "",
+                                  mentorshipEndDate: (student as any).mentorshipEndDate ? (student as any).mentorshipEndDate.slice(0, 10) : "",
+                                });
+                              }}
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
                             </Button>
                             {waLink && (
                               <a
