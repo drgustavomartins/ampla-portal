@@ -5,6 +5,7 @@ import { loginSchema, registerSchema } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,7 @@ export default function LoginPage() {
   const [trialConfirmEmailError, setTrialConfirmEmailError] = useState("");
   const { login } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -121,7 +123,7 @@ export default function LoginPage() {
         {mode !== "trial" && (
           <button
             type="button"
-            onClick={() => setMode("trial")}
+            onClick={() => navigate("/comecar")}
             className="w-full flex items-center justify-between gap-3 rounded-xl border border-gold/30 bg-gold/5 hover:bg-gold/10 px-4 py-3 transition-colors text-left"
           >
             <div className="flex items-center gap-2.5">

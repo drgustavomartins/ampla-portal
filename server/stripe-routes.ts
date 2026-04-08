@@ -385,3 +385,57 @@ export function registerStripeRoutes(app: Express) {
     });
   });
 }
+
+// ─── POST /api/stripe/public-checkout ─────────────────────────────────────────
+// Checkout SEM autenticação — cartão OU PIX dinâmico (QR Code automático)
+// PIX: Stripe gera QR Code, confirma automaticamente via webhook, sem WhatsApp
+export function registerPublicStripeRoutes(app: Express) {
+  app.post("/api/stripe/public-checkout", async (req: Request, res: Response) => {
+    const stripe = getStripe();
+    if (!stripe) return res.status(503).json({ message: "Pagamentos não configurados ainda" });
+
+    const { planKey } = req.body as { planKey: PlanKey };
+    const plan = PLANS[planKey];
+    if (!plan) return res.status(400).json({ message: "Plano inválido" });
+
+    const baseUrl = process.env.APP_URL || "https://portal.amplafacial.com.br";
+
+    // Aceita cartão + PIX dinâmico nativo do Stripe
+    // PIX: gera QR Code na própria tela do Stripe, confirmação automática via webhook
+    // Não precisa de WhatsApp, não precisa de ação manual
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card", "pix"],
+      mode: "payment",
+      billing_address_collection: "auto",
+      customer_creation: "always",
+      phone_number_collection: { enabled: true },
+      payment_intent_data: {
+        // PIX expira em 24h
+        payment_method_options: {
+          pix: { expires_after_seconds: 86400 },
+        } as any,
+        metadata: { planKey, source: "public_checkout" },
+      },
+      line_items: [
+        {
+          price_data: {
+            currency: "brl",
+            product_data: {
+              name: `Ampla Facial — ${plan.name}`,
+              description: plan.features.slice(0, 3).join(" · "),
+              metadata: { planKey },
+            },
+            unit_amount: plan.price,
+          },
+          quantity: 1,
+        },
+      ],
+      metadata: { planKey, source: "public_checkout" },
+      success_url: `${baseUrl}/#/pagamento/novo?plan=${planKey}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/#/comecar`,
+      locale: "pt-BR",
+    });
+
+    res.json({ url: session.url, sessionId: session.id });
+  });
+}
