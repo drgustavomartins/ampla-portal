@@ -947,6 +947,19 @@ export default function AdminDashboard() {
               <span className="hidden sm:inline">Alunos</span>
             </TabsTrigger>
             <TabsTrigger
+              value="trial"
+              data-testid="tab-trial"
+              className="data-[state=active]:bg-yellow-500/10 data-[state=active]:text-yellow-400 data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3 relative"
+            >
+              <Sparkles className="w-4 h-4 sm:mr-2 shrink-0" />
+              <span className="hidden sm:inline">Leads Trial</span>
+              {trialStudents.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 text-black text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {trialStudents.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger
               value="plans"
               data-testid="tab-plans"
               className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
@@ -977,19 +990,6 @@ export default function AdminDashboard() {
             >
               <Library className="w-4 h-4 sm:mr-2 shrink-0" />
               <span className="hidden sm:inline">Materiais</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="trial"
-              data-testid="tab-trial"
-              className="data-[state=active]:bg-yellow-500/10 data-[state=active]:text-yellow-400 data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3 relative"
-            >
-              <Sparkles className="w-4 h-4 sm:mr-2 shrink-0" />
-              <span className="hidden sm:inline">Leads Trial</span>
-              {trialStudents.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 text-black text-[10px] font-bold rounded-full flex items-center justify-center">
-                  {trialStudents.length}
-                </span>
-              )}
             </TabsTrigger>
             {isSuperAdmin && (
               <>
