@@ -727,8 +727,10 @@ export async function registerRoutes(server: Server, app: Express) {
       if (!user) {
         return res.json({ accessAll: false, topics: [] });
       }
-      // All logged-in users have access to materiais complementares
-      // (materialsAccess gate removed — open to all students)
+      // Trial users have no access to materiais complementares
+      if (auth.role === "trial") {
+        return res.json({ accessAll: false, topics: [], trialBlocked: true });
+      }
 
       // Check per-user material category overrides first
       let userCats: Awaited<ReturnType<typeof storage.getUserMaterialCategories>> = [];

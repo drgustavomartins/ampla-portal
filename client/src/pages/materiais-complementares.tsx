@@ -259,7 +259,7 @@ function ThemeDetail({ theme, onBack }: { theme: Theme; onBack: () => void }) {
 
 export default function MateriaisComplementares({ onBack }: { onBack?: () => void }) {
   const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
-  const { user } = useAuth();
+  const { user, isTrial } = useAuth();
   const matShelfRef = useRef<HTMLDivElement>(null);
 
   const scrollMatShelf = (direction: "left" | "right") => {
@@ -284,6 +284,31 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
 
   // All users have access to all materials — no filtering needed
   const allowedThemes = allThemes;
+
+  // Trial users cannot access materiais complementares
+  if (isTrial) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-4">
+        <div className="w-14 h-14 rounded-full bg-yellow-500/10 flex items-center justify-center">
+          <Lock className="w-7 h-7 text-yellow-500" />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-foreground">Materiais exclusivos para assinantes</h3>
+          <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+            Os materiais complementares não estão disponíveis no período de teste. Assine para ter acesso completo.
+          </p>
+        </div>
+        <a
+          href="https://wa.me/5521976310365"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black font-semibold text-sm px-5 py-2.5 rounded-lg transition-colors"
+        >
+          Quero assinar
+        </a>
+      </div>
+    );
+  }
 
   // Loading state
   if (themesLoading) {
