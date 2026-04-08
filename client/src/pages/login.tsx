@@ -38,11 +38,11 @@ function humanizeError(error: any): string {
 
 // Módulos para exibir na proposta de valor
 const MODULES = [
-  { icon: "💉", title: "Toxina Botulínica", lessons: "+26 aulas" },
-  { icon: "✨", title: "Preenchedores Faciais", lessons: "+8 aulas" },
-  { icon: "🧬", title: "Bioestimuladores", lessons: "Colágeno e neocolagênese" },
-  { icon: "🔬", title: "Moduladores de Matriz", lessons: "Extracelular" },
-  { icon: "⭐", title: "Método NaturalUp®", lessons: "Protocolo registrado" },
+  { title: "Toxina Botulínica", lessons: "+26 aulas" },
+  { title: "Preenchedores Faciais", lessons: "+8 aulas" },
+  { title: "Bioestimuladores", lessons: "Colágeno e neocolagênese" },
+  { title: "Moduladores de Matriz", lessons: "Extracelular" },
+  { title: "Método NaturalUp®", lessons: "Protocolo registrado" },
 ];
 
 type Mode = "login" | "trial" | "forgot";
@@ -130,8 +130,8 @@ export default function LoginPage() {
     >
       {/* ===== COLUNA ESQUERDA — Proposta de valor (desktop only) ===== */}
       {/* #37 — Layout 2 colunas com proposta de valor */}
-      <div className="hidden lg:flex lg:w-[52%] flex-col justify-center px-16 py-12 border-r border-white/5">
-        <div className="max-w-md">
+      <div className="hidden lg:flex lg:w-[52%] flex-col justify-center px-20 py-12 border-r border-white/5">
+        <div className="max-w-[400px]">
           <img
             src="/logo-icon.png"
             alt="Ampla Facial"
@@ -166,11 +166,11 @@ export default function LoginPage() {
           <p className="text-xs uppercase tracking-widest text-gold/50 mb-4">O que você vai aprender</p>
           <div className="space-y-3">
             {MODULES.map((m) => (
-              <div key={m.title} className="flex items-center gap-3">
-                <span className="text-xl w-7 shrink-0">{m.icon}</span>
+              <div key={m.title} className="flex items-center gap-4">
+                <div className="w-px h-8 bg-gold/30 shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-white/90">{m.title}</p>
-                  <p className="text-xs text-white/40">{m.lessons}</p>
+                  <p className="text-xs text-white/35">{m.lessons}</p>
                 </div>
               </div>
             ))}
@@ -179,10 +179,10 @@ export default function LoginPage() {
           {/* Materiais */}
           <div className="mt-8 rounded-xl border border-white/8 bg-white/[0.03] p-4">
             <p className="text-xs text-gold/60 uppercase tracking-widest mb-3">Materiais complementares</p>
-            <div className="flex gap-4 text-xs text-white/50">
-              <span className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-red-400" />PDFs científicos</span>
-              <span className="flex items-center gap-1.5"><Headphones className="w-3.5 h-3.5 text-emerald-400" />Resumos em MP3</span>
-              <span className="flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5 text-blue-400" />Artigos Open Access</span>
+            <div className="flex gap-4 text-xs text-white/45">
+              <span className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-gold/50" />PDFs científicos</span>
+              <span className="flex items-center gap-1.5"><Headphones className="w-3.5 h-3.5 text-gold/50" />Resumos em MP3</span>
+              <span className="flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5 text-gold/50" />Artigos Open Access</span>
             </div>
           </div>
 
