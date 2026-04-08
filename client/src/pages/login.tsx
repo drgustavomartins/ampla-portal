@@ -130,66 +130,51 @@ export default function LoginPage() {
     >
       {/* ===== COLUNA ESQUERDA — Proposta de valor (desktop only) ===== */}
       {/* #37 — Layout 2 colunas com proposta de valor */}
-      <div className="hidden lg:flex lg:w-[52%] flex-col justify-center px-20 py-12 border-r border-white/5">
-        <div className="max-w-[400px]">
-          <img
-            src="/logo-icon.png"
-            alt="Ampla Facial"
-            className="h-20 w-20 object-contain mb-8 drop-shadow-lg"
-          />
-          <p className="text-xs uppercase tracking-widest text-gold/60 mb-2">Portal de Aulas</p>
-          <h1 className="text-4xl font-semibold text-white leading-tight mb-1">
-            Ampla Facial
-          </h1>
-          <p className="text-gold text-lg mb-6">Dr. Gustavo Martins</p>
-          <div className="w-10 h-px bg-gold/40 mb-8" />
+      <div className="hidden lg:flex lg:w-[52%] flex-col justify-center px-16 py-10 border-r border-white/5">
+        <div className="max-w-[380px]">
 
-          {/* Stats rápidas */}
-          <div className="flex items-center gap-6 mb-10">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gold">+50</p>
-              <p className="text-xs text-white/40 mt-0.5">aulas gravadas</p>
-            </div>
-            <div className="w-px h-10 bg-white/10" />
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gold">5</p>
-              <p className="text-xs text-white/40 mt-0.5">módulos</p>
-            </div>
-            <div className="w-px h-10 bg-white/10" />
-            <div className="text-center">
-              <p className="text-2xl font-bold text-gold">6</p>
-              <p className="text-xs text-white/40 mt-0.5">anos em HOF</p>
+          {/* Logo + identidade */}
+          <div className="flex items-center gap-4 mb-8">
+            <img src="/logo-icon.png" alt="Ampla Facial" className="h-12 w-12 object-contain drop-shadow-lg shrink-0" />
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-gold/50 mb-0.5">Portal de Aulas</p>
+              <h1 className="text-xl font-semibold text-white leading-tight">Ampla Facial</h1>
+              <p className="text-sm text-gold/80">Dr. Gustavo Martins</p>
             </div>
           </div>
 
-          {/* Lista de módulos */}
-          <p className="text-xs uppercase tracking-widest text-gold/50 mb-4">O que você vai aprender</p>
-          <div className="space-y-3">
-            {MODULES.map((m) => (
-              <div key={m.title} className="flex items-center gap-4" style={{ borderLeft: "1px solid rgba(184,152,80,0.3)", paddingLeft: "1rem" }}>
-                <div>
-                  <p className="text-sm font-medium text-white/90">{m.title}</p>
-                  <p className="text-xs text-white/35">{m.lessons}</p>
-                </div>
+          {/* Divider */}
+          <div className="w-full h-px bg-gradient-to-r from-gold/30 via-gold/10 to-transparent mb-8" />
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            {[["50+", "aulas"], ["5", "módulos"], ["6 anos", "em HOF"]].map(([val, label]) => (
+              <div key={label} className="rounded-lg border border-white/6 bg-white/[0.03] px-3 py-3 text-center">
+                <p className="text-lg font-bold text-gold leading-none mb-1">{val}</p>
+                <p className="text-[10px] text-white/35 uppercase tracking-wide">{label}</p>
               </div>
             ))}
           </div>
 
-          {/* Materiais */}
-          <div className="mt-8 rounded-xl border border-white/8 bg-white/[0.03] p-4">
-            <p className="text-xs text-gold/60 uppercase tracking-widest mb-3">Materiais complementares</p>
-            <div className="flex gap-4 text-xs text-white/45">
-              <span className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-gold/50" />PDFs científicos</span>
-              <span className="flex items-center gap-1.5"><Headphones className="w-3.5 h-3.5 text-gold/50" />Resumos em MP3</span>
-              <span className="flex items-center gap-1.5"><BookOpen className="w-3.5 h-3.5 text-gold/50" />Artigos Open Access</span>
-            </div>
+          {/* Módulos */}
+          <p className="text-[10px] uppercase tracking-widest text-gold/40 mb-3">Conteúdo</p>
+          <div className="space-y-2 mb-8">
+            {MODULES.map((m, i) => (
+              <div key={m.title} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] text-gold/30 font-mono w-4">0{i + 1}</span>
+                  <p className="text-sm text-white/80">{m.title}</p>
+                </div>
+                <p className="text-[10px] text-white/30">{m.lessons}</p>
+              </div>
+            ))}
           </div>
 
-          {/* Credenciais */}
-          <div className="mt-6 flex flex-col gap-1.5">
-            {["Protocolo NaturalUp® registrado", "Técnica exclusiva — acesso restrito a alunos selecionados", "Mestre em HOF"].map((c) => (
-              <span key={c} className="flex items-center gap-2 text-[11px] text-white/35">
-                <span className="w-3 h-px bg-gold/40 shrink-0" />
+          {/* Credenciais inline */}
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+            {["Protocolo NaturalUp® registrado", "Técnica exclusiva — acesso restrito", "Mestre em HOF"].map((c) => (
+              <span key={c} className="flex items-center gap-1.5 text-[10px] text-white/30">
+                <span className="w-1 h-1 rounded-full bg-gold/40 shrink-0" />
                 {c}
               </span>
             ))}
