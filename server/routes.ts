@@ -401,6 +401,28 @@ export async function registerRoutes(server: Server, app: Express) {
     console.error("[one-time-migrate] Failed to seed Toxina patient lesson:", e.message);
   }
 
+  // ==================== ONE-TIME: Toxina — Terço Superior 60+ NaturalUp ====================
+  try {
+    const { db } = await import("./db");
+    await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
+    const migrationName = "seed_toxina_tercosuperior_60mais_2026_04";
+    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    if (already.rows.length === 0) {
+      const exists = await db.execute(`SELECT id FROM lessons WHERE module_id = 2 AND video_url = 'https://youtube.com/shorts/2Z9LwcqWohk' LIMIT 1`);
+      if (exists.rows.length === 0) {
+        await db.execute(`INSERT INTO lessons (module_id, title, description, video_url, duration, "order") VALUES
+          (2, 'Protocolo NaturalUp® — Terço Superior em paciente acima de 60 anos', 'Caso clínico real demonstrando o protocolo personalizado de toxina botulínica no terço superior (frontal, glabela e patas de galinha) em paciente acima de 60 anos com histórico de tratamentos prévios. Aborda a leitura individualizada da dinâmica muscular, adaptações de dose e pontos de injeção dentro da metodologia NaturalUp® para preservar expressão e naturalidade em pacientes maduros.', 'https://youtube.com/shorts/2Z9LwcqWohk', NULL, 28)
+        `);
+        console.log("[one-time-migrate] Seeded Toxina Terço Superior 60+ lesson");
+      }
+      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+    } else {
+      console.log("[one-time-migrate] seed_toxina_tercosuperior_60mais already applied, skipping");
+    }
+  } catch (e: any) {
+    console.error("[one-time-migrate] Failed to seed Toxina Terço Superior lesson:", e.message);
+  }
+
   // ==================== ONE-TIME: Seed Bioestimuladores lessons ====================
   try {
     const { db } = await import("./db");
