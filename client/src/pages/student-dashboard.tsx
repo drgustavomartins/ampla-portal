@@ -17,7 +17,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
-  ChevronLeft, ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle,
+  ChevronLeft, ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle, Star,
   Users, MessageCircle, Lock, ShoppingCart, ExternalLink, Paperclip
 } from "lucide-react";
 import MateriaisComplementares from "./materiais-complementares";
@@ -465,6 +465,14 @@ export default function StudentDashboard() {
 
           {/* Right: User info */}
           <div className="flex items-center gap-3">
+            {/* Link de planos sempre visível */}
+            <Link
+              href="/planos"
+              className="hidden sm:flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/5 hover:bg-gold/15 px-3 py-1.5 text-xs font-semibold text-gold transition-colors"
+            >
+              <Star className="w-3 h-3" />
+              Planos
+            </Link>
             <div className="hidden sm:flex flex-col items-end mr-1">
               <span className="text-sm font-medium text-foreground leading-none">{firstName}</span>
               {userPlan && <span className="text-[10px] text-gold-muted mt-0.5">{userPlan.name}</span>}
@@ -504,27 +512,43 @@ export default function StudentDashboard() {
 
           {/* Access expiry banners */}
           {isExpired && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-destructive">Seu acesso expirou</p>
-                <p className="text-sm text-destructive/80 mt-1">
-                  Entre em contato com o administrador para renovar seu plano.
-                </p>
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-destructive">Seu acesso expirou</p>
+                  <p className="text-sm text-destructive/80 mt-0.5">
+                    Escolha um plano para continuar acessando as aulas.
+                  </p>
+                </div>
               </div>
+              <Link
+                href="/planos"
+                className="shrink-0 rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white hover:bg-destructive/90 transition-colors"
+              >
+                Ver planos
+              </Link>
             </div>
           )}
           {isExpiringSoon && (
-            <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-amber-500">
-                  Seu acesso expira em {rawDaysLeft} {rawDaysLeft === 1 ? "dia" : "dias"}
-                </p>
-                <p className="text-sm text-amber-500/80 mt-1">
-                  Entre em contato para renovação.
-                </p>
+            <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-amber-500">
+                    Seu acesso expira em {rawDaysLeft} {rawDaysLeft === 1 ? "dia" : "dias"}
+                  </p>
+                  <p className="text-sm text-amber-500/80 mt-0.5">
+                    Renove agora e não perca o acesso ao conteúdo.
+                  </p>
+                </div>
               </div>
+              <Link
+                href="/planos"
+                className="shrink-0 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-[#0A1628] hover:bg-amber-400 transition-colors"
+              >
+                Renovar plano
+              </Link>
             </div>
           )}
 
@@ -566,6 +590,14 @@ export default function StudentDashboard() {
                 <span className="text-muted-foreground">Aulas concluídas</span>
                 <span className="font-medium text-gold">{completedCount}/{totalLessons}</span>
               </div>
+              {/* CTA de planos no card */}
+              <Link
+                href="/planos"
+                className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-gold/30 bg-gold/5 hover:bg-gold/15 px-3 py-2 text-xs font-semibold text-gold transition-colors"
+              >
+                <Star className="w-3 h-3" />
+                {isTrial ? `Trial — ${trialDaysLeft} dia${trialDaysLeft !== 1 ? "s" : ""} restante${trialDaysLeft !== 1 ? "s" : ""}` : "Ver planos e upgrade"}
+              </Link>
             </div>
             </div>
           </section>
