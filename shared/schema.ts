@@ -13,6 +13,20 @@ export const plans = pgTable("plans", {
   order: integer("order").notNull().default(0),
 });
 
+// Stripe plan keys — each maps to a product in Stripe
+export const PLAN_KEYS = [
+  "modulo_avulso",
+  "pacote_completo",
+  "observador_essencial",
+  "observador_avancado",
+  "observador_intensivo",
+  "imersao",
+  "vip_online",
+  "vip_presencial",
+  "vip_completo",
+] as const;
+export type PlanKey = typeof PLAN_KEYS[number];
+
 // Users (students + admins)
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -37,6 +51,13 @@ export const users = pgTable("users", {
   // Mentorship date range
   mentorshipStartDate: text("mentorship_start_date"), // ISO date string
   mentorshipEndDate: text("mentorship_end_date"), // ISO date string
+  // Stripe payment fields
+  stripeCustomerId: text("stripe_customer_id"),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  planKey: text("plan_key"), // e.g. 'vip_online', 'observador_essencial'
+  planPaidAt: text("plan_paid_at"), // ISO date of last payment
+  planAmountPaid: integer("plan_amount_paid").default(0), // in centavos
+  trialStartedAt: text("trial_started_at"), // ISO date trial began
 });
 
 // Modules

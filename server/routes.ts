@@ -7,6 +7,7 @@ import { sql } from "drizzle-orm";
 import { storage } from "./storage";
 import { registerSchema, loginSchema, insertModuleSchema, insertLessonSchema } from "@shared/schema";
 import { Resend } from "resend";
+import { registerStripeRoutes } from "./stripe-routes";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -1712,6 +1713,9 @@ export async function registerRoutes(server: Server, app: Express) {
 
     return res.json({ message: "Migração concluída", results });
   });
+
+  // ─── Rotas de pagamento Stripe ──────────────────────────────────────────────
+  registerStripeRoutes(app);
 }
 
 // Helper to get all progress (not in storage since it's a simple select-all)

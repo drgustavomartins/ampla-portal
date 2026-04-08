@@ -10,6 +10,9 @@ import ModulePage from "./pages/module-page";
 import AdminDashboard from "./pages/admin-dashboard";
 import ResetPasswordPage from "./pages/reset-password";
 import NotFound from "./pages/not-found";
+import PlanosPage from "./pages/planos";
+import UpgradePage from "./pages/upgrade";
+import PagamentoSucesso from "./pages/pagamento-sucesso";
 
 function AppContent() {
   const { user, isAdmin } = useAuth();
@@ -32,6 +35,13 @@ function ProtectedModulePage() {
   return <ModulePage />;
 }
 
+function ProtectedPage({ component: Component }: { component: React.ComponentType }) {
+  const { user, isAdmin } = useAuth();
+  if (!user) return <LoginPage />;
+  if (isAdmin) return <AdminDashboard />;
+  return <Component />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -41,6 +51,10 @@ function App() {
             <Route path="/" component={AppContent} />
             <Route path="/module/:id" component={ProtectedModulePage} />
             <Route path="/reset-password/:token" component={ResetPasswordPage} />
+            <Route path="/planos" component={() => <ProtectedPage component={PlanosPage} />} />
+            <Route path="/upgrade" component={() => <ProtectedPage component={UpgradePage} />} />
+            <Route path="/pagamento/sucesso" component={() => <ProtectedPage component={PagamentoSucesso} />} />
+            <Route path="/trial/ativo" component={() => <ProtectedPage component={PagamentoSucesso} />} />
             <Route component={NotFound} />
           </Switch>
         </Router>

@@ -2,7 +2,8 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
+import { UpgradeBanner } from "@/components/UpgradeBanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -407,14 +408,11 @@ export default function StudentDashboard() {
             </span>
             <span className="text-white/40 text-xs hidden sm:inline truncate">Acesso às 2 primeiras aulas de cada módulo</span>
           </div>
-          <a
-            href={whatsappTrialUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 text-xs font-semibold bg-gold text-background px-3 py-1.5 rounded-full hover:bg-gold/90 transition-colors"
-          >
-            Assinar
-          </a>
+          <Link href="/planos">
+            <button className="shrink-0 text-xs font-semibold bg-gold text-background px-3 py-1.5 rounded-full hover:bg-gold/90 transition-colors">
+              Ver planos
+            </button>
+          </Link>
         </div>
       )}
 
