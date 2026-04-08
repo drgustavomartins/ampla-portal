@@ -378,6 +378,30 @@ export async function registerRoutes(server: Server, app: Express) {
     console.error("[one-time-migrate] Failed to seed materials:", e.message);
   }
 
+  // ==================== ONE-TIME: Add Toxina Shorts lesson 2Z9LwcqWohk ====================
+  try {
+    const { db } = await import("./db");
+    await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
+    const migrationName = "seed_toxina_shorts_2Z9LwcqWohk_2026_04";
+    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    if (already.rows.length === 0) {
+      const exists = await db.execute(`SELECT id FROM lessons WHERE module_id = 2 AND video_url = 'https://youtube.com/shorts/2Z9LwcqWohk' LIMIT 1`);
+      if (exists.rows.length === 0) {
+        const maxOrder = await db.execute(`SELECT COALESCE(MAX("order"), 0) as max_order FROM lessons WHERE module_id = 2`);
+        const nextOrder = (maxOrder.rows[0] as any).max_order + 1;
+        await db.execute(`INSERT INTO lessons (module_id, title, description, video_url, duration, "order") VALUES
+          (2, 'Toxina Botulínica em paciente — aplicação prática', 'Demonstração prática de aplicação de toxina botulínica em paciente real em ambiente clínico. Veja a técnica de injeção e os detalhes do procedimento.', 'https://youtube.com/shorts/2Z9LwcqWohk', '1:34', ${nextOrder})
+        `);
+        console.log("[one-time-migrate] Seeded Toxina Shorts lesson 2Z9LwcqWohk");
+      }
+      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+    } else {
+      console.log("[one-time-migrate] seed_toxina_shorts_2Z9LwcqWohk already applied, skipping");
+    }
+  } catch (e: any) {
+    console.error("[one-time-migrate] Failed to seed Toxina Shorts lesson:", e.message);
+  }
+
   // ==================== ONE-TIME: Add Toxina patient case lesson ====================
   try {
     const { db } = await import("./db");
