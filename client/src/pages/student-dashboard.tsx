@@ -377,6 +377,43 @@ export default function StudentDashboard() {
   // Intro lessons get merged into the first course module for display
   const introLessons = introModule ? getLessonsForModule(introModule.id) : [];
 
+  // #41 — "Continue de onde parou": encontra a última aula com progresso, ou a próxima não concluída
+  const lastLesson = (() => {
+    // Pega a aula concluída mais recentemente
+    const completed = progress
+      .filter(p => p.completed && p.completedAt)
+      .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
+    if (completed.length > 0) {
+      const lastDone = completed[0];
+      const lastLesson = lessons.find(l => l.id === lastDone.lessonId);
+      if (lastLesson) {
+        // Tenta encontrar a próxima aula do mesmo módulo
+        const modLessons = getLessonsForModule(lastLesson.moduleId);
+        const idx = modLessons.findIndex(l => l.id === lastLesson.id);
+        const next = modLessons[idx + 1];
+        return next || lastLesson; // se não tem próxima, repete a última
+      }
+    }
+    // Nenhum progresso: retorna a primeira aula do primeiro módulo real
+    const firstMod = sortedModules.find(m => m !== introModule);
+    if (firstMod) {
+      const modLessons = getLessonsForModule(firstMod.id);
+      return modLessons[0] || null;
+    }
+    return null;
+  })();
+  const lastLessonModule = lastLesson ? modules.find(m => m.id === lastLesson.moduleId) : null;
+  const lastLessonThumb = (() => {
+    if (!lastLesson?.videoUrl) return null;
+    const ytMatch = lastLesson.videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+    if (ytMatch) return `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`;
+    return null;
+  })();
+  const isLastLessonDone = lastLesson ? completedIds.has(lastLesson.id) : false;
+  const continueLabel = progress.filter(p => p.completed).length === 0
+    ? "Comece por aqui"
+    : isLastLessonDone ? "Continue assistindo" : "Continue assistindo";
+
   // Plan progress (days)
   const planDurationDays = userPlan?.durationDays || 365;
   const daysUsed = Math.max(0, planDurationDays - daysLeft);
@@ -532,6 +569,45 @@ export default function StudentDashboard() {
             </div>
             </div>
           </section>
+
+          {/* ===== CONTINUE DE ONDE PAROU ===== */}
+          {/* #41 */}
+          {lastLesson && (
+            <section className="space-y-3">
+              <h2 className="text-xs font-semibold text-gold-muted uppercase tracking-brand">{continueLabel}</h2>
+              <button
+                className="w-full text-left rounded-xl border border-border/30 bg-card/60 hover:border-gold/30 hover:bg-card/80 transition-all duration-200 overflow-hidden group"
+                onClick={() => setSelectedLesson(lastLesson)}
+              >
+                <div className="flex items-center gap-4 p-4">
+                  {lastLessonThumb ? (
+                    <div className="shrink-0 w-24 h-14 rounded-lg overflow-hidden ring-1 ring-border/20 relative">
+                      <img src={lastLessonThumb} alt="" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Play className="w-5 h-5 text-white fill-white/80" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="shrink-0 w-14 h-14 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
+                      <Play className="w-6 h-6 text-gold" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <p className="text-sm font-medium text-foreground truncate">{lastLesson.title}</p>
+                    {lastLessonModule && (
+                      <p className="text-xs text-muted-foreground truncate">{lastLessonModule.title}</p>
+                    )}
+                    {lastLesson.duration && (
+                      <p className="text-xs text-gold/60 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />{lastLesson.duration}
+                      </p>
+                    )}
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gold/40 shrink-0 group-hover:text-gold/70 transition-colors" />
+                </div>
+              </button>
+            </section>
+          )}
 
           {/* ===== BOAS VINDAS (Featured/Hero Section) ===== */}
           {introModule && introLessons.length > 0 && (

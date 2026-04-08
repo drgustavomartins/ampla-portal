@@ -5,11 +5,85 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { sql } from "drizzle-orm";
 import { storage } from "./storage";
-import { registerSchema, loginSchema, insertModuleSchema, insertLessonSchema } from "@shared/schema";
+import { registerSchema, trialRegisterSchema, loginSchema, insertModuleSchema, insertLessonSchema } from "@shared/schema";
 import { Resend } from "resend";
 import { registerStripeRoutes, registerPublicStripeRoutes } from "./stripe-routes";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+async function sendWelcomeEmail(user: { name: string; email: string }) {
+  if (!resend) return;
+  const firstName = user.name.split(" ")[0];
+  try {
+    await resend.emails.send({
+      from: "Dr. Gustavo Martins <onboarding@resend.dev>",
+      to: user.email,
+      subject: "Seu acesso à Ampla Facial está ativo — 7 dias para explorar",
+      html: `
+        <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0A1628;color:#fff;padding:40px 32px;border-radius:16px">
+          <img src="https://portal.amplafacial.com.br/logo-icon.png" alt="Ampla Facial" style="width:72px;display:block;margin:0 auto 24px" />
+          <h1 style="text-align:center;color:#D4A843;font-size:22px;margin:0 0 8px">Bem-vindo à Ampla Facial, ${firstName}!</h1>
+          <div style="width:48px;height:1px;background:#D4A843;opacity:0.5;margin:0 auto 24px"></div>
+          <p style="color:#ccc;font-size:15px;line-height:1.6;margin:0 0 20px">
+            Seu teste gratuito de <strong style="color:#D4A843">7 dias</strong> está ativo. Você tem acesso às primeiras aulas de cada módulo — sem cartão de crédito.
+          </p>
+          <div style="background:#0D1E35;border-radius:12px;padding:20px;margin:0 0 24px">
+            <p style="color:#D4A843;font-size:13px;font-weight:bold;margin:0 0 12px;text-transform:uppercase;letter-spacing:0.05em">O que você pode explorar:</p>
+            <ul style="color:#ccc;font-size:14px;line-height:2;margin:0;padding-left:20px">
+              <li>Toxina Botulínica — fundamentos e protocolos</li>
+              <li>Preenchedores Faciais — reologia e técnica</li>
+              <li>Bioestimuladores de Colágeno</li>
+              <li>Moduladores de Matriz Extracelular</li>
+              <li>Método NaturalUp® (protocolo registrado)</li>
+            </ul>
+          </div>
+          <div style="text-align:center;margin:0 0 24px">
+            <a href="https://portal.amplafacial.com.br" style="display:inline-block;background:#D4A843;color:#0A1628;padding:14px 32px;border-radius:10px;font-weight:bold;font-size:15px;text-decoration:none">Acessar a plataforma</a>
+          </div>
+          <p style="color:#666;font-size:12px;text-align:center;margin:0">
+            Dúvidas? Fale comigo pelo WhatsApp: <a href="https://wa.me/5521976310365" style="color:#D4A843">(21) 97631-0365</a>
+          </p>
+        </div>
+      `,
+    });
+  } catch (err) {
+    console.error("[email] Erro ao enviar email de boas-vindas:", err);
+  }
+}
+
+async function sendPasswordResetEmail(user: { name: string; email: string }, token: string) {
+  if (!resend) return;
+  const firstName = user.name.split(" ")[0];
+  const resetLink = `https://portal.amplafacial.com.br/#/reset-password/${token}`;
+  try {
+    await resend.emails.send({
+      from: "Ampla Facial Portal <onboarding@resend.dev>",
+      to: user.email,
+      subject: "Redefinição de senha — Ampla Facial",
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0A1628;color:#fff;padding:40px 32px;border-radius:16px">
+          <img src="https://portal.amplafacial.com.br/logo-icon.png" alt="Ampla Facial" style="width:64px;display:block;margin:0 auto 24px" />
+          <h1 style="text-align:center;color:#D4A843;font-size:20px;margin:0 0 20px">Redefinição de senha</h1>
+          <p style="color:#ccc;font-size:15px;line-height:1.6;margin:0 0 24px">
+            Olá, ${firstName}. Recebemos uma solicitação para redefinir a senha da sua conta na Ampla Facial.
+          </p>
+          <p style="color:#ccc;font-size:15px;line-height:1.6;margin:0 0 8px">
+            Clique no botão abaixo para criar uma nova senha. O link é válido por <strong style="color:#D4A843">1 hora</strong>.
+          </p>
+          <div style="text-align:center;margin:24px 0">
+            <a href="${resetLink}" style="display:inline-block;background:#D4A843;color:#0A1628;padding:14px 32px;border-radius:10px;font-weight:bold;font-size:15px;text-decoration:none">Redefinir senha</a>
+          </div>
+          <p style="color:#888;font-size:12px;line-height:1.6;margin:0 0 12px">
+            Se você não solicitou isso, pode ignorar este email — sua senha continua a mesma.
+          </p>
+          <p style="color:#555;font-size:11px;word-break:break-all">${resetLink}</p>
+        </div>
+      `,
+    });
+  } catch (err) {
+    console.error("[email] Erro ao enviar email de reset:", err);
+  }
+}
 
 async function notifyNewRegistration(user: { name: string; email: string; phone?: string }) {
   if (!resend) return; // silently skip if API key not configured
@@ -180,6 +254,7 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_paid_at TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_amount_paid INTEGER DEFAULT 0`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_started_at TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS lgpd_accepted_at TEXT`).catch(() => {});
     console.log("[auto-migrate] material_topics, order, materials_access, mentorship dates, user_modules, user_material_categories, material_themes/subcategories/files, stripe columns ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
@@ -514,22 +589,23 @@ export async function registerRoutes(server: Server, app: Express) {
       if (!rateLimit(`register:${ip}`, 5, 15 * 60 * 1000)) {
         return res.status(429).json({ message: "Muitas tentativas. Tente novamente mais tarde." });
       }
-      const data = registerSchema.parse(req.body);
+      const data = trialRegisterSchema.parse(req.body);
       const existing = await storage.getUserByEmail(data.email);
       if (existing) {
-        return res.status(400).json({ message: "Email já cadastrado" });
+        return res.status(400).json({ message: "Email já cadastrado. Tente fazer login ou recuperar sua senha." });
       }
       const hashedPassword = await bcrypt.hash(data.password, 10);
       const trialExpires = new Date();
       trialExpires.setDate(trialExpires.getDate() + 7);
+      const now = new Date().toISOString();
 
       const user = await storage.createUser({
         name: sanitize(data.name),
         email: data.email.trim().toLowerCase(),
-        phone: sanitize(data.phone),
+        phone: data.phone ? sanitize(data.phone) : "",
         password: hashedPassword,
         planId: null,
-        createdAt: new Date().toISOString(),
+        createdAt: now,
       });
 
       // Auto-approve as trial with 7-day expiry
@@ -537,14 +613,56 @@ export async function registerRoutes(server: Server, app: Express) {
         role: "trial",
         approved: true,
         accessExpiresAt: trialExpires.toISOString(),
-      });
+        trialStartedAt: now,
+        lgpdAcceptedAt: now,
+      } as any);
 
-      // Notify admin (non-blocking)
+      // Issue JWT so frontend can log in immediately without a second request
+      const token = jwt.sign({ userId: user.id, role: "trial" }, JWT_SECRET, { expiresIn: "30d" });
+      res.cookie("ampla_token", token, { httpOnly: true, secure: true, sameSite: "none", maxAge: 30 * 24 * 60 * 60 * 1000 });
+
+      // Send welcome email and notify admin (non-blocking)
+      sendWelcomeEmail({ name: user.name, email: user.email });
       notifyNewRegistration({ name: user.name, email: user.email, phone: user.phone ?? undefined });
 
-      return res.json({ message: "Seu teste gratuito de 7 dias foi ativado!", user: { id: user.id, name: user.name, email: user.email } });
+      const { password: _p, lockedUntil: _l, loginAttempts: _a, ...safeUser } = user;
+      return res.json({
+        message: "Seu teste gratuito de 7 dias foi ativado!",
+        user: { ...safeUser, role: "trial", approved: true, accessExpiresAt: trialExpires.toISOString() },
+        token,
+      });
     } catch (e: any) {
+      if (e?.errors) {
+        const msg = e.errors[0]?.message || "Dados inválidos";
+        return res.status(400).json({ message: msg });
+      }
       return res.status(400).json({ message: e.message || "Erro no cadastro" });
+    }
+  });
+
+  // Forgot password — sends reset link by email
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const ip = req.ip || req.socket.remoteAddress || "unknown";
+      if (!rateLimit(`forgot:${ip}`, 3, 15 * 60 * 1000)) {
+        return res.status(429).json({ message: "Muitas tentativas. Tente novamente em 15 minutos." });
+      }
+      const { email } = req.body;
+      if (!email || typeof email !== "string") {
+        return res.status(400).json({ message: "Email inválido" });
+      }
+      const user = await storage.getUserByEmail(email.trim().toLowerCase());
+      // Always return 200 to prevent email enumeration
+      if (!user) {
+        return res.json({ message: "Se este email estiver cadastrado, você receberá um link em instantes." });
+      }
+      const token = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+      await storage.createPasswordReset({ userId: user.id, token, expiresAt, createdAt: new Date().toISOString() });
+      sendPasswordResetEmail({ name: user.name, email: user.email }, token);
+      return res.json({ message: "Se este email estiver cadastrado, você receberá um link em instantes." });
+    } catch (e: any) {
+      return res.status(500).json({ message: "Erro interno. Tente novamente." });
     }
   });
 

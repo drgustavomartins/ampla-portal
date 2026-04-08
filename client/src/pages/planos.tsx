@@ -143,7 +143,22 @@ export default function PlanosPage() {
       return data;
     },
     onSuccess: (data) => {
-      if (data.url) window.location.href = data.url;
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        // #39 — Fallback: Stripe não configurado, redirecionar para WhatsApp
+        const selectedPlan = plans.find((p) => p.key === checkoutMutation.variables);
+        const planName = selectedPlan?.name || "plano selecionado";
+        const msg = encodeURIComponent(`Olá Dr. Gustavo! Quero assinar o ${planName} da Ampla Facial. Meu e-mail: ${user?.email || ""}`);
+        window.open(`https://wa.me/5521976310365?text=${msg}`, "_blank");
+      }
+    },
+    onError: () => {
+      // #39 — Erro no checkout: fallback imediato para WhatsApp
+      const selectedPlan = plans.find((p) => p.key === checkoutMutation.variables);
+      const planName = selectedPlan?.name || "plano";
+      const msg = encodeURIComponent(`Olá Dr. Gustavo! Quero assinar o ${planName} da Ampla Facial. Meu e-mail: ${user?.email || ""}`);
+      window.open(`https://wa.me/5521976310365?text=${msg}`, "_blank");
     },
   });
 

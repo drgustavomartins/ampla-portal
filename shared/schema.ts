@@ -58,6 +58,7 @@ export const users = pgTable("users", {
   planPaidAt: text("plan_paid_at"), // ISO date of last payment
   planAmountPaid: integer("plan_amount_paid").default(0), // in centavos
   trialStartedAt: text("trial_started_at"), // ISO date trial began
+  lgpdAcceptedAt: text("lgpd_accepted_at"), // ISO date user accepted LGPD terms
 });
 
 // Modules
@@ -184,6 +185,15 @@ export const registerSchema = z.object({
   email: z.string().email("Email inválido"),
   phone: z.string().min(8, "Telefone é obrigatório"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+});
+
+// Trial registration — phone is optional
+export const trialRegisterSchema = z.object({
+  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  email: z.string().email("Email inválido"),
+  phone: z.string().optional().default(""),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  lgpdAccepted: z.boolean().refine((v) => v === true, "Você precisa aceitar os termos para continuar"),
 });
 
 export const loginSchema = z.object({

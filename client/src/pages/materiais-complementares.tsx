@@ -114,8 +114,13 @@ function FileThumbnail({ file }: { file: FileEntry }) {
 
 const TRIAL_FREE_MATERIAL_DRIVE_ID = "1AURBQNKIsduh6EBJV1uUfsgkaipm2qry"; // Compilado Toxina Botulínica — Ampla Facial
 
+// #40 — Detecta iOS/Safari para evitar iframe do Drive (que falha no iOS)
+const isIOS = typeof navigator !== "undefined" &&
+  /iPad|iPhone|iPod/.test(navigator.userAgent);
+
 function FileRow({ file, trialLocked = false }: { file: FileEntry; trialLocked?: boolean }) {
   const [pdfOpen, setPdfOpen] = useState(false);
+  const [mp3Error, setMp3Error] = useState(false);
   const showDownload = file.type !== "mp3";
 
   if (trialLocked) {
@@ -162,24 +167,51 @@ function FileRow({ file, trialLocked = false }: { file: FileEntry; trialLocked?:
               />
             </div>
           ) : file.type === "mp3" ? (
-            <iframe
-              src={drivePreviewUrl(file.driveId)}
-              className="w-full max-w-md h-20 mt-1 rounded-lg border border-border/20"
-              allow="autoplay"
-              sandbox="allow-same-origin allow-scripts allow-popups"
-              title={file.name}
-            />
+            // #40 — iOS: iframe do Drive falha; mostrar link direto
+            isIOS || mp3Error ? (
+              <a
+                href={driveViewUrl(file.driveId)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 mt-1 text-xs text-gold/70 hover:text-gold underline"
+              >
+                <Play className="w-3.5 h-3.5" />
+                Ouvir no Google Drive
+              </a>
+            ) : (
+              <iframe
+                src={drivePreviewUrl(file.driveId)}
+                className="w-full max-w-md h-20 mt-1 rounded-lg border border-border/20"
+                allow="autoplay"
+                sandbox="allow-same-origin allow-scripts allow-popups"
+                title={file.name}
+                onError={() => setMp3Error(true)}
+              />
+            )
           ) : null}
         </div>
         <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
           {file.type === "pdf" && (
-            <button
-              onClick={() => setPdfOpen(!pdfOpen)}
-              className={`transition-colors ${pdfOpen ? "text-gold" : "text-muted-foreground hover:text-gold"}`}
-              title={pdfOpen ? "Fechar visualização" : "Visualizar PDF"}
-            >
-              {pdfOpen ? <X className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
+            // #40 — Em iOS, abrir no Drive diretamente; no desktop, toggle iframe inline
+            isIOS ? (
+              <a
+                href={driveViewUrl(file.driveId)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-gold transition-colors"
+                title="Visualizar PDF"
+              >
+                <Eye className="w-4 h-4" />
+              </a>
+            ) : (
+              <button
+                onClick={() => setPdfOpen(!pdfOpen)}
+                className={`transition-colors ${pdfOpen ? "text-gold" : "text-muted-foreground hover:text-gold"}`}
+                title={pdfOpen ? "Fechar visualização" : "Visualizar PDF"}
+              >
+                {pdfOpen ? <X className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            )
           )}
           <a
             href={driveViewUrl(file.driveId)}
