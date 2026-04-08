@@ -77,6 +77,9 @@ export const storage = {
   async getStudents(): Promise<User[]> {
     return db.select().from(users).where(eq(users.role, "student")).orderBy(asc(users.name));
   },
+  async getTrialStudents(): Promise<User[]> {
+    return db.select().from(users).where(eq(users.role, "trial")).orderBy(desc(users.createdAt));
+  },
   async getPendingStudents(): Promise<User[]> {
     return db.select().from(users).where(and(eq(users.role, "student"), eq(users.approved, false))).orderBy(asc(users.name));
   },
