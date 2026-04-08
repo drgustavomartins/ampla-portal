@@ -1214,6 +1214,13 @@ export default function AdminDashboard() {
                               <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0" onClick={() => resetPasswordMutation.mutate(s.id)} title="Resetar senha" disabled={resetPasswordMutation.isPending}>
                                 <KeyRound className="w-3.5 h-3.5" />
                               </Button>
+                              {s.phone && (
+                                <a href={`https://wa.me/55${s.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
+                                  <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-green-400 h-8 w-8 p-0" title="WhatsApp">
+                                    <MessageCircle className="w-3.5 h-3.5" />
+                                  </Button>
+                                </a>
+                              )}
                               {isSuperAdmin && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
