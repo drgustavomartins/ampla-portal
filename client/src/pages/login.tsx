@@ -38,11 +38,11 @@ function humanizeError(error: any): string {
 
 // Módulos para exibir na proposta de valor
 const MODULES = [
-  { title: "Toxina Botulínica", lessons: "+26 aulas" },
-  { title: "Preenchedores Faciais", lessons: "+8 aulas" },
-  { title: "Bioestimuladores", lessons: "Colágeno e neocolagênese" },
-  { title: "Moduladores de Matriz", lessons: "Extracelular" },
-  { title: "Método NaturalUp®", lessons: "Protocolo registrado" },
+  { title: "Toxina Botulínica" },
+  { title: "Preenchedores Faciais" },
+  { title: "Bioestimuladores de Colágeno" },
+  { title: "Moduladores de Matriz Extracelular" },
+  { title: "Método NaturalUp®" },
 ];
 
 type Mode = "login" | "trial" | "forgot";
@@ -160,15 +160,17 @@ export default function LoginPage() {
           <p className="text-[10px] uppercase tracking-widest text-gold/40 mb-3">Conteúdo</p>
           <div className="space-y-2 mb-8">
             {MODULES.map((m, i) => (
-              <div key={m.title} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] text-gold/30 font-mono w-4">0{i + 1}</span>
-                  <p className="text-sm text-white/80">{m.title}</p>
-                </div>
-                <p className="text-[10px] text-white/30">{m.lessons}</p>
+              <div key={m.title} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
+                <span className="text-[10px] text-gold/30 font-mono w-4 shrink-0">0{i + 1}</span>
+                <p className="text-sm text-white/80">{m.title}</p>
               </div>
             ))}
           </div>
+
+          {/* Atualização contínua */}
+          <p className="text-[11px] text-white/30 leading-relaxed mb-6">
+            Conteúdo sempre atualizado com os casos clínicos mais relevantes da prática em harmonização facial.
+          </p>
 
           {/* Credenciais inline */}
           <div className="flex flex-wrap gap-x-4 gap-y-1.5">
