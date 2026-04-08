@@ -1032,9 +1032,12 @@ export default function AdminDashboard() {
                 ? sortedPendingStudents.filter((s) => s.name.toLowerCase().includes(searchQuery))
                 : sortedPendingStudents;
               const filteredStudents = searchQuery
-                ? sortedStudents.filter((s) => s.name.toLowerCase().includes(searchQuery))
-                : sortedStudents;
-              const noResults = searchQuery && filteredPending.length === 0 && filteredStudents.length === 0;
+                ? sortedStudents.filter((s) => s.name.toLowerCase().includes(searchQuery) && s.role !== "trial")
+                : sortedStudents.filter(s => s.role !== "trial");
+              const filteredTrial = searchQuery
+                ? trialStudents.filter((s) => s.name.toLowerCase().includes(searchQuery))
+                : trialStudents;
+              const noResults = searchQuery && filteredPending.length === 0 && filteredStudents.length === 0 && filteredTrial.length === 0;
 
               return (
                 <>
@@ -1290,6 +1293,67 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
+
+            {/* Trial Students Section */}
+            {filteredTrial.length > 0 && (
+              <div className="space-y-3 mt-6">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
+                  Alunos em Trial ({filteredTrial.length})
+                </h3>
+                <div className="space-y-2">
+                  {filteredTrial.map((s) => {
+                    const daysLeft = s.accessExpiresAt
+                      ? Math.ceil((new Date(s.accessExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                      : 0;
+                    const isExpired = daysLeft <= 0;
+                    return (
+                      <Card key={s.id} className="border-yellow-500/20 bg-yellow-500/5 hover:bg-yellow-500/10 transition-colors">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium truncate text-foreground">{s.name}</p>
+                                {isExpired ? (
+                                  <Badge variant="secondary" className="text-[11px] bg-red-500/10 text-red-400 border-0 shrink-0">
+                                    Expirado
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-[11px] bg-yellow-500/15 text-yellow-400 border-0 shrink-0">
+                                    <Sparkles className="w-2.5 h-2.5 mr-1" />
+                                    {daysLeft}d restantes
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground truncate mt-0.5">{s.email}</p>
+                              {s.phone && (
+                                <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                  <Phone className="w-3 h-3 inline mr-1" />
+                                  {s.phone}
+                                </p>
+                              )}
+                            </div>
+                            {s.phone && (
+                              <a
+                                href={`https://wa.me/55${s.phone.replace(/\D/g, "")}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="shrink-0"
+                              >
+                                <Button size="sm" variant="outline" className="border-green-500/30 text-green-400 hover:bg-green-500/10 text-xs h-8 gap-1.5">
+                                  <MessageCircle className="w-3.5 h-3.5" />
+                                  WhatsApp
+                                </Button>
+                              </a>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
                 </>
               );
             })()}
