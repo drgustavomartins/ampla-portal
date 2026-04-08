@@ -123,7 +123,7 @@ export default function LoginPage() {
         {mode !== "trial" && (
           <button
             type="button"
-            onClick={() => navigate("/comecar")}
+            onClick={() => setMode("trial")}
             className="w-full flex items-center justify-between gap-3 rounded-xl border border-gold/30 bg-gold/5 hover:bg-gold/10 px-4 py-3 transition-colors text-left"
           >
             <div className="flex items-center gap-2.5">
