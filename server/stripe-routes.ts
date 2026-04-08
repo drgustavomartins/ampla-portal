@@ -404,7 +404,7 @@ export function registerPublicStripeRoutes(app: Express) {
     // PIX: gera QR Code na própria tela do Stripe, confirmação automática via webhook
     // Não precisa de WhatsApp, não precisa de ação manual
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card", "pix"],
+      payment_method_types: ["card"],
       mode: "payment",
       billing_address_collection: "auto",
       customer_creation: "always",
