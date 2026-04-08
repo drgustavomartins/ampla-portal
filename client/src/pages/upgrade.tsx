@@ -1,7 +1,9 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
-import { Check, ArrowRight, TrendingUp, Info } from "lucide-react";
+import { Check, TrendingUp, Info, ChevronDown, ChevronUp } from "lucide-react";
 import { Link } from "wouter";
+import { useState } from "react";
+import { BotaoEspecialista } from "@/components/whatsapp-especialista";
 
 interface UpgradeOption {
   key: string;
@@ -31,29 +33,81 @@ interface UpgradeData {
   options: UpgradeOption[];
 }
 
+function UpgradeCard({ option, userEmail }: { option: UpgradeOption; userEmail?: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const isDestaque = !!option.highlight;
+  const visibleFeatures = expanded ? option.features : option.features.slice(0, 5);
+
+  return (
+    <div
+      className={`relative rounded-2xl border p-6 transition-all ${
+        isDestaque
+          ? "border-[#D4A843] bg-gradient-to-b from-[#1a2d4d] to-[#0D1E35] shadow-[0_0_20px_rgba(212,168,67,0.15)]"
+          : "border-[#1e3a5f] bg-[#0D1E35] hover:border-[#D4A843]/30"
+      }`}
+    >
+      {option.highlight && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#D4A843] px-4 py-1 text-xs font-bold text-[#0A1628]">
+          {option.highlight}
+        </div>
+      )}
+
+      <h3 className="text-xl font-bold text-white">{option.name}</h3>
+      <p className="mt-1 text-sm text-gray-400">{option.description}</p>
+
+      {/* Bloco de crédito — sem revelar o preço final, só a economia */}
+      <div className="mt-5 rounded-xl bg-[#0A1628] p-4 space-y-1.5">
+        <div className="flex items-center justify-between text-sm text-gray-400">
+          <span>Valor já pago pelo plano atual</span>
+          <span className="text-green-400 font-medium">{option.creditFormatted} de crédito</span>
+        </div>
+        <p className="text-xs text-gray-500">{option.creditNote}</p>
+        <div className="pt-1 border-t border-[#1e3a5f] text-xs text-[#D4A843]/80">
+          Nossa especialista calcula o valor exato para você — sem surpresas.
+        </div>
+      </div>
+
+      {/* Features */}
+      <ul className="mt-4 space-y-1.5">
+        {visibleFeatures.map((f, i) => (
+          <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#D4A843]" />
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+
+      {option.features.length > 5 && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="mt-2 mb-4 flex items-center gap-1 text-xs text-[#D4A843]/70 hover:text-[#D4A843] transition-colors"
+        >
+          {expanded ? (
+            <><ChevronUp className="h-3.5 w-3.5" /> Ver menos</>
+          ) : (
+            <><ChevronDown className="h-3.5 w-3.5" /> Ver mais {option.features.length - 5} benefícios</>
+          )}
+        </button>
+      )}
+
+      <div className="mt-4">
+        <BotaoEspecialista
+          planName={`upgrade para ${option.name}`}
+          email={userEmail}
+          destaque={isDestaque}
+          label="Solicitar upgrade"
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function UpgradePage() {
   const { user } = useAuth();
 
   const { data, isLoading } = useQuery<UpgradeData>({
     queryKey: ["/api/stripe/upgrade-options"],
     enabled: !!user,
-  });
-
-  const upgradeMutation = useMutation({
-    mutationFn: async (planKey: string) => {
-      const res = await fetch("/api/stripe/create-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ planKey, isUpgrade: true }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message);
-      return json;
-    },
-    onSuccess: (data) => {
-      if (data.url) window.location.href = data.url;
-    },
   });
 
   if (isLoading) {
@@ -70,7 +124,9 @@ export default function UpgradePage() {
         <TrendingUp className="mb-4 h-12 w-12 text-[#D4A843]" />
         <h2 className="text-2xl font-bold text-white">Você está no plano mais completo</h2>
         <p className="mt-2 text-gray-400">Não há opções de upgrade disponíveis no momento.</p>
-        <Link href="/" className="mt-6 text-[#D4A843] hover:underline">Voltar para a plataforma</Link>
+        <Link href="/" className="mt-6 text-[#D4A843] hover:underline">
+          Voltar para a plataforma
+        </Link>
       </div>
     );
   }
@@ -102,96 +158,28 @@ export default function UpgradePage() {
             <strong>{currentPlan.amountPaidFormatted}</strong> há{" "}
             {currentPlan.daysSincePurchase} dia{currentPlan.daysSincePurchase !== 1 ? "s" : ""}.
             {currentPlan.daysSincePurchase <= 60
-              ? " Como está dentro de 60 dias, aproveita 100% de crédito."
-              : " Como passou de 60 dias, o crédito é de 70% do valor pago."}
+              ? " Está dentro de 60 dias: 100% de crédito garantido."
+              : " Passou de 60 dias: crédito de 70% do valor pago."}
+            {" "}Nossa especialista calcula o valor exato para você.
           </div>
         </div>
 
-        {/* Cards de upgrade */}
+        {/* Cards */}
         <div className="grid gap-6 sm:grid-cols-2">
-          {options.map((option) => {
-            const savings = option.fullPrice - option.toPay;
-            const isPending = upgradeMutation.isPending && upgradeMutation.variables === option.key;
-
-            return (
-              <div
-                key={option.key}
-                className={`relative rounded-2xl border p-6 transition-all hover:scale-[1.01] ${
-                  option.highlight
-                    ? "border-[#D4A843] bg-gradient-to-b from-[#1a2d4d] to-[#0D1E35] shadow-[0_0_20px_rgba(212,168,67,0.15)]"
-                    : "border-[#1e3a5f] bg-[#0D1E35] hover:border-[#D4A843]/30"
-                }`}
-              >
-                {option.highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#D4A843] px-4 py-1 text-xs font-bold text-[#0A1628]">
-                    {option.highlight}
-                  </div>
-                )}
-
-                <h3 className="text-xl font-bold text-white">{option.name}</h3>
-                <p className="mt-1 text-sm text-gray-400">{option.description}</p>
-
-                {/* Preço com crédito */}
-                <div className="mt-5 rounded-xl bg-[#0A1628] p-4">
-                  <div className="flex items-center justify-between text-sm text-gray-400">
-                    <span>Valor cheio</span>
-                    <span className="line-through">{option.fullPriceFormatted}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm text-green-400">
-                    <span>Seu crédito</span>
-                    <span>- {option.creditFormatted}</span>
-                  </div>
-                  <div className="mt-2 border-t border-[#1e3a5f] pt-2 flex items-center justify-between">
-                    <span className="text-sm font-semibold text-white">Você paga</span>
-                    <span className="text-2xl font-bold text-[#D4A843]">{option.toPayFormatted}</span>
-                  </div>
-                  <div className="mt-1 text-right text-xs text-green-400">
-                    Economia de {(savings / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                  </div>
-                </div>
-
-                {/* Features */}
-                <ul className="mt-4 space-y-1.5">
-                  {option.features.slice(0, 5).map((f, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#D4A843]" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                  {option.features.length > 5 && (
-                    <li className="text-sm text-gray-500">+ {option.features.length - 5} benefícios</li>
-                  )}
-                </ul>
-
-                <button
-                  onClick={() => upgradeMutation.mutate(option.key)}
-                  disabled={isPending}
-                  className={`mt-6 w-full rounded-xl py-3 font-semibold transition-all ${
-                    option.highlight
-                      ? "bg-[#D4A843] text-[#0A1628] hover:bg-[#e8b84d]"
-                      : "border border-[#D4A843] text-[#D4A843] hover:bg-[#D4A843] hover:text-[#0A1628]"
-                  } disabled:opacity-50`}
-                >
-                  {isPending ? "Aguarde..." : (
-                    <>Fazer upgrade <ArrowRight className="ml-1 inline h-4 w-4" /></>
-                  )}
-                </button>
-              </div>
-            );
-          })}
+          {options.map((option) => (
+            <UpgradeCard key={option.key} option={option} userEmail={user?.email} />
+          ))}
         </div>
 
         <div className="mt-8 text-center text-sm text-gray-500">
           Dúvidas?{" "}
-          <a
-            href="https://wa.me/5521995523509"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[#D4A843] hover:underline"
-          >
-            Fale com o Dr. Gustavo
-          </a>
+          <BotaoEspecialista
+            planName="upgrade de plano"
+            email={user?.email}
+            label="Falar com especialista"
+          />
         </div>
+
       </div>
     </div>
   );

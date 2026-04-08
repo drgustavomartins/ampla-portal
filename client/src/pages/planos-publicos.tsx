@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
-  Check, Star, ArrowRight, Zap, Users, Video, Clock,
-  CreditCard, ChevronLeft, Sparkles, Loader2
+  Check, Star, Clock, Zap, Users, Video,
+  ChevronDown, ChevronUp, MessageCircle,
 } from "lucide-react";
+import { BotaoEspecialista } from "@/components/whatsapp-especialista";
 
 interface PlanData {
   key: string;
@@ -11,10 +12,6 @@ interface PlanData {
   description: string;
   group: "digital" | "observador" | "vip";
   highlight?: string;
-  price: number;
-  priceFormatted: string;
-  installments12x: number | null;
-  installments12xFormatted: string | null;
   features: string[];
   clinicalHours: number;
   practiceHours: number;
@@ -24,25 +21,24 @@ interface PlanData {
   hasNaturalUp: boolean;
 }
 
-// Planos que requerem negociação direta (prática presencial ou entrevista)
-const NEGOCIACAO_DIRETA = ["imersao", "vip_online", "vip_presencial", "vip_completo"];
+const GROUP_ORDER = ["digital", "observador", "vip"];
 
-const WHATSAPP_NEGOCIACAO = (planName: string) =>
-  `https://wa.me/5521995523509?text=${encodeURIComponent(
-    `Olá Dr. Gustavo! Tenho interesse no ${planName} e gostaria de agendar uma entrevista para saber mais.`
-  )}`;
+const GROUP_LABELS: Record<string, string> = {
+  digital: "Acesso Digital",
+  observador: "Observação Clínica Presencial",
+  vip: "Mentoria VIP",
+};
 
-function PlanCard({
-  plan,
-  onPagar,
-  isLoading,
-}: {
-  plan: PlanData;
-  onPagar: (key: string) => void;
-  isLoading: boolean;
-}) {
-  const isNegociacao = NEGOCIACAO_DIRETA.includes(plan.key);
-  const isDestaque = plan.key === "vip_completo" || !!plan.highlight;
+const GROUP_DESCRIPTIONS: Record<string, string> = {
+  digital: "Estude no seu ritmo com aulas gravadas e materiais científicos",
+  observador: "Acompanhe a rotina clínica real do Dr. Gustavo presencialmente",
+  vip: "Mentoria individual e formação completa em harmonização orofacial",
+};
+
+function PlanCard({ plan }: { plan: PlanData }) {
+  const [expanded, setExpanded] = useState(false);
+  const isDestaque = !!plan.highlight || plan.group === "vip";
+  const visibleFeatures = expanded ? plan.features : plan.features.slice(0, 5);
 
   return (
     <div
@@ -58,13 +54,14 @@ function PlanCard({
         </div>
       )}
 
+      {/* Header */}
       <div className="mb-3">
         <h3 className="text-lg font-bold text-white">{plan.name}</h3>
         <p className="mt-1 text-sm text-gray-400">{plan.description}</p>
       </div>
 
       {/* Badges */}
-      <div className="mb-4 flex flex-wrap gap-1.5">
+      <div className="mb-5 flex flex-wrap gap-1.5">
         {plan.clinicalHours > 0 && (
           <span className="flex items-center gap-1 rounded-full bg-blue-900/40 px-2.5 py-1 text-xs text-blue-300">
             <Clock className="h-3 w-3" /> {plan.clinicalHours}h observação
@@ -87,126 +84,43 @@ function PlanCard({
         )}
       </div>
 
-      {/* Preço */}
-      <div className="mb-5">
-        <div className="text-3xl font-bold text-[#D4A843]">{plan.priceFormatted}</div>
-        {plan.installments12xFormatted && (
-          <div className="text-sm text-gray-400">ou 12x de {plan.installments12xFormatted}</div>
-        )}
-        {!isNegociacao && (
-          <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
-            <CreditCard className="h-3 w-3" /> Cartão ou PIX — acesso imediato
-          </div>
-        )}
-      </div>
-
       {/* Features */}
-      <ul className="mb-6 flex-1 space-y-2">
-        {plan.features.slice(0, 5).map((f, i) => (
+      <ul className="mb-2 flex-1 space-y-2">
+        {visibleFeatures.map((f, i) => (
           <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
             <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#D4A843]" />
             <span>{f}</span>
           </li>
         ))}
-        {plan.features.length > 5 && (
-          <li className="text-xs text-gray-500">+ {plan.features.length - 5} benefícios inclusos</li>
-        )}
       </ul>
 
-      {/* CTA — sempre na base do card */}
-      {isNegociacao ? (
-        <div className="mt-auto space-y-2">
-          <p className="text-center text-xs text-[#D4A843]/70">
-            {plan.practiceHours > 0
-              ? "Inclui prática com paciente modelo — requer entrevista prévia."
-              : "Requer entrevista com o Dr. Gustavo antes da matrícula."}
-          </p>
-          <a
-            href={WHATSAPP_NEGOCIACAO(plan.name)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3 text-sm font-semibold whitespace-nowrap text-white transition-all hover:bg-[#1ebe5d]"
-          >
-            <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-            </svg>
-            Solicitar vaga
-          </a>
-        </div>
-      ) : (
+      {plan.features.length > 5 && (
         <button
-          onClick={() => onPagar(plan.key)}
-          disabled={isLoading}
-          className={`mt-auto flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-all disabled:opacity-50 ${
-            isDestaque
-              ? "bg-[#D4A843] text-[#0A1628] hover:bg-[#e8b84d]"
-              : "border border-[#D4A843] text-[#D4A843] hover:bg-[#D4A843] hover:text-[#0A1628]"
-          }`}
+          onClick={() => setExpanded(!expanded)}
+          className="mb-5 flex items-center gap-1 text-xs text-[#D4A843]/70 hover:text-[#D4A843] transition-colors"
         >
-          {isLoading ? (
-            <><Loader2 className="h-4 w-4 animate-spin" /> Aguarde...</>
+          {expanded ? (
+            <><ChevronUp className="h-3.5 w-3.5" /> Ver menos</>
           ) : (
-            <>Pagar e acessar agora <ArrowRight className="h-4 w-4" /></>
+            <><ChevronDown className="h-3.5 w-3.5" /> Ver mais {plan.features.length - 5} benefícios</>
           )}
         </button>
       )}
+
+      {/* CTA */}
+      <div className="mt-auto">
+        <BotaoEspecialista planName={plan.name} destaque={isDestaque} />
+      </div>
     </div>
   );
 }
 
 export default function PlanosPublicos() {
-  const [loadingKey, setLoadingKey] = useState<string | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery<{ plans: PlanData[] }>({
     queryKey: ["/api/stripe/plans"],
   });
-
-  const checkoutMutation = useMutation({
-    mutationFn: async (planKey: string) => {
-      const res = await fetch("/api/stripe/public-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planKey }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Erro ao gerar link de pagamento");
-      return json;
-    },
-    onSuccess: (data) => {
-      if (data.url) window.location.href = data.url;
-    },
-    onError: () => {
-      setLoadingKey(null);
-      alert("Erro ao gerar link. Tente novamente ou fale com o Dr. Gustavo pelo WhatsApp.");
-    },
-  });
-
-  const handlePagar = (planKey: string) => {
-    setLoadingKey(planKey);
-    checkoutMutation.mutate(planKey);
-  };
-
-  const plans = data?.plans || [];
-
-  // Separar planos de compra direta dos planos de negociação direta
-  const planosDirectos = plans.filter((p) => !NEGOCIACAO_DIRETA.includes(p.key));
-  const planosNegociacao = plans.filter((p) => NEGOCIACAO_DIRETA.includes(p.key));
-
-  // Agrupar planos diretos
-  const grupos: Record<string, PlanData[]> = {};
-  for (const p of planosDirectos) {
-    if (!grupos[p.group]) grupos[p.group] = [];
-    grupos[p.group].push(p);
-  }
-
-  const GROUP_LABELS: Record<string, string> = {
-    digital: "Acesso Digital",
-    observador: "Observação Clínica Presencial",
-  };
-  const GROUP_DESCRIPTIONS: Record<string, string> = {
-    digital: "Estude no seu ritmo com aulas gravadas e materiais científicos",
-    observador: "Acompanhe a rotina clínica real do Dr. Gustavo presencialmente",
-  };
 
   if (isLoading) {
     return (
@@ -216,6 +130,13 @@ export default function PlanosPublicos() {
     );
   }
 
+  const plans = data?.plans || [];
+  const grouped: Record<string, PlanData[]> = {};
+  for (const p of plans) {
+    if (!grouped[p.group]) grouped[p.group] = [];
+    grouped[p.group].push(p);
+  }
+
   return (
     <div className="min-h-screen bg-[#0A1628] px-4 py-10">
       <div className="mx-auto max-w-6xl">
@@ -223,19 +144,71 @@ export default function PlanosPublicos() {
         {/* Header */}
         <div className="mb-10 text-center">
           <img src="/logo-transparent.png" alt="Ampla Facial" className="mx-auto mb-5 h-14 object-contain" />
-          <h1 className="text-3xl font-bold text-white">Escolha seu plano e comece agora</h1>
-          <p className="mt-2 text-gray-400">Acesso liberado imediatamente após o pagamento — cartão ou PIX</p>
-
-          <div className="mt-5 flex flex-wrap justify-center gap-4 text-sm text-gray-400">
-            <span className="flex items-center gap-1.5"><Check className="h-4 w-4 text-green-400" /> Acesso imediato</span>
-            <span className="flex items-center gap-1.5"><Check className="h-4 w-4 text-green-400" /> Cartão ou PIX</span>
-            <span className="flex items-center gap-1.5"><Check className="h-4 w-4 text-green-400" /> Upgrade com crédito a qualquer momento</span>
+          <h1 className="text-3xl font-bold text-white">Escolha seu plano</h1>
+          <p className="mt-2 text-gray-400">
+            Do iniciante ao avançado — encontre o plano certo para o seu momento em HOF
+          </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm text-gray-400">
+            <span className="flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-green-400" /> Atendimento personalizado
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-green-400" /> Upgrade com crédito a qualquer momento
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-green-400" /> Acesso liberado no mesmo dia
+            </span>
           </div>
         </div>
 
-        {/* Planos de compra direta */}
-        {["digital", "observador"].map((group) => {
-          const groupPlans = grupos[group] || [];
+        {/* Como funciona */}
+        <div className="mb-10 rounded-2xl border border-[#1e3a5f] bg-[#0D1E35] p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <MessageCircle className="h-4 w-4 text-[#25D366]" />
+            <p className="text-sm font-semibold text-white">Como funciona a contratação</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-400">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#D4A843]">1</span>
+              <span>Explore os planos abaixo e veja o que cada um inclui</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#D4A843]">2</span>
+              <span>Clique em "Falar com especialista" para tirar dúvidas e contratar</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#D4A843]">3</span>
+              <span>Acesso liberado após confirmação, geralmente no mesmo dia</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Filtros */}
+        <div className="mb-8 flex justify-center gap-2 flex-wrap">
+          <button
+            onClick={() => setSelectedGroup(null)}
+            className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${
+              !selectedGroup ? "bg-[#D4A843] text-[#0A1628]" : "border border-[#1e3a5f] text-gray-400 hover:border-[#D4A843]/40"
+            }`}
+          >
+            Todos
+          </button>
+          {GROUP_ORDER.filter((g) => grouped[g]?.length).map((g) => (
+            <button
+              key={g}
+              onClick={() => setSelectedGroup(g === selectedGroup ? null : g)}
+              className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${
+                selectedGroup === g ? "bg-[#D4A843] text-[#0A1628]" : "border border-[#1e3a5f] text-gray-400 hover:border-[#D4A843]/40"
+              }`}
+            >
+              {GROUP_LABELS[g]}
+            </button>
+          ))}
+        </div>
+
+        {/* Grupos de planos */}
+        {GROUP_ORDER.filter((g) => !selectedGroup || selectedGroup === g).map((group) => {
+          const groupPlans = grouped[group] || [];
           if (!groupPlans.length) return null;
           return (
             <div key={group} className="mb-14">
@@ -246,66 +219,39 @@ export default function PlanosPublicos() {
                 <p className="mt-2 text-sm text-gray-500">{GROUP_DESCRIPTIONS[group]}</p>
               </div>
               <div className={`grid items-stretch gap-6 ${
-                groupPlans.length <= 2 ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto" :
+                groupPlans.length === 1 ? "max-w-sm mx-auto" :
+                groupPlans.length === 2 ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto" :
                 "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
               }`}>
                 {groupPlans.map((plan) => (
-                  <PlanCard
-                    key={plan.key}
-                    plan={plan}
-                    onPagar={handlePagar}
-                    isLoading={checkoutMutation.isPending && loadingKey === plan.key}
-                  />
+                  <PlanCard key={plan.key} plan={plan} />
                 ))}
               </div>
             </div>
           );
         })}
 
-        {/* Separador — Planos com negociação direta */}
-        {planosNegociacao.length > 0 && (
-          <div className="mb-14">
-            <div className="mb-8 flex items-center gap-4">
-              <div className="h-px flex-1 bg-[#1e3a5f]" />
-              <div className="text-center">
-                <div className="inline-block rounded-full border border-[#D4A843]/30 bg-[#D4A843]/10 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-[#D4A843]">
-                  Mentoria VIP + Imersão
-                </div>
-                <p className="mt-2 text-sm text-gray-500">Vagas limitadas — requer entrevista prévia com o Dr. Gustavo</p>
-              </div>
-              <div className="h-px flex-1 bg-[#1e3a5f]" />
-            </div>
-            <div className={`grid items-stretch gap-6 ${
-              planosNegociacao.length <= 2 ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto" :
-              "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
-            }`}>
-              {planosNegociacao.map((plan) => (
-                <PlanCard
-                  key={plan.key}
-                  plan={plan}
-                  onPagar={handlePagar}
-                  isLoading={false}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Nota de upgrade */}
-        <div className="rounded-2xl border border-[#1e3a5f] bg-[#0D1E35] p-6 text-center">
-          <Star className="mx-auto mb-3 h-5 w-5 text-[#D4A843]" />
-          <h3 className="font-semibold text-white">Começou num plano menor? Faça upgrade com crédito</h3>
-          <p className="mt-1.5 text-sm text-gray-400">
-            Dentro de 60 dias: 100% do que pagou vira crédito no próximo plano. Você paga só a diferença.
+        {/* Política de upgrade */}
+        <div className="mt-4 rounded-2xl border border-[#1e3a5f] bg-[#0D1E35] p-6 text-center">
+          <Star className="mx-auto mb-3 h-6 w-6 text-[#D4A843]" />
+          <h3 className="text-lg font-semibold text-white">Upgrade com crédito</h3>
+          <p className="mt-2 text-sm text-gray-400">
+            Começou com um plano menor? Tudo bem. Dentro de 60 dias você aproveita 100% do valor pago
+            como crédito no próximo plano. Após 60 dias, o crédito é de 70%. Você sempre paga apenas a diferença.
           </p>
         </div>
 
-        {/* Link de volta */}
-        <div className="mt-8 text-center">
-          <a href="/#/" className="text-sm text-gray-500 hover:text-[#D4A843] transition-colors">
-            <ChevronLeft className="inline h-4 w-4" /> Já tenho conta — fazer login
-          </a>
+        {/* Trial */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-500">
+            Ainda não tem conta?{" "}
+            <a href="/#/" className="text-[#D4A843] hover:underline">
+              Faça o teste gratuito de 7 dias
+            </a>{" "}
+            antes de escolher.
+          </p>
         </div>
+
       </div>
     </div>
   );
