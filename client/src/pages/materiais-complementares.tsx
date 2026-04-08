@@ -408,7 +408,7 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
               <img
                 src={theme.coverUrl}
                 alt={theme.title}
-                className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.03]"
+                className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.03]"
               />
 
               {/* Soft vignette */}
