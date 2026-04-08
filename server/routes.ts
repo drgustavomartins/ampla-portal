@@ -841,6 +841,12 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json(safe);
   });
 
+  app.get("/api/admin/students/trial", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const result = await db.execute(`SELECT id, name, email, phone, role, approved, created_at, access_expires_at FROM users WHERE role = 'trial' ORDER BY created_at DESC`);
+    res.json(result.rows);
+  });
+
   app.get("/api/admin/students/pending", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const pending = await storage.getPendingStudents();
