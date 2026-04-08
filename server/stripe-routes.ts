@@ -410,10 +410,6 @@ export function registerPublicStripeRoutes(app: Express) {
       customer_creation: "always",
       phone_number_collection: { enabled: true },
       payment_intent_data: {
-        // PIX expira em 24h
-        payment_method_options: {
-          pix: { expires_after_seconds: 86400 },
-        } as any,
         metadata: { planKey, source: "public_checkout" },
       },
       line_items: [
