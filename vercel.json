@@ -77,7 +77,7 @@
   ],
   "build": {
     "env": {
-      "FORCE_REBUILD": "v9-trial"
+      "FORCE_REBUILD": "v10-converter"
     }
   },
   "buildCommand": "npm run build",
