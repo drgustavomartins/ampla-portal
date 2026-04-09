@@ -624,6 +624,7 @@ export async function registerRoutes(server: Server, app: Express) {
   // POST /api/funnel/event — registrar evento do funil
   app.post("/api/funnel/event", async (req, res) => {
     try {
+      const { db } = await import("./db");
       const { session_id, email, event, metadata } = req.body;
       if (!session_id || !event) return res.status(400).json({ message: "session_id e event são obrigatórios" });
       await db.execute(
@@ -640,6 +641,7 @@ export async function registerRoutes(server: Server, app: Express) {
   app.get("/api/admin/funnel", async (req: any, res) => {
     if (!requireAdmin(req, res)) return;
     try {
+      const { db } = await import("./db");
       // Agrupa eventos por session_id, pega o email mais recente e lista eventos
       const result = await db.execute(`
         SELECT
@@ -679,6 +681,7 @@ export async function registerRoutes(server: Server, app: Express) {
   // POST /api/quiz/click — registrar clique no banner
   app.post("/api/quiz/click", async (req, res) => {
     try {
+      const { db } = await import("./db");
       const source = req.body?.source || "unknown";
       const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0] || req.socket.remoteAddress || "";
       const ua = req.headers["user-agent"] || "";
@@ -696,6 +699,7 @@ export async function registerRoutes(server: Server, app: Express) {
   app.get("/api/admin/quiz-stats", async (req: any, res) => {
     if (!requireAdmin(req, res)) return;
     try {
+      const { db } = await import("./db");
       const clicks = await db.execute(`SELECT source, COUNT(*) as total FROM quiz_clicks GROUP BY source ORDER BY total DESC`);
       const totalClicks = await db.execute(`SELECT COUNT(*) as total FROM quiz_clicks`);
       const totalLeads = await db.execute(`SELECT COUNT(*) as total FROM quiz_leads`);
@@ -829,6 +833,7 @@ export async function registerRoutes(server: Server, app: Express) {
   app.get("/api/admin/quiz-leads", async (req: any, res) => {
     if (!requireAdmin(req, res)) return;
     try {
+      const { db } = await import("./db");
       const result = await db.execute(
         `SELECT * FROM quiz_leads ORDER BY created_at DESC LIMIT 500`
       );
