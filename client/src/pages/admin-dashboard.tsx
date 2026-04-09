@@ -2303,7 +2303,10 @@ export default function AdminDashboard() {
 
           {/* ========== LEADS TRIAL TAB ========== */}
           <TabsContent value="leads" className="space-y-6 mt-0">
-            <LeadsTab trialCount={trialStudents.length} />
+            <LeadsTab
+              trialStudents={trialStudents}
+              onConvert={(id) => approveMutation.mutate(id)}
+            />
           </TabsContent>
 
           <TabsContent value="trial-legacy" className="space-y-6 mt-0">
