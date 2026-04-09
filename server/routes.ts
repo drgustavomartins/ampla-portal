@@ -820,8 +820,8 @@ export async function registerRoutes(server: Server, app: Express) {
 
       res.json({ success: true });
     } catch (e: any) {
-      console.error("[quiz] Failed to save lead:", e.message);
-      res.status(500).json({ message: "Erro ao salvar" });
+      console.error("[quiz] Failed to save lead:", e.message, e.stack);
+      res.status(500).json({ message: "Erro ao salvar", detail: e.message });
     }
   });
 
