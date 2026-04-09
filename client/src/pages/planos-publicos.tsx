@@ -24,7 +24,7 @@ interface PlanData {
 const NEGOCIACAO_DIRETA = ["imersao", "vip_online", "vip_presencial", "vip_completo"];
 
 const WHATSAPP_NEGOCIACAO = (planName: string) =>
-  `https://wa.me/5521995523509?text=${encodeURIComponent(
+  `https://wa.me/5521976263881?text=${encodeURIComponent(
     `Olá Dr. Gustavo! Tenho interesse no ${planName} e gostaria de agendar uma entrevista para saber mais.`
   )}`;
 

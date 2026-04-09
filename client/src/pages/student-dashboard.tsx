@@ -173,7 +173,7 @@ export default function StudentDashboard() {
 
   const getWhatsAppUrl = (mod: Module) => {
     const msg = encodeURIComponent(`Olá! Tenho interesse em adquirir o módulo ${mod.title} da mentoria Ampla Facial. Meu email de acesso é ${user?.email || ""}.`);
-    return `https://wa.me/5521976310365?text=${msg}`;
+    return `https://wa.me/5521976263881?text=${msg}`;
   };
 
   // Video embed logic
@@ -431,7 +431,7 @@ export default function StudentDashboard() {
     return "Conteúdo exclusivo da mentoria Ampla Facial";
   };
 
-  const whatsappTrialUrl = `https://wa.me/5521976310365?text=${encodeURIComponent(`Olá Dr. Gustavo! Estou no período de teste gratuito da Ampla Facial e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
+  const whatsappTrialUrl = `https://wa.me/5521976263881?text=${encodeURIComponent(`Olá! Estou no período de teste gratuito da Ampla Facial e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
@@ -836,7 +836,7 @@ export default function StudentDashboard() {
                 </div>
               ) : (
                 <a
-                  href="https://wa.me/5521976310365"
+                  href="https://wa.me/5521976263881"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
@@ -859,7 +859,7 @@ export default function StudentDashboard() {
               {/* Praticas Clinicas — WhatsApp scheduling button */}
               {clinicalEnabled && (
                 <a
-                  href="https://wa.me/5521995523509?text=Ol%C3%A1%2C%20gostaria%20de%20consultar%20minhas%20horas%20presenciais%20dispon%C3%ADveis"
+                  href="https://wa.me/5521976263881?text=Ol%C3%A1%2C%20gostaria%20de%20consultar%20minhas%20horas%20presenciais%20dispon%C3%ADveis"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 transition-all duration-300 hover:-translate-y-1 hover:border-green-500/40 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]"

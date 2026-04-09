@@ -271,7 +271,7 @@ export default function ModulePage() {
 
   const getWhatsAppUrl = () => {
     const msg = encodeURIComponent(`Olá! Tenho interesse em adquirir o módulo ${currentModule.title} da mentoria Ampla Facial. Meu email de acesso é ${user?.email || ""}.`);
-    return `https://wa.me/5521976310365?text=${msg}`;
+    return `https://wa.me/5521976263881?text=${msg}`;
   };
 
   // Scroll to top when entering the module page
@@ -621,7 +621,7 @@ export default function ModulePage() {
   }
 
   // ========== MODULE PAGE (HERO + LESSON LIST) ==========
-  const whatsappTrialUrl = `https://wa.me/5521976310365?text=${encodeURIComponent(`Olá Dr. Gustavo! Estou no período de teste gratuito da Ampla Facial e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
+  const whatsappTrialUrl = `https://wa.me/5521976263881?text=${encodeURIComponent(`Olá! Estou no período de teste gratuito da Ampla Facial e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

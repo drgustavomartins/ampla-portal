@@ -77,7 +77,7 @@ export default function TermosPage() {
             Dúvidas sobre estes termos podem ser enviadas para{" "}
             <a href="mailto:contato@amplafacial.com.br" className="text-gold underline">contato@amplafacial.com.br</a>{" "}
             ou pelo WhatsApp{" "}
-            <a href="https://wa.me/5521976310365" className="text-gold underline" target="_blank">(21) 97631-0365</a>.
+            <a href="https://wa.me/5521976263881" className="text-gold underline" target="_blank">(21) 97631-0365</a>.
           </p>
         </section>
 

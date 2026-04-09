@@ -134,7 +134,7 @@ function FileRow({ file, trialLocked = false }: { file: FileEntry; trialLocked?:
             <span className="text-sm text-muted-foreground leading-snug">{file.name}</span>
           </div>
           <a
-            href="https://wa.me/5521976310365"
+            href="https://wa.me/5521976263881"
             target="_blank"
             rel="noopener noreferrer"
             className="text-[11px] text-yellow-500 hover:text-yellow-400 shrink-0 font-medium"
@@ -284,7 +284,7 @@ function ThemeDetail({ theme, onBack, isTrial = false }: { theme: Theme; onBack:
       {isTrial && (
         <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-4 py-2.5">
           <Lock className="w-4 h-4 text-yellow-500 shrink-0" />
-          <p className="text-xs text-yellow-500">Você está no período de teste — apenas o primeiro material está disponível. <a href="https://wa.me/5521976310365" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Assine para liberar tudo.</a></p>
+          <p className="text-xs text-yellow-500">Você está no período de teste — apenas o primeiro material está disponível. <a href="https://wa.me/5521976263881" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Assine para liberar tudo.</a></p>
         </div>
       )}
 
@@ -406,7 +406,7 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
       {isTrial && (
         <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-4 py-2.5">
           <Lock className="w-4 h-4 text-yellow-500 shrink-0" />
-          <p className="text-xs text-yellow-500">Período de teste — apenas 1 material disponível. <a href="https://wa.me/5521976310365" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Assine para liberar tudo.</a></p>
+          <p className="text-xs text-yellow-500">Período de teste — apenas 1 material disponível. <a href="https://wa.me/5521976263881" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Assine para liberar tudo.</a></p>
         </div>
       )}
 

@@ -77,7 +77,7 @@ const RESULTADOS = {
       "Certificado de participação",
     ],
     cta: "Conhecer o Acesso Digital",
-    whatsapp: "Olá Dr. Gustavo! Fiz o quiz da Ampla Facial e meu perfil indicou o Acesso Digital. Gostaria de saber mais!",
+    whatsapp: "Olá! Fiz o quiz da Ampla Facial e meu perfil indicou o Acesso Digital. Gostaria de saber mais!",
   },
   observador: {
     plano: "Plano Observador",
@@ -92,7 +92,7 @@ const RESULTADOS = {
       "Certificado de participação",
     ],
     cta: "Conhecer o Plano Observador",
-    whatsapp: "Olá Dr. Gustavo! Fiz o quiz da Ampla Facial e meu perfil indicou o Plano Observador. Gostaria de saber mais!",
+    whatsapp: "Olá! Fiz o quiz da Ampla Facial e meu perfil indicou o Plano Observador. Gostaria de saber mais!",
   },
   vip: {
     plano: "Mentoria VIP",
@@ -108,7 +108,7 @@ const RESULTADOS = {
       "Encontros ao vivo quinzenais",
     ],
     cta: "Agendar entrevista com o Dr. Gustavo",
-    whatsapp: "Olá Dr. Gustavo! Fiz o quiz da Ampla Facial e meu perfil indicou a Mentoria VIP. Gostaria de agendar uma conversa!",
+    whatsapp: "Olá! Fiz o quiz da Ampla Facial e meu perfil indicou a Mentoria VIP. Gostaria de agendar uma conversa!",
   },
 };
 
@@ -453,7 +453,7 @@ export default function QuizPage() {
 
   // ── RESULTADO ──────────────────────────────────────────────────────────────
   if (etapa === "resultado" && resultadoData) {
-    const whatsappUrl = `https://wa.me/5521995523509?text=${encodeURIComponent(resultadoData.whatsapp)}`;
+    const whatsappUrl = `https://wa.me/5521976263881?text=${encodeURIComponent(resultadoData.whatsapp)}`;
 
     return (
       <div className="min-h-screen bg-[#0A1628] flex flex-col items-center justify-center px-4 py-10">
