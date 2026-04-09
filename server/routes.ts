@@ -869,17 +869,24 @@ export async function registerRoutes(server: Server, app: Express) {
       const { sql: sqlTag } = await import("drizzle-orm");
       // Buscar leads parciais com mais de 60 minutos sem reengajamento
       const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-      const result = await db.execute(
-        sqlTag`SELECT id, nome, email, whatsapp, created_at
-         FROM quiz_leads
-         WHERE resultado = 'parcial'
-           AND (reengajamento_enviado IS NULL OR reengajamento_enviado = FALSE)
-           AND created_at < ${cutoff}
-         ORDER BY created_at ASC
-         LIMIT 50`
+
+      // Marca atomicamente como enviado antes de processar (evita duplicatas em execuções paralelas)
+      const claimed = await db.execute(
+        sqlTag`UPDATE quiz_leads
+         SET reengajamento_enviado = TRUE, reengajamento_enviado_at = NOW()
+         WHERE id IN (
+           SELECT id FROM quiz_leads
+           WHERE resultado = 'parcial'
+             AND (reengajamento_enviado IS NULL OR reengajamento_enviado = FALSE)
+             AND created_at < ${cutoff}
+           ORDER BY created_at ASC
+           LIMIT 50
+           FOR UPDATE SKIP LOCKED
+         )
+         RETURNING id, nome, email, whatsapp, created_at`
       );
 
-      const leads = result.rows;
+      const leads = claimed.rows;
       let enviados = 0;
       let erros = 0;
 
@@ -997,16 +1004,15 @@ export async function registerRoutes(server: Server, app: Express) {
             subject: `${primeiroNome}, seu resultado do quiz ainda est\u00e1 esperando por voc\u00ea — Ampla Facial`,
             html: htmlEmail,
           });
-
-          // Marcar como enviado
-          const now = new Date().toISOString();
-          const leadId = lead.id as number;
-          await db.execute(
-            sqlTag`UPDATE quiz_leads SET reengajamento_enviado = TRUE, reengajamento_enviado_at = ${now} WHERE id = ${leadId}`
-          );
+          // Lead já foi marcado como enviado atomicamente antes do loop
           enviados++;
           console.log(`[cron:quiz] Reengajamento enviado para ${lead.email}`);
         } catch (emailErr: any) {
+          // Se o envio falhou, reverter o flag para que possa ser tentado novamente
+          const leadId = lead.id as number;
+          await db.execute(
+            sqlTag`UPDATE quiz_leads SET reengajamento_enviado = FALSE, reengajamento_enviado_at = NULL WHERE id = ${leadId}`
+          ).catch(() => {});
           console.error(`[cron:quiz] Erro ao enviar para ${lead.email}:`, emailErr.message);
           erros++;
         }
