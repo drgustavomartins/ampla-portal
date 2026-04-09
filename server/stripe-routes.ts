@@ -172,6 +172,13 @@ export function registerStripeRoutes(app: Express) {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ["card"],
+      payment_method_options: {
+        card: {
+          installments: {
+            enabled: true,
+          },
+        },
+      },
       mode: "payment",
       line_items: [
         {
@@ -246,6 +253,13 @@ export function registerStripeRoutes(app: Express) {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ["card"],
+      payment_method_options: {
+        card: {
+          installments: {
+            enabled: true,
+          },
+        },
+      },
       mode: "setup",
       metadata: {
         userId: String(user.id),
@@ -406,6 +420,13 @@ export function registerPublicStripeRoutes(app: Express) {
     // Não precisa de WhatsApp, não precisa de ação manual
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
+      payment_method_options: {
+        card: {
+          installments: {
+            enabled: true,
+          },
+        },
+      },
       mode: "payment",
       billing_address_collection: "auto",
       customer_creation: "always",
