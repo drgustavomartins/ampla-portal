@@ -529,9 +529,9 @@ export default function LoginPage() {
             {[...Array(5)].map((_, i) => <Star key={i} className="h-3 w-3 text-[#D4A843] fill-[#D4A843]" />)}
           </div>
           <p className="text-xs text-white/60 leading-relaxed italic">
-            &ldquo;A plataforma mudou minha prática em HOF. O conteúdo é profundo e prático ao mesmo tempo.&rdquo;
+            &ldquo;Amei cada aula. Foi uma das melhores experiências de aprendizado que já tive. Agora consigo assistir quantas vezes quiser ao meu professor favorito — isso não tem preço.&rdquo;
           </p>
-          <p className="mt-2 text-[10px] text-[#D4A843]/60">Dra. Ana Paula — Dentista, SP</p>
+          <p className="mt-2 text-[10px] text-[#D4A843]/60">Dra. Ana — Rio de Janeiro</p>
         </div>
 
         {/* Banner trial */}
