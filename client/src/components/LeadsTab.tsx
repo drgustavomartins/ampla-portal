@@ -107,21 +107,21 @@ export function LeadsTab({ trialStudents = [], onConvert }: {
       </div>
 
       {/* Sub-abas */}
-      <div className="flex gap-2 border-b border-border/30">
+      <div className="flex border-b border-border/30">
         {SUB_TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setSubTab(t.key)}
-            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-all relative ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 text-sm font-medium border-b-2 transition-all relative ${
               subTab === t.key
                 ? "border-gold text-gold bg-gold/5"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             {t.icon}
-            {t.label}
+            <span>{t.label}</span>
             {t.badge !== undefined && t.badge > 0 && (
-              <span className="ml-1 min-w-[18px] h-[18px] rounded-full bg-gold text-[#0A1628] text-[10px] font-bold flex items-center justify-center px-1">
+              <span className="min-w-[18px] h-[18px] rounded-full bg-gold text-[#0A1628] text-[10px] font-bold flex items-center justify-center px-1">
                 {t.badge}
               </span>
             )}
