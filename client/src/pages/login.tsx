@@ -129,72 +129,8 @@ export default function LoginPage() {
       style={{ background: "radial-gradient(ellipse at 30% 20%, hsl(216 60% 14%) 0%, hsl(216 60% 7%) 70%)" }}
     >
 
-      {/* ===== COLUNA ESQUERDA — Painel rico (desktop only) ===== */}
-      <div className="hidden lg:flex lg:w-[52%] flex-col justify-center px-16 py-10 border-r border-white/5">
-        <div className="max-w-[420px]">
-
-          {/* Logo + identidade */}
-          <div className="flex items-center gap-3 mb-8">
-            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-9 object-contain" />
-          </div>
-
-          {/* Divider */}
-          <div className="w-full h-px bg-gradient-to-r from-[#D4A843]/30 via-[#D4A843]/10 to-transparent mb-8" />
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-3 mb-8">
-            {[
-              { value: "150+", label: "Alunos formados" },
-              { value: "50+", label: "Horas de conteúdo" },
-              { value: "5★", label: "Avaliação média" },
-            ].map(({ value, label }) => (
-              <div key={label} className="rounded-lg border border-white/6 bg-white/[0.03] px-3 py-3 text-center">
-                <p className="text-lg font-bold text-[#D4A843] leading-none mb-1">{value}</p>
-                <p className="text-[10px] text-white/35 uppercase tracking-wide">{label}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Preview dos módulos */}
-          <p className="text-[10px] uppercase tracking-widest text-[#D4A843]/40 mb-3">Conteúdo disponível</p>
-          <div className="space-y-1.5 mb-8">
-            {MODULES.map((m, i) => (
-              <div key={m.title} className="flex items-center gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2.5">
-                <div className="w-5 h-5 rounded-full bg-[#D4A843]/10 border border-[#D4A843]/20 flex items-center justify-center shrink-0">
-                  <Play className="h-2 w-2 text-[#D4A843] fill-[#D4A843]" />
-                </div>
-                <span className="text-sm text-white/70">{m.title}</span>
-                <span className="ml-auto text-[10px] text-white/20 font-mono shrink-0">0{i + 1}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Depoimento */}
-          <div className="rounded-xl border border-[#D4A843]/20 bg-[#D4A843]/5 p-4 mb-6">
-            <div className="flex gap-0.5 mb-2">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="h-3 w-3 text-[#D4A843] fill-[#D4A843]" />
-              ))}
-            </div>
-            <p className="text-xs text-white/60 leading-relaxed italic">
-              &ldquo;A plataforma mudou completamente minha forma de trabalhar com HOF. O conteúdo é profundo e prático ao mesmo tempo.&rdquo;
-            </p>
-            <p className="mt-2 text-[10px] text-[#D4A843]/60">Dra. Ana Paula — Dentista, SP</p>
-          </div>
-
-          {/* Banner trial */}
-          <div className="rounded-xl border border-[#D4A843]/30 bg-[#D4A843]/8 p-4 flex items-center gap-3">
-            <Sparkles className="h-4 w-4 text-[#D4A843] shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white">7 dias grátis — sem cartão</p>
-              <p className="text-[10px] text-white/40">Acesse as primeiras aulas de cada módulo agora</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ===== COLUNA DIREITA — Formulário ===== */}
-      <div className="flex-1 flex flex-col items-center justify-start lg:justify-center p-4 pt-12 sm:pt-16 lg:pt-4">
+      {/* ===== COLUNA ESQUERDA — Formulário ===== */}
+      <div className="flex-1 flex flex-col items-center justify-start lg:justify-center p-4 pt-12 sm:pt-16 lg:pt-4 lg:border-r lg:border-white/5">
         <div className="w-full max-w-sm space-y-6">
 
           {/* Logo mobile */}
@@ -545,6 +481,66 @@ export default function LoginPage() {
             .
           </p>
         </div>
+      </div>
+
+      {/* ===== COLUNA DIREITA — Painel rico (desktop only) ===== */}
+      <div className="hidden lg:flex lg:w-[52%] flex-col justify-center px-14 py-8 gap-6">
+
+        {/* Logo */}
+        <img src="/logo-transparent.png" alt="Ampla Facial" className="h-9 w-auto object-contain" />
+
+        <div className="w-16 h-px bg-[#D4A843]/30" />
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { value: "150+", label: "Alunos formados" },
+            { value: "50+", label: "Horas de conteúdo" },
+            { value: "5★", label: "Avaliação média" },
+          ].map(({ value, label }) => (
+            <div key={label} className="rounded-lg border border-white/6 bg-white/[0.03] px-3 py-3 text-center">
+              <p className="text-lg font-bold text-[#D4A843] leading-none mb-1">{value}</p>
+              <p className="text-[10px] text-white/35 uppercase tracking-wide">{label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Preview módulos */}
+        <div>
+          <p className="text-[10px] uppercase tracking-widest text-[#D4A843]/40 mb-2">Conteúdo disponível</p>
+          <div className="space-y-1">
+            {MODULES.map((m, i) => (
+              <div key={m.title} className="flex items-center gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2">
+                <div className="w-5 h-5 rounded-full bg-[#D4A843]/10 border border-[#D4A843]/20 flex items-center justify-center shrink-0">
+                  <Play className="h-2 w-2 text-[#D4A843] fill-[#D4A843]" />
+                </div>
+                <span className="text-sm text-white/70">{m.title}</span>
+                <span className="ml-auto text-[10px] text-white/20 font-mono shrink-0">0{i + 1}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Depoimento */}
+        <div className="rounded-xl border border-[#D4A843]/20 bg-[#D4A843]/5 p-4">
+          <div className="flex gap-0.5 mb-2">
+            {[...Array(5)].map((_, i) => <Star key={i} className="h-3 w-3 text-[#D4A843] fill-[#D4A843]" />)}
+          </div>
+          <p className="text-xs text-white/60 leading-relaxed italic">
+            &ldquo;A plataforma mudou minha prática em HOF. O conteúdo é profundo e prático ao mesmo tempo.&rdquo;
+          </p>
+          <p className="mt-2 text-[10px] text-[#D4A843]/60">Dra. Ana Paula — Dentista, SP</p>
+        </div>
+
+        {/* Banner trial */}
+        <div className="rounded-xl border border-[#D4A843]/30 bg-[#D4A843]/5 p-4 flex items-center gap-3">
+          <Sparkles className="h-4 w-4 text-[#D4A843] shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-white">7 dias grátis — sem cartão</p>
+            <p className="text-[10px] text-white/40">Acesse as primeiras aulas agora mesmo</p>
+          </div>
+        </div>
+
       </div>
 
     </div>
