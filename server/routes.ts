@@ -599,6 +599,64 @@ export async function registerRoutes(server: Server, app: Express) {
     console.error("[quiz] Failed to create quiz_leads table:", e.message);
   }
 
+  // Tabela de eventos do funil (rastreia cada etapa por fingerprint/email)
+  try {
+    await db.execute(`CREATE TABLE IF NOT EXISTS funnel_events (
+      id SERIAL PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      email TEXT,
+      event TEXT NOT NULL,
+      metadata JSONB,
+      created_at TEXT NOT NULL
+    )`);
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_funnel_session ON funnel_events(session_id)`);
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_funnel_email ON funnel_events(email)`);
+  } catch (e: any) {
+    console.error("[funnel] Failed to create funnel_events table:", e.message);
+  }
+
+  // POST /api/funnel/event — registrar evento do funil
+  app.post("/api/funnel/event", async (req, res) => {
+    try {
+      const { session_id, email, event, metadata } = req.body;
+      if (!session_id || !event) return res.status(400).json({ message: "session_id e event são obrigatórios" });
+      await db.execute(
+        `INSERT INTO funnel_events (session_id, email, event, metadata, created_at) VALUES ($1, $2, $3, $4, $5)`,
+        [session_id, email || null, event, JSON.stringify(metadata || {}), new Date().toISOString()]
+      );
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.json({ ok: false });
+    }
+  });
+
+  // GET /api/admin/funnel — listar funil por sessão
+  app.get("/api/admin/funnel", async (req: any, res) => {
+    if (!req.user?.isAdmin) return res.status(403).json({ message: "Acesso restrito" });
+    try {
+      // Agrupa eventos por session_id, pega o email mais recente e lista eventos
+      const result = await db.execute(`
+        SELECT
+          session_id,
+          MAX(email) as email,
+          json_agg(json_build_object(
+            'event', event,
+            'metadata', metadata,
+            'created_at', created_at
+          ) ORDER BY created_at ASC) as events,
+          MIN(created_at) as first_seen,
+          MAX(created_at) as last_seen
+        FROM funnel_events
+        GROUP BY session_id
+        ORDER BY MAX(created_at) DESC
+        LIMIT 200
+      `);
+      res.json({ sessions: result.rows });
+    } catch (e: any) {
+      res.status(500).json({ message: "Erro" });
+    }
+  });
+
   // Tabela de tracking de cliques no banner do quiz
   try {
     await db.execute(`CREATE TABLE IF NOT EXISTS quiz_clicks (

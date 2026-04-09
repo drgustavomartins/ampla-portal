@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, Check, Loader2, Star, Trophy } from "lucide-react";
+import { trackEvent } from "@/lib/funnel";
 
 // ─── Perguntas ────────────────────────────────────────────────────────────────
 const PERGUNTAS = [
@@ -145,6 +146,13 @@ export default function QuizPage() {
   const [lead, setLead] = useState({ nome: "", email: "", whatsapp: "" });
   const [leadErro, setLeadErro] = useState("");
 
+  // Trackear início do quiz quando entra na etapa quiz
+  useEffect(() => {
+    if (etapa === "quiz" && perguntaAtual === 0) {
+      trackEvent("quiz_start");
+    }
+  }, [etapa]);
+
   // Alterna seleção de opção (múltipla)
   const toggleOpcao = (opcaoId: string) => {
     const atuais = respostas[PERGUNTAS[perguntaAtual].id] || [];
@@ -162,6 +170,7 @@ export default function QuizPage() {
     } else {
       const res = calcularResultado(respostas);
       setResultado(res);
+      trackEvent("quiz_complete", { resultado: res });
       setEtapa("lead");
     }
   };
@@ -189,6 +198,7 @@ export default function QuizPage() {
       return;
     }
     setLeadErro("");
+    trackEvent("lead_capture", { resultado: resultado! }, lead.email);
     salvarLeadMutation.mutate({
       nome: lead.nome,
       email: lead.email,
@@ -452,6 +462,7 @@ export default function QuizPage() {
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackEvent("plan_click", { plano: resultado, cta: "whatsapp" }, lead.email)}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] py-4 font-bold text-white text-base hover:bg-[#1ebe5d] transition-all mb-3"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">

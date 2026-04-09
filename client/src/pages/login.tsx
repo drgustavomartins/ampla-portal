@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Sparkles, Eye, EyeOff, CheckCircle2, Star, Users, Clock, Play, ArrowRight } from "lucide-react";
+import { trackEvent } from "@/lib/funnel";
 import type { z } from "zod";
 
 // #33 — Humaniza erros de API em mensagens amigáveis
@@ -549,7 +550,7 @@ export default function LoginPage() {
         {/* Banner Quiz */}
         <a
           href="/#/quiz"
-          onClick={() => fetch("/api/quiz/click", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source: "login_banner" }) }).catch(() => {})}
+          onClick={() => { fetch("/api/quiz/click", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source: "login_banner" }) }).catch(() => {}); trackEvent("banner_click", { source: "login_banner" }); }}
           className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 flex items-center gap-3 hover:border-[#D4A843]/30 hover:bg-[#D4A843]/5 transition-all group"
         >
           <span className="text-xl shrink-0">🏆</span>

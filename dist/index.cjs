@@ -187,7 +187,29 @@ Signature verification is impossible without access to the original signed mater
       resultado TEXT NOT NULL,
       respostas JSONB,
       created_at TEXT NOT NULL
-    )`)}catch(t){console.error("[quiz] Failed to create quiz_leads table:",t.message)}try{await db.execute(`CREATE TABLE IF NOT EXISTS quiz_clicks (
+    )`)}catch(t){console.error("[quiz] Failed to create quiz_leads table:",t.message)}try{await db.execute(`CREATE TABLE IF NOT EXISTS funnel_events (
+      id SERIAL PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      email TEXT,
+      event TEXT NOT NULL,
+      metadata JSONB,
+      created_at TEXT NOT NULL
+    )`),await db.execute("CREATE INDEX IF NOT EXISTS idx_funnel_session ON funnel_events(session_id)"),await db.execute("CREATE INDEX IF NOT EXISTS idx_funnel_email ON funnel_events(email)")}catch(t){console.error("[funnel] Failed to create funnel_events table:",t.message)}e.post("/api/funnel/event",async(t,r)=>{try{let{session_id:i,email:s,event:a,metadata:o}=t.body;if(!i||!a)return r.status(400).json({message:"session_id e event s\xE3o obrigat\xF3rios"});await db.execute("INSERT INTO funnel_events (session_id, email, event, metadata, created_at) VALUES ($1, $2, $3, $4, $5)",[i,s||null,a,JSON.stringify(o||{}),new Date().toISOString()]),r.json({ok:!0})}catch{r.json({ok:!1})}}),e.get("/api/admin/funnel",async(t,r)=>{if(!t.user?.isAdmin)return r.status(403).json({message:"Acesso restrito"});try{let i=await db.execute(`
+        SELECT
+          session_id,
+          MAX(email) as email,
+          json_agg(json_build_object(
+            'event', event,
+            'metadata', metadata,
+            'created_at', created_at
+          ) ORDER BY created_at ASC) as events,
+          MIN(created_at) as first_seen,
+          MAX(created_at) as last_seen
+        FROM funnel_events
+        GROUP BY session_id
+        ORDER BY MAX(created_at) DESC
+        LIMIT 200
+      `);r.json({sessions:i.rows})}catch{r.status(500).json({message:"Erro"})}});try{await db.execute(`CREATE TABLE IF NOT EXISTS quiz_clicks (
       id SERIAL PRIMARY KEY,
       source TEXT NOT NULL,
       ip TEXT,
