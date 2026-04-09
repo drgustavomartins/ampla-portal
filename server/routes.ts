@@ -256,6 +256,12 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_started_at TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS lgpd_accepted_at TEXT`).catch(() => {});
     console.log("[auto-migrate] material_topics, order, materials_access, mentorship dates, user_modules, user_material_categories, material_themes/subcategories/files, stripe columns ensured");
+    // Tabelas de quiz e funil
+    await db.execute(`CREATE TABLE IF NOT EXISTS quiz_leads (id SERIAL PRIMARY KEY, nome TEXT NOT NULL, email TEXT NOT NULL, whatsapp TEXT NOT NULL, resultado TEXT NOT NULL, respostas JSONB, created_at TEXT NOT NULL)`).catch(() => {});
+    await db.execute(`CREATE TABLE IF NOT EXISTS quiz_clicks (id SERIAL PRIMARY KEY, source TEXT NOT NULL, ip TEXT, user_agent TEXT, created_at TEXT NOT NULL)`).catch(() => {});
+    await db.execute(`CREATE TABLE IF NOT EXISTS funnel_events (id SERIAL PRIMARY KEY, session_id TEXT NOT NULL, email TEXT, event TEXT NOT NULL, metadata JSONB, created_at TEXT NOT NULL)`).catch(() => {});
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_funnel_session ON funnel_events(session_id)`).catch(() => {});
+    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events tables ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
