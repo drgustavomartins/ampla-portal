@@ -716,6 +716,7 @@ export async function registerRoutes(server: Server, app: Express) {
   // POST /api/quiz/lead — salvar lead do quiz
   app.post("/api/quiz/lead", async (req, res) => {
     try {
+      const { db } = await import("./db");
       const { nome, email, whatsapp, resultado, respostas } = req.body;
       if (!nome || !email || !whatsapp || !resultado) {
         return res.status(400).json({ message: "Dados incompletos" });
