@@ -2180,7 +2180,7 @@ export async function registerRoutes(server: Server, app: Express) {
     try {
       const { subcategoryId, name, type, driveId, order } = req.body;
       if (!subcategoryId || !name || !type || !driveId) return res.status(400).json({ message: "subcategoryId, nome, tipo e driveId são obrigatórios" });
-      if (type !== "pdf" && type !== "docx" && type !== "mp3") return res.status(400).json({ message: "Tipo deve ser 'pdf', 'docx' ou 'mp3'" });
+      if (!["pdf","docx","mp3","youtube"].includes(type)) return res.status(400).json({ message: "Tipo deve ser 'pdf', 'docx', 'mp3' ou 'youtube'" });
       const { youtubeId } = req.body;
       const file = await storage.createMaterialFile({ subcategoryId, name: sanitize(name), type, driveId: sanitize(driveId), youtubeId: youtubeId ? sanitize(youtubeId) : null, order: order ?? 0 });
       const admin = await storage.getUser(auth.userId);
@@ -2200,7 +2200,7 @@ export async function registerRoutes(server: Server, app: Express) {
     const updateData: any = {};
     if (name !== undefined) updateData.name = sanitize(name);
     if (type !== undefined) {
-      if (type !== "pdf" && type !== "docx" && type !== "mp3") return res.status(400).json({ message: "Tipo deve ser 'pdf', 'docx' ou 'mp3'" });
+      if (!["pdf","docx","mp3","youtube"].includes(type)) return res.status(400).json({ message: "Tipo deve ser 'pdf', 'docx', 'mp3' ou 'youtube'" });
       updateData.type = type;
     }
     if (driveId !== undefined) updateData.driveId = sanitize(driveId);
