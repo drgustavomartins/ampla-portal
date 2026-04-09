@@ -632,7 +632,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // GET /api/admin/funnel — listar funil por sessão
   app.get("/api/admin/funnel", async (req: any, res) => {
-    if (!req.user?.isAdmin) return res.status(403).json({ message: "Acesso restrito" });
+    if (!requireAdmin(req, res)) return;
     try {
       // Agrupa eventos por session_id, pega o email mais recente e lista eventos
       const result = await db.execute(`
@@ -688,7 +688,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // GET /api/admin/quiz-stats — stats de cliques e conversão
   app.get("/api/admin/quiz-stats", async (req: any, res) => {
-    if (!req.user?.isAdmin) return res.status(403).json({ message: "Acesso restrito" });
+    if (!requireAdmin(req, res)) return;
     try {
       const clicks = await db.execute(`SELECT source, COUNT(*) as total FROM quiz_clicks GROUP BY source ORDER BY total DESC`);
       const totalClicks = await db.execute(`SELECT COUNT(*) as total FROM quiz_clicks`);
@@ -815,7 +815,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // GET /api/admin/quiz-leads — listar leads do quiz (admin)
   app.get("/api/admin/quiz-leads", async (req: any, res) => {
-    if (!req.user?.isAdmin) return res.status(403).json({ message: "Acesso restrito" });
+    if (!requireAdmin(req, res)) return;
     try {
       const result = await db.execute(
         `SELECT * FROM quiz_leads ORDER BY created_at DESC LIMIT 500`
