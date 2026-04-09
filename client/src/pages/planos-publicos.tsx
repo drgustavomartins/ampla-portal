@@ -95,7 +95,7 @@ function PlanCard({
         )}
         {!isNegociacao && (
           <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
-            <CreditCard className="h-3 w-3" /> Cartão ou PIX — acesso imediato
+            <CreditCard className="h-3 w-3" /> Cartão — acesso imediato
           </div>
         )}
       </div>
@@ -113,7 +113,7 @@ function PlanCard({
         )}
       </ul>
 
-      {/* CTA — sempre na base do card */}
+      {/* CTA */}
       {isNegociacao ? (
         <div className="mt-auto space-y-2">
           <p className="text-center text-xs text-[#D4A843]/70">
@@ -188,11 +188,9 @@ export default function PlanosPublicos() {
 
   const plans = data?.plans || [];
 
-  // Separar planos de compra direta dos planos de negociação direta
   const planosDirectos = plans.filter((p) => !NEGOCIACAO_DIRETA.includes(p.key));
   const planosNegociacao = plans.filter((p) => NEGOCIACAO_DIRETA.includes(p.key));
 
-  // Agrupar planos diretos
   const grupos: Record<string, PlanData[]> = {};
   for (const p of planosDirectos) {
     if (!grupos[p.group]) grupos[p.group] = [];
@@ -220,20 +218,18 @@ export default function PlanosPublicos() {
     <div className="min-h-screen bg-[#0A1628] px-4 py-10">
       <div className="mx-auto max-w-6xl">
 
-        {/* Header */}
         <div className="mb-10 text-center">
           <img src="/logo-transparent.png" alt="Ampla Facial" className="mx-auto mb-5 h-14 object-contain" />
           <h1 className="text-3xl font-bold text-white">Escolha seu plano e comece agora</h1>
-          <p className="mt-2 text-gray-400">Acesso liberado imediatamente após o pagamento — cartão ou PIX</p>
+          <p className="mt-2 text-gray-400">Acesso liberado imediatamente após o pagamento — cartão</p>
 
           <div className="mt-5 flex flex-wrap justify-center gap-4 text-sm text-gray-400">
             <span className="flex items-center gap-1.5"><Check className="h-4 w-4 text-green-400" /> Acesso imediato</span>
-            <span className="flex items-center gap-1.5"><Check className="h-4 w-4 text-green-400" /> Cartão ou PIX</span>
+            <span className="flex items-center gap-1.5"><Check className="h-4 w-4 text-green-400" /> Pagamento seguro via Stripe</span>
             <span className="flex items-center gap-1.5"><Check className="h-4 w-4 text-green-400" /> Upgrade com crédito a qualquer momento</span>
           </div>
         </div>
 
-        {/* Planos de compra direta */}
         {["digital", "observador"].map((group) => {
           const groupPlans = grupos[group] || [];
           if (!groupPlans.length) return null;
@@ -262,7 +258,6 @@ export default function PlanosPublicos() {
           );
         })}
 
-        {/* Separador — Planos com negociação direta */}
         {planosNegociacao.length > 0 && (
           <div className="mb-14">
             <div className="mb-8 flex items-center gap-4">
@@ -291,7 +286,6 @@ export default function PlanosPublicos() {
           </div>
         )}
 
-        {/* Nota de upgrade */}
         <div className="rounded-2xl border border-[#1e3a5f] bg-[#0D1E35] p-6 text-center">
           <Star className="mx-auto mb-3 h-5 w-5 text-[#D4A843]" />
           <h3 className="font-semibold text-white">Começou num plano menor? Faça upgrade com crédito</h3>
@@ -300,7 +294,6 @@ export default function PlanosPublicos() {
           </p>
         </div>
 
-        {/* Link de volta */}
         <div className="mt-8 text-center">
           <a href="/#/" className="text-sm text-gray-500 hover:text-[#D4A843] transition-colors">
             <ChevronLeft className="inline h-4 w-4" /> Já tenho conta — fazer login
