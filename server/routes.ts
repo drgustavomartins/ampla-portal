@@ -687,6 +687,40 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   });
 
+  // POST /api/admin/broadcast-email — envia email para todos os alunos aprovados
+  app.post("/api/admin/broadcast-email", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { subject, html, excludeEmails = [] } = req.body;
+      if (!subject || !html) return res.status(400).json({ message: "subject e html s\u00e3o obrigat\u00f3rios" });
+      if (!resend) return res.status(503).json({ message: "Servi\u00e7o de email n\u00e3o configurado (RESEND_API_KEY ausente)" });
+      const { db } = await import("./db");
+      const result = await db.execute(`SELECT id, name, email FROM users WHERE approved = true AND role NOT IN ('admin','super_admin')`);
+      const recipients = result.rows.filter((u: any) => !excludeEmails.includes(u.email));
+      const results: any[] = [];
+      for (const user of recipients) {
+        const personalizedHtml = html.replace(/\[nome\]/gi, (user as any).name?.split(' ')[0] || 'M\u00e9dico(a)');
+        try {
+          await resend.emails.send({
+            from: "Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",
+            to: (user as any).email,
+            subject,
+            html: personalizedHtml,
+          });
+          results.push({ email: (user as any).email, status: 'sent' });
+        } catch (err: any) {
+          results.push({ email: (user as any).email, status: 'error', error: err.message });
+        }
+      }
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || 'Admin', 'broadcast_email', 'email', 0, subject, { total: recipients.length });
+      res.json({ sent: results.filter(r => r.status === 'sent').length, failed: results.filter(r => r.status === 'error').length, results });
+    } catch (e: any) {
+      res.status(500).json({ message: e.message });
+    }
+  });
+
   // Tabela de tracking de cliques no banner do quiz
   try {
     const { db } = await import("./db");
