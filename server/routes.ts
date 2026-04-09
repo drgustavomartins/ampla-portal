@@ -2019,6 +2019,17 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // ==================== MATERIALS (DB-driven) ====================
   // Public endpoint: get all themes with nested subcategories and files
+  // Mapa canônico de capas — fonte da verdade, nunca depende do banco
+  // Atualizar este mapa sempre que gerar novas imagens de capa
+  const COVER_MAP: Record<string, string> = {
+    "Toxina Botul\u00ednica":                  "/images/covers/cover_toxina_botulinica_v2026.png",
+    "Preenchedores Faciais":               "/images/covers/cover_preenchedores_faciais_v2026.png",
+    "Bioestimuladores de Col\u00e1geno":       "/images/covers/cover_bioestimuladores_v2026.png",
+    "Moduladores de Matriz Extracelular":  "/images/covers/cover_moduladores_matriz_v2026.png",
+    "M\u00e9todo NaturalUp\u00ae":                  "/images/covers/cover_metodo_naturalup_v2026.png",
+    "IA na Medicina Est\u00e9tica":             "/images/covers/cover_ia_medicina.png",
+  };
+
   app.get("/api/materials", async (req, res) => {
     // Public endpoint — materials catalog is visible to all (files are PDFs/links, not sensitive)
     try {
@@ -2033,7 +2044,9 @@ export async function registerRoutes(server: Server, app: Express) {
           return { ...sub, files };
         }));
         const fileCount = subsWithFiles.reduce((acc, sub) => acc + sub.files.length, 0);
-        return { ...theme, subcategories: subsWithFiles, fileCount };
+        // Sempre usa o mapa canônico; só cai no banco se o titulo nao estiver mapeado
+        const coverUrl = COVER_MAP[theme.title] ?? theme.coverUrl;
+        return { ...theme, coverUrl, subcategories: subsWithFiles, fileCount };
       }));
       res.json(result);
     } catch (e: any) {
