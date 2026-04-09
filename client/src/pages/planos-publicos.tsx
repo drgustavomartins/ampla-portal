@@ -206,6 +206,15 @@ export default function PlanosPublicos() {
 
   return (
     <div className="min-h-screen bg-[#0A1628] px-4 py-10">
+      {/* Botão voltar */}
+      <button
+        onClick={() => window.history.back()}
+        className="fixed left-4 top-4 z-50 flex items-center gap-1.5 rounded-full border border-[#1e3a5f] bg-[#0D1E35]/80 px-4 py-2 text-sm text-gray-400 backdrop-blur hover:border-[#D4A843]/40 hover:text-[#D4A843] transition-all"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Voltar
+      </button>
+
       <div className="mx-auto max-w-6xl">
 
         <div className="mb-10 text-center">
