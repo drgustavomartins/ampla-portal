@@ -8,8 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { QuizLeadsTab } from "@/components/QuizLeadsTab";
-import { FunnelTab } from "@/components/FunnelTab";
+import { LeadsTab } from "@/components/LeadsTab";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription
 } from "@/components/ui/dialog";
@@ -836,7 +835,7 @@ export default function AdminDashboard() {
   const uniqueAdmins = [...new Map(auditLogs.map(l => [l.adminId, l.adminName])).entries()];
 
   // Tab count: how many tabs to show
-  const tabCount = isSuperAdmin ? 10 : 8;
+  const tabCount = isSuperAdmin ? 8 : 6;
 
   return (
     <div className="min-h-screen bg-background">
@@ -941,7 +940,7 @@ export default function AdminDashboard() {
 
         {/* ─── Main Content Tabs ─── */}
         <Tabs defaultValue="lessons" className="space-y-6">
-          <TabsList className={`w-full grid bg-card/60 border border-border/30 p-1 h-11 sm:h-12 ${isSuperAdmin ? "grid-cols-10" : "grid-cols-8"}`}>
+          <TabsList className={`w-full grid bg-card/60 border border-border/30 p-1 h-11 sm:h-12 ${isSuperAdmin ? "grid-cols-8" : "grid-cols-6"}`}>
             <TabsTrigger
               value="students"
               data-testid="tab-students"
@@ -951,14 +950,14 @@ export default function AdminDashboard() {
               <span className="hidden sm:inline">Alunos</span>
             </TabsTrigger>
             <TabsTrigger
-              value="trial"
-              data-testid="tab-trial"
-              className="data-[state=active]:bg-yellow-500/10 data-[state=active]:text-yellow-400 data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3 relative"
+              value="leads"
+              data-testid="tab-leads"
+              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3 relative"
             >
-              <Sparkles className="w-4 h-4 sm:mr-2 shrink-0" />
-              <span className="hidden sm:inline">Leads Trial</span>
+              <Users className="w-4 h-4 sm:mr-2 shrink-0" />
+              <span className="hidden sm:inline">Leads</span>
               {trialStudents.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 text-black text-[10px] font-bold rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-gold text-[#0A1628] text-[10px] font-bold rounded-full flex items-center justify-center">
                   {trialStudents.length}
                 </span>
               )}
@@ -1004,20 +1003,6 @@ export default function AdminDashboard() {
                 >
                   <UserCog className="w-4 h-4 sm:mr-2 shrink-0" />
                   <span className="hidden sm:inline">Admins</span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="quiz-leads"
-                  className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
-                >
-                  <span className="hidden sm:inline">Quiz</span>
-                  <span className="sm:hidden">Quiz</span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="funnel"
-                  className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
-                >
-                  <span className="hidden sm:inline">Funil</span>
-                  <span className="sm:hidden">Funil</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="history"
@@ -2317,7 +2302,11 @@ export default function AdminDashboard() {
           </TabsContent>
 
           {/* ========== LEADS TRIAL TAB ========== */}
-          <TabsContent value="trial" className="space-y-6 mt-0">
+          <TabsContent value="leads" className="space-y-6 mt-0">
+            <LeadsTab trialCount={trialStudents.length} />
+          </TabsContent>
+
+          <TabsContent value="trial-legacy" className="space-y-6 mt-0">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Leads Trial ({trialStudents.length})</h3>
@@ -2514,15 +2503,7 @@ export default function AdminDashboard() {
             </TabsContent>
           )}
 
-          {/* ========== QUIZ LEADS TAB ========== */}
-          <TabsContent value="quiz-leads" className="space-y-6 mt-0">
-            <QuizLeadsTab />
-          </TabsContent>
 
-          {/* ========== FUNIL TAB ========== */}
-          <TabsContent value="funnel" className="space-y-6 mt-0">
-            <FunnelTab />
-          </TabsContent>
 
           {/* ========== HISTORY TAB (super_admin: all logs, admin: own logs inline) ========== */}
           {isSuperAdmin && (
