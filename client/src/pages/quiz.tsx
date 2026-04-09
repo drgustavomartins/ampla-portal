@@ -139,7 +139,7 @@ function calcularResultado(respostas: Respostas): PlanoKey {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function QuizPage() {
-  const [etapa, setEtapa] = useState<"intro" | "quiz" | "lead" | "resultado">("intro");
+  const [etapa, setEtapa] = useState<"intro" | "lead" | "quiz" | "resultado">("intro");
   const [perguntaAtual, setPerguntaAtual] = useState(0);
   const [respostas, setRespostas] = useState<Respostas>({});
   const [resultado, setResultado] = useState<PlanoKey | null>(null);
@@ -189,16 +189,34 @@ export default function QuizPage() {
       return res.json();
     },
     onSuccess: () => setEtapa("resultado"),
-    onError: () => setEtapa("resultado"), // mostra resultado mesmo se falhar
+    onError: () => setEtapa("resultado"),
   });
 
-  const enviarLead = () => {
+  // Salvar lead parcial (só dados, sem resultado ainda)
+  const salvarLeadParcialMutation = useMutation({
+    mutationFn: async (data: { nome: string; email: string; whatsapp: string }) => {
+      await fetch("/api/quiz/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...data, resultado: "parcial", respostas: {} }),
+      });
+    },
+  });
+
+  const enviarLeadInicial = () => {
     if (!lead.nome.trim() || !lead.email.trim() || !lead.whatsapp.trim()) {
-      setLeadErro("Preencha todos os campos para ver seu resultado.");
+      setLeadErro("Preencha todos os campos para continuar.");
       return;
     }
     setLeadErro("");
-    trackEvent("lead_capture", { resultado: resultado! }, lead.email);
+    // Salva lead parcial imediatamente
+    trackEvent("lead_capture", { etapa: "inicial" }, lead.email);
+    salvarLeadParcialMutation.mutate({ nome: lead.nome, email: lead.email, whatsapp: lead.whatsapp });
+    setEtapa("quiz");
+  };
+
+  const enviarLeadFinal = () => {
+    trackEvent("lead_capture", { resultado: resultado!, etapa: "final" }, lead.email);
     salvarLeadMutation.mutate({
       nome: lead.nome,
       email: lead.email,
@@ -244,7 +262,7 @@ export default function QuizPage() {
           </div>
 
           <button
-            onClick={() => setEtapa("quiz")}
+            onClick={() => { trackEvent("banner_click", { source: "quiz_intro" }); setEtapa("lead"); }}
             className="w-full rounded-xl bg-[#D4A843] py-4 font-bold text-[#0A1628] text-lg hover:bg-[#e8b84d] transition-all flex items-center justify-center gap-2"
           >
             Descobrir meu perfil <ArrowRight className="h-5 w-5" />
@@ -338,17 +356,18 @@ export default function QuizPage() {
     );
   }
 
-  // ── LEAD ───────────────────────────────────────────────────────────────────
+  // ── LEAD (coleta de dados ANTES do quiz) ─────────────────────────────────
   if (etapa === "lead") {
     return (
       <div className="min-h-screen bg-[#0A1628] flex flex-col items-center justify-center px-4 py-10">
         <div className="max-w-md w-full">
 
           <div className="text-center mb-8">
-            <div className="text-4xl mb-4">🎉</div>
-            <h2 className="text-2xl font-bold text-white mb-2">Seu resultado está pronto!</h2>
+            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-12 mx-auto mb-4 object-contain" />
+            <div className="text-4xl mb-3">🏆</div>
+            <h2 className="text-2xl font-bold text-white mb-2">Antes de começar</h2>
             <p className="text-gray-400 text-sm">
-              Deixe seus dados para ver qual mentoria foi recomendada para o seu perfil — e concorrer a <strong className="text-[#D4A843]">1 mês de Mentoria VIP grátis</strong>.
+              Deixe seus dados para participar do sorteio de <strong className="text-[#D4A843]">1 mês de Mentoria VIP grátis</strong> e receber seu resultado personalizado.
             </p>
           </div>
 
@@ -390,14 +409,14 @@ export default function QuizPage() {
           )}
 
           <button
-            onClick={enviarLead}
-            disabled={salvarLeadMutation.isPending}
+            onClick={enviarLeadInicial}
+            disabled={salvarLeadParcialMutation.isPending}
             className="w-full rounded-xl bg-[#D4A843] py-4 font-bold text-[#0A1628] text-base hover:bg-[#e8b84d] transition-all flex items-center justify-center gap-2 disabled:opacity-70"
           >
-            {salvarLeadMutation.isPending ? (
-              <><Loader2 className="h-5 w-5 animate-spin" /> Calculando...</>
+            {salvarLeadParcialMutation.isPending ? (
+              <><Loader2 className="h-5 w-5 animate-spin" /> Salvando...</>
             ) : (
-              <>Ver meu resultado <ArrowRight className="h-5 w-5" /></>
+              <>Começar o quiz <ArrowRight className="h-5 w-5" /></>
             )}
           </button>
 
@@ -407,6 +426,11 @@ export default function QuizPage() {
         </div>
       </div>
     );
+  }
+
+  // Salva resultado final ao chegar na tela de resultado
+  if (etapa === "resultado" && resultado && !salvarLeadMutation.isSuccess && !salvarLeadMutation.isPending) {
+    salvarLeadMutation.mutate({ nome: lead.nome, email: lead.email, whatsapp: lead.whatsapp, resultado: resultado, respostas });
   }
 
   // ── RESULTADO ──────────────────────────────────────────────────────────────
