@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Sparkles, Eye, EyeOff, CheckCircle2, Star, Users, Clock, Play } from "lucide-react";
+import { Loader2, Sparkles, Eye, EyeOff, CheckCircle2, Star, Users, Clock, Play, ArrowRight } from "lucide-react";
 import type { z } from "zod";
 
 // #33 — Humaniza erros de API em mensagens amigáveis
@@ -545,6 +545,19 @@ export default function LoginPage() {
             <p className="text-[9px] text-white/40">Acesse as primeiras aulas agora mesmo</p>
           </div>
         </div>
+
+        {/* Banner Quiz */}
+        <a
+          href="/#/quiz"
+          className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 flex items-center gap-3 hover:border-[#D4A843]/30 hover:bg-[#D4A843]/5 transition-all group"
+        >
+          <span className="text-xl shrink-0">🏆</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-white">Qual mentoria é ideal para você?</p>
+            <p className="text-[9px] text-white/40">Faça o quiz e concorra a 1 mês VIP grátis</p>
+          </div>
+          <ArrowRight className="h-3.5 w-3.5 text-[#D4A843]/50 group-hover:text-[#D4A843] shrink-0 transition-colors" />
+        </a>
 
       </div>
 
