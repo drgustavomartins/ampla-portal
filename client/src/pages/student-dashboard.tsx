@@ -404,7 +404,7 @@ export default function StudentDashboard() {
   })();
   const lastLessonModule = lastLesson ? modules.find(m => m.id === lastLesson.moduleId) : null;
   const lastLessonThumb = (() => {
-    if (!lastLesson?.videoUrl) return null;
+    if (!lastLesson?.videoUrl || lastLesson.videoUrl.trim() === "") return null;
     const ytMatch = lastLesson.videoUrl.match(/(?:(?:www\.)?youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
     if (ytMatch) return `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`;
     return null;
