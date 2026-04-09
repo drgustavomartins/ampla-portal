@@ -306,7 +306,7 @@ export async function registerRoutes(server: Server, app: Express) {
     if (alreadyRows.length === 0) {
       const themesData = [
         {
-          title: "Toxina Botulínica", coverUrl: "/images/covers/cover_toxina_botulinica.png?v=3", order: 1,
+          title: "Toxina Botulínica", coverUrl: "/images/covers/cover_toxina_botulinica.png?v=4", order: 1,
           subcategories: [
             { name: "Compilados e Resumos", order: 1, files: [
               { name: "Compilado Toxina Botulínica — Ampla Facial", type: "pdf", driveId: "1AURBQNKIsduh6EBJV1uUfsgkaipm2qry", order: 1 },
@@ -415,7 +415,7 @@ export async function registerRoutes(server: Server, app: Express) {
           ],
         },
         {
-          title: "Moduladores de Matriz Extracelular", coverUrl: "/images/covers/cover_moduladores_matriz.png?v=2", order: 4,
+          title: "Moduladores de Matriz Extracelular", coverUrl: "/images/covers/cover_moduladores_matriz.png?v=3", order: 4,
           subcategories: [],
         },
         {
@@ -556,7 +556,7 @@ export async function registerRoutes(server: Server, app: Express) {
     const migrationName = "fix_toxina_cover_url_v3_2026_04";
     const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
     if (already.rows.length === 0) {
-      await db.execute(`UPDATE material_themes SET cover_url = '/images/covers/cover_toxina_botulinica.png?v=3' WHERE title = 'Toxina Botulínica'`);
+      await db.execute(`UPDATE material_themes SET cover_url = '/images/covers/cover_toxina_botulinica.png?v=4' WHERE title = 'Toxina Botulínica'`);
       await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
       console.log("[one-time-migrate] Updated Toxina Botulínica cover URL to v3");
     } else {
@@ -564,6 +564,22 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   } catch (e: any) {
     console.error("[one-time-migrate] Failed to update toxina cover URL:", e.message);
+  }
+
+  // Fix coverUrl cache bust para Moduladores de Matriz Extracelular
+  try {
+    await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
+    const migrationName = "fix_moduladores_cover_url_v3_2026_04";
+    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    if (already.rows.length === 0) {
+      await db.execute(`UPDATE material_themes SET cover_url = '/images/covers/cover_moduladores_matriz.png?v=3' WHERE title = 'Moduladores de Matriz Extracelular'`);
+      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+      console.log("[one-time-migrate] Updated Moduladores cover URL to v3");
+    } else {
+      console.log("[one-time-migrate] fix_moduladores_cover_url_v3 already applied, skipping");
+    }
+  } catch (e: any) {
+    console.error("[one-time-migrate] Failed to update moduladores cover URL:", e.message);
   }
 
   // ==================== AUTH ====================
