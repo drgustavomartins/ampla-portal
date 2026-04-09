@@ -458,9 +458,13 @@ export default function StudentDashboard() {
       <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           {/* Left: Logo */}
-          <div className="flex items-center gap-3">
-            <img src="/logo-icon.png" alt="Ampla Facial" className="w-7 h-7 object-contain" />
-            <span className="text-sm font-medium text-gold tracking-wide">AMPLA FACIAL</span>
+          <div className="flex items-center gap-2.5">
+            <img src="/logo-icon.png" alt="Ampla Facial" className="w-10 h-10 object-contain shrink-0 -mt-1" />
+            <div className="leading-none">
+              <p className="text-[8px] uppercase tracking-[0.3em] text-gold/50 font-light mb-0.5">Portal de Aulas</p>
+              <p className="text-sm font-extrabold tracking-wide text-white">AMPLA FACIAL</p>
+              <p className="text-[9px] text-gold/70 tracking-wide font-light">Dr. Gustavo Martins</p>
+            </div>
           </div>
 
           {/* Right: User info */}
