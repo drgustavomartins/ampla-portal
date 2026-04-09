@@ -841,6 +841,7 @@ export async function registerRoutes(server: Server, app: Express) {
     }
 
     try {
+      const { db } = await import("./db");
       // Buscar leads parciais com mais de 60 minutos sem reengajamento
       const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       const result = await db.execute(
