@@ -135,9 +135,14 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col items-center justify-center p-4 pt-8 lg:pt-4 lg:border-r lg:border-white/5">
         <div className="w-full max-w-sm space-y-5">
 
-          {/* Logo acima do login — centralizada ao box */}
-          <div className="text-center">
-            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-20 w-auto object-contain mx-auto" />
+          {/* Logo acima do login — ícone + texto em linha */}
+          <div className="flex items-center gap-4 justify-center">
+            <img src="/logo-icon.png" alt="" className="h-16 w-16 object-contain shrink-0" />
+            <div>
+              <p className="text-[9px] uppercase tracking-[0.3em] text-[#D4A843]/50 mb-0.5">Portal de Aulas</p>
+              <h1 className="text-2xl font-bold tracking-wider text-white leading-tight">AMPLA FACIAL</h1>
+              <p className="text-[10px] tracking-widest text-[#D4A843]/60 mt-0.5">Dr. Gustavo Martins</p>
+            </div>
           </div>
 
           {/* Logo mobile (mantida para compatibilidade) */}
