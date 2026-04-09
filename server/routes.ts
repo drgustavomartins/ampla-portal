@@ -582,6 +582,56 @@ export async function registerRoutes(server: Server, app: Express) {
     console.error("[one-time-migrate] Failed to update moduladores cover URL:", e.message);
   }
 
+  // ==================== QUIZ LEADS ====================
+
+  // Criar tabela de leads do quiz na inicialização
+  try {
+    await db.execute(`CREATE TABLE IF NOT EXISTS quiz_leads (
+      id SERIAL PRIMARY KEY,
+      nome TEXT NOT NULL,
+      email TEXT NOT NULL,
+      whatsapp TEXT NOT NULL,
+      resultado TEXT NOT NULL,
+      respostas JSONB,
+      created_at TEXT NOT NULL
+    )`);
+  } catch (e: any) {
+    console.error("[quiz] Failed to create quiz_leads table:", e.message);
+  }
+
+  // POST /api/quiz/lead — salvar lead do quiz
+  app.post("/api/quiz/lead", async (req, res) => {
+    try {
+      const { nome, email, whatsapp, resultado, respostas } = req.body;
+      if (!nome || !email || !whatsapp || !resultado) {
+        return res.status(400).json({ message: "Dados incompletos" });
+      }
+      await db.execute(
+        `INSERT INTO quiz_leads (nome, email, whatsapp, resultado, respostas, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [nome, email, whatsapp, resultado, JSON.stringify(respostas || {}), new Date().toISOString()]
+      );
+      console.log(`[quiz] Novo lead: ${nome} (${email}) — resultado: ${resultado}`);
+      res.json({ success: true });
+    } catch (e: any) {
+      console.error("[quiz] Failed to save lead:", e.message);
+      res.status(500).json({ message: "Erro ao salvar" });
+    }
+  });
+
+  // GET /api/admin/quiz-leads — listar leads do quiz (admin)
+  app.get("/api/admin/quiz-leads", async (req: any, res) => {
+    if (!req.user?.isAdmin) return res.status(403).json({ message: "Acesso restrito" });
+    try {
+      const result = await db.execute(
+        `SELECT * FROM quiz_leads ORDER BY created_at DESC LIMIT 500`
+      );
+      res.json({ leads: result.rows });
+    } catch (e: any) {
+      res.status(500).json({ message: "Erro ao buscar leads" });
+    }
+  });
+
   // ==================== AUTH ====================
 
   app.post("/api/auth/register", async (req, res) => {

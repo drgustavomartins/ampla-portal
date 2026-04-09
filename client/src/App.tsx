@@ -14,6 +14,7 @@ import PlanosPage from "./pages/planos";
 import UpgradePage from "./pages/upgrade";
 import PagamentoSucesso from "./pages/pagamento-sucesso";
 import PlanosPublicos from "./pages/planos-publicos";
+import QuizPage from "./pages/quiz";
 import TermosPage from "./pages/termos";
 import PrivacidadePage from "./pages/privacidade";
 
@@ -59,6 +60,7 @@ function App() {
             <Route path="/pagamento/sucesso" component={() => <ProtectedPage component={PagamentoSucesso} />} />
             <Route path="/trial/ativo" component={() => <ProtectedPage component={PagamentoSucesso} />} />
             <Route path="/comecar" component={PlanosPublicos} />
+            <Route path="/quiz" component={QuizPage} />
             <Route path="/termos" component={TermosPage} />
             <Route path="/privacidade" component={PrivacidadePage} />
             <Route component={NotFound} />
