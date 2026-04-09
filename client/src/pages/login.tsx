@@ -128,22 +128,20 @@ export default function LoginPage() {
       className="min-h-screen flex flex-col"
       style={{ background: "radial-gradient(ellipse at 50% 10%, hsl(216 60% 14%) 0%, hsl(216 60% 7%) 70%)" }}
     >
-      {/* ===== LOGO CENTRALIZADA NO TOPO ===== */}
-      <div className="pt-10 pb-6 text-center">
-        <img src="/logo-transparent.png" alt="Ampla Facial" className="h-28 w-auto object-contain mx-auto" />
-        <p className="mt-2 text-[10px] uppercase tracking-[0.3em] text-[#D4A843]/50">Portal de Aulas — Dr. Gustavo Martins</p>
-        <div className="mt-3 mx-auto w-10 h-px bg-[#D4A843]/40" />
-      </div>
-
-      {/* ===== DUAS COLUNAS ABAIXO ===== */}
+      {/* ===== DUAS COLUNAS ===== */}
       <div className="flex flex-col lg:flex-row flex-1">
 
       {/* ===== COLUNA ESQUERDA — Formulário ===== */}
-      <div className="flex-1 flex flex-col items-center justify-start lg:justify-center p-4 pt-4 lg:pt-4 lg:border-r lg:border-white/5">
-        <div className="w-full max-w-sm space-y-6">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 pt-8 lg:pt-4 lg:border-r lg:border-white/5">
+        <div className="w-full max-w-sm space-y-5">
 
-          {/* Logo mobile */}
-          <div className="lg:hidden text-center space-y-3">
+          {/* Logo acima do login — centralizada ao box */}
+          <div className="text-center">
+            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-20 w-auto object-contain mx-auto" />
+          </div>
+
+          {/* Logo mobile (mantida para compatibilidade) */}
+          <div className="hidden text-center space-y-3">
             <img src="/logo-icon.png" alt="Ampla Facial" className="mx-auto h-28 w-28 object-contain drop-shadow-lg" />
             <div>
               <h1 className="text-2xl font-semibold tracking-widest text-gold uppercase">Ampla Facial</h1>
