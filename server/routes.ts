@@ -590,6 +590,27 @@ export async function registerRoutes(server: Server, app: Express) {
     console.error("[one-time-migrate] Failed to update moduladores cover URL:", e.message);
   }
 
+  // Fix coverUrl v2026 — nomes de arquivo novos para forcar cache bust real no CDN
+  try {
+    const { db } = await import("./db");
+    await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
+    const migrationName = "fix_all_cover_urls_v2026_04_09";
+    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    if (already.rows.length === 0) {
+      await db.execute(`UPDATE material_themes SET cover_url = '/images/covers/cover_toxina_botulinica_v2026.png' WHERE title = 'Toxina Botulínica'`);
+      await db.execute(`UPDATE material_themes SET cover_url = '/images/covers/cover_preenchedores_faciais_v2026.png' WHERE title = 'Preenchedores Faciais'`);
+      await db.execute(`UPDATE material_themes SET cover_url = '/images/covers/cover_bioestimuladores_v2026.png' WHERE title = 'Bioestimuladores de Colágeno'`);
+      await db.execute(`UPDATE material_themes SET cover_url = '/images/covers/cover_moduladores_matriz_v2026.png' WHERE title = 'Moduladores de Matriz Extracelular'`);
+      await db.execute(`UPDATE material_themes SET cover_url = '/images/covers/cover_metodo_naturalup_v2026.png' WHERE title = 'Método NaturalUp®'`);
+      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+      console.log("[one-time-migrate] Updated all cover URLs to v2026 (real filename change for CDN cache bust)");
+    } else {
+      console.log("[one-time-migrate] fix_all_cover_urls_v2026 already applied, skipping");
+    }
+  } catch (e: any) {
+    console.error("[one-time-migrate] Failed to update cover URLs v2026:", e.message);
+  }
+
   // ==================== QUIZ LEADS ====================
 
   // Criar tabela de leads do quiz na inicialização
