@@ -136,8 +136,8 @@ export default function LoginPage() {
         <div className="w-full max-w-sm space-y-5">
 
           {/* Logo acima do login — ícone + texto em linha */}
-          <div className="flex items-center gap-4 justify-center">
-            <img src="/logo-icon.png" alt="" className="h-16 w-16 object-contain shrink-0" />
+          <div className="flex items-start gap-4 justify-center">
+            <img src="/logo-icon.png" alt="" className="h-16 w-16 object-contain shrink-0 -mt-1" />
             <div>
               <p className="text-[9px] uppercase tracking-[0.3em] text-[#D4A843]/50 mb-0.5">Portal de Aulas</p>
               <h1 className="text-2xl font-bold tracking-wider text-white leading-tight">AMPLA FACIAL</h1>
