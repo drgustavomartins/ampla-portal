@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { ArrowRight, CheckCircle2, Loader2, Star, Trophy } from "lucide-react";
+import { ArrowRight, CheckCircle2, Check, Loader2, Star, Trophy } from "lucide-react";
 
 // ─── Perguntas ────────────────────────────────────────────────────────────────
 const PERGUNTAS = [
@@ -112,18 +112,22 @@ const RESULTADOS = {
 };
 
 type PlanoKey = keyof typeof RESULTADOS;
-type Respostas = Record<number, string>;
+// Múltipla seleção por pergunta
+type Respostas = Record<number, string[]>;
 
 function calcularResultado(respostas: Respostas): PlanoKey {
   const pontos = { digital: 0, observador: 0, vip: 0 };
 
   PERGUNTAS.forEach((q) => {
-    const opcaoEscolhida = q.opcoes.find((o) => o.id === respostas[q.id]);
-    if (opcaoEscolhida) {
-      pontos.digital += opcaoEscolhida.peso.digital;
-      pontos.observador += opcaoEscolhida.peso.observador;
-      pontos.vip += opcaoEscolhida.peso.vip;
-    }
+    const selecionadas = respostas[q.id] || [];
+    selecionadas.forEach((opcId) => {
+      const opc = q.opcoes.find((o) => o.id === opcId);
+      if (opc) {
+        pontos.digital += opc.peso.digital;
+        pontos.observador += opc.peso.observador;
+        pontos.vip += opc.peso.vip;
+      }
+    });
   });
 
   const max = Math.max(pontos.digital, pontos.observador, pontos.vip);
@@ -141,6 +145,27 @@ export default function QuizPage() {
   const [lead, setLead] = useState({ nome: "", email: "", whatsapp: "" });
   const [leadErro, setLeadErro] = useState("");
 
+  // Alterna seleção de opção (múltipla)
+  const toggleOpcao = (opcaoId: string) => {
+    const atuais = respostas[PERGUNTAS[perguntaAtual].id] || [];
+    const novas = atuais.includes(opcaoId)
+      ? atuais.filter((id) => id !== opcaoId)
+      : [...atuais, opcaoId];
+    setRespostas({ ...respostas, [PERGUNTAS[perguntaAtual].id]: novas });
+  };
+
+  const avançar = () => {
+    const selecionadas = respostas[PERGUNTAS[perguntaAtual].id] || [];
+    if (selecionadas.length === 0) return; // precisa selecionar ao menos 1
+    if (perguntaAtual < PERGUNTAS.length - 1) {
+      setPerguntaAtual(perguntaAtual + 1);
+    } else {
+      const res = calcularResultado(respostas);
+      setResultado(res);
+      setEtapa("lead");
+    }
+  };
+
   const salvarLeadMutation = useMutation({
     mutationFn: async (data: {
       nome: string; email: string; whatsapp: string;
@@ -157,19 +182,6 @@ export default function QuizPage() {
     onSuccess: () => setEtapa("resultado"),
     onError: () => setEtapa("resultado"), // mostra resultado mesmo se falhar
   });
-
-  const responder = (opcaoId: string) => {
-    const novas = { ...respostas, [PERGUNTAS[perguntaAtual].id]: opcaoId };
-    setRespostas(novas);
-
-    if (perguntaAtual < PERGUNTAS.length - 1) {
-      setTimeout(() => setPerguntaAtual(perguntaAtual + 1), 300);
-    } else {
-      const res = calcularResultado(novas);
-      setResultado(res);
-      setEtapa("lead");
-    }
-  };
 
   const enviarLead = () => {
     if (!lead.nome.trim() || !lead.email.trim() || !lead.whatsapp.trim()) {
@@ -261,27 +273,52 @@ export default function QuizPage() {
             <h2 className="text-xl sm:text-2xl font-bold text-white leading-snug">{q.pergunta}</h2>
           </div>
 
-          {/* Opções */}
+          {/* Instrução */}
+          <p className="text-center text-xs text-gray-500 mb-4">Selecione todas as opções que se aplicam a você</p>
+
+          {/* Opções — múltipla seleção */}
           <div className="space-y-3">
-            {q.opcoes.map((opcao) => (
-              <button
-                key={opcao.id}
-                onClick={() => responder(opcao.id)}
-                className="w-full text-left rounded-xl border border-[#1e3a5f] bg-[#0D1E35] px-5 py-4 text-sm text-white hover:border-[#D4A843] hover:bg-[#D4A843]/5 transition-all duration-200 flex items-center gap-3 group"
-              >
-                <span className="w-7 h-7 rounded-full border border-[#1e3a5f] group-hover:border-[#D4A843] group-hover:bg-[#D4A843]/10 flex items-center justify-center text-xs text-gray-400 group-hover:text-[#D4A843] shrink-0 font-bold transition-all">
-                  {opcao.id.toUpperCase()}
-                </span>
-                {opcao.texto}
-              </button>
-            ))}
+            {q.opcoes.map((opcao) => {
+              const selecionadas = respostas[q.id] || [];
+              const selecionada = selecionadas.includes(opcao.id);
+              return (
+                <button
+                  key={opcao.id}
+                  onClick={() => toggleOpcao(opcao.id)}
+                  className={`w-full text-left rounded-xl border px-5 py-4 text-sm text-white transition-all duration-200 flex items-center gap-3 ${
+                    selecionada
+                      ? "border-[#D4A843] bg-[#D4A843]/10"
+                      : "border-[#1e3a5f] bg-[#0D1E35] hover:border-[#D4A843]/40 hover:bg-[#D4A843]/5"
+                  }`}
+                >
+                  <span className={`w-7 h-7 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                    selecionada
+                      ? "border-[#D4A843] bg-[#D4A843] text-[#0A1628]"
+                      : "border-[#1e3a5f] text-gray-400"
+                  }`}>
+                    {selecionada ? <Check className="h-4 w-4" /> : <span className="text-xs font-bold">{opcao.id.toUpperCase()}</span>}
+                  </span>
+                  {opcao.texto}
+                </button>
+              );
+            })}
           </div>
+
+          {/* Botão avançar */}
+          <button
+            onClick={avançar}
+            disabled={(respostas[q.id] || []).length === 0}
+            className="mt-6 w-full rounded-xl bg-[#D4A843] py-3.5 font-bold text-[#0A1628] hover:bg-[#e8b84d] transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {perguntaAtual < PERGUNTAS.length - 1 ? "Próxima" : "Ver meu resultado"}
+            <ArrowRight className="h-4 w-4" />
+          </button>
 
           {/* Voltar */}
           {perguntaAtual > 0 && (
             <button
               onClick={() => setPerguntaAtual(perguntaAtual - 1)}
-              className="mt-6 w-full text-center text-sm text-gray-600 hover:text-gray-400 transition-colors"
+              className="mt-3 w-full text-center text-sm text-gray-600 hover:text-gray-400 transition-colors"
             >
               ← Voltar
             </button>

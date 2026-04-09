@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { QuizLeadsTab } from "@/components/QuizLeadsTab";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription
 } from "@/components/ui/dialog";
@@ -834,7 +835,7 @@ export default function AdminDashboard() {
   const uniqueAdmins = [...new Map(auditLogs.map(l => [l.adminId, l.adminName])).entries()];
 
   // Tab count: how many tabs to show
-  const tabCount = isSuperAdmin ? 8 : 6;
+  const tabCount = isSuperAdmin ? 9 : 7;
 
   return (
     <div className="min-h-screen bg-background">
@@ -939,7 +940,7 @@ export default function AdminDashboard() {
 
         {/* ─── Main Content Tabs ─── */}
         <Tabs defaultValue="lessons" className="space-y-6">
-          <TabsList className={`w-full grid bg-card/60 border border-border/30 p-1 h-11 sm:h-12 ${isSuperAdmin ? "grid-cols-8" : "grid-cols-6"}`}>
+          <TabsList className={`w-full grid bg-card/60 border border-border/30 p-1 h-11 sm:h-12 ${isSuperAdmin ? "grid-cols-9" : "grid-cols-7"}`}>
             <TabsTrigger
               value="students"
               data-testid="tab-students"
@@ -1002,6 +1003,13 @@ export default function AdminDashboard() {
                 >
                   <UserCog className="w-4 h-4 sm:mr-2 shrink-0" />
                   <span className="hidden sm:inline">Admins</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="quiz-leads"
+                  className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
+                >
+                  <span className="hidden sm:inline">Quiz</span>
+                  <span className="sm:hidden">Quiz</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="history"
@@ -2497,6 +2505,11 @@ export default function AdminDashboard() {
               </div>
             </TabsContent>
           )}
+
+          {/* ========== QUIZ LEADS TAB ========== */}
+          <TabsContent value="quiz-leads" className="space-y-6 mt-0">
+            <QuizLeadsTab />
+          </TabsContent>
 
           {/* ========== HISTORY TAB (super_admin: all logs, admin: own logs inline) ========== */}
           {isSuperAdmin && (
