@@ -486,10 +486,12 @@ export default function LoginPage() {
       {/* ===== COLUNA DIREITA — Painel rico (desktop only) ===== */}
       <div className="hidden lg:flex lg:w-[52%] flex-col justify-center px-14 py-8 gap-6">
 
-        {/* Logo */}
-        <img src="/logo-transparent.png" alt="Ampla Facial" className="h-9 w-auto object-contain" />
-
-        <div className="w-16 h-px bg-[#D4A843]/30" />
+        {/* Logo + identidade */}
+        <div>
+          <img src="/logo-transparent.png" alt="Ampla Facial" className="h-20 w-auto object-contain mb-3" />
+          <p className="text-xs uppercase tracking-[0.25em] text-[#D4A843]/50">Portal de Aulas — Dr. Gustavo Martins</p>
+          <div className="mt-3 w-12 h-px bg-gradient-to-r from-[#D4A843]/50 to-transparent" />
+        </div>
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
