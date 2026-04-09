@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Download } from "lucide-react";
+import { Download, MousePointerClick, Users, TrendingUp } from "lucide-react";
 
 interface QuizLead {
   id: number;
@@ -37,20 +37,40 @@ function exportCSV(leads: QuizLead[]) {
   a.click();
 }
 
+interface QuizStats {
+  totalClicks: number;
+  totalLeads: number;
+  bySource: { source: string; total: number }[];
+}
+
+const SOURCE_LABEL: Record<string, string> = {
+  login_banner: "Banner na tela de login",
+  dashboard_banner: "Banner no dashboard",
+  qr_code: "QR Code da palestra",
+  unknown: "Outro",
+};
+
 export function QuizLeadsTab() {
   const { data, isLoading } = useQuery<{ leads: QuizLead[] }>({
     queryKey: ["/api/admin/quiz-leads"],
     queryFn: () => apiRequest("GET", "/api/admin/quiz-leads").then((r) => r.json()),
   });
 
-  const leads = data?.leads || [];
+  const { data: statsData } = useQuery<QuizStats>({
+    queryKey: ["/api/admin/quiz-stats"],
+    queryFn: () => apiRequest("GET", "/api/admin/quiz-stats").then((r) => r.json()),
+  });
 
-  const stats = {
+  const leads = data?.leads || [];
+  const leadStats = {
     total: leads.length,
     digital: leads.filter((l) => l.resultado === "digital").length,
     observador: leads.filter((l) => l.resultado === "observador").length,
     vip: leads.filter((l) => l.resultado === "vip").length,
   };
+  const conversao = stats?.totalClicks
+    ? Math.round((stats.totalLeads / stats.totalClicks) * 100)
+    : 0;
 
   if (isLoading) {
     return (
@@ -66,7 +86,7 @@ export function QuizLeadsTab() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h3 className="text-sm font-semibold text-foreground">Leads do Quiz HOF</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">{stats.total} participante{stats.total !== 1 ? "s" : ""} no total</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{leadStats.total} participante{leadStats.total !== 1 ? "s" : ""} no total</p>
         </div>
         {leads.length > 0 && (
           <button
@@ -78,12 +98,48 @@ export function QuizLeadsTab() {
         )}
       </div>
 
-      {/* Stats */}
+      {/* Métricas de tracking */}
+      {stats && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-center">
+            <MousePointerClick className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
+            <p className="text-xl font-bold text-foreground">{stats.totalClicks}</p>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Cliques no quiz</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-center">
+            <Users className="h-4 w-4 text-muted-foreground mx-auto mb-1" />
+            <p className="text-xl font-bold text-foreground">{stats.totalLeads}</p>
+            <p className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">Leads gerados</p>
+          </div>
+          <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-3 text-center">
+            <TrendingUp className="h-4 w-4 text-green-400 mx-auto mb-1" />
+            <p className="text-xl font-bold text-green-400">{conversao}%</p>
+            <p className="text-[10px] uppercase tracking-wide text-green-400/60 mt-0.5">Conversão</p>
+          </div>
+        </div>
+      )}
+
+      {/* Por origem */}
+      {stats?.bySource && stats.bySource.length > 0 && (
+        <div className="rounded-xl border border-border/30 bg-card/40 p-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Cliques por origem</p>
+          <div className="space-y-2">
+            {stats.bySource.map((s) => (
+              <div key={s.source} className="flex items-center justify-between">
+                <span className="text-xs text-foreground">{SOURCE_LABEL[s.source] || s.source}</span>
+                <span className="text-xs font-bold text-[#D4A843]">{s.total}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Stats por plano */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Acesso Digital", count: stats.digital, cor: "border-blue-500/20 bg-blue-500/5 text-blue-400" },
-          { label: "Observador", count: stats.observador, cor: "border-yellow-500/20 bg-yellow-500/5 text-yellow-400" },
-          { label: "Mentoria VIP", count: stats.vip, cor: "border-[#D4A843]/20 bg-[#D4A843]/5 text-[#D4A843]" },
+          { label: "Acesso Digital", count: leadStats.digital, cor: "border-blue-500/20 bg-blue-500/5 text-blue-400" },
+          { label: "Observador", count: leadStats.observador, cor: "border-yellow-500/20 bg-yellow-500/5 text-yellow-400" },
+          { label: "Mentoria VIP", count: leadStats.vip, cor: "border-[#D4A843]/20 bg-[#D4A843]/5 text-[#D4A843]" },
         ].map(({ label, count, cor }) => (
           <div key={label} className={`rounded-xl border p-3 text-center ${cor}`}>
             <p className="text-2xl font-bold">{count}</p>

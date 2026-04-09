@@ -599,6 +599,52 @@ export async function registerRoutes(server: Server, app: Express) {
     console.error("[quiz] Failed to create quiz_leads table:", e.message);
   }
 
+  // Tabela de tracking de cliques no banner do quiz
+  try {
+    await db.execute(`CREATE TABLE IF NOT EXISTS quiz_clicks (
+      id SERIAL PRIMARY KEY,
+      source TEXT NOT NULL,
+      ip TEXT,
+      user_agent TEXT,
+      created_at TEXT NOT NULL
+    )`);
+  } catch (e: any) {
+    console.error("[quiz] Failed to create quiz_clicks table:", e.message);
+  }
+
+  // POST /api/quiz/click — registrar clique no banner
+  app.post("/api/quiz/click", async (req, res) => {
+    try {
+      const source = req.body?.source || "unknown";
+      const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0] || req.socket.remoteAddress || "";
+      const ua = req.headers["user-agent"] || "";
+      await db.execute(
+        `INSERT INTO quiz_clicks (source, ip, user_agent, created_at) VALUES ($1, $2, $3, $4)`,
+        [source, ip, ua, new Date().toISOString()]
+      );
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.json({ ok: false });
+    }
+  });
+
+  // GET /api/admin/quiz-stats — stats de cliques e conversão
+  app.get("/api/admin/quiz-stats", async (req: any, res) => {
+    if (!req.user?.isAdmin) return res.status(403).json({ message: "Acesso restrito" });
+    try {
+      const clicks = await db.execute(`SELECT source, COUNT(*) as total FROM quiz_clicks GROUP BY source ORDER BY total DESC`);
+      const totalClicks = await db.execute(`SELECT COUNT(*) as total FROM quiz_clicks`);
+      const totalLeads = await db.execute(`SELECT COUNT(*) as total FROM quiz_leads`);
+      res.json({
+        totalClicks: Number(totalClicks.rows[0]?.total || 0),
+        totalLeads: Number(totalLeads.rows[0]?.total || 0),
+        bySource: clicks.rows,
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: "Erro" });
+    }
+  });
+
   // POST /api/quiz/lead — salvar lead do quiz
   app.post("/api/quiz/lead", async (req, res) => {
     try {

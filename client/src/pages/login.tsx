@@ -549,6 +549,7 @@ export default function LoginPage() {
         {/* Banner Quiz */}
         <a
           href="/#/quiz"
+          onClick={() => fetch("/api/quiz/click", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source: "login_banner" }) }).catch(() => {})}
           className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 flex items-center gap-3 hover:border-[#D4A843]/30 hover:bg-[#D4A843]/5 transition-all group"
         >
           <span className="text-xl shrink-0">🏆</span>
