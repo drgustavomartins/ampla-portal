@@ -815,6 +815,178 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   });
 
+  // ==================== CRON: REENGAJAMENTO QUIZ ====================
+
+  // POST /api/cron/reengajamento-quiz
+  // Chamado pelo agendador externo (Perplexity Computer) a cada hora.
+  // Busca leads com resultado='parcial' que ainda nao receberam e-mail
+  // de reengajamento e foram criados ha mais de 60 minutos.
+  app.post("/api/cron/reengajamento-quiz", async (req, res) => {
+    // Autenticacao simples via header secret
+    const secret = req.headers["x-cron-secret"];
+    const CRON_SECRET = process.env.CRON_SECRET || "ampla-cron-2026";
+    if (secret !== CRON_SECRET) {
+      return res.status(401).json({ message: "Nao autorizado" });
+    }
+
+    try {
+      // Buscar leads parciais com mais de 60 minutos sem reengajamento
+      const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const result = await db.execute(
+        `SELECT id, nome, email, whatsapp, created_at
+         FROM quiz_leads
+         WHERE resultado = 'parcial'
+           AND (reengajamento_enviado IS NULL OR reengajamento_enviado = FALSE)
+           AND created_at < $1
+         ORDER BY created_at ASC
+         LIMIT 50`,
+        [cutoff]
+      );
+
+      const leads = result.rows;
+      let enviados = 0;
+      let erros = 0;
+
+      if (leads.length === 0) {
+        return res.json({ message: "Nenhum lead pendente", enviados: 0 });
+      }
+
+      const { Resend } = await import("resend");
+      const resendClient = new Resend(process.env.RESEND_API_KEY!);
+
+      for (const lead of leads) {
+        const primeiroNome = (lead.nome as string).split(" ")[0];
+        const quizUrl = "https://portal.amplafacial.com.br/#/quiz";
+
+        const htmlEmail = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#0A1628;font-family:'Helvetica Neue',Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0A1628;padding:40px 20px">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#0D1E35;border-radius:16px;border:1px solid rgba(212,168,67,0.25);overflow:hidden;max-width:560px;width:100%">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#0a0e1a 0%,#0f1829 100%);padding:32px 40px;text-align:center;border-bottom:1px solid rgba(212,168,67,0.2)">
+            <img src="https://portal.amplafacial.com.br/logo-transparent.png" height="48" alt="Ampla Facial" style="display:block;margin:0 auto 16px" />
+            <div style="display:inline-block;background:rgba(212,168,67,0.12);border:1px solid rgba(212,168,67,0.35);border-radius:100px;padding:6px 18px;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#D4A843">Quiz de Perfil HOF</div>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:36px 40px">
+            <p style="margin:0 0 8px;font-size:13px;color:#D4A843;font-weight:600;letter-spacing:0.06em;text-transform:uppercase">Oi, ${primeiroNome}!</p>
+            <h1 style="margin:0 0 16px;font-size:26px;font-weight:700;color:#ffffff;line-height:1.3">Voc&ecirc; ficou a um passo<br/>do seu resultado 🎯</h1>
+            <p style="margin:0 0 24px;font-size:15px;color:rgba(255,255,255,0.65);line-height:1.7">
+              Voc&ecirc; come&ccedil;ou o quiz da Ampla Facial mas n&atilde;o chegou at&eacute; o final &mdash; e seu resultado personalizado ainda est&aacute; esperando por voc&ecirc;.
+            </p>
+
+            <!-- Info cards -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px">
+              <tr>
+                <td style="padding:4px">
+                  <table width="100%" cellpadding="14" style="background:#0A1628;border:1px solid rgba(212,168,67,0.15);border-radius:10px">
+                    <tr>
+                      <td style="font-size:22px;width:36px">⚡</td>
+                      <td>
+                        <p style="margin:0;font-size:13px;font-weight:600;color:#fff">S&oacute; 5 perguntas r&aacute;pidas</p>
+                        <p style="margin:2px 0 0;font-size:12px;color:rgba(255,255,255,0.4)">menos de 2 minutos para completar</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:4px">
+                  <table width="100%" cellpadding="14" style="background:#0A1628;border:1px solid rgba(212,168,67,0.15);border-radius:10px">
+                    <tr>
+                      <td style="font-size:22px;width:36px">🎯</td>
+                      <td>
+                        <p style="margin:0;font-size:13px;font-weight:600;color:#fff">Resultado 100% personalizado</p>
+                        <p style="margin:2px 0 0;font-size:12px;color:rgba(255,255,255,0.4)">Observador, Digital ou Mentoria VIP &mdash; ideal para o seu momento</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:4px">
+                  <table width="100%" cellpadding="14" style="background:#0A1628;border:1px solid rgba(212,168,67,0.15);border-radius:10px">
+                    <tr>
+                      <td style="font-size:22px;width:36px">🏆</td>
+                      <td>
+                        <p style="margin:0;font-size:13px;font-weight:600;color:#fff">Concorra a 1 m&ecirc;s de Mentoria VIP gr&aacute;tis</p>
+                        <p style="margin:2px 0 0;font-size:12px;color:rgba(255,255,255,0.4)">Sorteio entre quem completar o quiz</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+
+            <!-- CTA -->
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="center">
+                  <a href="${quizUrl}" style="display:inline-block;background:#D4A843;color:#0A1628;padding:16px 40px;border-radius:10px;font-size:16px;font-weight:700;text-decoration:none;letter-spacing:0.02em">Completar meu quiz agora &rarr;</a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:20px 0 0;font-size:12px;color:rgba(255,255,255,0.25);text-align:center">Ou acesse: <a href="${quizUrl}" style="color:#D4A843">${quizUrl}</a></p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#0A1628;border-top:1px solid rgba(255,255,255,0.06);padding:24px 40px;text-align:center">
+            <p style="margin:0 0 6px;font-size:12px;color:rgba(255,255,255,0.3)">Ampla Facial &mdash; Mentoria em Harmoniza&ccedil;&atilde;o Orofacial</p>
+            <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.2)">Dr. Gustavo Martins &middot; Rio de Janeiro</p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+        try {
+          await resendClient.emails.send({
+            from: "Dr. Gustavo Martins <portal@amplafacial.com.br>",
+            to: lead.email as string,
+            subject: `${primeiroNome}, seu resultado do quiz ainda est\u00e1 esperando por voc\u00ea — Ampla Facial`,
+            html: htmlEmail,
+          });
+
+          // Marcar como enviado
+          await db.execute(
+            `UPDATE quiz_leads SET reengajamento_enviado = TRUE, reengajamento_enviado_at = $1 WHERE id = $2`,
+            [new Date().toISOString(), lead.id]
+          );
+          enviados++;
+          console.log(`[cron:quiz] Reengajamento enviado para ${lead.email}`);
+        } catch (emailErr: any) {
+          console.error(`[cron:quiz] Erro ao enviar para ${lead.email}:`, emailErr.message);
+          erros++;
+        }
+      }
+
+      res.json({
+        message: "Cron executado",
+        leads_encontrados: leads.length,
+        enviados,
+        erros,
+      });
+    } catch (e: any) {
+      console.error("[cron:quiz] Erro geral:", e.message);
+      res.status(500).json({ message: "Erro interno", erro: e.message });
+    }
+  });
+
   // ==================== AUTH ====================
 
   app.post("/api/auth/register", async (req, res) => {

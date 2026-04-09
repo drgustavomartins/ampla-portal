@@ -171,7 +171,9 @@ export default function QuizPage() {
       const res = calcularResultado(respostas);
       setResultado(res);
       trackEvent("quiz_complete", { resultado: res });
-      setEtapa("lead");
+      // Lead já foi coletado antes do quiz — vai direto para resultado
+      // e dispara o salvamento final com o resultado calculado
+      setEtapa("resultado");
     }
   };
 
@@ -444,7 +446,8 @@ export default function QuizPage() {
   }
 
   // Salva resultado final ao chegar na tela de resultado
-  if (etapa === "resultado" && resultado && !salvarLeadMutation.isSuccess && !salvarLeadMutation.isPending) {
+  // (guard: só dispara se o lead final ainda não foi salvo)
+  if (etapa === "resultado" && resultado && !salvarLeadMutation.isSuccess && !salvarLeadMutation.isPending && !salvarLeadMutation.isError) {
     salvarLeadMutation.mutate({ nome: lead.nome, email: lead.email, whatsapp: lead.whatsapp, resultado: resultado, respostas });
   }
 
