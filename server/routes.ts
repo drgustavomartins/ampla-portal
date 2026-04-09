@@ -16,7 +16,7 @@ async function sendWelcomeEmail(user: { name: string; email: string }) {
   const firstName = user.name.split(" ")[0];
   try {
     await resend.emails.send({
-      from: "Dr. Gustavo Martins <onboarding@resend.dev>",
+      from: "Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",
       to: user.email,
       subject: "Seu acesso à Ampla Facial está ativo — 7 dias para explorar",
       html: `
@@ -57,7 +57,7 @@ async function sendPasswordResetEmail(user: { name: string; email: string }, tok
   const resetLink = `https://portal.amplafacial.com.br/#/reset-password/${token}`;
   try {
     await resend.emails.send({
-      from: "Ampla Facial Portal <onboarding@resend.dev>",
+      from: "Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",
       to: user.email,
       subject: "Redefinição de senha — Ampla Facial",
       html: `
@@ -89,7 +89,7 @@ async function notifyNewRegistration(user: { name: string; email: string; phone?
   if (!resend) return; // silently skip if API key not configured
   try {
     await resend.emails.send({
-      from: "Ampla Facial Portal <onboarding@resend.dev>",
+      from: "Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",
       to: "gustavo.m.martins@outlook.com",
       subject: `🔔 Novo cadastro: ${user.name}`,
       html: `
@@ -801,7 +801,7 @@ export async function registerRoutes(server: Server, app: Express) {
               const { Resend } = await import("resend");
               const resend = new Resend(process.env.RESEND_API_KEY);
               await resend.emails.send({
-                from: "Ampla Facial <portal@amplafacial.com.br>",
+                from: "Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",
                 to: email,
                 subject: "Seu acesso gratuito está pronto — Ampla Facial",
                 html: `
@@ -992,7 +992,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
         try {
           await resendClient.emails.send({
-            from: "Dr. Gustavo Martins <portal@amplafacial.com.br>",
+            from: "Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",
             to: lead.email as string,
             subject: `${primeiroNome}, seu resultado do quiz ainda est\u00e1 esperando por voc\u00ea — Ampla Facial`,
             html: htmlEmail,
