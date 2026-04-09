@@ -842,17 +842,17 @@ export async function registerRoutes(server: Server, app: Express) {
 
     try {
       const { db } = await import("./db");
+      const { sql: sqlTag } = await import("drizzle-orm");
       // Buscar leads parciais com mais de 60 minutos sem reengajamento
       const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       const result = await db.execute(
-        `SELECT id, nome, email, whatsapp, created_at
+        sqlTag`SELECT id, nome, email, whatsapp, created_at
          FROM quiz_leads
          WHERE resultado = 'parcial'
            AND (reengajamento_enviado IS NULL OR reengajamento_enviado = FALSE)
-           AND created_at < $1
+           AND created_at < ${cutoff}
          ORDER BY created_at ASC
-         LIMIT 50`,
-        [cutoff]
+         LIMIT 50`
       );
 
       const leads = result.rows;
@@ -975,9 +975,10 @@ export async function registerRoutes(server: Server, app: Express) {
           });
 
           // Marcar como enviado
+          const now = new Date().toISOString();
+          const leadId = lead.id as number;
           await db.execute(
-            `UPDATE quiz_leads SET reengajamento_enviado = TRUE, reengajamento_enviado_at = $1 WHERE id = $2`,
-            [new Date().toISOString(), lead.id]
+            sqlTag`UPDATE quiz_leads SET reengajamento_enviado = TRUE, reengajamento_enviado_at = ${now} WHERE id = ${leadId}`
           );
           enviados++;
           console.log(`[cron:quiz] Reengajamento enviado para ${lead.email}`);
