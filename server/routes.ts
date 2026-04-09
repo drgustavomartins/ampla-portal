@@ -1983,9 +1983,8 @@ export async function registerRoutes(server: Server, app: Express) {
     }
     const target = await storage.getUser(targetId);
     if (!target) return res.status(404).json({ message: "Usuário não encontrado" });
-    if (target.role === "super_admin") {
-      return res.status(400).json({ message: "Não é possível alterar role de super_admin" });
-    }
+    // Nao permite rebaixar a si mesmo nem escalar outro para super_admin
+    // Permite rebaixar super_admin para admin (caso de auditoria/gestao)
     const updated = await storage.updateUser(targetId, { role });
     const superAdmin = await storage.getUser(auth.userId);
     await logAction(auth.userId, superAdmin?.name || "Super Admin", "admin_role_changed", "admin", targetId, target.name, { from: target.role, to: role });
