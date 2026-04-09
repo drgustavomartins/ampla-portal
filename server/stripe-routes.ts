@@ -283,7 +283,7 @@ export function registerStripeRoutes(app: Express) {
     }
 
     if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.CheckoutSession;
+      const session = event.data.object as Stripe.Checkout.Session;
       const userId = Number(session.metadata?.userId);
       const planKey = session.metadata?.planKey as PlanKey;
       const isUpgrade = session.metadata?.isUpgrade === "true";

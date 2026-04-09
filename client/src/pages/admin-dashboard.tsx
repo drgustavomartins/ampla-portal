@@ -831,8 +831,8 @@ export default function AdminDashboard() {
     return true;
   });
 
-  const uniqueActions = [...new Set(auditLogs.map(l => l.action))];
-  const uniqueAdmins = [...new Map(auditLogs.map(l => [l.adminId, l.adminName])).entries()];
+  const uniqueActions = Array.from(new Set(auditLogs.map(l => l.action)));
+  const uniqueAdmins = Array.from(new Map(auditLogs.map(l => [l.adminId, l.adminName])).entries());
 
   // Tab count: how many tabs to show
   const tabCount = isSuperAdmin ? 8 : 6;

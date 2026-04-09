@@ -154,7 +154,7 @@ function isValidUrl(url: string): boolean {
   }
 }
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET as string;
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET environment variable is required");
 }
@@ -170,7 +170,7 @@ function authenticateRequest(req: Request): { userId: number; role: string } | n
   }
   if (!token) return null;
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as { userId: number; role: string };
+    const payload = jwt.verify(token, JWT_SECRET) as unknown as { userId: number; role: string };
     return payload;
   } catch {
     return null;
@@ -558,6 +558,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Fix coverUrl cache bust para Toxina Botulínica
   try {
+    const { db } = await import("./db");
     await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
     const migrationName = "fix_toxina_cover_url_v3_2026_04";
     const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
@@ -574,6 +575,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Fix coverUrl cache bust para Moduladores de Matriz Extracelular
   try {
+    const { db } = await import("./db");
     await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
     const migrationName = "fix_moduladores_cover_url_v3_2026_04";
     const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
@@ -592,6 +594,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Criar tabela de leads do quiz na inicialização
   try {
+    const { db } = await import("./db");
     await db.execute(`CREATE TABLE IF NOT EXISTS quiz_leads (
       id SERIAL PRIMARY KEY,
       nome TEXT NOT NULL,
@@ -607,6 +610,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Tabela de eventos do funil (rastreia cada etapa por fingerprint/email)
   try {
+    const { db } = await import("./db");
     await db.execute(`CREATE TABLE IF NOT EXISTS funnel_events (
       id SERIAL PRIMARY KEY,
       session_id TEXT NOT NULL,
@@ -664,6 +668,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // Tabela de tracking de cliques no banner do quiz
   try {
+    const { db } = await import("./db");
     await db.execute(`CREATE TABLE IF NOT EXISTS quiz_clicks (
       id SERIAL PRIMARY KEY,
       source TEXT NOT NULL,
@@ -752,11 +757,11 @@ export async function registerRoutes(server: Server, app: Express) {
           const inserted = await db.execute(sql`INSERT INTO users (name, email, phone, password, role, approved, access_expires_at, materials_access, trial_started_at, created_at)
              VALUES (${nome}, ${email}, ${whatsapp}, ${hash}, 'trial', true, ${trialExpiry}, false, ${now}, ${now})
              RETURNING id`);
-          userId = inserted.rows[0]?.id;
+          userId = (inserted.rows[0]?.id as number) ?? null;
           isNew = true;
           console.log(`[quiz] Trial criado automaticamente para ${email} (userId: ${userId})`);
         } else {
-          userId = existing.rows[0].id;
+          userId = (existing.rows[0].id as number) ?? null;
           console.log(`[quiz] Usuário já existe: ${email}`);
         }
 
@@ -1106,7 +1111,7 @@ export async function registerRoutes(server: Server, app: Express) {
       }
       const token = crypto.randomBytes(32).toString("hex");
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
-      await storage.createPasswordReset({ userId: user.id, token, expiresAt, createdAt: new Date().toISOString() });
+      await storage.createPasswordReset(user.id, token, expiresAt);
       sendPasswordResetEmail({ name: user.name, email: user.email }, token);
       return res.json({ message: "Se este email estiver cadastrado, você receberá um link em instantes." });
     } catch (e: any) {
