@@ -4,6 +4,8 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { useLocation, Link } from "wouter";
 import { UpgradeBanner } from "@/components/UpgradeBanner";
+import { ReferralCard } from "@/components/ReferralCard";
+import { Gift, Copy, Check as CheckIcon } from "lucide-react";
 import { TrialPlansToast } from "@/components/TrialPlansToast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -881,6 +883,12 @@ export default function StudentDashboard() {
                   </span>
                 </a>
               )}
+
+              {/* Indicação — apenas para alunos com plano ativo */}
+              {!isTrial && user?.planKey && (
+                <ReferralCard planKey={user.planKey} />
+              )}
+
               {/* Materiais Complementares shortcut card */}
               <button
                 onClick={() => materiaisRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}

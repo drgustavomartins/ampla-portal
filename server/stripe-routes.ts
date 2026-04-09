@@ -52,6 +52,7 @@ export function registerStripeRoutes(app: Express) {
       hasLiveEvents: p.hasLiveEvents,
       hasNaturalUp: p.hasNaturalUp,
       canUpgradeTo: p.canUpgradeTo,
+      valorMercado: p.valorMercado ?? null,
     }));
     res.json({ plans });
   });
@@ -433,5 +434,20 @@ export function registerPublicStripeRoutes(app: Express) {
     });
 
     res.json({ url: session.url, sessionId: session.id });
+  });
+
+  // ─── GET /api/referral/code ────────────────────────────────────────────────
+  app.get("/api/referral/code", async (req: Request, res: Response) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+    const [user] = await db.select().from(users).where(eq(users.id, auth.userId));
+    if (!user || !user.planKey) {
+      return res.status(403).json({ message: "Apenas alunos com plano ativo têm código de indicação" });
+    }
+
+    const code = "AMPLA" + String(user.id).padStart(4, "0");
+    const link = `https://portal.amplafacial.com.br/#/comecar?ref=${code}`;
+    res.json({ code, link });
   });
 }

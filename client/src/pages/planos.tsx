@@ -3,8 +3,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import {
   Check, Star, Clock, Zap, Users, Video,
-  ChevronDown, ChevronUp, ArrowRight, Loader2, MessageCircle,
-} from "lucide-react";
+  ChevronDown, ChevronUp, ArrowRight, Loader2,
+  TrendingUp, Timer, MessageCircle,} from "lucide-react";
 
 const NEGOCIACAO_DIRETA = ["imersao", "vip_online", "vip_presencial", "vip_completo"];
 
@@ -31,6 +31,7 @@ interface PlanData {
   hasLiveEvents: boolean;
   hasNaturalUp: boolean;
   canUpgradeTo: string[];
+  valorMercado: number | null;
 }
 
 const GROUP_LABELS: Record<string, string> = {
@@ -118,6 +119,24 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
             <><ChevronDown className="h-3.5 w-3.5" /> Ver mais {plan.features.length - 5} benefícios</>
           )}
         </button>
+      )}
+
+      {/* Valor percebido */}
+      {plan.valorMercado && (
+        <div className="mb-3 rounded-xl border border-[#D4A843]/20 bg-[#D4A843]/5 px-3 py-2">
+          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+            <TrendingUp className="h-3.5 w-3.5 text-[#D4A843]" />
+            <span>Se fosse curso a curso, pagaria</span>
+          </div>
+          <div className="mt-0.5 flex items-center gap-2">
+            <span className="text-sm font-semibold text-gray-500 line-through">
+              {(plan.valorMercado / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+            </span>
+            <span className="rounded-full bg-green-900/40 px-2 py-0.5 text-xs font-bold text-green-400">
+              -{Math.round((1 - plan.price / plan.valorMercado) * 100)}%
+            </span>
+          </div>
+        </div>
       )}
 
       {/* Preço */}

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://portal.amplafacial.com.br/sitemap.xml
