@@ -1969,6 +1969,30 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   });
 
+  // PATCH /api/admin/admins/:id/role — super_admin altera role de outro admin (nao pode escalar para super_admin)
+  app.patch("/api/admin/admins/:id/role", async (req, res) => {
+    const auth = requireSuperAdmin(req, res);
+    if (!auth) return;
+    const targetId = parseInt(req.params.id);
+    if (targetId === auth.userId) {
+      return res.status(400).json({ message: "Não é possível alterar a própria role" });
+    }
+    const { role } = req.body;
+    if (!role || ![ "admin" ].includes(role)) {
+      return res.status(400).json({ message: "Role inválida. Apenas 'admin' é permitido" });
+    }
+    const target = await storage.getUser(targetId);
+    if (!target) return res.status(404).json({ message: "Usuário não encontrado" });
+    if (target.role === "super_admin") {
+      return res.status(400).json({ message: "Não é possível alterar role de super_admin" });
+    }
+    const updated = await storage.updateUser(targetId, { role });
+    const superAdmin = await storage.getUser(auth.userId);
+    await logAction(auth.userId, superAdmin?.name || "Super Admin", "admin_role_changed", "admin", targetId, target.name, { from: target.role, to: role });
+    const { password: _, ...safe } = updated!;
+    res.json(safe);
+  });
+
   app.delete("/api/admin/admins/:id", async (req, res) => {
     const auth = requireSuperAdmin(req, res);
     if (!auth) return;
