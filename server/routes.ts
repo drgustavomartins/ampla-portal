@@ -717,6 +717,12 @@ export async function registerRoutes(server: Server, app: Express) {
         return res.status(400).json({ message: "Dados incompletos" });
       }
 
+      // Garantir que a tabela existe (fallback para ambientes serverless)
+      await db.execute(`CREATE TABLE IF NOT EXISTS quiz_leads (
+        id SERIAL PRIMARY KEY, nome TEXT NOT NULL, email TEXT NOT NULL,
+        whatsapp TEXT NOT NULL, resultado TEXT NOT NULL, respostas JSONB, created_at TEXT NOT NULL
+      )`).catch(() => {});
+
       // Salvar lead do quiz (upsert por email+resultado)
       const existing_lead = await db.execute(
         `SELECT id FROM quiz_leads WHERE email = $1 AND resultado = $2 LIMIT 1`,
