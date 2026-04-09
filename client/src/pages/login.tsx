@@ -125,12 +125,21 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col lg:flex-row"
-      style={{ background: "radial-gradient(ellipse at 30% 20%, hsl(216 60% 14%) 0%, hsl(216 60% 7%) 70%)" }}
+      className="min-h-screen flex flex-col"
+      style={{ background: "radial-gradient(ellipse at 50% 10%, hsl(216 60% 14%) 0%, hsl(216 60% 7%) 70%)" }}
     >
+      {/* ===== LOGO CENTRALIZADA NO TOPO ===== */}
+      <div className="pt-10 pb-6 text-center">
+        <img src="/logo-transparent.png" alt="Ampla Facial" className="h-28 w-auto object-contain mx-auto" />
+        <p className="mt-2 text-[10px] uppercase tracking-[0.3em] text-[#D4A843]/50">Portal de Aulas — Dr. Gustavo Martins</p>
+        <div className="mt-3 mx-auto w-10 h-px bg-[#D4A843]/40" />
+      </div>
+
+      {/* ===== DUAS COLUNAS ABAIXO ===== */}
+      <div className="flex flex-col lg:flex-row flex-1">
 
       {/* ===== COLUNA ESQUERDA — Formulário ===== */}
-      <div className="flex-1 flex flex-col items-center justify-start lg:justify-center p-4 pt-12 sm:pt-16 lg:pt-4 lg:border-r lg:border-white/5">
+      <div className="flex-1 flex flex-col items-center justify-start lg:justify-center p-4 pt-4 lg:pt-4 lg:border-r lg:border-white/5">
         <div className="w-full max-w-sm space-y-6">
 
           {/* Logo mobile */}
@@ -484,67 +493,59 @@ export default function LoginPage() {
       </div>
 
       {/* ===== COLUNA DIREITA — Painel rico (desktop only) ===== */}
-      <div className="hidden lg:flex lg:w-[52%] flex-col justify-center px-14 py-8 gap-6">
-
-        {/* Logo + identidade */}
-        <div>
-          <img src="/logo-transparent.png" alt="Ampla Facial" className="h-20 w-auto object-contain mb-3" />
-          <p className="text-xs uppercase tracking-[0.25em] text-[#D4A843]/50">Portal de Aulas — Dr. Gustavo Martins</p>
-          <div className="mt-3 w-12 h-px bg-gradient-to-r from-[#D4A843]/50 to-transparent" />
-        </div>
+      <div className="hidden lg:flex lg:w-[52%] flex-col items-center justify-center px-12 py-4 gap-4">
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 w-full">
           {[
-            { value: "150+", label: "Alunos formados" },
-            { value: "50+", label: "Horas de conteúdo" },
-            { value: "5★", label: "Avaliação média" },
+            { value: "150+", label: "Alunos" },
+            { value: "50+", label: "Horas" },
+            { value: "5★", label: "Avaliação" },
           ].map(({ value, label }) => (
-            <div key={label} className="rounded-lg border border-white/6 bg-white/[0.03] px-3 py-3 text-center">
-              <p className="text-lg font-bold text-[#D4A843] leading-none mb-1">{value}</p>
-              <p className="text-[10px] text-white/35 uppercase tracking-wide">{label}</p>
+            <div key={label} className="rounded-lg border border-white/6 bg-white/[0.03] py-2.5 text-center">
+              <p className="text-base font-bold text-[#D4A843] leading-none">{value}</p>
+              <p className="text-[9px] text-white/30 uppercase tracking-wide mt-1">{label}</p>
             </div>
           ))}
         </div>
 
         {/* Preview módulos */}
-        <div>
-          <p className="text-[10px] uppercase tracking-widest text-[#D4A843]/40 mb-2">Conteúdo disponível</p>
+        <div className="w-full">
+          <p className="text-[9px] uppercase tracking-widest text-[#D4A843]/40 mb-1.5">Conteúdo disponível</p>
           <div className="space-y-1">
             {MODULES.map((m, i) => (
-              <div key={m.title} className="flex items-center gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2">
-                <div className="w-5 h-5 rounded-full bg-[#D4A843]/10 border border-[#D4A843]/20 flex items-center justify-center shrink-0">
-                  <Play className="h-2 w-2 text-[#D4A843] fill-[#D4A843]" />
-                </div>
-                <span className="text-sm text-white/70">{m.title}</span>
-                <span className="ml-auto text-[10px] text-white/20 font-mono shrink-0">0{i + 1}</span>
+              <div key={m.title} className="flex items-center gap-2.5 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-1.5">
+                <Play className="h-2 w-2 text-[#D4A843] fill-[#D4A843] shrink-0" />
+                <span className="text-xs text-white/65">{m.title}</span>
+                <span className="ml-auto text-[9px] text-white/20 font-mono shrink-0">0{i + 1}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Depoimento */}
-        <div className="rounded-xl border border-[#D4A843]/20 bg-[#D4A843]/5 p-4">
-          <div className="flex gap-0.5 mb-2">
-            {[...Array(5)].map((_, i) => <Star key={i} className="h-3 w-3 text-[#D4A843] fill-[#D4A843]" />)}
+        <div className="w-full rounded-xl border border-[#D4A843]/20 bg-[#D4A843]/5 px-4 py-3">
+          <div className="flex gap-0.5 mb-1.5">
+            {[...Array(5)].map((_, i) => <Star key={i} className="h-2.5 w-2.5 text-[#D4A843] fill-[#D4A843]" />)}
           </div>
-          <p className="text-xs text-white/60 leading-relaxed italic">
-            &ldquo;Amei cada aula. Foi uma das melhores experiências de aprendizado que já tive. Agora consigo assistir quantas vezes quiser ao meu professor favorito — isso não tem preço.&rdquo;
+          <p className="text-[11px] text-white/55 leading-relaxed italic">
+            &ldquo;Amei cada aula. Foi uma das melhores experiências de aprendizado que já tive. Consigo assistir quantas vezes quiser ao meu professor favorito.&rdquo;
           </p>
-          <p className="mt-2 text-[10px] text-[#D4A843]/60">Dra. Ana — Rio de Janeiro</p>
+          <p className="mt-1.5 text-[9px] text-[#D4A843]/60">Dra. Ana — Rio de Janeiro</p>
         </div>
 
         {/* Banner trial */}
-        <div className="rounded-xl border border-[#D4A843]/30 bg-[#D4A843]/5 p-4 flex items-center gap-3">
+        <div className="w-full rounded-xl border border-[#D4A843]/30 bg-[#D4A843]/5 px-4 py-3 flex items-center gap-3">
           <Sparkles className="h-4 w-4 text-[#D4A843] shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-white">7 dias grátis — sem cartão</p>
-            <p className="text-[10px] text-white/40">Acesse as primeiras aulas agora mesmo</p>
+          <div>
+            <p className="text-xs font-semibold text-white">7 dias grátis — sem cartão</p>
+            <p className="text-[9px] text-white/40">Acesse as primeiras aulas agora mesmo</p>
           </div>
         </div>
 
       </div>
 
+      </div>{/* fim das duas colunas */}
     </div>
   );
 }
