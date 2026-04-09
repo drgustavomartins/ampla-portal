@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import {
   Check, Star, Clock, Zap, Users, Video,
-  ChevronDown, ChevronUp, ArrowRight, Loader2,
+  ChevronDown, ChevronUp, ArrowRight, Loader2, MessageCircle,
 } from "lucide-react";
 
 const NEGOCIACAO_DIRETA = ["imersao", "vip_online", "vip_presencial", "vip_completo"];

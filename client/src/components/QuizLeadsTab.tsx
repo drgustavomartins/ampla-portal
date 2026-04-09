@@ -68,6 +68,7 @@ export function QuizLeadsTab() {
     observador: leads.filter((l) => l.resultado === "observador").length,
     vip: leads.filter((l) => l.resultado === "vip").length,
   };
+  const stats = statsData;
   const conversao = stats?.totalClicks
     ? Math.round((stats.totalLeads / stats.totalClicks) * 100)
     : 0;
