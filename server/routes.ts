@@ -627,10 +627,7 @@ export async function registerRoutes(server: Server, app: Express) {
       const { db } = await import("./db");
       const { session_id, email, event, metadata } = req.body;
       if (!session_id || !event) return res.status(400).json({ message: "session_id e event são obrigatórios" });
-      await db.execute(
-        `INSERT INTO funnel_events (session_id, email, event, metadata, created_at) VALUES ($1, $2, $3, $4, $5)`,
-        [session_id, email || null, event, JSON.stringify(metadata || {}), new Date().toISOString()]
-      );
+      await db.execute(sql`INSERT INTO funnel_events (session_id, email, event, metadata, created_at) VALUES (${session_id}, ${email || null}, ${event}, ${JSON.stringify(metadata || {})}, ${new Date().toISOString()})`);
       res.json({ ok: true });
     } catch (e: any) {
       res.json({ ok: false });
@@ -685,10 +682,7 @@ export async function registerRoutes(server: Server, app: Express) {
       const source = req.body?.source || "unknown";
       const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0] || req.socket.remoteAddress || "";
       const ua = req.headers["user-agent"] || "";
-      await db.execute(
-        `INSERT INTO quiz_clicks (source, ip, user_agent, created_at) VALUES ($1, $2, $3, $4)`,
-        [source, ip, ua, new Date().toISOString()]
-      );
+      await db.execute(sql`INSERT INTO quiz_clicks (source, ip, user_agent, created_at) VALUES (${source}, ${ip}, ${ua}, ${new Date().toISOString()})`);
       res.json({ ok: true });
     } catch (e: any) {
       res.json({ ok: false });
@@ -722,37 +716,25 @@ export async function registerRoutes(server: Server, app: Express) {
         return res.status(400).json({ message: "Dados incompletos" });
       }
 
-      // Garantir que a tabela existe (fallback para ambientes serverless)
-      await db.execute(`CREATE TABLE IF NOT EXISTS quiz_leads (
+      // Garantir que a tabela existe
+      await db.execute(sql`CREATE TABLE IF NOT EXISTS quiz_leads (
         id SERIAL PRIMARY KEY, nome TEXT NOT NULL, email TEXT NOT NULL,
         whatsapp TEXT NOT NULL, resultado TEXT NOT NULL, respostas JSONB, created_at TEXT NOT NULL
-      )`).catch(() => {});
+      )`);
 
-      // Salvar lead do quiz (upsert por email+resultado)
-      const existing_lead = await db.execute(
-        `SELECT id FROM quiz_leads WHERE email = $1 AND resultado = $2 LIMIT 1`,
-        [email, resultado]
-      );
+      // Salvar lead do quiz (upsert por email)
+      const existing_lead = await db.execute(sql`SELECT id FROM quiz_leads WHERE email = ${email} AND resultado = ${resultado} LIMIT 1`);
       if (existing_lead.rows.length === 0) {
-        await db.execute(
-          `INSERT INTO quiz_leads (nome, email, whatsapp, resultado, respostas, created_at)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [nome, email, whatsapp, resultado, JSON.stringify(respostas || {}), new Date().toISOString()]
-        );
+        await db.execute(sql`INSERT INTO quiz_leads (nome, email, whatsapp, resultado, respostas, created_at)
+           VALUES (${nome}, ${email}, ${whatsapp}, ${resultado}, ${JSON.stringify(respostas || {})}, ${new Date().toISOString()})`);
       } else {
-        // Atualizar resultado se era parcial
-        await db.execute(
-          `UPDATE quiz_leads SET resultado = $1, respostas = $2 WHERE email = $3 AND id = $4`,
-          [resultado, JSON.stringify(respostas || {}), email, existing_lead.rows[0].id]
-        );
+        const lid = existing_lead.rows[0].id as number;
+        await db.execute(sql`UPDATE quiz_leads SET resultado = ${resultado}, respostas = ${JSON.stringify(respostas || {})} WHERE id = ${lid}`);
       }
 
       // Se o quiz foi completado (não parcial), criar conta trial automaticamente
       if (resultado !== "parcial") {
-        const existing = await db.execute(
-          `SELECT id, role FROM users WHERE email = $1 LIMIT 1`,
-          [email]
-        );
+        const existing = await db.execute(sql`SELECT id, role FROM users WHERE email = ${email} LIMIT 1`);
 
         let userId: number | null = null;
         let tempPassword: string | null = null;
@@ -766,12 +748,10 @@ export async function registerRoutes(server: Server, app: Express) {
           const hash = await bcrypt.hash(tempPassword, 10);
           const trialExpiry = new Date(Date.now() + 7 * 86400000).toISOString();
 
-          const inserted = await db.execute(
-            `INSERT INTO users (name, email, phone, password, role, approved, access_expires_at, materials_access, trial_started_at, created_at)
-             VALUES ($1, $2, $3, $4, 'trial', true, $5, false, $6, $7)
-             RETURNING id`,
-            [nome, email, whatsapp, hash, trialExpiry, new Date().toISOString(), new Date().toISOString()]
-          );
+          const now = new Date().toISOString();
+          const inserted = await db.execute(sql`INSERT INTO users (name, email, phone, password, role, approved, access_expires_at, materials_access, trial_started_at, created_at)
+             VALUES (${nome}, ${email}, ${whatsapp}, ${hash}, 'trial', true, ${trialExpiry}, false, ${now}, ${now})
+             RETURNING id`);
           userId = inserted.rows[0]?.id;
           isNew = true;
           console.log(`[quiz] Trial criado automaticamente para ${email} (userId: ${userId})`);
