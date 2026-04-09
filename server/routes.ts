@@ -711,13 +711,24 @@ export async function registerRoutes(server: Server, app: Express) {
         return res.status(400).json({ message: "Dados incompletos" });
       }
 
-      // Salvar/atualizar lead do quiz
-      await db.execute(
-        `INSERT INTO quiz_leads (nome, email, whatsapp, resultado, respostas, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT DO NOTHING`,
-        [nome, email, whatsapp, resultado, JSON.stringify(respostas || {}), new Date().toISOString()]
+      // Salvar lead do quiz (upsert por email+resultado)
+      const existing_lead = await db.execute(
+        `SELECT id FROM quiz_leads WHERE email = $1 AND resultado = $2 LIMIT 1`,
+        [email, resultado]
       );
+      if (existing_lead.rows.length === 0) {
+        await db.execute(
+          `INSERT INTO quiz_leads (nome, email, whatsapp, resultado, respostas, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [nome, email, whatsapp, resultado, JSON.stringify(respostas || {}), new Date().toISOString()]
+        );
+      } else {
+        // Atualizar resultado se era parcial
+        await db.execute(
+          `UPDATE quiz_leads SET resultado = $1, respostas = $2 WHERE email = $3 AND id = $4`,
+          [resultado, JSON.stringify(respostas || {}), email, existing_lead.rows[0].id]
+        );
+      }
 
       // Se o quiz foi completado (não parcial), criar conta trial automaticamente
       if (resultado !== "parcial") {
