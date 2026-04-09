@@ -394,8 +394,8 @@ export default function StudentDashboard() {
         return next || lastLesson; // se não tem próxima, repete a última
       }
     }
-    // Nenhum progresso: começa pelo módulo Boas-Vindas (ou primeiro módulo)
-    const firstMod = introModule || sortedModules[0];
+    // Nenhum progresso: começa pela primeira aula do primeiro módulo de curso (não Boas-Vindas)
+    const firstMod = sortedModules.find(m => m !== introModule) || sortedModules[0];
     if (firstMod) {
       const modLessons = getLessonsForModule(firstMod.id);
       return modLessons[0] || null;
@@ -642,8 +642,7 @@ export default function StudentDashboard() {
           )}
 
           {/* ===== BOAS VINDAS (Featured/Hero Section) ===== */}
-          {/* Só mostra se aluno já tem progresso — caso contrário o Boas-Vindas aparece no "Comece por aqui" */}
-          {introModule && introLessons.length > 0 && progress.filter(p => p.completed).length > 0 && (
+          {introModule && introLessons.length > 0 && (
             <section className="space-y-4">
               <h2 className="font-serif text-2xl font-semibold text-foreground">Boas-Vindas</h2>
               <div
