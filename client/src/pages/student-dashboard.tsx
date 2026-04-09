@@ -394,8 +394,8 @@ export default function StudentDashboard() {
         return next || lastLesson; // se não tem próxima, repete a última
       }
     }
-    // Nenhum progresso: retorna a primeira aula do primeiro módulo real
-    const firstMod = sortedModules.find(m => m !== introModule);
+    // Nenhum progresso: começa pelo módulo Boas-Vindas (ou primeiro módulo)
+    const firstMod = introModule || sortedModules[0];
     if (firstMod) {
       const modLessons = getLessonsForModule(firstMod.id);
       return modLessons[0] || null;
@@ -405,7 +405,7 @@ export default function StudentDashboard() {
   const lastLessonModule = lastLesson ? modules.find(m => m.id === lastLesson.moduleId) : null;
   const lastLessonThumb = (() => {
     if (!lastLesson?.videoUrl) return null;
-    const ytMatch = lastLesson.videoUrl.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+    const ytMatch = lastLesson.videoUrl.match(/(?:(?:www\.)?youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
     if (ytMatch) return `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`;
     return null;
   })();
@@ -642,7 +642,8 @@ export default function StudentDashboard() {
           )}
 
           {/* ===== BOAS VINDAS (Featured/Hero Section) ===== */}
-          {introModule && introLessons.length > 0 && (
+          {/* Só mostra se aluno já tem progresso — caso contrário o Boas-Vindas aparece no "Comece por aqui" */}
+          {introModule && introLessons.length > 0 && progress.filter(p => p.completed).length > 0 && (
             <section className="space-y-4">
               <h2 className="font-serif text-2xl font-semibold text-foreground">Boas-Vindas</h2>
               <div

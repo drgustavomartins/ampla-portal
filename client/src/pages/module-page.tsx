@@ -55,7 +55,7 @@ function getFirstDescLine(desc: string): string | null {
 // Extract YouTube video ID from a URL for thumbnail generation
 function getYouTubeId(url: string | null | undefined): string | null {
   if (!url) return null;
-  const match = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  const match = url.match(/(?:(?:www\.)?youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
   return match ? match[1] : null;
 }
 
