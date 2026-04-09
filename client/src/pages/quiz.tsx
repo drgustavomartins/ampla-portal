@@ -188,7 +188,22 @@ export default function QuizPage() {
       if (!res.ok) throw new Error("Erro ao salvar");
       return res.json();
     },
-    onSuccess: () => setEtapa("resultado"),
+    onSuccess: (data) => {
+      // Se recebeu token, fazer auto-login e redirecionar para o portal
+      if (data.token) {
+        document.cookie = `ampla_token=${data.token}; path=/; max-age=${7 * 86400}`;
+        // Pequeno delay para mostrar a tela de resultado antes de redirecionar
+        setEtapa("resultado");
+        if (data.isNew) {
+          // Novo usuário: redireciona após 4 segundos
+          setTimeout(() => {
+            window.location.href = "/#/";
+          }, 4000);
+        }
+      } else {
+        setEtapa("resultado");
+      }
+    },
     onError: () => setEtapa("resultado"),
   });
 
@@ -469,6 +484,19 @@ export default function QuizPage() {
               ))}
             </ul>
           </div>
+
+          {/* Acesso liberado */}
+          {salvarLeadMutation.data?.isNew && (
+            <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 flex items-start gap-3 mb-4">
+              <CheckCircle2 className="h-5 w-5 text-green-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-white">Acesso gratuito liberado por 7 dias!</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Entrando na plataforma automaticamente em instantes… Verifique seu e-mail para a senha de acesso.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Banner sorteio */}
           <div className="rounded-xl border border-[#D4A843]/20 bg-[#D4A843]/5 p-4 flex items-start gap-3 mb-6">

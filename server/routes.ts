@@ -710,12 +710,91 @@ export async function registerRoutes(server: Server, app: Express) {
       if (!nome || !email || !whatsapp || !resultado) {
         return res.status(400).json({ message: "Dados incompletos" });
       }
+
+      // Salvar/atualizar lead do quiz
       await db.execute(
         `INSERT INTO quiz_leads (nome, email, whatsapp, resultado, respostas, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT DO NOTHING`,
         [nome, email, whatsapp, resultado, JSON.stringify(respostas || {}), new Date().toISOString()]
       );
-      console.log(`[quiz] Novo lead: ${nome} (${email}) — resultado: ${resultado}`);
+
+      // Se o quiz foi completado (não parcial), criar conta trial automaticamente
+      if (resultado !== "parcial") {
+        const existing = await db.execute(
+          `SELECT id, role FROM users WHERE email = $1 LIMIT 1`,
+          [email]
+        );
+
+        let userId: number | null = null;
+        let tempPassword: string | null = null;
+        let isNew = false;
+
+        if (existing.rows.length === 0) {
+          // Criar conta trial automaticamente
+          const bcrypt = await import("bcryptjs");
+          const crypto = await import("crypto");
+          tempPassword = crypto.randomBytes(4).toString("hex"); // senha temporária de 8 chars
+          const hash = await bcrypt.hash(tempPassword, 10);
+          const trialExpiry = new Date(Date.now() + 7 * 86400000).toISOString();
+
+          const inserted = await db.execute(
+            `INSERT INTO users (name, email, phone, password, role, approved, access_expires_at, materials_access, trial_started_at, created_at)
+             VALUES ($1, $2, $3, $4, 'trial', true, $5, false, $6, $7)
+             RETURNING id`,
+            [nome, email, whatsapp, hash, trialExpiry, new Date().toISOString(), new Date().toISOString()]
+          );
+          userId = inserted.rows[0]?.id;
+          isNew = true;
+          console.log(`[quiz] Trial criado automaticamente para ${email} (userId: ${userId})`);
+        } else {
+          userId = existing.rows[0].id;
+          console.log(`[quiz] Usuário já existe: ${email}`);
+        }
+
+        // Gerar token de acesso direto (auto-login)
+        if (userId) {
+          const jwt = await import("jsonwebtoken");
+          const token = jwt.sign(
+            { userId, role: "trial" },
+            process.env.JWT_SECRET!,
+            { expiresIn: "7d" }
+          );
+
+          // Enviar e-mail de boas-vindas com senha e link (se tiver Resend configurado)
+          if (isNew && tempPassword && process.env.RESEND_API_KEY) {
+            try {
+              const { Resend } = await import("resend");
+              const resend = new Resend(process.env.RESEND_API_KEY);
+              await resend.emails.send({
+                from: "Ampla Facial <portal@amplafacial.com.br>",
+                to: email,
+                subject: "Seu acesso gratuito está pronto — Ampla Facial",
+                html: `
+                  <div style="background:#0A1628;color:#fff;padding:40px;font-family:sans-serif;border-radius:12px">
+                    <img src="https://portal.amplafacial.com.br/logo-transparent.png" height="48" />
+                    <h2 style="color:#D4A843;margin-top:24px">Olá, ${nome.split(" ")[0]}!</h2>
+                    <p>Seu resultado no quiz foi: <strong style="color:#D4A843">${resultado === "vip" ? "Mentoria VIP" : resultado === "observador" ? "Plano Observador" : "Acesso Digital"}</strong></p>
+                    <p>Criei um acesso gratuito de 7 dias para você explorar a plataforma Ampla Facial.</p>
+                    <div style="background:#0D1E35;border-radius:8px;padding:20px;margin:24px 0">
+                      <p style="margin:0;color:#aaa">E-mail: <strong style="color:#fff">${email}</strong></p>
+                      <p style="margin:8px 0 0;color:#aaa">Senha temporária: <strong style="color:#D4A843;font-size:18px">${tempPassword}</strong></p>
+                    </div>
+                    <a href="https://portal.amplafacial.com.br" style="display:inline-block;background:#D4A843;color:#0A1628;padding:14px 32px;border-radius:8px;font-weight:bold;text-decoration:none">Acessar a plataforma</a>
+                    <p style="margin-top:32px;color:#666;font-size:12px">Altere sua senha após o primeiro acesso. Dúvidas? Responda este e-mail.</p>
+                  </div>
+                `,
+              });
+              console.log(`[quiz] E-mail de boas-vindas enviado para ${email}`);
+            } catch (emailErr: any) {
+              console.error("[quiz] Erro ao enviar e-mail:", emailErr.message);
+            }
+          }
+
+          return res.json({ success: true, token, isNew, userId });
+        }
+      }
+
       res.json({ success: true });
     } catch (e: any) {
       console.error("[quiz] Failed to save lead:", e.message);
