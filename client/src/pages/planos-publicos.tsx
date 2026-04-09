@@ -25,7 +25,7 @@ const NEGOCIACAO_DIRETA = ["imersao", "vip_online", "vip_presencial", "vip_compl
 
 const WHATSAPP_NEGOCIACAO = (planName: string) =>
   `https://wa.me/5521976263881?text=${encodeURIComponent(
-    `Olá Dr. Gustavo! Tenho interesse no ${planName} e gostaria de agendar uma entrevista para saber mais.`
+    `Olá! Vim pela página de planos da Ampla Facial e tenho interesse no ${planName}. Pode me ajudar com as próximas etapas?`
   )}`;
 
 const GROUP_LABELS: Record<string, string> = {
