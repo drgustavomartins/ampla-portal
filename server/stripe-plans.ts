@@ -177,6 +177,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
       "Mentoria 1:1 pós-turno",
       "Canal direto por 3 meses",
       "Suporte a dúvidas clínicas por 3 meses",
+      "Certificado de participação",
     ],
     accessDays: 180,
     includesModules: true,
