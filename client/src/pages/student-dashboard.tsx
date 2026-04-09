@@ -17,7 +17,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
-  ChevronLeft, ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle,
+  ChevronLeft, ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle, Star,
   Users, MessageCircle, Lock, ShoppingCart, ExternalLink, Paperclip
 } from "lucide-react";
 import MateriaisComplementares from "./materiais-complementares";
@@ -377,6 +377,43 @@ export default function StudentDashboard() {
   // Intro lessons get merged into the first course module for display
   const introLessons = introModule ? getLessonsForModule(introModule.id) : [];
 
+  // #41 — "Continue de onde parou": encontra a última aula com progresso, ou a próxima não concluída
+  const lastLesson = (() => {
+    // Pega a aula concluída mais recentemente
+    const completed = progress
+      .filter(p => p.completed && p.completedAt)
+      .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
+    if (completed.length > 0) {
+      const lastDone = completed[0];
+      const lastLesson = lessons.find(l => l.id === lastDone.lessonId);
+      if (lastLesson) {
+        // Tenta encontrar a próxima aula do mesmo módulo
+        const modLessons = getLessonsForModule(lastLesson.moduleId);
+        const idx = modLessons.findIndex(l => l.id === lastLesson.id);
+        const next = modLessons[idx + 1];
+        return next || lastLesson; // se não tem próxima, repete a última
+      }
+    }
+    // Nenhum progresso: retorna a primeira aula do primeiro módulo real
+    const firstMod = sortedModules.find(m => m !== introModule);
+    if (firstMod) {
+      const modLessons = getLessonsForModule(firstMod.id);
+      return modLessons[0] || null;
+    }
+    return null;
+  })();
+  const lastLessonModule = lastLesson ? modules.find(m => m.id === lastLesson.moduleId) : null;
+  const lastLessonThumb = (() => {
+    if (!lastLesson?.videoUrl) return null;
+    const ytMatch = lastLesson.videoUrl.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+    if (ytMatch) return `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg`;
+    return null;
+  })();
+  const isLastLessonDone = lastLesson ? completedIds.has(lastLesson.id) : false;
+  const continueLabel = progress.filter(p => p.completed).length === 0
+    ? "Comece por aqui"
+    : isLastLessonDone ? "Continue assistindo" : "Continue assistindo";
+
   // Plan progress (days)
   const planDurationDays = userPlan?.durationDays || 365;
   const daysUsed = Math.max(0, planDurationDays - daysLeft);
@@ -428,6 +465,14 @@ export default function StudentDashboard() {
 
           {/* Right: User info */}
           <div className="flex items-center gap-3">
+            {/* Link de planos sempre visível */}
+            <Link
+              href="/planos"
+              className="hidden sm:flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/5 hover:bg-gold/15 px-3 py-1.5 text-xs font-semibold text-gold transition-colors"
+            >
+              <Star className="w-3 h-3" />
+              Planos
+            </Link>
             <div className="hidden sm:flex flex-col items-end mr-1">
               <span className="text-sm font-medium text-foreground leading-none">{firstName}</span>
               {userPlan && <span className="text-[10px] text-gold-muted mt-0.5">{userPlan.name}</span>}
@@ -467,27 +512,43 @@ export default function StudentDashboard() {
 
           {/* Access expiry banners */}
           {isExpired && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-destructive">Seu acesso expirou</p>
-                <p className="text-sm text-destructive/80 mt-1">
-                  Entre em contato com o administrador para renovar seu plano.
-                </p>
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-destructive">Seu acesso expirou</p>
+                  <p className="text-sm text-destructive/80 mt-0.5">
+                    Escolha um plano para continuar acessando as aulas.
+                  </p>
+                </div>
               </div>
+              <Link
+                href="/planos"
+                className="shrink-0 rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white hover:bg-destructive/90 transition-colors"
+              >
+                Ver planos
+              </Link>
             </div>
           )}
           {isExpiringSoon && (
-            <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-amber-500">
-                  Seu acesso expira em {rawDaysLeft} {rawDaysLeft === 1 ? "dia" : "dias"}
-                </p>
-                <p className="text-sm text-amber-500/80 mt-1">
-                  Entre em contato para renovação.
-                </p>
+            <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-amber-500">
+                    Seu acesso expira em {rawDaysLeft} {rawDaysLeft === 1 ? "dia" : "dias"}
+                  </p>
+                  <p className="text-sm text-amber-500/80 mt-0.5">
+                    Renove agora e não perca o acesso ao conteúdo.
+                  </p>
+                </div>
               </div>
+              <Link
+                href="/planos"
+                className="shrink-0 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-[#0A1628] hover:bg-amber-400 transition-colors"
+              >
+                Renovar plano
+              </Link>
             </div>
           )}
 
@@ -529,9 +590,56 @@ export default function StudentDashboard() {
                 <span className="text-muted-foreground">Aulas concluídas</span>
                 <span className="font-medium text-gold">{completedCount}/{totalLessons}</span>
               </div>
+              {/* CTA de planos no card */}
+              <Link
+                href="/planos"
+                className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-gold/30 bg-gold/5 hover:bg-gold/15 px-3 py-2 text-xs font-semibold text-gold transition-colors"
+              >
+                <Star className="w-3 h-3" />
+                {isTrial ? `Trial — ${trialDaysLeft} dia${trialDaysLeft !== 1 ? "s" : ""} restante${trialDaysLeft !== 1 ? "s" : ""}` : "Ver planos e upgrade"}
+              </Link>
             </div>
             </div>
           </section>
+
+          {/* ===== CONTINUE DE ONDE PAROU ===== */}
+          {/* #41 */}
+          {lastLesson && (
+            <section className="space-y-3">
+              <h2 className="text-xs font-semibold text-gold-muted uppercase tracking-brand">{continueLabel}</h2>
+              <button
+                className="w-full text-left rounded-xl border border-border/30 bg-card/60 hover:border-gold/30 hover:bg-card/80 transition-all duration-200 overflow-hidden group"
+                onClick={() => setSelectedLesson(lastLesson)}
+              >
+                <div className="flex items-center gap-4 p-4">
+                  {lastLessonThumb ? (
+                    <div className="shrink-0 w-24 h-14 rounded-lg overflow-hidden ring-1 ring-border/20 relative">
+                      <img src={lastLessonThumb} alt="" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Play className="w-5 h-5 text-white fill-white/80" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="shrink-0 w-14 h-14 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center">
+                      <Play className="w-6 h-6 text-gold" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <p className="text-sm font-medium text-foreground truncate">{lastLesson.title}</p>
+                    {lastLessonModule && (
+                      <p className="text-xs text-muted-foreground truncate">{lastLessonModule.title}</p>
+                    )}
+                    {lastLesson.duration && (
+                      <p className="text-xs text-gold/60 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />{lastLesson.duration}
+                      </p>
+                    )}
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gold/40 shrink-0 group-hover:text-gold/70 transition-colors" />
+                </div>
+              </button>
+            </section>
+          )}
 
           {/* ===== BOAS VINDAS (Featured/Hero Section) ===== */}
           {introModule && introLessons.length > 0 && (

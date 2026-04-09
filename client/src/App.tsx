@@ -14,6 +14,8 @@ import PlanosPage from "./pages/planos";
 import UpgradePage from "./pages/upgrade";
 import PagamentoSucesso from "./pages/pagamento-sucesso";
 import PlanosPublicos from "./pages/planos-publicos";
+import TermosPage from "./pages/termos";
+import PrivacidadePage from "./pages/privacidade";
 
 function AppContent() {
   const { user, isAdmin } = useAuth();
@@ -57,6 +59,8 @@ function App() {
             <Route path="/pagamento/sucesso" component={() => <ProtectedPage component={PagamentoSucesso} />} />
             <Route path="/trial/ativo" component={() => <ProtectedPage component={PagamentoSucesso} />} />
             <Route path="/comecar" component={PlanosPublicos} />
+            <Route path="/termos" component={TermosPage} />
+            <Route path="/privacidade" component={PrivacidadePage} />
             <Route component={NotFound} />
           </Switch>
         </Router>

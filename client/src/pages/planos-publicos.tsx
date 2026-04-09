@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
-  Check, Star, ArrowRight, Zap, Users, Video, Clock,
-  CreditCard, ChevronLeft, Sparkles, Loader2
+  Check, Clock, Zap, Users, Video, Award, Star, MessageCircle, ArrowRight, Shield,
 } from "lucide-react";
+import { BotaoEspecialista } from "@/components/whatsapp-especialista";
 
 interface PlanData {
   key: string;
@@ -11,10 +11,6 @@ interface PlanData {
   description: string;
   group: "digital" | "observador" | "vip";
   highlight?: string;
-  price: number;
-  priceFormatted: string;
-  installments12x: number | null;
-  installments12xFormatted: string | null;
   features: string[];
   clinicalHours: number;
   practiceHours: number;
@@ -24,68 +20,70 @@ interface PlanData {
   hasNaturalUp: boolean;
 }
 
-// Planos que requerem negociação direta (prática presencial ou entrevista)
-const NEGOCIACAO_DIRETA = ["imersao", "vip_online", "vip_presencial", "vip_completo"];
+const GROUP_ORDER = ["digital", "observador", "vip"];
 
-const WHATSAPP_NEGOCIACAO = (planName: string) =>
-  `https://wa.me/5521995523509?text=${encodeURIComponent(
-    `Olá Dr. Gustavo! Tenho interesse no ${planName} e gostaria de agendar uma entrevista para saber mais.`
-  )}`;
+const GROUP_LABELS: Record<string, string> = {
+  digital: "Acesso Digital",
+  observador: "Observação Clínica",
+  vip: "Mentoria VIP",
+};
 
-function PlanCard({
-  plan,
-  onPagar,
-  isLoading,
-}: {
-  plan: PlanData;
-  onPagar: (key: string) => void;
-  isLoading: boolean;
-}) {
-  const isNegociacao = NEGOCIACAO_DIRETA.includes(plan.key);
-  const isDestaque = plan.key === "vip_completo" || !!plan.highlight;
+const GROUP_DESCRIPTIONS: Record<string, string> = {
+  digital: "Estude no seu ritmo com aulas gravadas e materiais científicos exclusivos",
+  observador: "Acompanhe a rotina clínica real do Dr. Gustavo presencialmente",
+  vip: "Formação completa com mentoria individual em harmonização orofacial",
+};
+
+function PlanCard({ plan }: { plan: PlanData }) {
+  const isDestaque = !!plan.highlight || plan.group === "vip";
+  const mainFeatures = plan.features.filter(f => !f.toLowerCase().includes("certificado"));
+  const hasCertificate = plan.features.some(f => f.toLowerCase().includes("certificado"));
 
   return (
     <div
-      className={`relative flex h-full flex-col rounded-2xl border transition-all duration-200 hover:scale-[1.01] ${
+      className={`relative flex h-full flex-col rounded-2xl border transition-all duration-200 hover:scale-[1.015] hover:shadow-xl ${
         isDestaque
-          ? "border-[#D4A843] bg-gradient-to-b from-[#1a2d4d] to-[#0D1E35] shadow-[0_0_24px_rgba(212,168,67,0.12)]"
+          ? "border-[#D4A843] bg-gradient-to-b from-[#1a2d4d] to-[#0D1E35] shadow-[0_0_32px_rgba(212,168,67,0.15)]"
           : "border-[#1e3a5f] bg-[#0D1E35] hover:border-[#D4A843]/30"
       } p-6`}
     >
       {plan.highlight && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#D4A843] px-4 py-1 text-xs font-bold text-[#0A1628]">
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#D4A843] px-4 py-1 text-xs font-bold text-[#0A1628] shadow-lg">
           {plan.highlight}
         </div>
       )}
 
-      <div className="mb-3">
+      {/* Header */}
+      <div className="mb-4">
         <h3 className="text-lg font-bold text-white">{plan.name}</h3>
-        <p className="mt-1 text-sm text-gray-400">{plan.description}</p>
+        <p className="mt-1 text-sm text-gray-400 leading-snug">{plan.description}</p>
       </div>
 
-      {/* Badges */}
-      <div className="mb-4 flex flex-wrap gap-1.5">
-        {plan.clinicalHours > 0 && (
-          <span className="flex items-center gap-1 rounded-full bg-blue-900/40 px-2.5 py-1 text-xs text-blue-300">
-            <Clock className="h-3 w-3" /> {plan.clinicalHours}h observação
-          </span>
-        )}
-        {plan.practiceHours > 0 && (
-          <span className="flex items-center gap-1 rounded-full bg-green-900/40 px-2.5 py-1 text-xs text-green-300">
-            <Zap className="h-3 w-3" /> {plan.practiceHours}h prática c/ paciente
-          </span>
-        )}
-        {plan.hasLiveEvents && (
-          <span className="flex items-center gap-1 rounded-full bg-purple-900/40 px-2.5 py-1 text-xs text-purple-300">
-            <Video className="h-3 w-3" /> Encontros ao vivo
-          </span>
-        )}
-        {plan.hasMentorship && (
-          <span className="flex items-center gap-1 rounded-full bg-yellow-900/40 px-2.5 py-1 text-xs text-yellow-300">
-            <Users className="h-3 w-3" /> Mentoria individual
-          </span>
-        )}
-      </div>
+      {/* Badges de destaque */}
+      {(plan.clinicalHours > 0 || plan.practiceHours > 0 || plan.hasLiveEvents || plan.hasMentorship) && (
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          {plan.clinicalHours > 0 && (
+            <span className="flex items-center gap-1 rounded-full border border-blue-500/20 bg-blue-900/20 px-2.5 py-1 text-xs text-blue-300">
+              <Clock className="h-3 w-3" /> {plan.clinicalHours}h observação
+            </span>
+          )}
+          {plan.practiceHours > 0 && (
+            <span className="flex items-center gap-1 rounded-full border border-green-500/20 bg-green-900/20 px-2.5 py-1 text-xs text-green-300">
+              <Zap className="h-3 w-3" /> {plan.practiceHours}h prática c/ paciente
+            </span>
+          )}
+          {plan.hasLiveEvents && (
+            <span className="flex items-center gap-1 rounded-full border border-purple-500/20 bg-purple-900/20 px-2.5 py-1 text-xs text-purple-300">
+              <Video className="h-3 w-3" /> Encontros ao vivo
+            </span>
+          )}
+          {plan.hasMentorship && (
+            <span className="flex items-center gap-1 rounded-full border border-yellow-500/20 bg-yellow-900/20 px-2.5 py-1 text-xs text-yellow-300">
+              <Users className="h-3 w-3" /> Mentoria individual
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Preço */}
       <div className="mb-5">
@@ -101,16 +99,13 @@ function PlanCard({
       </div>
 
       {/* Features */}
-      <ul className="mb-6 flex-1 space-y-2">
-        {plan.features.slice(0, 5).map((f, i) => (
+      <ul className="mb-4 flex-1 space-y-2.5">
+        {mainFeatures.map((f, i) => (
           <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
-            <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#D4A843]" />
-            <span>{f}</span>
+            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#D4A843]" />
+            <span className="leading-snug">{f}</span>
           </li>
         ))}
-        {plan.features.length > 5 && (
-          <li className="text-xs text-gray-500">+ {plan.features.length - 5} benefícios inclusos</li>
-        )}
       </ul>
 
       {/* CTA */}
@@ -133,29 +128,18 @@ function PlanCard({
             Solicitar vaga
           </a>
         </div>
-      ) : (
-        <button
-          onClick={() => onPagar(plan.key)}
-          disabled={isLoading}
-          className={`mt-auto flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-all disabled:opacity-50 ${
-            isDestaque
-              ? "bg-[#D4A843] text-[#0A1628] hover:bg-[#e8b84d]"
-              : "border border-[#D4A843] text-[#D4A843] hover:bg-[#D4A843] hover:text-[#0A1628]"
-          }`}
-        >
-          {isLoading ? (
-            <><Loader2 className="h-4 w-4 animate-spin" /> Aguarde...</>
-          ) : (
-            <>Pagar e acessar agora <ArrowRight className="h-4 w-4" /></>
-          )}
-        </button>
       )}
+
+      {/* CTA */}
+      <div className="mt-auto">
+        <BotaoEspecialista planName={plan.name} destaque={isDestaque} />
+      </div>
     </div>
   );
 }
 
 export default function PlanosPublicos() {
-  const [loadingKey, setLoadingKey] = useState<string | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery<{ plans: PlanData[] }>({
     queryKey: ["/api/stripe/plans"],
@@ -214,8 +198,15 @@ export default function PlanosPublicos() {
     );
   }
 
+  const plans = data?.plans || [];
+  const grouped: Record<string, PlanData[]> = {};
+  for (const p of plans) {
+    if (!grouped[p.group]) grouped[p.group] = [];
+    grouped[p.group].push(p);
+  }
+
   return (
-    <div className="min-h-screen bg-[#0A1628] px-4 py-10">
+    <div className="min-h-screen bg-[#0A1628] px-4 pb-16 pt-10">
       <div className="mx-auto max-w-6xl">
 
         <div className="mb-10 text-center">
@@ -235,23 +226,23 @@ export default function PlanosPublicos() {
           if (!groupPlans.length) return null;
           return (
             <div key={group} className="mb-14">
-              <div className="mb-6 text-center">
+              <div className="mb-7 text-center">
                 <div className="inline-block rounded-full border border-[#D4A843]/30 bg-[#D4A843]/10 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-[#D4A843]">
                   {GROUP_LABELS[group]}
                 </div>
                 <p className="mt-2 text-sm text-gray-500">{GROUP_DESCRIPTIONS[group]}</p>
               </div>
-              <div className={`grid items-stretch gap-6 ${
-                groupPlans.length <= 2 ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto" :
-                "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-              }`}>
+              <div
+                className={`grid items-stretch gap-6 ${
+                  groupPlans.length === 1
+                    ? "max-w-lg mx-auto"
+                    : groupPlans.length === 2
+                    ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto"
+                    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                }`}
+              >
                 {groupPlans.map((plan) => (
-                  <PlanCard
-                    key={plan.key}
-                    plan={plan}
-                    onPagar={handlePagar}
-                    isLoading={checkoutMutation.isPending && loadingKey === plan.key}
-                  />
+                  <PlanCard key={plan.key} plan={plan} />
                 ))}
               </div>
             </div>
@@ -288,9 +279,10 @@ export default function PlanosPublicos() {
 
         <div className="rounded-2xl border border-[#1e3a5f] bg-[#0D1E35] p-6 text-center">
           <Star className="mx-auto mb-3 h-5 w-5 text-[#D4A843]" />
-          <h3 className="font-semibold text-white">Começou num plano menor? Faça upgrade com crédito</h3>
-          <p className="mt-1.5 text-sm text-gray-400">
-            Dentro de 60 dias: 100% do que pagou vira crédito no próximo plano. Você paga só a diferença.
+          <h3 className="text-base font-semibold text-white">Começou pequeno? Seu investimento não vai embora.</h3>
+          <p className="mx-auto mt-2 max-w-md text-sm text-gray-400 leading-relaxed">
+            Dentro de 60 dias você aproveita <span className="text-white font-medium">100% do valor pago</span> como crédito no próximo plano.
+            Após isso, 70%. Você sempre paga apenas a diferença.
           </p>
         </div>
 
@@ -299,6 +291,7 @@ export default function PlanosPublicos() {
             <ChevronLeft className="inline h-4 w-4" /> Já tenho conta — fazer login
           </a>
         </div>
+
       </div>
     </div>
   );
