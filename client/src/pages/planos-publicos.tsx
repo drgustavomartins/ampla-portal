@@ -239,7 +239,7 @@ export default function PlanosPublicos() {
               <div
                 className={`grid items-stretch gap-6 ${
                   groupPlans.length === 1
-                    ? "max-w-sm mx-auto"
+                    ? "max-w-lg mx-auto"
                     : groupPlans.length === 2
                     ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto"
                     : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
