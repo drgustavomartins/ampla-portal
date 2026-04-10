@@ -354,9 +354,12 @@ export function registerStripeRoutes(app: Express) {
         const accessExpiry = new Date(Date.now() + plan.accessDays * 86400000).toISOString();
         const now = new Date().toISOString();
 
-        // Buscar valor pago
+        // Buscar valor pago e plano anterior (para detectar renovação)
         let amountPaid = plan.price;
         if (session.amount_total) amountPaid = session.amount_total;
+        const prevUser = await db.execute(sql`SELECT plan_key FROM users WHERE id = ${userId}`);
+        const previousPlanKey = (prevUser as any).rows?.[0]?.plan_key || null;
+        const isRenewal = previousPlanKey === planKey;
 
         // ─── Mapa de módulos por plano ────────────────────────────────────────
         // IDs reais do banco: 6=Boas-vindas, 2=Toxina, 3=Preenchedores,
@@ -500,14 +503,19 @@ export function registerStripeRoutes(app: Express) {
         console.log(`[stripe webhook] Aluno ${userId} provisionado no plano ${planKey} até ${accessExpiry} | módulos: ${provisioning.modules.length} | materiais: ${provisioning.materials.length} | mentoria: ${provisioning.mentorshipMonths}m`);
 
         // ─── Auto-cashback ──────────────────────────────────────────────
+        // Renovação = 10% fixo | Nova compra = % variável por plano
         try {
           const { CASHBACK_RATES } = await import("./stripe-plans");
-          const cashbackRate = CASHBACK_RATES[planKey as PlanKey] || 0;
+          const RENEWAL_CASHBACK = 0.10;
+          const cashbackRate = isRenewal ? RENEWAL_CASHBACK : (CASHBACK_RATES[planKey as PlanKey] || 0);
           if (cashbackRate > 0 && amountPaid > 0) {
             const cashbackAmount = Math.floor(amountPaid * cashbackRate);
+            const label = isRenewal
+              ? `Cashback 10% renovação ${plan.name}`
+              : `Cashback ${Math.round(cashbackRate * 100)}% ${plan.name}`;
             await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at)
-              VALUES (${userId}, 'cashback', ${cashbackAmount}, ${'Cashback ' + Math.round(cashbackRate * 100) + '% do plano ' + planKey}, ${session.id}, ${new Date().toISOString()})`);
-            console.log(`[stripe webhook] Cashback ${cashbackRate * 100}% = ${cashbackAmount} centavos para userId ${userId}`);
+              VALUES (${userId}, 'cashback', ${cashbackAmount}, ${label}, ${session.id}, ${new Date().toISOString()})`);
+            console.log(`[stripe webhook] ${isRenewal ? 'RENOVAÇÃO ' : ''}Cashback ${Math.round(cashbackRate * 100)}% = ${cashbackAmount} centavos para userId ${userId}`);
           }
         } catch (e: any) {
           console.error("[stripe webhook] Cashback error:", e.message);
