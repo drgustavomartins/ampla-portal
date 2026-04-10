@@ -6,6 +6,10 @@ import {
   ChevronDown, ChevronUp, ArrowRight, Loader2,
   TrendingUp, Timer, MessageCircle,} from "lucide-react";
 
+function formatBRL(c: number) {
+  return (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 const NEGOCIACAO_DIRETA = ["vip_online", "vip_presencial", "vip_completo"];
 
 const WHATSAPP_NEGOCIACAO = (planName: string) =>
@@ -192,24 +196,41 @@ export default function PlanosPage() {
   const { user } = useAuth();
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
+  const [creditsToUse, setCreditsToUse] = useState(0);
 
   const { data, isLoading } = useQuery<{ plans: PlanData[] }>({
     queryKey: ["/api/stripe/plans"],
   });
 
+  const { data: creditsData } = useQuery<{ balance: number; referralCode: string }>({
+    queryKey: ["/api/credits/balance"],
+    enabled: !!user,
+  });
+
+  const creditBalance = creditsData?.balance || 0;
+
   const checkoutMutation = useMutation({
     mutationFn: async (planKey: string) => {
+      const token = localStorage.getItem("ampla_token");
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
       const res = await fetch("/api/stripe/create-checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         credentials: "include",
-        body: JSON.stringify({ planKey }),
+        body: JSON.stringify({ planKey, creditsToUse: creditsToUse > 0 ? creditsToUse : undefined }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || "Erro ao gerar link");
       return json;
     },
-    onSuccess: (data) => { if (data.url) window.location.href = data.url; },
+    onSuccess: (data) => {
+      if (data.paidWithCredits) {
+        window.location.href = "/#/pagamento/sucesso?credits=true";
+      } else if (data.url) {
+        window.location.href = data.url;
+      }
+    },
     onError: () => {
       setLoadingKey(null);
       alert("Erro ao gerar link. Tente novamente.");
@@ -267,6 +288,41 @@ export default function PlanosPage() {
             </div>
           )}
         </div>
+
+        {/* Credit balance banner */}
+        {creditBalance > 0 && (
+          <div className="mb-8 rounded-2xl border border-[#D4A843]/30 bg-[#0D1E35] p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#D4A843]/15 flex items-center justify-center">
+                  <Star className="h-5 w-5 text-[#D4A843]" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">Voce tem creditos!</p>
+                  <p className="text-xs text-gray-400">Saldo disponivel: <strong className="text-[#D4A843]">{formatBRL(creditBalance)}</strong></p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <label className="text-xs text-gray-400 shrink-0">Usar:</label>
+                <input
+                  type="range"
+                  min={0}
+                  max={creditBalance}
+                  step={100}
+                  value={creditsToUse}
+                  onChange={(e) => setCreditsToUse(Number(e.target.value))}
+                  className="flex-1 sm:w-48 accent-[#D4A843]"
+                />
+                <span className="text-sm font-semibold text-[#D4A843] min-w-[80px] text-right">{formatBRL(creditsToUse)}</span>
+              </div>
+            </div>
+            {creditsToUse > 0 && (
+              <p className="mt-3 text-xs text-[#D4A843]/80">
+                Desconto de {formatBRL(creditsToUse)} sera aplicado no checkout.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Como funciona o processo */}
         <div className="mb-10 rounded-2xl border border-[#1e3a5f] bg-[#0D1E35] p-6">

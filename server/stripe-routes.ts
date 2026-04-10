@@ -123,7 +123,7 @@ export function registerStripeRoutes(app: Express) {
     const auth = authenticateRequest(req);
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
 
-    const { planKey, isUpgrade } = req.body as { planKey: PlanKey; isUpgrade?: boolean };
+    const { planKey, isUpgrade, creditsToUse, referralCode } = req.body as { planKey: PlanKey; isUpgrade?: boolean; creditsToUse?: number; referralCode?: string };
     const plan = PLANS[planKey];
     if (!plan) return res.status(400).json({ message: "Plano inválido" });
 
@@ -149,6 +149,34 @@ export function registerStripeRoutes(app: Express) {
       amountToPay = upgrade.toPay;
       upgradeCredit = upgrade.credit;
       upgradeDescription = `Upgrade para ${plan.name} (crédito de ${formatBRL(upgradeCredit)} aplicado)`;
+    }
+
+    // Apply credits if requested
+    let creditDeduction = 0;
+    if (creditsToUse && creditsToUse > 0) {
+      const balanceResult = await db.execute(sql`SELECT COALESCE(SUM(amount), 0) as balance FROM credit_transactions WHERE user_id = ${auth.userId}`);
+      const balance = Number((balanceResult as any).rows?.[0]?.balance || 0);
+      if (creditsToUse > balance) return res.status(400).json({ message: "Saldo de créditos insuficiente" });
+      creditDeduction = Math.min(creditsToUse, amountToPay);
+      amountToPay -= creditDeduction;
+    }
+
+    // If credits cover 100% of the price, skip Stripe and activate directly
+    if (amountToPay <= 0) {
+      const now = new Date().toISOString();
+      const accessExpiry = new Date(Date.now() + plan.accessDays * 86400000).toISOString();
+      // Debit credits
+      await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at) VALUES (${auth.userId}, 'usage', ${-creditDeduction}, ${'Pagamento integral com créditos: ' + plan.name}, ${'credits_' + Date.now()}, ${now})`);
+      // Activate access
+      await db.execute(sql`UPDATE users SET plan_key = ${planKey}, plan_paid_at = ${now}, plan_amount_paid = ${plan.price}, approved = true, access_expires_at = ${accessExpiry}, materials_access = true WHERE id = ${auth.userId}`);
+      return res.json({ url: null, sessionId: null, paidWithCredits: true });
+    }
+
+    // Debit credits now (will be applied regardless of Stripe outcome)
+    if (creditDeduction > 0) {
+      const now = new Date().toISOString();
+      await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at) VALUES (${auth.userId}, 'usage', ${-creditDeduction}, ${'Créditos aplicados: ' + plan.name}, ${'checkout_' + Date.now()}, ${now})`);
+      upgradeDescription = `${plan.name} (${formatBRL(creditDeduction)} em créditos aplicados)`;
     }
 
     // Criar ou recuperar customer Stripe
@@ -203,13 +231,13 @@ export function registerStripeRoutes(app: Express) {
           trialDays: String(trialDays),
         },
       },
-      // Trial: cobrar após 7 dias (Stripe subscription trial)
-      // Para pagamento único + trial, usamos setup_intent + delayed charge via webhook
       metadata: {
         userId: String(user.id),
         planKey,
         isUpgrade: isUpgrade ? "true" : "false",
         trialDays: String(trialDays),
+        referralCode: referralCode || "",
+        creditsUsed: String(creditDeduction),
       },
       success_url: `${baseUrl}/#/pagamento/sucesso?plan=${planKey}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/#/planos`,
@@ -470,6 +498,37 @@ export function registerStripeRoutes(app: Express) {
         }
 
         console.log(`[stripe webhook] Aluno ${userId} provisionado no plano ${planKey} até ${accessExpiry} | módulos: ${provisioning.modules.length} | materiais: ${provisioning.materials.length} | mentoria: ${provisioning.mentorshipMonths}m`);
+
+        // ─── Auto-cashback ──────────────────────────────────────────────
+        try {
+          const { CASHBACK_RATES } = await import("./stripe-plans");
+          const cashbackRate = CASHBACK_RATES[planKey as PlanKey] || 0;
+          if (cashbackRate > 0 && amountPaid > 0) {
+            const cashbackAmount = Math.floor(amountPaid * cashbackRate);
+            await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at)
+              VALUES (${userId}, 'cashback', ${cashbackAmount}, ${'Cashback ' + Math.round(cashbackRate * 100) + '% do plano ' + planKey}, ${session.id}, ${new Date().toISOString()})`);
+            console.log(`[stripe webhook] Cashback ${cashbackRate * 100}% = ${cashbackAmount} centavos para userId ${userId}`);
+          }
+        } catch (e: any) {
+          console.error("[stripe webhook] Cashback error:", e.message);
+        }
+
+        // ─── Referral credit ────────────────────────────────────────────
+        try {
+          const referralCode = session.metadata?.referralCode;
+          if (referralCode && amountPaid > 0) {
+            const ref = await db.execute(sql`SELECT user_id FROM referral_codes WHERE code = ${referralCode}`);
+            if ((ref as any).rows?.length > 0) {
+              const referrerId = (ref as any).rows[0].user_id;
+              const referralCredit = Math.floor(amountPaid * 0.10);
+              await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at)
+                VALUES (${referrerId}, 'referral', ${referralCredit}, ${'Indicação: ' + planKey}, ${session.id}, ${new Date().toISOString()})`);
+              console.log(`[stripe webhook] Referral credit ${referralCredit} centavos para referrer userId ${referrerId}`);
+            }
+          }
+        } catch (e: any) {
+          console.error("[stripe webhook] Referral credit error:", e.message);
+        }
       }
     }
 
@@ -533,15 +592,13 @@ export function registerPublicStripeRoutes(app: Express) {
     const stripe = getStripe();
     if (!stripe) return res.status(503).json({ message: "Pagamentos não configurados ainda" });
 
-    const { planKey } = req.body as { planKey: PlanKey };
+    const { planKey, referralCode } = req.body as { planKey: PlanKey; referralCode?: string };
     const plan = PLANS[planKey];
     if (!plan) return res.status(400).json({ message: "Plano inválido" });
 
     const baseUrl = process.env.APP_URL || "https://portal.amplafacial.com.br";
 
     // Aceita cartão + PIX dinâmico nativo do Stripe
-    // PIX: gera QR Code na própria tela do Stripe, confirmação automática via webhook
-    // Não precisa de WhatsApp, não precisa de ação manual
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       payment_method_options: {
@@ -572,7 +629,7 @@ export function registerPublicStripeRoutes(app: Express) {
           quantity: 1,
         },
       ],
-      metadata: { planKey, source: "public_checkout" },
+      metadata: { planKey, source: "public_checkout", referralCode: referralCode || "" },
       success_url: `${baseUrl}/#/pagamento/novo?plan=${planKey}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/#/comecar`,
       locale: "pt-BR",

@@ -28,7 +28,7 @@ import {
   Clock, Video, Shield, GraduationCap, Eye, Pencil, Calendar, Settings,
   CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library,
   GripVertical, CalendarDays, FolderOpen, Search, FileText, FileIcon, Headphones, ChevronDown, ChevronUp,
-  Sparkles, MessageCircle, Phone
+  Sparkles, MessageCircle, Phone, Coins
 } from "lucide-react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -272,6 +272,17 @@ export default function AdminDashboard() {
     queryKey: ["/api/materials"],
     queryFn: async () => { const res = await apiRequest("GET", "/api/materials"); return res.json(); },
   });
+  // Credits data
+  type CreditTransaction = { id: number; userId: number; userName: string; userEmail: string; type: string; amount: number; description: string; referenceId: string; createdAt: string };
+  type CreditBalance = { userId: number; userName: string; userEmail: string; balance: number };
+  const { data: creditsAdminData } = useQuery<{ transactions: CreditTransaction[]; balances: CreditBalance[]; totalOutstanding: number }>({
+    queryKey: ["/api/admin/credits"],
+    queryFn: async () => { const res = await apiRequest("GET", "/api/admin/credits"); return res.json(); },
+  });
+  const creditTransactions = creditsAdminData?.transactions || [];
+  const creditBalances = creditsAdminData?.balances || [];
+  const totalCreditOutstanding = creditsAdminData?.totalOutstanding || 0;
+  const [creditFilter, setCreditFilter] = useState<string>("all");
   const [expandedThemeId, setExpandedThemeId] = useState<number | null>(null);
   const [expandedSubcatId, setExpandedSubcatId] = useState<number | null>(null);
   // Theme dialogs
@@ -940,7 +951,7 @@ export default function AdminDashboard() {
 
         {/* ─── Main Content Tabs ─── */}
         <Tabs defaultValue="lessons" className="space-y-6">
-          <TabsList className={`w-full grid bg-card/60 border border-border/30 p-1 h-11 sm:h-12 ${isSuperAdmin ? "grid-cols-8" : "grid-cols-6"}`}>
+          <TabsList className={`w-full grid bg-card/60 border border-border/30 p-1 h-11 sm:h-12 ${isSuperAdmin ? "grid-cols-9" : "grid-cols-7"}`}>
             <TabsTrigger
               value="students"
               data-testid="tab-students"
@@ -993,6 +1004,14 @@ export default function AdminDashboard() {
             >
               <Library className="w-4 h-4 sm:mr-2 shrink-0" />
               <span className="hidden sm:inline">Materiais</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="credits"
+              data-testid="tab-credits"
+              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
+            >
+              <Coins className="w-4 h-4 sm:mr-2 shrink-0" />
+              <span className="hidden sm:inline">Créditos</span>
             </TabsTrigger>
             {isSuperAdmin && (
               <>
@@ -2298,6 +2317,108 @@ export default function AdminDashboard() {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          </TabsContent>
+
+          {/* ========== CREDITS TAB ========== */}
+          <TabsContent value="credits" className="space-y-6 mt-0">
+            {/* Stats row */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card className="border-border/30 bg-card/40">
+                <CardContent className="p-4 text-center">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Total pendente</p>
+                  <p className="text-2xl font-bold text-gold mt-1">{(totalCreditOutstanding / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-border/30 bg-card/40">
+                <CardContent className="p-4 text-center">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Usuarios com saldo</p>
+                  <p className="text-2xl font-bold text-foreground mt-1">{creditBalances.filter(b => b.balance > 0).length}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-border/30 bg-card/40">
+                <CardContent className="p-4 text-center">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Transacoes</p>
+                  <p className="text-2xl font-bold text-foreground mt-1">{creditTransactions.length}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Balances table */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Saldos por usuario</h3>
+              {creditBalances.length === 0 ? (
+                <Card className="border-border/30 bg-card/40"><CardContent className="p-12 text-center"><Coins className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" /><p className="text-sm text-muted-foreground">Nenhum credito registrado</p></CardContent></Card>
+              ) : (
+                <div className="space-y-1">
+                  {creditBalances.map(b => (
+                    <Card key={b.userId} className="border-border/25 bg-card/40">
+                      <CardContent className="p-3 flex items-center gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{b.userName || 'ID ' + b.userId}</p>
+                          <p className="text-xs text-muted-foreground truncate">{b.userEmail}</p>
+                        </div>
+                        <Badge variant="outline" className={`shrink-0 ${b.balance > 0 ? 'text-emerald-400 border-emerald-500/30' : 'text-orange-400 border-orange-500/30'}`}>
+                          {(b.balance / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Transactions table */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Transacoes ({creditTransactions.length})</h3>
+                <Select value={creditFilter} onValueChange={setCreditFilter}>
+                  <SelectTrigger className="bg-background/50 border-border/40 w-36 h-8 text-xs"><SelectValue placeholder="Filtrar tipo" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="cashback">Cashback</SelectItem>
+                    <SelectItem value="referral">Indicacao</SelectItem>
+                    <SelectItem value="usage">Uso</SelectItem>
+                    <SelectItem value="adjustment">Ajuste</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {(() => {
+                const filtered = creditFilter === "all" ? creditTransactions : creditTransactions.filter(t => t.type === creditFilter);
+                if (filtered.length === 0) return (
+                  <Card className="border-border/30 bg-card/40"><CardContent className="p-12 text-center"><p className="text-sm text-muted-foreground">Nenhuma transacao encontrada</p></CardContent></Card>
+                );
+                return (
+                  <div className="space-y-1">
+                    {filtered.slice(0, 100).map(tx => (
+                      <Card key={tx.id} className="border-border/25 bg-card/40">
+                        <CardContent className="p-3 flex items-center gap-3">
+                          <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${tx.amount > 0 ? 'bg-emerald-500/10' : 'bg-orange-500/10'}`}>
+                            <Coins className={`w-3.5 h-3.5 ${tx.amount > 0 ? 'text-emerald-400' : 'text-orange-400'}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-foreground truncate">{tx.userName || 'ID ' + tx.userId}</span>
+                              <Badge variant="outline" className="text-[10px] px-1.5 border-border/30 text-muted-foreground shrink-0">
+                                {tx.type}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate">{tx.description}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className={`text-sm font-semibold ${tx.amount > 0 ? 'text-emerald-400' : 'text-orange-400'}`}>
+                              {tx.amount > 0 ? '+' : ''}{(tx.amount / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                            </span>
+                            <p className="text-[10px] text-muted-foreground">
+                              {new Date(tx.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </TabsContent>
 

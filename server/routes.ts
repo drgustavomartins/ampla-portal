@@ -261,7 +261,10 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`CREATE TABLE IF NOT EXISTS quiz_clicks (id SERIAL PRIMARY KEY, source TEXT NOT NULL, ip TEXT, user_agent TEXT, created_at TEXT NOT NULL)`).catch(() => {});
     await db.execute(`CREATE TABLE IF NOT EXISTS funnel_events (id SERIAL PRIMARY KEY, session_id TEXT NOT NULL, email TEXT, event TEXT NOT NULL, metadata JSONB, created_at TEXT NOT NULL)`).catch(() => {});
     await db.execute(`CREATE INDEX IF NOT EXISTS idx_funnel_session ON funnel_events(session_id)`).catch(() => {});
-    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events tables ensured");
+    // Credits system tables
+    await db.execute(`CREATE TABLE IF NOT EXISTS referral_codes (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL UNIQUE, code TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL)`).catch(() => {});
+    await db.execute(`CREATE TABLE IF NOT EXISTS credit_transactions (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, type TEXT NOT NULL, amount INTEGER NOT NULL, description TEXT NOT NULL, reference_id TEXT, created_at TEXT NOT NULL)`).catch(() => {});
+    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions tables ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
@@ -2484,6 +2487,169 @@ export async function registerRoutes(server: Server, app: Express) {
     }
 
     return res.json({ message: "Migração concluída", results });
+  });
+
+  // ─── Credits System Routes ──────────────────────────────────────────────────
+
+  // GET /api/credits/balance — authenticated user gets their balance + referral code
+  app.get("/api/credits/balance", async (req: Request, res: Response) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const { db } = await import("./db");
+      // Calculate balance from all transactions
+      const balanceResult = await db.execute(sql`SELECT COALESCE(SUM(amount), 0) as balance FROM credit_transactions WHERE user_id = ${auth.userId}`);
+      const balance = Number((balanceResult as any).rows?.[0]?.balance || 0);
+
+      // Get or create referral code
+      const existingCode = await db.execute(sql`SELECT code FROM referral_codes WHERE user_id = ${auth.userId}`);
+      let referralCode = (existingCode as any).rows?.[0]?.code;
+      if (!referralCode) {
+        // Get user name for code generation
+        const userResult = await db.execute(sql`SELECT name FROM users WHERE id = ${auth.userId}`);
+        const userName = (userResult as any).rows?.[0]?.name || "USER";
+        const firstName = userName.split(" ")[0].toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const randomChars = Math.random().toString(36).substring(2, 6).toUpperCase();
+        referralCode = `${firstName}-${randomChars}`;
+        await db.execute(sql`INSERT INTO referral_codes (user_id, code, created_at) VALUES (${auth.userId}, ${referralCode}, ${new Date().toISOString()}) ON CONFLICT (user_id) DO NOTHING`);
+        // Re-fetch in case of race condition
+        const refetch = await db.execute(sql`SELECT code FROM referral_codes WHERE user_id = ${auth.userId}`);
+        referralCode = (refetch as any).rows?.[0]?.code || referralCode;
+      }
+      res.json({ balance, referralCode });
+    } catch (e: any) {
+      console.error("[credits/balance] Error:", e.message);
+      res.status(500).json({ message: "Erro ao buscar saldo" });
+    }
+  });
+
+  // GET /api/credits/transactions — authenticated user gets their history
+  app.get("/api/credits/transactions", async (req: Request, res: Response) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const { db } = await import("./db");
+      const result = await db.execute(sql`SELECT id, type, amount, description, created_at FROM credit_transactions WHERE user_id = ${auth.userId} ORDER BY created_at DESC`);
+      const transactions = ((result as any).rows || []).map((r: any) => ({
+        id: r.id,
+        type: r.type,
+        amount: r.amount,
+        description: r.description,
+        createdAt: r.created_at,
+      }));
+      res.json({ transactions });
+    } catch (e: any) {
+      console.error("[credits/transactions] Error:", e.message);
+      res.status(500).json({ message: "Erro ao buscar transações" });
+    }
+  });
+
+  // POST /api/credits/apply — apply credits to a checkout
+  app.post("/api/credits/apply", async (req: Request, res: Response) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const { db } = await import("./db");
+      const { planKey, creditsToUse } = req.body as { planKey: string; creditsToUse: number };
+      if (!planKey || typeof creditsToUse !== "number" || creditsToUse < 0) {
+        return res.status(400).json({ message: "Parâmetros inválidos" });
+      }
+      const { PLANS: plans } = await import("./stripe-plans");
+      const plan = plans[planKey as keyof typeof plans];
+      if (!plan) return res.status(400).json({ message: "Plano inválido" });
+
+      // Check balance
+      const balanceResult = await db.execute(sql`SELECT COALESCE(SUM(amount), 0) as balance FROM credit_transactions WHERE user_id = ${auth.userId}`);
+      const balance = Number((balanceResult as any).rows?.[0]?.balance || 0);
+      if (creditsToUse > balance) return res.status(400).json({ message: "Saldo insuficiente" });
+      if (creditsToUse > plan.price) return res.status(400).json({ message: "Créditos excedem o valor do plano" });
+
+      const creditsApplied = Math.min(creditsToUse, plan.price);
+      const finalPrice = plan.price - creditsApplied;
+      const needsStripe = finalPrice > 0;
+
+      if (!needsStripe) {
+        // Full credit payment — activate access directly
+        const now = new Date().toISOString();
+        const accessExpiry = new Date(Date.now() + plan.accessDays * 86400000).toISOString();
+        // Debit credits
+        await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at) VALUES (${auth.userId}, 'usage', ${-creditsApplied}, ${'Pagamento integral com créditos: ' + plan.name}, ${'credits_' + Date.now()}, ${now})`);
+        // Activate access (simplified — same fields as webhook)
+        await db.execute(sql`UPDATE users SET plan_key = ${planKey}, plan_paid_at = ${now}, plan_amount_paid = ${plan.price}, approved = true, access_expires_at = ${accessExpiry}, materials_access = true WHERE id = ${auth.userId}`);
+      }
+
+      res.json({ originalPrice: plan.price, creditsApplied, finalPrice, needsStripe });
+    } catch (e: any) {
+      console.error("[credits/apply] Error:", e.message);
+      res.status(500).json({ message: "Erro ao aplicar créditos" });
+    }
+  });
+
+  // GET /api/credits/referral-stats — how many people used my code
+  app.get("/api/credits/referral-stats", async (req: Request, res: Response) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const { db } = await import("./db");
+      // Get referral transactions for this user
+      const result = await db.execute(sql`SELECT amount, description, created_at FROM credit_transactions WHERE user_id = ${auth.userId} AND type = 'referral' ORDER BY created_at DESC`);
+      const referrals = ((result as any).rows || []).map((r: any) => ({
+        description: r.description,
+        date: r.created_at,
+        earned: r.amount,
+      }));
+      const totalReferrals = referrals.length;
+      const totalEarned = referrals.reduce((sum: number, r: any) => sum + r.earned, 0);
+      res.json({ totalReferrals, totalEarned, referrals });
+    } catch (e: any) {
+      console.error("[credits/referral-stats] Error:", e.message);
+      res.status(500).json({ message: "Erro ao buscar estatísticas de indicação" });
+    }
+  });
+
+  // GET /api/admin/credits — admin view of all credit transactions
+  app.get("/api/admin/credits", async (req: Request, res: Response) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const result = await db.execute(sql`
+        SELECT ct.id, ct.user_id, ct.type, ct.amount, ct.description, ct.reference_id, ct.created_at, u.name as user_name, u.email as user_email
+        FROM credit_transactions ct
+        LEFT JOIN users u ON u.id = ct.user_id
+        ORDER BY ct.created_at DESC
+        LIMIT 500
+      `);
+      const transactions = ((result as any).rows || []).map((r: any) => ({
+        id: r.id,
+        userId: r.user_id,
+        userName: r.user_name,
+        userEmail: r.user_email,
+        type: r.type,
+        amount: r.amount,
+        description: r.description,
+        referenceId: r.reference_id,
+        createdAt: r.created_at,
+      }));
+      // Also get per-user balances
+      const balancesResult = await db.execute(sql`
+        SELECT ct.user_id, u.name as user_name, u.email as user_email, SUM(ct.amount) as balance
+        FROM credit_transactions ct
+        LEFT JOIN users u ON u.id = ct.user_id
+        GROUP BY ct.user_id, u.name, u.email
+        ORDER BY balance DESC
+      `);
+      const balances = ((balancesResult as any).rows || []).map((r: any) => ({
+        userId: r.user_id,
+        userName: r.user_name,
+        userEmail: r.user_email,
+        balance: Number(r.balance),
+      }));
+      const totalOutstanding = balances.reduce((sum: number, b: any) => sum + Math.max(0, b.balance), 0);
+      res.json({ transactions, balances, totalOutstanding });
+    } catch (e: any) {
+      console.error("[admin/credits] Error:", e.message);
+      res.status(500).json({ message: "Erro ao buscar créditos" });
+    }
   });
 
   // ─── Rotas de pagamento Stripe ──────────────────────────────────────────────

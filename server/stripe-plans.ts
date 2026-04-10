@@ -304,6 +304,31 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     hasNaturalUp: true,
     canUpgradeTo: [],
   },
+
+  horas_clinicas: {
+    key: "horas_clinicas",
+    name: "Horas Clínicas Adicionais",
+    description: "4 horas de atendimento a pacientes modelo com supervisão do Dr. Gustavo",
+    price: 100000,
+    installments12x: null,
+    group: "vip",
+    features: [
+      "4 horas de prática com pacientes modelo",
+      "Supervisão direta do Dr. Gustavo",
+      "Certificado de carga horária",
+    ],
+    accessDays: 90,
+    includesModules: false,
+    clinicalHours: 0,
+    practiceHours: 4,
+    hasDirectChannel: false,
+    channelMonths: 0,
+    hasMentorship: false,
+    mentorshipMonths: 0,
+    hasLiveEvents: false,
+    hasNaturalUp: false,
+    canUpgradeTo: [],
+  },
 };
 
 // ─── Cálculo de crédito de upgrade ──────────────────────────────────────────
@@ -332,6 +357,20 @@ export function calculateUpgradePrice(
   const toPay = Math.max(0, target.price - credit);
   return { credit, toPay, valid: true };
 }
+
+// ─── Cashback rates por plano ────────────────────────────────────────────────
+export const CASHBACK_RATES: Record<PlanKey, number> = {
+  modulo_avulso: 0.03,
+  pacote_completo: 0.05,
+  observador_essencial: 0.05,
+  observador_avancado: 0.07,
+  observador_intensivo: 0.08,
+  imersao: 0.10,
+  vip_online: 0.08,
+  vip_presencial: 0.10,
+  vip_completo: 0.10,
+  horas_clinicas: 0.05,
+};
 
 // ─── Formatar preço em BRL ───────────────────────────────────────────────────
 export function formatBRL(centavos: number): string {
