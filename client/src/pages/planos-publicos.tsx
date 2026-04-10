@@ -551,14 +551,33 @@ export default function PlanosPublicos() {
             title="Com Observação Clínica"
             sub="Acompanhe atendimentos reais do Dr. Gustavo. Teoria e prática no mesmo programa."
           />
-          <div className={`grid gap-5 mx-auto ${
-            observador.length <= 2 ? "grid-cols-1 sm:grid-cols-2 max-w-3xl"
-              : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
-            {observador.map((p) => (
-              <PlanCard key={p.key} plan={p} onAcessar={handleAcessar}
-                isLoading={checkoutMutation.isPending && loadingKey === p.key} />
-            ))}
-          </div>
+          {/* Primeiros cards em grid */}
+          {observador.length > 3 ? (
+            <>
+              <div className="grid gap-5 mx-auto grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                {observador.slice(0, 3).map((p) => (
+                  <PlanCard key={p.key} plan={p} onAcessar={handleAcessar}
+                    isLoading={checkoutMutation.isPending && loadingKey === p.key} />
+                ))}
+              </div>
+              {/* Último card (Imersão) centralizado */}
+              <div className="mt-5 max-w-sm mx-auto">
+                {observador.slice(3).map((p) => (
+                  <PlanCard key={p.key} plan={p} onAcessar={handleAcessar}
+                    isLoading={checkoutMutation.isPending && loadingKey === p.key} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className={`grid gap-5 mx-auto ${
+              observador.length <= 2 ? "grid-cols-1 sm:grid-cols-2 max-w-3xl"
+                : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
+              {observador.map((p) => (
+                <PlanCard key={p.key} plan={p} onAcessar={handleAcessar}
+                  isLoading={checkoutMutation.isPending && loadingKey === p.key} />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Divider especial antes da seção VIP */}
