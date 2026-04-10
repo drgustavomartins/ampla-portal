@@ -566,8 +566,59 @@ export function registerStripeRoutes(app: Express) {
       const pi = event.data.object as Stripe.PaymentIntent;
       const userId = Number(pi.metadata?.userId);
       if (userId) {
-        // Apenas logar — não remover acesso ativo
         console.warn(`[stripe webhook] Pagamento falhou para userId ${userId}`);
+
+        try {
+          // Buscar dados do aluno
+          const userResult = await db.execute(sql`SELECT name, email, role, plan_key, approved FROM users WHERE id = ${userId}`);
+          const failedUser = (userResult as any).rows?.[0];
+          if (!failedUser) {
+            console.warn(`[stripe webhook] User ${userId} not found for payment failure`);
+          } else {
+            // Bloquear acesso: setar access_expires_at para agora (expira imediatamente)
+            await db.execute(sql`UPDATE users SET access_expires_at = ${new Date().toISOString()} WHERE id = ${userId}`);
+            console.warn(`[stripe webhook] Acesso bloqueado para userId ${userId} (${failedUser.email})`);
+
+            // Registrar no audit log
+            await db.execute(sql`INSERT INTO audit_logs (admin_id, admin_name, action, target_type, target_id, target_name, details, created_at)
+              VALUES (${0}, ${'Sistema Stripe'}, ${'payment_failed'}, ${'payment'}, ${userId}, ${failedUser.name || 'Aluno'}, ${JSON.stringify({
+                paymentIntentId: pi.id,
+                error: pi.last_payment_error?.message || 'Cartao recusado',
+                planKey: pi.metadata?.planKey || null,
+              })}, ${new Date().toISOString()})`);
+
+            // Enviar e-mail de recuperação
+            const RESEND_KEY = process.env.RESEND_API_KEY;
+            if (RESEND_KEY && failedUser.email) {
+              try {
+                const { Resend } = await import("resend");
+                const resendClient = new Resend(RESEND_KEY);
+                await resendClient.emails.send({
+                  from: "Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",
+                  to: failedUser.email,
+                  subject: "Houve um problema com seu pagamento",
+                  html: `
+                    <div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:40px 20px;color:#1a1a2e">
+                      <h2 style="color:#0A1628;margin-bottom:16px">Olá, ${(failedUser.name || '').split(' ')[0] || 'aluno(a)'}!</h2>
+                      <p style="line-height:1.7;color:#333">Identificamos que houve um problema com o pagamento do seu plano na plataforma Ampla Facial.</p>
+                      <p style="line-height:1.7;color:#333">Seu acesso foi temporariamente suspenso até a regularização. Para resolver, basta acessar o portal e tentar novamente com outro cartão ou forma de pagamento:</p>
+                      <div style="text-align:center;margin:32px 0">
+                        <a href="https://portal.amplafacial.com.br/#/planos" style="display:inline-block;padding:14px 36px;background:#D4A843;color:#0A1628;font-weight:bold;text-decoration:none;border-radius:10px;font-family:Georgia,serif">Regularizar pagamento</a>
+                      </div>
+                      <p style="line-height:1.7;color:#333">Se precisar de ajuda, entre em contato pelo WhatsApp: (21) 99552-3509.</p>
+                      <p style="line-height:1.7;color:#333;margin-top:24px">Atenciosamente,<br><strong>Dr. Gustavo Martins</strong><br>Ampla Facial</p>
+                    </div>
+                  `,
+                });
+                console.log(`[stripe webhook] Email de falha de pagamento enviado para ${failedUser.email}`);
+              } catch (emailErr: any) {
+                console.error(`[stripe webhook] Erro ao enviar email de falha:`, emailErr.message);
+              }
+            }
+          }
+        } catch (failErr: any) {
+          console.error(`[stripe webhook] Erro ao processar falha de pagamento:`, failErr.message);
+        }
       }
     }
 
