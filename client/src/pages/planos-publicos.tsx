@@ -379,7 +379,7 @@ export default function PlanosPublicos() {
           <div className="hidden md:block h-5 w-px bg-gray-200 shrink-0" />
 
           {/* Tabs — centralizam no espaço disponível */}
-          <nav className="flex items-center gap-1 flex-1 justify-center">
+          <nav className="flex items-center gap-3 flex-1 justify-center">
             {TABS.map((tab) => {
               const active = activeTab === tab.key;
               const isVip  = tab.key === "mentoria";
@@ -387,7 +387,7 @@ export default function PlanosPublicos() {
                 <button
                   key={tab.key}
                   onClick={() => scrollTo(tab.key)}
-                  className="relative flex flex-col items-start rounded-2xl px-4 py-2 transition-all duration-200 group"
+                  className="relative flex flex-col items-start rounded-2xl px-6 py-2 transition-all duration-200 group"
                   style={{
                     background: active
                       ? isVip ? "#0A0500" : "#0A1628"
