@@ -156,7 +156,7 @@ export default function CreditsRulesPage() {
             <div className="space-y-4">
               <div className="bg-background/50 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-foreground">Os creditos expiram?</h3>
-                <p className="text-sm text-muted-foreground mt-1">Nao! Seus creditos nao tem data de validade. Eles ficam na sua carteira ate voce usar.</p>
+                <p className="text-sm text-muted-foreground mt-1">Sim. Cada credito tem validade de <strong className="text-gold">6 meses</strong> a partir da data em que foi gerado. Creditos expirados nao podem ser utilizados. Acompanhe as datas no seu extrato.</p>
               </div>
               <div className="bg-background/50 rounded-lg p-4">
                 <h3 className="text-sm font-medium text-foreground">Posso combinar cashback e indicacao?</h3>

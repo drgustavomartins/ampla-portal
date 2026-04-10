@@ -533,9 +533,10 @@ export function registerStripeRoutes(app: Express) {
             const label = isRenewal
               ? `Cashback 10% renovação ${plan.name}`
               : `Cashback ${Math.round(cashbackRate * 100)}% ${plan.name}`;
-            await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at)
-              VALUES (${userId}, 'cashback', ${cashbackAmount}, ${label}, ${session.id}, ${new Date().toISOString()})`);
-            console.log(`[stripe webhook] ${isRenewal ? 'RENOVAÇÃO ' : ''}Cashback ${Math.round(cashbackRate * 100)}% = ${cashbackAmount} centavos para userId ${userId}`);
+            const expiresAt = new Date(Date.now() + 180 * 86400000).toISOString(); // 6 meses
+            await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at, expires_at)
+              VALUES (${userId}, 'cashback', ${cashbackAmount}, ${label}, ${session.id}, ${new Date().toISOString()}, ${expiresAt})`);
+            console.log(`[stripe webhook] ${isRenewal ? 'RENOVAÇÃO ' : ''}Cashback ${Math.round(cashbackRate * 100)}% = ${cashbackAmount} centavos para userId ${userId} (expira ${expiresAt})`);
           }
         } catch (e: any) {
           console.error("[stripe webhook] Cashback error:", e.message);
@@ -549,9 +550,10 @@ export function registerStripeRoutes(app: Express) {
             if ((ref as any).rows?.length > 0) {
               const referrerId = (ref as any).rows[0].user_id;
               const referralCredit = Math.floor(amountPaid * 0.10);
-              await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at)
-                VALUES (${referrerId}, 'referral', ${referralCredit}, ${'Indicação: ' + planKey}, ${session.id}, ${new Date().toISOString()})`);
-              console.log(`[stripe webhook] Referral credit ${referralCredit} centavos para referrer userId ${referrerId}`);
+              const refExpiresAt = new Date(Date.now() + 180 * 86400000).toISOString(); // 6 meses
+              await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at, expires_at)
+                VALUES (${referrerId}, 'referral', ${referralCredit}, ${'Indicação: ' + planKey}, ${session.id}, ${new Date().toISOString()}, ${refExpiresAt})`);
+              console.log(`[stripe webhook] Referral credit ${referralCredit} centavos para referrer userId ${referrerId} (expira ${refExpiresAt})`);
             }
           }
         } catch (e: any) {

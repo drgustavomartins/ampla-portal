@@ -263,7 +263,9 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`CREATE INDEX IF NOT EXISTS idx_funnel_session ON funnel_events(session_id)`).catch(() => {});
     // Credits system tables
     await db.execute(`CREATE TABLE IF NOT EXISTS referral_codes (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL UNIQUE, code TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL)`).catch(() => {});
-    await db.execute(`CREATE TABLE IF NOT EXISTS credit_transactions (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, type TEXT NOT NULL, amount INTEGER NOT NULL, description TEXT NOT NULL, reference_id TEXT, created_at TEXT NOT NULL)`).catch(() => {});
+    await db.execute(`CREATE TABLE IF NOT EXISTS credit_transactions (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, type TEXT NOT NULL, amount INTEGER NOT NULL, description TEXT NOT NULL, reference_id TEXT, created_at TEXT NOT NULL, expires_at TEXT)`).catch(() => {});
+    // Adicionar coluna expires_at se nao existir (migracao segura)
+    await db.execute(`ALTER TABLE credit_transactions ADD COLUMN IF NOT EXISTS expires_at TEXT`).catch(() => {});
     console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions tables ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
@@ -2498,7 +2500,7 @@ export async function registerRoutes(server: Server, app: Express) {
     try {
       const { db } = await import("./db");
       // Calculate balance from all transactions
-      const balanceResult = await db.execute(sql`SELECT COALESCE(SUM(amount), 0) as balance FROM credit_transactions WHERE user_id = ${auth.userId}`);
+      const balanceResult = await db.execute(sql`SELECT COALESCE(SUM(amount), 0) as balance FROM credit_transactions WHERE (expires_at IS NULL OR expires_at > NOW()::text OR amount < 0) AND user_id = ${auth.userId}`);
       const balance = Number((balanceResult as any).rows?.[0]?.balance || 0);
 
       // Get or create referral code
@@ -2529,7 +2531,7 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
     try {
       const { db } = await import("./db");
-      const result = await db.execute(sql`SELECT id, type, amount, description, reference_id, created_at FROM credit_transactions WHERE user_id = ${auth.userId} ORDER BY created_at DESC`);
+      const result = await db.execute(sql`SELECT id, type, amount, description, reference_id, created_at, expires_at FROM credit_transactions WHERE user_id = ${auth.userId} ORDER BY created_at DESC`);
       const rows = (result as any).rows || [];
       // Para bônus, extrair o admin_id do reference_id (formato: admin_bonus_<adminId>_<timestamp>)
       const adminIds = new Set<number>();
@@ -2550,6 +2552,7 @@ export async function registerRoutes(server: Server, app: Express) {
           const match = r.reference_id.match(/admin_bonus_(\d+)_/);
           if (match) creditedBy = adminNames[Number(match[1])] || null;
         }
+        const isExpired = r.expires_at && new Date(r.expires_at) < new Date();
         return {
           id: r.id,
           type: r.type,
@@ -2557,6 +2560,8 @@ export async function registerRoutes(server: Server, app: Express) {
           description: r.description,
           creditedBy,
           createdAt: r.created_at,
+          expiresAt: r.expires_at || null,
+          expired: !!isExpired,
         };
       });
       res.json({ transactions });
@@ -2581,7 +2586,7 @@ export async function registerRoutes(server: Server, app: Express) {
       if (!plan) return res.status(400).json({ message: "Plano inválido" });
 
       // Check balance
-      const balanceResult = await db.execute(sql`SELECT COALESCE(SUM(amount), 0) as balance FROM credit_transactions WHERE user_id = ${auth.userId}`);
+      const balanceResult = await db.execute(sql`SELECT COALESCE(SUM(amount), 0) as balance FROM credit_transactions WHERE (expires_at IS NULL OR expires_at > NOW()::text OR amount < 0) AND user_id = ${auth.userId}`);
       const balance = Number((balanceResult as any).rows?.[0]?.balance || 0);
       if (creditsToUse > balance) return res.status(400).json({ message: "Saldo insuficiente" });
       if (creditsToUse > plan.price) return res.status(400).json({ message: "Créditos excedem o valor do plano" });
@@ -2658,6 +2663,7 @@ export async function registerRoutes(server: Server, app: Express) {
         SELECT ct.user_id, u.name as user_name, u.email as user_email, u.plan_key as plan_key, SUM(ct.amount) as balance
         FROM credit_transactions ct
         LEFT JOIN users u ON u.id = ct.user_id
+        WHERE (ct.expires_at IS NULL OR ct.expires_at > NOW()::text OR ct.amount < 0)
         GROUP BY ct.user_id, u.name, u.email, u.plan_key
         ORDER BY balance DESC
       `);
@@ -2690,14 +2696,15 @@ export async function registerRoutes(server: Server, app: Express) {
       if (!target) return res.status(404).json({ message: "Usuário não encontrado" });
 
       const now = new Date().toISOString();
+      const bonusExpiresAt = new Date(Date.now() + 180 * 86400000).toISOString(); // 6 meses
       const desc = description || "Bonificação especial";
-      await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at)
-        VALUES (${userId}, 'bonus', ${amount}, ${desc}, ${'admin_bonus_' + auth.userId + '_' + Date.now()}, ${now})`);
+      await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at, expires_at)
+        VALUES (${userId}, 'bonus', ${amount}, ${desc}, ${'admin_bonus_' + auth.userId + '_' + Date.now()}, ${now}, ${bonusExpiresAt})`);
 
       const admin = await storage.getUser(auth.userId);
       await logAction(auth.userId, admin?.name || "Admin", "credit_bonus", "credits", userId, target.name, { amount, description: desc });
 
-      const balResult = await db.execute(sql`SELECT COALESCE(SUM(amount), 0) as balance FROM credit_transactions WHERE user_id = ${userId}`);
+      const balResult = await db.execute(sql`SELECT COALESCE(SUM(amount), 0) as balance FROM credit_transactions WHERE (expires_at IS NULL OR expires_at > NOW()::text OR amount < 0) AND user_id = ${userId}`);
       const newBalance = Number((balResult as any).rows?.[0]?.balance || 0);
 
       res.json({ success: true, userId, credited: amount, newBalance, description: desc });

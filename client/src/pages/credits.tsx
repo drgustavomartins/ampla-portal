@@ -25,7 +25,7 @@ export default function CreditsPage() {
     enabled: !!user,
   });
 
-  const { data: txData } = useQuery<{ transactions: Array<{ id: number; type: string; amount: number; description: string; creditedBy: string | null; createdAt: string }> }>({
+  const { data: txData } = useQuery<{ transactions: Array<{ id: number; type: string; amount: number; description: string; creditedBy: string | null; createdAt: string; expiresAt: string | null; expired: boolean }> }>({
     queryKey: ["/api/credits/transactions"],
     enabled: !!user,
   });
@@ -206,9 +206,15 @@ export default function CreditsPage() {
                           {new Date(tx.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </div>
-                      <p className="text-sm text-foreground mt-1 truncate">{tx.description}</p>
+                      <p className={`text-sm mt-1 truncate ${tx.expired ? 'text-muted-foreground line-through' : 'text-foreground'}`}>{tx.description}</p>
                       {tx.creditedBy && (
                         <p className="text-xs text-amber-400/70 mt-0.5">Creditado por {tx.creditedBy}</p>
+                      )}
+                      {tx.expiresAt && tx.amount > 0 && (
+                        <p className={`text-[10px] mt-0.5 ${tx.expired ? 'text-red-400' : 'text-muted-foreground'}`}>
+                          {tx.expired ? 'Expirado em ' : 'Expira em '}
+                          {new Date(tx.expiresAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                        </p>
                       )}
                     </div>
                     <span className={`text-sm font-semibold shrink-0 ${
