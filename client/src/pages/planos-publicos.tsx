@@ -459,7 +459,7 @@ export default function PlanosPublicos() {
               </div>
             )}
             <h1 className="text-4xl sm:text-5xl lg:text-[52px] font-bold tracking-tight text-gray-900 leading-[1.07]">
-              Aprenda Harmonização Facial<br />
+              <span className="whitespace-nowrap">Aprenda Harmonização Facial</span><br />
               <span style={{ color: "#D4A843" }}>do jeito certo.</span>
             </h1>
             <p className="mt-4 text-base sm:text-lg text-gray-500 leading-relaxed max-w-lg">
