@@ -898,9 +898,6 @@ export default function StudentDashboard() {
                 <ReferralCard planKey={user.planKey} />
               )}
 
-              {/* Créditos card — saldo + extrato + gatilhos */}
-              <CreditsDashboardCard />
-
               {/* Materiais Complementares shortcut card */}
               <button
                 onClick={() => materiaisRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
