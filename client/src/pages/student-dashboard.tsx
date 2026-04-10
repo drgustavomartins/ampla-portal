@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import MateriaisComplementares from "./materiais-complementares";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
+import { CreditsDashboardCard } from "@/components/CreditsDashboardCard";
 
 function linkifyText(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -889,26 +890,9 @@ export default function StudentDashboard() {
                 <ReferralCard planKey={user.planKey} />
               )}
 
-              {/* Créditos card */}
+              {/* Créditos card — saldo + extrato + gatilhos */}
               {!isTrial && user?.planKey && (
-                <Link
-                  href="/creditos"
-                  className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 block transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
-                    <Star className="w-5 h-5 text-gold" />
-                  </div>
-                  <h3 className="font-semibold text-sm text-foreground">Meus Créditos</h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed">Veja seu saldo de cashback e indicações. Use como desconto na próxima compra.</p>
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center rounded-full bg-gold/15 border border-gold/30 px-2 py-0.5 text-[10px] font-semibold text-gold uppercase tracking-wider">
-                      Carteira
-                    </span>
-                  </div>
-                  <span className="inline-flex items-center min-h-[44px] py-2 text-xs font-medium text-gold group-hover:underline">
-                    Ver créditos <ChevronRight className="w-3 h-3 ml-1" />
-                  </span>
-                </Link>
+                <CreditsDashboardCard />
               )}
 
               {/* Materiais Complementares shortcut card */}
