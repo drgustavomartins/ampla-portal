@@ -287,7 +287,7 @@ export default function PlanosPublicos() {
 
         {/* Header */}
         <div className="mb-8 text-center">
-          <img src="/logo-transparent.png" alt="Ampla Facial" className="mx-auto mb-5 h-14 object-contain" />
+          <img src="/logo-transparent.png" alt="Ampla Facial" className="mx-auto mb-5 h-24 object-contain" />
           <h1 className="text-3xl font-bold text-white">Escolha seu plano e comece agora</h1>
           <p className="mt-2 text-gray-400">Acesso liberado imediatamente após o pagamento</p>
           <div className="mt-5 flex flex-wrap justify-center gap-4 text-sm text-gray-400">

@@ -252,7 +252,7 @@ export default function PlanosPage() {
 
         {/* Header */}
         <div className="mb-10 text-center">
-          <img src="/logo-transparent.png" alt="Ampla Facial" className="mx-auto mb-5 h-12 object-contain" />
+          <img src="/logo-transparent.png" alt="Ampla Facial" className="mx-auto mb-5 h-24 object-contain" />
           <h1 className="text-4xl font-bold text-white">Escolha seu caminho</h1>
           <p className="mt-2 text-gray-400">
             Do iniciante ao avançado — cada plano é uma etapa da sua evolução em HOF
