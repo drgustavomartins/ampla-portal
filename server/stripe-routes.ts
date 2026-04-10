@@ -463,9 +463,9 @@ export function registerStripeRoutes(app: Express) {
         await db.execute(sql`DELETE FROM user_material_categories WHERE user_id = ${userId}`);
         for (const cat of provisioning.materials) {
           await db.execute(sql`
-            INSERT INTO user_material_categories (user_id, category_title, enabled)
+            INSERT INTO user_material_categories (user_id, category_name, enabled)
             VALUES (${userId}, ${cat}, true)
-            ON CONFLICT (user_id, category_title) DO UPDATE SET enabled = true
+            ON CONFLICT (user_id, category_name) DO UPDATE SET enabled = true
           `);
         }
 
