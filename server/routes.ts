@@ -2654,6 +2654,37 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   });
 
+  // POST /api/admin/credits/bonus — bonificação manual de créditos
+  app.post("/api/admin/credits/bonus", async (req: Request, res: Response) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { userId, amount, description } = req.body;
+      if (!userId || !amount || amount <= 0) {
+        return res.status(400).json({ message: "userId e amount (positivo, em centavos) são obrigatórios" });
+      }
+      const { db } = await import("./db");
+      const target = await storage.getUser(userId);
+      if (!target) return res.status(404).json({ message: "Usuário não encontrado" });
+
+      const now = new Date().toISOString();
+      const desc = description || "Bonificação especial";
+      await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at)
+        VALUES (${userId}, 'bonus', ${amount}, ${desc}, ${'admin_bonus_' + auth.userId + '_' + Date.now()}, ${now})`);
+
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || "Admin", "credit_bonus", "credits", userId, target.name, { amount, description: desc });
+
+      const balResult = await db.execute(sql`SELECT COALESCE(SUM(amount), 0) as balance FROM credit_transactions WHERE user_id = ${userId}`);
+      const newBalance = Number((balResult as any).rows?.[0]?.balance || 0);
+
+      res.json({ success: true, userId, credited: amount, newBalance, description: desc });
+    } catch (e: any) {
+      console.error("[admin/credits/bonus] Error:", e.message);
+      res.status(500).json({ message: "Erro ao creditar bônus" });
+    }
+  });
+
   // ─── Rotas de pagamento Stripe ──────────────────────────────────────────────
   registerStripeRoutes(app);
   registerPublicStripeRoutes(app);

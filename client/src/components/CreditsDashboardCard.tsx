@@ -26,6 +26,7 @@ function typeLabel(type: string) {
     case "referral": return { label: "Indicação", color: "text-blue-400", bg: "bg-blue-400/10" };
     case "usage": return { label: "Uso", color: "text-orange-400", bg: "bg-orange-400/10" };
     case "adjustment": return { label: "Ajuste", color: "text-purple-400", bg: "bg-purple-400/10" };
+    case "bonus": return { label: "Bônus", color: "text-amber-400", bg: "bg-amber-400/10" };
     default: return { label: type, color: "text-muted-foreground", bg: "bg-muted/10" };
   }
 }

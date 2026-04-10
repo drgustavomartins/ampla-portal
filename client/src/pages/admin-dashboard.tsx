@@ -28,7 +28,7 @@ import {
   Clock, Video, Shield, GraduationCap, Eye, Pencil, Calendar, Settings,
   CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library,
   GripVertical, CalendarDays, FolderOpen, Search, FileText, FileIcon, Headphones, ChevronDown, ChevronUp,
-  Sparkles, MessageCircle, Phone, Coins
+  Sparkles, MessageCircle, Phone, Coins, Gift
 } from "lucide-react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -285,6 +285,11 @@ export default function AdminDashboard() {
   const [creditFilter, setCreditFilter] = useState<string>("all");
   const [creditPlanFilter, setCreditPlanFilter] = useState<string>("all");
   const [creditPeriod, setCreditPeriod] = useState<string>("all");
+  const [bonusDialogOpen, setBonusDialogOpen] = useState(false);
+  const [bonusUserId, setBonusUserId] = useState<string>("");
+  const [bonusAmount, setBonusAmount] = useState<string>("");
+  const [bonusDesc, setBonusDesc] = useState<string>("");
+  const [bonusLoading, setBonusLoading] = useState(false);
   const [expandedThemeId, setExpandedThemeId] = useState<number | null>(null);
   const [expandedSubcatId, setExpandedSubcatId] = useState<number | null>(null);
   // Theme dialogs
@@ -2346,9 +2351,83 @@ export default function AdminDashboard() {
               </Card>
             </div>
 
-            {/* Balances table */}
+            {/* Bonus dialog + Balances table */}
             <div className="space-y-3">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Saldos por usuario</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Saldos por usuario</h3>
+                <Dialog open={bonusDialogOpen} onOpenChange={setBonusDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="h-8 text-xs border-gold/30 text-gold hover:bg-gold/10">
+                      <Gift className="w-3.5 h-3.5 mr-1.5" /> Dar b\u00f4nus
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-card border-border/40 max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Bonifica\u00e7\u00e3o de Cr\u00e9ditos</DialogTitle>
+                      <DialogDescription>Credite um valor na carteira de um aluno como bonifica\u00e7\u00e3o especial.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-2">
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">Aluno</label>
+                        <select
+                          value={bonusUserId}
+                          onChange={(e) => setBonusUserId(e.target.value)}
+                          className="w-full mt-1 rounded-lg border border-border/40 bg-background/50 px-3 py-2 text-sm"
+                        >
+                          <option value="">Selecione um aluno...</option>
+                          {students.filter(s => s.role !== 'admin' && s.role !== 'super_admin').map(s => (
+                            <option key={s.id} value={s.id}>{s.name} ({s.email})</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">Valor (R$)</label>
+                        <Input
+                          type="number"
+                          min="1"
+                          step="1"
+                          placeholder="Ex: 100"
+                          value={bonusAmount}
+                          onChange={(e) => setBonusAmount(e.target.value)}
+                          className="mt-1 bg-background/50 border-border/40"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">Motivo</label>
+                        <Input
+                          placeholder="Ex: Bonifica\u00e7\u00e3o HOF Meeting"
+                          value={bonusDesc}
+                          onChange={(e) => setBonusDesc(e.target.value)}
+                          className="mt-1 bg-background/50 border-border/40"
+                        />
+                      </div>
+                      <Button
+                        className="w-full bg-gold hover:bg-gold/90 text-background font-semibold"
+                        disabled={!bonusUserId || !bonusAmount || bonusLoading}
+                        onClick={async () => {
+                          setBonusLoading(true);
+                          try {
+                            const res = await apiRequest("POST", "/api/admin/credits/bonus", {
+                              userId: Number(bonusUserId),
+                              amount: Math.round(Number(bonusAmount) * 100),
+                              description: bonusDesc || "Bonifica\u00e7\u00e3o especial",
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                              setBonusDialogOpen(false);
+                              setBonusUserId(""); setBonusAmount(""); setBonusDesc("");
+                              queryClient.invalidateQueries({ queryKey: ["/api/admin/credits"] });
+                            }
+                          } catch (e) { console.error(e); }
+                          setBonusLoading(false);
+                        }}
+                      >
+                        {bonusLoading ? "Creditando..." : "Creditar b\u00f4nus"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
               {creditBalances.length === 0 ? (
                 <Card className="border-border/30 bg-card/40"><CardContent className="p-12 text-center"><Coins className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" /><p className="text-sm text-muted-foreground">Nenhum credito registrado</p></CardContent></Card>
               ) : (
@@ -2392,6 +2471,7 @@ export default function AdminDashboard() {
                       <SelectItem value="referral">Indicacao</SelectItem>
                       <SelectItem value="usage">Uso</SelectItem>
                       <SelectItem value="adjustment">Ajuste</SelectItem>
+                      <SelectItem value="bonus">Bonificacao</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={creditPlanFilter} onValueChange={setCreditPlanFilter}>
