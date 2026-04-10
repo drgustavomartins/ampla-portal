@@ -34,7 +34,7 @@ function AppContent() {
 
 function ProtectedModulePage() {
   const { user, isAdmin } = useAuth();
-  if (!user || isAdmin) return <LoginPage />;
+  if (!user) return <LoginPage />;
   return <ModulePage />;
 }
 
