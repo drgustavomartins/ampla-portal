@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
   ChevronLeft, ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle, Star,
-  Users, MessageCircle, Lock, ShoppingCart, ExternalLink, Paperclip
+  Users, MessageCircle, Lock, ShoppingCart, ExternalLink, Paperclip, DollarSign
 } from "lucide-react";
 import MateriaisComplementares from "./materiais-complementares";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
@@ -474,6 +474,13 @@ export default function StudentDashboard() {
           <div className="flex items-center gap-3">
             {/* Link de planos sempre visível */}
             <Link
+              href="/creditos"
+              className="hidden sm:flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-400 transition-colors"
+            >
+              <DollarSign className="w-3 h-3" />
+              Créditos
+            </Link>
+            <Link
               href="/planos"
               className="hidden sm:flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/5 hover:bg-gold/15 px-3 py-1.5 text-xs font-semibold text-gold transition-colors"
             >
@@ -891,9 +898,7 @@ export default function StudentDashboard() {
               )}
 
               {/* Créditos card — saldo + extrato + gatilhos */}
-              {!isTrial && user?.planKey && (
-                <CreditsDashboardCard />
-              )}
+              <CreditsDashboardCard />
 
               {/* Materiais Complementares shortcut card */}
               <button
