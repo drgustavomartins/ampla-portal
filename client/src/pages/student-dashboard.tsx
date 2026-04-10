@@ -25,6 +25,7 @@ import {
 import MateriaisComplementares from "./materiais-complementares";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 import { CreditsDashboardCard } from "@/components/CreditsDashboardCard";
+import { CreditsFullSection } from "@/components/CreditsFullSection";
 
 function linkifyText(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -926,6 +927,9 @@ export default function StudentDashboard() {
           <section ref={materiaisRef} className="space-y-4 scroll-mt-20">
             <MateriaisComplementares />
           </section>
+
+          {/* ===== CRÉDITOS FULL SECTION ===== */}
+          <CreditsFullSection />
 
         </div>
       </main>
