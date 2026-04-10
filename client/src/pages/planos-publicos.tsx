@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Check, ArrowRight, Loader2, ChevronLeft, Gift, Star } from "lucide-react";
+import { Check, ArrowRight, Loader2, ChevronLeft, Gift, Star, Shield } from "lucide-react";
 
 interface PlanData {
   key: string;
@@ -22,287 +22,109 @@ interface PlanData {
   valorMercado: number | null;
 }
 
-function formatBRL(centavos: number) {
-  return (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+type Tab = "online" | "observacao" | "mentoria";
+
+const TABS: { key: Tab; label: string; sub: string }[] = [
+  { key: "online",     label: "Online",               sub: "Estude no seu ritmo" },
+  { key: "observacao", label: "Com Observação Clínica", sub: "Acompanhe atendimentos reais" },
+  { key: "mentoria",   label: "Mentoria VIP",          sub: "Acompanhamento individual" },
+];
+
+function formatBRL(c: number) {
+  return (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-// ── SVG ilustrações por plano ──────────────────────────────────────────────
-function IllustrationToxina() {
-  return (
-    <svg viewBox="0 0 200 140" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      <defs>
-        <radialGradient id="tox-bg" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#E8F4FD" />
-          <stop offset="100%" stopColor="#C5E3F7" />
-        </radialGradient>
-      </defs>
-      <ellipse cx="100" cy="70" rx="80" ry="55" fill="url(#tox-bg)" opacity="0.5" />
-      {/* Seringa estilizada */}
-      <rect x="75" y="55" width="50" height="16" rx="8" fill="#2B6CB0" />
-      <rect x="115" y="59" width="18" height="8" rx="4" fill="#3182CE" />
-      <rect x="133" y="62" width="12" height="2" rx="1" fill="#63B3ED" />
-      <rect x="78" y="59" width="34" height="8" rx="3" fill="#EBF8FF" opacity="0.6" />
-      <circle cx="83" cy="63" r="3" fill="#BEE3F8" />
-      {/* Partículas */}
-      <circle cx="60" cy="45" r="4" fill="#90CDF4" opacity="0.7" />
-      <circle cx="148" cy="85" r="3" fill="#63B3ED" opacity="0.5" />
-      <circle cx="55" cy="90" r="2.5" fill="#BEE3F8" opacity="0.8" />
-      <circle cx="150" cy="50" r="5" fill="#90CDF4" opacity="0.4" />
-      {/* Ondas */}
-      <path d="M40 100 Q70 88 100 100 Q130 112 160 100" stroke="#2B6CB0" strokeWidth="1.5" fill="none" opacity="0.2" />
-      <path d="M40 108 Q70 96 100 108 Q130 120 160 108" stroke="#2B6CB0" strokeWidth="1" fill="none" opacity="0.15" />
-    </svg>
-  );
-}
+// ─── Visual assets premium por plano ─────────────────────────────────────────
+// Cada card usa um gradiente editorial diferente + padrão geométrico em SVG
 
-function IllustrationPreenchedor() {
-  return (
-    <svg viewBox="0 0 200 140" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      <defs>
-        <radialGradient id="pre-bg" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#FFF5F5" />
-          <stop offset="100%" stopColor="#FED7D7" />
-        </radialGradient>
-      </defs>
-      <ellipse cx="100" cy="70" rx="80" ry="55" fill="url(#pre-bg)" opacity="0.5" />
-      {/* Rosto estilizado */}
-      <ellipse cx="100" cy="68" rx="32" ry="38" fill="#FEB2B2" opacity="0.3" />
-      <ellipse cx="100" cy="65" rx="28" ry="34" fill="#FC8181" opacity="0.2" />
-      {/* Lábios */}
-      <path d="M85 78 Q100 85 115 78" stroke="#C53030" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-      <path d="M85 78 Q100 72 115 78" stroke="#E53E3E" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-      {/* Olhos */}
-      <ellipse cx="88" cy="62" rx="5" ry="3" fill="#C53030" opacity="0.5" />
-      <ellipse cx="112" cy="62" rx="5" ry="3" fill="#C53030" opacity="0.5" />
-      {/* Pontos de aplicação */}
-      <circle cx="78" cy="74" r="3" fill="#E53E3E" opacity="0.6" />
-      <circle cx="122" cy="74" r="3" fill="#E53E3E" opacity="0.6" />
-      <circle cx="82" cy="85" r="2.5" fill="#FC8181" opacity="0.7" />
-      <circle cx="118" cy="85" r="2.5" fill="#FC8181" opacity="0.7" />
-      {/* Brilhos */}
-      <circle cx="55" cy="40" r="4" fill="#FEB2B2" opacity="0.6" />
-      <circle cx="148" cy="45" r="3" fill="#FC8181" opacity="0.5" />
-      <circle cx="52" cy="95" r="3" fill="#FED7D7" opacity="0.8" />
-      <circle cx="150" cy="92" r="4" fill="#FEB2B2" opacity="0.5" />
-    </svg>
-  );
-}
-
-function IllustrationBioestimulador() {
-  return (
-    <svg viewBox="0 0 200 140" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      <defs>
-        <radialGradient id="bio-bg" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#F0FFF4" />
-          <stop offset="100%" stopColor="#C6F6D5" />
-        </radialGradient>
-      </defs>
-      <ellipse cx="100" cy="70" rx="80" ry="55" fill="url(#bio-bg)" opacity="0.5" />
-      {/* Fibras de colágeno */}
-      <path d="M50 90 Q75 60 100 90 Q125 120 150 90" stroke="#276749" strokeWidth="2" fill="none" opacity="0.4" />
-      <path d="M50 80 Q75 50 100 80 Q125 110 150 80" stroke="#38A169" strokeWidth="2" fill="none" opacity="0.5" />
-      <path d="M50 70 Q75 40 100 70 Q125 100 150 70" stroke="#48BB78" strokeWidth="2.5" fill="none" opacity="0.6" />
-      <path d="M50 60 Q75 30 100 60 Q125 90 150 60" stroke="#68D391" strokeWidth="2" fill="none" opacity="0.4" />
-      {/* Células */}
-      <circle cx="100" cy="68" r="12" fill="#9AE6B4" opacity="0.4" />
-      <circle cx="100" cy="68" r="7" fill="#68D391" opacity="0.6" />
-      <circle cx="100" cy="68" r="3" fill="#276749" opacity="0.8" />
-      {/* Partículas */}
-      <circle cx="65" cy="50" r="4" fill="#9AE6B4" opacity="0.7" />
-      <circle cx="140" cy="55" r="3" fill="#68D391" opacity="0.6" />
-      <circle cx="60" cy="95" r="3" fill="#C6F6D5" opacity="0.8" />
-      <circle cx="145" cy="92" r="4" fill="#9AE6B4" opacity="0.5" />
-      <circle cx="75" cy="105" r="2.5" fill="#68D391" opacity="0.6" />
-      <circle cx="130" cy="102" r="2.5" fill="#9AE6B4" opacity="0.6" />
-    </svg>
-  );
-}
-
-function IllustrationBiorregenerador() {
-  return (
-    <svg viewBox="0 0 200 140" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      <defs>
-        <radialGradient id="bio2-bg" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#FFFAF0" />
-          <stop offset="100%" stopColor="#FEEBC8" />
-        </radialGradient>
-      </defs>
-      <ellipse cx="100" cy="70" rx="80" ry="55" fill="url(#bio2-bg)" opacity="0.5" />
-      {/* DNA helix */}
-      <path d="M80 35 Q100 55 80 75 Q60 95 80 115" stroke="#C05621" strokeWidth="2.5" fill="none" opacity="0.5" />
-      <path d="M120 35 Q100 55 120 75 Q140 95 120 115" stroke="#DD6B20" strokeWidth="2.5" fill="none" opacity="0.5" />
-      {/* Links */}
-      <line x1="80" y1="48" x2="120" y2="48" stroke="#F6AD55" strokeWidth="1.5" opacity="0.7" />
-      <line x1="78" y1="60" x2="122" y2="60" stroke="#F6AD55" strokeWidth="1.5" opacity="0.7" />
-      <line x1="80" y1="72" x2="120" y2="72" stroke="#F6AD55" strokeWidth="1.5" opacity="0.7" />
-      <line x1="82" y1="84" x2="118" y2="84" stroke="#F6AD55" strokeWidth="1.5" opacity="0.7" />
-      <line x1="84" y1="96" x2="116" y2="96" stroke="#F6AD55" strokeWidth="1.5" opacity="0.7" />
-      <line x1="86" y1="108" x2="114" y2="108" stroke="#F6AD55" strokeWidth="1.5" opacity="0.7" />
-      {/* Nós */}
-      {[48, 60, 72, 84, 96, 108].map((y, i) => (
-        <g key={i}>
-          <circle cx={i % 2 === 0 ? 80 : 82} cy={y} r="3.5" fill="#ED8936" opacity="0.8" />
-          <circle cx={i % 2 === 0 ? 120 : 118} cy={y} r="3.5" fill="#ED8936" opacity="0.8" />
-        </g>
-      ))}
-      {/* Brilhos */}
-      <circle cx="55" cy="50" r="3" fill="#FBD38D" opacity="0.7" />
-      <circle cx="150" cy="85" r="4" fill="#F6AD55" opacity="0.5" />
-    </svg>
-  );
-}
-
-function IllustrationNaturalUp() {
-  return (
-    <svg viewBox="0 0 200 140" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      <defs>
-        <radialGradient id="nat-bg" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#FAF5FF" />
-          <stop offset="100%" stopColor="#E9D8FD" />
-        </radialGradient>
-      </defs>
-      <ellipse cx="100" cy="70" rx="80" ry="55" fill="url(#nat-bg)" opacity="0.5" />
-      {/* Rosto com lifting */}
-      <ellipse cx="100" cy="72" rx="30" ry="36" fill="#D6BCFA" opacity="0.25" />
-      {/* Setas de lifting */}
-      <path d="M75 90 Q72 70 78 55" stroke="#6B46C1" strokeWidth="2" fill="none" markerEnd="url(#arrow-purple)" opacity="0.7" />
-      <path d="M125 90 Q128 70 122 55" stroke="#6B46C1" strokeWidth="2" fill="none" opacity="0.7" />
-      {/* Pontas das setas */}
-      <polygon points="76,52 78,60 82,55" fill="#6B46C1" opacity="0.7" />
-      <polygon points="124,52 122,60 118,55" fill="#6B46C1" opacity="0.7" />
-      {/* Rosto simplificado */}
-      <ellipse cx="91" cy="65" rx="4" ry="2.5" fill="#805AD5" opacity="0.4" />
-      <ellipse cx="109" cy="65" rx="4" ry="2.5" fill="#805AD5" opacity="0.4" />
-      <path d="M88 80 Q100 87 112 80" stroke="#6B46C1" strokeWidth="2" fill="none" strokeLinecap="round" />
-      {/* Estrelas / brilho */}
-      <path d="M55 45 L57 51 L63 53 L57 55 L55 61 L53 55 L47 53 L53 51 Z" fill="#B794F4" opacity="0.7" />
-      <path d="M148 88 L150 93 L155 94 L150 96 L148 101 L146 96 L141 94 L146 93 Z" fill="#9F7AEA" opacity="0.5" />
-      <circle cx="52" cy="95" r="3" fill="#E9D8FD" opacity="0.8" />
-      <circle cx="152" cy="45" r="4" fill="#D6BCFA" opacity="0.6" />
-    </svg>
-  );
-}
-
-function IllustrationCompleto() {
-  return (
-    <svg viewBox="0 0 280 160" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      <defs>
-        <radialGradient id="comp-bg" cx="50%" cy="50%" r="60%">
-          <stop offset="0%" stopColor="#EBF8FF" />
-          <stop offset="100%" stopColor="#BEE3F8" />
-        </radialGradient>
-      </defs>
-      <ellipse cx="140" cy="80" rx="120" ry="65" fill="url(#comp-bg)" opacity="0.35" />
-      {/* 5 ícones representando cada módulo */}
-      {/* Toxina - azul */}
-      <circle cx="55" cy="75" r="22" fill="#EBF8FF" stroke="#63B3ED" strokeWidth="1.5" opacity="0.9" />
-      <rect x="44" y="68" width="22" height="7" rx="3.5" fill="#2B6CB0" opacity="0.7" />
-      <rect x="59" y="70" width="9" height="3" rx="1.5" fill="#63B3ED" opacity="0.8" />
-      {/* Preenchedor - rosa */}
-      <circle cx="107" cy="60" r="22" fill="#FFF5F5" stroke="#FC8181" strokeWidth="1.5" opacity="0.9" />
-      <ellipse cx="107" cy="57" rx="11" ry="13" fill="#FEB2B2" opacity="0.3" />
-      <path d="M99 65 Q107 70 115 65" stroke="#C53030" strokeWidth="2" fill="none" strokeLinecap="round" />
-      {/* Bioestimulador - verde */}
-      <circle cx="140" cy="90" r="24" fill="#F0FFF4" stroke="#68D391" strokeWidth="1.5" opacity="0.9" />
-      <path d="M128 90 Q135 75 140 90 Q145 105 152 90" stroke="#38A169" strokeWidth="2" fill="none" />
-      <circle cx="140" cy="90" r="5" fill="#9AE6B4" opacity="0.8" />
-      {/* Biorregenerador - laranja */}
-      <circle cx="173" cy="60" r="22" fill="#FFFAF0" stroke="#F6AD55" strokeWidth="1.5" opacity="0.9" />
-      <path d="M165 50 Q173 65 165 80" stroke="#C05621" strokeWidth="2" fill="none" opacity="0.6" />
-      <path d="M181 50 Q173 65 181 80" stroke="#DD6B20" strokeWidth="2" fill="none" opacity="0.6" />
-      <line x1="165" y1="60" x2="181" y2="60" stroke="#F6AD55" strokeWidth="1.5" opacity="0.8" />
-      <line x1="165" y1="70" x2="181" y2="70" stroke="#F6AD55" strokeWidth="1.5" opacity="0.8" />
-      {/* NaturalUp - roxo */}
-      <circle cx="225" cy="75" r="22" fill="#FAF5FF" stroke="#B794F4" strokeWidth="1.5" opacity="0.9" />
-      <path d="M216 85 Q213 72 218 63" stroke="#6B46C1" strokeWidth="2" fill="none" opacity="0.8" />
-      <path d="M234 85 Q237 72 232 63" stroke="#6B46C1" strokeWidth="2" fill="none" opacity="0.8" />
-      <polygon points="217,61 219,67 223,63" fill="#6B46C1" opacity="0.8" />
-      <polygon points="233,61 231,67 227,63" fill="#6B46C1" opacity="0.8" />
-      {/* Conectores */}
-      <line x1="77" y1="75" x2="85" y2="65" stroke="#A0AEC0" strokeWidth="1" strokeDasharray="3 2" opacity="0.5" />
-      <line x1="129" y1="62" x2="116" y2="66" stroke="#A0AEC0" strokeWidth="1" strokeDasharray="3 2" opacity="0.5" />
-      <line x1="164" y1="65" x2="151" y2="72" stroke="#A0AEC0" strokeWidth="1" strokeDasharray="3 2" opacity="0.5" />
-      <line x1="201" y1="65" x2="195" y2="70" stroke="#A0AEC0" strokeWidth="1" strokeDasharray="3 2" opacity="0.5" />
-    </svg>
-  );
-}
-
-function IllustrationVIP() {
-  return (
-    <svg viewBox="0 0 280 160" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      <defs>
-        <radialGradient id="vip-bg" cx="50%" cy="50%" r="60%">
-          <stop offset="0%" stopColor="#FFFFF0" />
-          <stop offset="100%" stopColor="#FEFCBF" />
-        </radialGradient>
-      </defs>
-      <ellipse cx="140" cy="80" rx="120" ry="65" fill="url(#vip-bg)" opacity="0.4" />
-      {/* Coroa */}
-      <path d="M100 105 L100 75 L120 90 L140 65 L160 90 L180 75 L180 105 Z" fill="#D4A843" opacity="0.15" stroke="#D4A843" strokeWidth="1.5" />
-      <polygon points="140,62 145,76 160,76 148,85 153,99 140,90 127,99 132,85 120,76 135,76" fill="#D4A843" opacity="0.7" />
-      {/* Brilhos */}
-      <path d="M60 50 L62 57 L69 59 L62 61 L60 68 L58 61 L51 59 L58 57 Z" fill="#D4A843" opacity="0.6" />
-      <path d="M215 95 L217 100 L222 102 L217 104 L215 109 L213 104 L208 102 L213 100 Z" fill="#D4A843" opacity="0.4" />
-      <circle cx="75" cy="95" r="4" fill="#F6E05E" opacity="0.6" />
-      <circle cx="205" cy="55" r="5" fill="#ECC94B" opacity="0.5" />
-      <circle cx="55" cy="110" r="3" fill="#F6E05E" opacity="0.7" />
-      <circle cx="220" cy="40" r="3.5" fill="#D4A843" opacity="0.5" />
-      {/* Faixas */}
-      <line x1="80" y1="120" x2="200" y2="120" stroke="#D4A843" strokeWidth="1.5" opacity="0.3" />
-      <line x1="90" y1="126" x2="190" y2="126" stroke="#D4A843" strokeWidth="1" opacity="0.2" />
-    </svg>
-  );
-}
-
-// Mapa de ilustrações por plan key
-const PLAN_ILLUSTRATIONS: Record<string, () => JSX.Element> = {
-  modulo_avulso: IllustrationToxina,
-  pacote_completo: IllustrationCompleto,
-  observador_essencial: IllustrationBioestimulador,
-  observador_avancado: IllustrationBiorregenerador,
-  observador_intensivo: IllustrationPreenchedor,
-  imersao: IllustrationNaturalUp,
-  vip_online: IllustrationVIP,
-  vip_presencial: IllustrationVIP,
-  vip_completo: IllustrationVIP,
+const CARD_THEMES: Record<string, { grad: string; accent: string; pattern: string; dark: boolean }> = {
+  modulo_avulso: {
+    dark: false,
+    accent: "#1A56A4",
+    grad: "linear-gradient(135deg, #EBF4FF 0%, #DBEAFE 60%, #BFDBFE 100%)",
+    pattern: `<svg width="260" height="160" viewBox="0 0 260 160" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="210" cy="30" r="80" fill="#93C5FD" fill-opacity="0.25"/><circle cx="30" cy="130" r="50" fill="#BFDBFE" fill-opacity="0.3"/><line x1="0" y1="80" x2="260" y2="80" stroke="#93C5FD" stroke-opacity="0.2" stroke-width="0.5"/><line x1="130" y1="0" x2="130" y2="160" stroke="#93C5FD" stroke-opacity="0.2" stroke-width="0.5"/></svg>`,
+  },
+  pacote_completo: {
+    dark: true,
+    accent: "#D4A843",
+    grad: "linear-gradient(135deg, #0A1628 0%, #0F2040 60%, #162C52 100%)",
+    pattern: `<svg width="260" height="160" viewBox="0 0 260 160" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="220" cy="20" r="90" fill="#D4A843" fill-opacity="0.08"/><circle cx="20" cy="140" r="60" fill="#D4A843" fill-opacity="0.06"/><path d="M0 0 L260 160" stroke="#D4A843" stroke-opacity="0.07" stroke-width="0.5"/><path d="M260 0 L0 160" stroke="#D4A843" stroke-opacity="0.07" stroke-width="0.5"/></svg>`,
+  },
+  observador_essencial: {
+    dark: false,
+    accent: "#0D7A5F",
+    grad: "linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 60%, #A7F3D0 100%)",
+    pattern: `<svg width="260" height="160" viewBox="0 0 260 160" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="200" cy="40" r="70" fill="#6EE7B7" fill-opacity="0.25"/><circle cx="40" cy="120" r="45" fill="#A7F3D0" fill-opacity="0.3"/></svg>`,
+  },
+  observador_avancado: {
+    dark: false,
+    accent: "#065F46",
+    grad: "linear-gradient(135deg, #F0FDF4 0%, #BBF7D0 60%, #86EFAC 100%)",
+    pattern: `<svg width="260" height="160" viewBox="0 0 260 160" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="220" cy="25" r="80" fill="#4ADE80" fill-opacity="0.2"/><circle cx="25" cy="135" r="55" fill="#86EFAC" fill-opacity="0.25"/></svg>`,
+  },
+  observador_intensivo: {
+    dark: true,
+    accent: "#D4A843",
+    grad: "linear-gradient(135deg, #052E16 0%, #064E3B 60%, #065F46 100%)",
+    pattern: `<svg width="260" height="160" viewBox="0 0 260 160" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="215" cy="25" r="85" fill="#D4A843" fill-opacity="0.07"/><circle cx="20" cy="140" r="60" fill="#D4A843" fill-opacity="0.05"/><path d="M0 0 L260 160" stroke="#6EE7B7" stroke-opacity="0.08" stroke-width="0.5"/></svg>`,
+  },
+  imersao: {
+    dark: true,
+    accent: "#D4A843",
+    grad: "linear-gradient(135deg, #0A1628 0%, #14213D 50%, #1C2E4A 100%)",
+    pattern: `<svg width="260" height="160" viewBox="0 0 260 160" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="200" cy="30" r="90" fill="#D4A843" fill-opacity="0.09"/><circle cx="30" cy="130" r="65" fill="#D4A843" fill-opacity="0.06"/><circle cx="130" cy="80" r="30" fill="#D4A843" fill-opacity="0.05"/></svg>`,
+  },
+  vip_online: {
+    dark: true,
+    accent: "#D4A843",
+    grad: "linear-gradient(135deg, #1C0F00 0%, #2D1A00 50%, #3D2400 100%)",
+    pattern: `<svg width="260" height="160" viewBox="0 0 260 160" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="220" cy="20" r="100" fill="#D4A843" fill-opacity="0.1"/><circle cx="20" cy="140" r="70" fill="#D4A843" fill-opacity="0.07"/><path d="M110 10 L150 80 L110 150 L70 80 Z" fill="#D4A843" fill-opacity="0.04"/></svg>`,
+  },
+  vip_presencial: {
+    dark: true,
+    accent: "#D4A843",
+    grad: "linear-gradient(135deg, #0F0A00 0%, #231500 50%, #2D1C00 100%)",
+    pattern: `<svg width="260" height="160" viewBox="0 0 260 160" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="220" cy="25" r="95" fill="#D4A843" fill-opacity="0.1"/><path d="M80 20 L130 100 L80 160 L30 100 Z" fill="#D4A843" fill-opacity="0.05"/></svg>`,
+  },
+  vip_completo: {
+    dark: true,
+    accent: "#D4A843",
+    grad: "linear-gradient(135deg, #0A0500 0%, #1A0E00 50%, #251500 100%)",
+    pattern: `<svg width="260" height="160" viewBox="0 0 260 160" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="220" cy="20" r="110" fill="#D4A843" fill-opacity="0.12"/><circle cx="20" cy="140" r="75" fill="#D4A843" fill-opacity="0.08"/><circle cx="130" cy="80" r="40" fill="#D4A843" fill-opacity="0.06"/><path d="M95 15 L145 80 L95 145 L45 80 Z" fill="#D4A843" fill-opacity="0.05"/></svg>`,
+  },
 };
 
-// Ícone de módulo individual
-const MODULE_ICONS: Record<string, () => JSX.Element> = {
-  toxina: IllustrationToxina,
-  preenchedor: IllustrationPreenchedor,
-  bioestimulador: IllustrationBioestimulador,
-  biorregenerador: IllustrationBiorregenerador,
-  naturalup: IllustrationNaturalUp,
-};
-
-// ── Card de Módulo Individual ──────────────────────────────────────────────
-function ModuleCard({
-  icon: Icon,
-  title,
-  subtitle,
-  color,
-}: {
-  icon: () => JSX.Element;
-  title: string;
-  subtitle: string;
-  color: string;
-}) {
+// ─── Ícone minimalista de categoria ──────────────────────────────────────────
+function IconOnline() {
   return (
-    <div className={`rounded-2xl p-5 flex flex-col gap-3 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow`}>
-      <div className="h-20 w-full">
-        <Icon />
-      </div>
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color }}>Módulo</p>
-        <h3 className="text-sm font-bold text-gray-900 mt-0.5">{title}</h3>
-        <p className="text-xs text-gray-500 mt-1 leading-relaxed">{subtitle}</p>
-      </div>
-    </div>
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <rect x="2" y="4" width="16" height="11" rx="2" stroke="currentColor" strokeWidth="1.4"/>
+      <path d="M7 15l1-1.5h4l1 1.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+      <path d="M6 18h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+      <circle cx="10" cy="9.5" r="2" stroke="currentColor" strokeWidth="1.2"/>
+    </svg>
+  );
+}
+function IconObservacao() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M10 4C6.134 4 3 7 3 10s3.134 6 7 6 7-3 7-6-3.134-6-7-6z" stroke="currentColor" strokeWidth="1.4"/>
+      <circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.2"/>
+      <path d="M3 10h2M15 10h2M10 3v2M10 15v2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+    </svg>
+  );
+}
+function IconMentoria() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="8" cy="7" r="3" stroke="currentColor" strokeWidth="1.4"/>
+      <path d="M3 17c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+      <path d="M14 8l1.5 1.5L18 7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
   );
 }
 
-// ── Card de plano principal ────────────────────────────────────────────────
+// ─── Card principal ───────────────────────────────────────────────────────────
 function PlanCard({
   plan,
   onAcessar,
@@ -312,134 +134,152 @@ function PlanCard({
   onAcessar: (key: string) => void;
   isLoading: boolean;
 }) {
-  const Illustration = PLAN_ILLUSTRATIONS[plan.key] || IllustrationCompleto;
-  const isDestaque = plan.key === "vip_completo" || plan.key === "pacote_completo";
-  const isVip = plan.group === "vip";
+  const theme = CARD_THEMES[plan.key] ?? CARD_THEMES["pacote_completo"];
+  const { dark, accent, grad, pattern } = theme;
 
   const economia = plan.valorMercado
     ? Math.round((1 - plan.price / plan.valorMercado) * 100)
     : null;
 
+  const textPrimary   = dark ? "#FFFFFF" : "#111827";
+  const textSecondary = dark ? "rgba(255,255,255,0.55)" : "#6B7280";
+  const textTertiary  = dark ? "rgba(255,255,255,0.35)" : "#9CA3AF";
+  const dividerColor  = dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)";
+  const checkBg       = dark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
+  const badgeBg       = dark ? "rgba(255,255,255,0.1)"  : "rgba(0,0,0,0.06)";
+  const badgeText     = dark ? "rgba(255,255,255,0.75)" : "#374151";
+
   return (
     <div
-      className={`relative flex flex-col rounded-3xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${
-        isDestaque
-          ? "bg-gradient-to-b from-[#0A1628] to-[#0D1E35] shadow-xl ring-1 ring-[#D4A843]/30"
-          : isVip
-          ? "bg-gradient-to-b from-[#1a1400] to-[#0D0900] shadow-xl ring-1 ring-[#D4A843]/20"
-          : "bg-white shadow-lg ring-1 ring-gray-100"
-      }`}
+      className="relative flex flex-col rounded-3xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
+      style={{
+        background: grad,
+        boxShadow: dark
+          ? "0 4px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06)"
+          : "0 4px 24px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.06)",
+      }}
     >
-      {/* Badge destaque */}
+      {/* Badge */}
       {plan.highlight && (
         <div className="absolute top-4 right-4 z-10">
-          <span className="rounded-full bg-[#D4A843] px-3 py-1 text-[11px] font-bold text-[#0A1628] shadow">
+          <span
+            className="rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide"
+            style={{ background: accent, color: dark ? "#0A1628" : "#fff" }}
+          >
             {plan.highlight}
           </span>
         </div>
       )}
 
-      {/* Ilustração */}
-      <div className={`px-8 pt-8 pb-0 h-36 ${isDestaque || isVip ? "opacity-80" : ""}`}>
-        <Illustration />
+      {/* Padrão geométrico */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ opacity: 1 }}
+        dangerouslySetInnerHTML={{ __html: `<svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 260 160" preserveAspectRatio="xMaxYMin slice" fill="none" xmlns="http://www.w3.org/2000/svg">${pattern.replace(/^<svg[^>]*>/, "").replace(/<\/svg>$/, "")}</svg>` }}
+      />
+
+      {/* Linha de acento topo */}
+      <div className="h-0.5 w-full" style={{ background: accent, opacity: 0.7 }} />
+
+      {/* Header da card */}
+      <div className="relative px-7 pt-6 pb-0">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: accent }}>
+          {plan.group === "digital" ? "Online" : plan.group === "observador" ? "Observação Clínica" : "Mentoria VIP"}
+        </p>
+        <h3 className="mt-1 text-xl font-bold leading-snug" style={{ color: textPrimary }}>
+          {plan.name}
+        </h3>
+        <p className="mt-1 text-sm leading-relaxed" style={{ color: textSecondary }}>
+          {plan.description}
+        </p>
       </div>
 
-      {/* Conteúdo */}
-      <div className="flex flex-col flex-1 p-7 pt-4">
-        {/* Nome e descrição */}
-        <div className="mb-5">
-          <h3 className={`text-xl font-bold leading-tight ${isDestaque || isVip ? "text-white" : "text-gray-900"}`}>
-            {plan.name}
-          </h3>
-          <p className={`mt-1.5 text-sm leading-relaxed ${isDestaque || isVip ? "text-gray-400" : "text-gray-500"}`}>
-            {plan.description}
-          </p>
-        </div>
-
-        {/* Preço */}
-        <div className="mb-5">
-          {plan.valorMercado && (
-            <div className="flex items-center gap-2 mb-1">
-              <span className={`text-sm line-through ${isDestaque || isVip ? "text-gray-500" : "text-gray-400"}`}>
-                {formatBRL(plan.valorMercado)}
+      {/* Preço */}
+      <div className="relative px-7 pt-5 pb-0">
+        {plan.valorMercado && (
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-sm line-through" style={{ color: textTertiary }}>
+              {formatBRL(plan.valorMercado)}
+            </span>
+            {economia && (
+              <span
+                className="rounded-full px-2 py-0.5 text-[11px] font-bold"
+                style={{ background: "rgba(34,197,94,0.15)", color: "#16A34A" }}
+              >
+                −{economia}%
               </span>
-              {economia && (
-                <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-bold text-green-700">
-                  -{economia}%
-                </span>
-              )}
-            </div>
-          )}
-          <div className={`text-3xl font-bold tabular-nums ${isDestaque || isVip ? "text-[#D4A843]" : "text-gray-900"}`}>
-            {plan.priceFormatted}
+            )}
           </div>
-          {plan.installments12xFormatted && (
-            <p className={`text-sm mt-0.5 ${isDestaque || isVip ? "text-gray-500" : "text-gray-400"}`}>
-              ou 12× de {plan.installments12xFormatted}
-            </p>
-          )}
+        )}
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl font-bold tabular-nums" style={{ color: plan.valorMercado ? accent : textPrimary }}>
+            {plan.priceFormatted}
+          </span>
         </div>
+        {plan.installments12xFormatted ? (
+          <p className="text-xs mt-0.5" style={{ color: textTertiary }}>
+            ou 12× de {plan.installments12xFormatted} sem juros
+          </p>
+        ) : (
+          <p className="text-xs mt-0.5" style={{ color: textTertiary }}>à vista</p>
+        )}
+      </div>
 
-        {/* Divisor */}
-        <div className={`h-px mb-5 ${isDestaque || isVip ? "bg-white/10" : "bg-gray-100"}`} />
+      {/* Divider */}
+      <div className="mx-7 mt-5 mb-0 h-px" style={{ background: dividerColor }} />
 
-        {/* Features */}
-        <ul className="flex-1 space-y-3 mb-6">
-          {plan.features.map((f, i) => (
-            <li key={i} className="flex items-start gap-2.5">
-              <div className={`mt-0.5 h-4 w-4 shrink-0 rounded-full flex items-center justify-center ${
-                isDestaque || isVip ? "bg-[#D4A843]/20" : "bg-gray-100"
-              }`}>
-                <Check className={`h-2.5 w-2.5 ${isDestaque || isVip ? "text-[#D4A843]" : "text-gray-600"}`} />
-              </div>
-              <span className={`text-sm leading-snug ${isDestaque || isVip ? "text-gray-300" : "text-gray-600"}`}>
-                {f}
-              </span>
-            </li>
-          ))}
-        </ul>
+      {/* Features */}
+      <ul className="relative flex-1 px-7 pt-5 pb-0 space-y-2.5">
+        {plan.features.map((f, i) => (
+          <li key={i} className="flex items-start gap-3">
+            <div
+              className="mt-0.5 h-4 w-4 shrink-0 rounded-full flex items-center justify-center"
+              style={{ background: checkBg }}
+            >
+              <Check className="h-2.5 w-2.5" style={{ color: accent }} />
+            </div>
+            <span className="text-sm leading-snug" style={{ color: textSecondary }}>
+              {f}
+            </span>
+          </li>
+        ))}
+      </ul>
 
-        {/* Badges extras */}
-        <div className="flex flex-wrap gap-1.5 mb-5">
-          {plan.clinicalHours > 0 && (
-            <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
-              isDestaque || isVip ? "bg-blue-900/40 text-blue-300" : "bg-blue-50 text-blue-700"
-            }`}>
-              {plan.clinicalHours}h observação clínica
-            </span>
-          )}
-          {plan.practiceHours > 0 && (
-            <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
-              isDestaque || isVip ? "bg-green-900/40 text-green-300" : "bg-green-50 text-green-700"
-            }`}>
-              {plan.practiceHours}h prática com paciente
-            </span>
-          )}
-          {plan.hasMentorship && (
-            <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
-              isDestaque || isVip ? "bg-amber-900/40 text-amber-300" : "bg-amber-50 text-amber-700"
-            }`}>
-              Mentoria individual
-            </span>
-          )}
-          {plan.hasLiveEvents && (
-            <span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
-              isDestaque || isVip ? "bg-purple-900/40 text-purple-300" : "bg-purple-50 text-purple-700"
-            }`}>
-              Encontros ao vivo
-            </span>
-          )}
-        </div>
+      {/* Badges */}
+      <div className="relative px-7 pt-4 pb-0 flex flex-wrap gap-1.5">
+        {plan.clinicalHours > 0 && (
+          <span className="rounded-full px-2.5 py-1 text-[11px] font-medium" style={{ background: badgeBg, color: badgeText }}>
+            {plan.clinicalHours}h observação
+          </span>
+        )}
+        {plan.practiceHours > 0 && (
+          <span className="rounded-full px-2.5 py-1 text-[11px] font-medium" style={{ background: badgeBg, color: badgeText }}>
+            {plan.practiceHours}h prática
+          </span>
+        )}
+        {plan.hasMentorship && (
+          <span className="rounded-full px-2.5 py-1 text-[11px] font-medium" style={{ background: badgeBg, color: badgeText }}>
+            Mentoria individual
+          </span>
+        )}
+        {plan.hasLiveEvents && (
+          <span className="rounded-full px-2.5 py-1 text-[11px] font-medium" style={{ background: badgeBg, color: badgeText }}>
+            Encontros ao vivo
+          </span>
+        )}
+      </div>
 
-        {/* CTA */}
+      {/* CTA */}
+      <div className="relative px-7 pt-5 pb-7">
         <button
           onClick={() => onAcessar(plan.key)}
           disabled={isLoading}
-          className={`flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold transition-all duration-200 disabled:opacity-50 ${
-            isDestaque || isVip
-              ? "bg-[#D4A843] text-[#0A1628] hover:bg-[#e8b84d] hover:shadow-lg hover:shadow-[#D4A843]/20"
-              : "bg-gray-900 text-white hover:bg-gray-800 hover:shadow-lg"
-          }`}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold transition-all duration-200 disabled:opacity-50"
+          style={{
+            background: accent,
+            color: dark ? "#0A1628" : "#fff",
+            boxShadow: `0 4px 20px ${accent}40`,
+          }}
         >
           {isLoading ? (
             <><Loader2 className="h-4 w-4 animate-spin" /> Aguarde...</>
@@ -452,10 +292,75 @@ function PlanCard({
   );
 }
 
-// ── Página principal ───────────────────────────────────────────────────────
+// ─── Card compacto para módulo avulso ────────────────────────────────────────
+function ModuloAvulsoCard({
+  plan,
+  onAcessar,
+  isLoading,
+}: {
+  plan: PlanData;
+  onAcessar: (key: string) => void;
+  isLoading: boolean;
+}) {
+  return (
+    <div
+      className="relative flex flex-col sm:flex-row items-center gap-6 rounded-3xl overflow-hidden p-7 transition-all duration-300 hover:-translate-y-0.5"
+      style={{
+        background: "linear-gradient(135deg, #EBF4FF 0%, #DBEAFE 60%, #BFDBFE 100%)",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.05)",
+      }}
+    >
+      {/* Ícone lateral */}
+      <div
+        className="shrink-0 h-16 w-16 rounded-2xl flex items-center justify-center"
+        style={{ background: "rgba(26, 86, 164, 0.1)" }}
+      >
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect x="4" y="7" width="24" height="16" rx="3" stroke="#1A56A4" strokeWidth="1.8"/>
+          <path d="M11 23l1.5-2.5h7l1.5 2.5" stroke="#1A56A4" strokeWidth="1.8" strokeLinecap="round"/>
+          <circle cx="16" cy="15" r="3.5" stroke="#1A56A4" strokeWidth="1.5"/>
+        </svg>
+      </div>
+
+      {/* Texto */}
+      <div className="flex-1 text-center sm:text-left">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-[#1A56A4] mb-0.5">Módulo Avulso</p>
+        <h3 className="text-lg font-bold text-gray-900">Escolha 1 módulo</h3>
+        <p className="text-sm text-gray-500 mt-0.5">{plan.description}</p>
+      </div>
+
+      {/* Preço + botão */}
+      <div className="shrink-0 flex flex-col items-center sm:items-end gap-3">
+        <div>
+          <div className="text-2xl font-bold text-gray-900 tabular-nums">{plan.priceFormatted}</div>
+          <p className="text-xs text-gray-400 text-right">acesso por 1 ano</p>
+        </div>
+        <button
+          onClick={() => onAcessar(plan.key)}
+          disabled={isLoading}
+          className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 disabled:opacity-50"
+          style={{ background: "#1A56A4", boxShadow: "0 4px 16px rgba(26,86,164,0.3)" }}
+        >
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Acessar agora <ArrowRight className="h-3.5 w-3.5" /></>}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Página ───────────────────────────────────────────────────────────────────
 export default function PlanosPublicos() {
+  const [activeTab, setActiveTab] = useState<Tab>("online");
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+  const [navStuck, setNavStuck] = useState(false);
+
+  // Ref para cada seção para scroll suave
+  const sectionRefs: Record<Tab, React.RefObject<HTMLDivElement>> = {
+    online:     useRef<HTMLDivElement>(null),
+    observacao: useRef<HTMLDivElement>(null),
+    mentoria:   useRef<HTMLDivElement>(null),
+  };
 
   const urlParams = new URLSearchParams(window.location.search);
   const couponCode = urlParams.get("ref") || "";
@@ -472,16 +377,11 @@ export default function PlanosPublicos() {
         body: JSON.stringify({ planKey }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Erro ao gerar link de pagamento");
+      if (!res.ok) throw new Error(json.message || "Erro");
       return json;
     },
-    onSuccess: (res) => {
-      if (res.url) window.location.href = res.url;
-    },
-    onError: () => {
-      setLoadingKey(null);
-      alert("Erro ao gerar link. Tente novamente.");
-    },
+    onSuccess: (res) => { if (res.url) window.location.href = res.url; },
+    onError: () => { setLoadingKey(null); alert("Erro ao gerar link. Tente novamente."); },
   });
 
   const handleAcessar = (planKey: string) => {
@@ -489,266 +389,330 @@ export default function PlanosPublicos() {
     checkoutMutation.mutate(planKey);
   };
 
+  // Detectar scroll para sticky nav
+  useEffect(() => {
+    const onScroll = () => {
+      if (!navRef.current) return;
+      setNavStuck(window.scrollY > 60);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Scroll suave ao mudar tab
+  const handleTab = (tab: Tab) => {
+    setActiveTab(tab);
+    const ref = sectionRefs[tab];
+    if (ref.current) {
+      const y = ref.current.getBoundingClientRect().top + window.scrollY - 90;
+      window.scrollTo({ top: y, behavior: "smooth" });
+    }
+  };
+
+  // Intersection observer para atualizar tab ativa ao rolar
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+    (Object.keys(sectionRefs) as Tab[]).forEach((key) => {
+      const el = sectionRefs[key].current;
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) setActiveTab(key); },
+        { rootMargin: "-30% 0px -60% 0px" }
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+    return () => observers.forEach((o) => o.disconnect());
+  }, [data]);
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
-        <div className="h-7 w-7 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
       </div>
     );
   }
 
   const plans = data?.plans || [];
-
-  // Separar grupos
-  const digital = plans.filter((p) => p.group === "digital");
+  const digital    = plans.filter((p) => p.group === "digital");
   const observador = plans.filter((p) => p.group === "observador");
-  const vip = plans.filter((p) => p.group === "vip");
-
-  // Módulo avulso separado para seção de módulos individuais
-  const moduloAvulso = plans.find((p) => p.key === "modulo_avulso");
-  const digitalSemAvulso = digital.filter((p) => p.key !== "modulo_avulso");
+  const vip        = plans.filter((p) => p.group === "vip");
+  const avulso     = digital.find((p) => p.key === "modulo_avulso");
+  const digSemAvulso = digital.filter((p) => p.key !== "modulo_avulso");
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7]" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif" }}>
+    <div
+      className="min-h-screen"
+      style={{
+        background: "#F8F7F4",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif",
+      }}
+    >
 
-      {/* Botão voltar */}
-      <button
-        onClick={() => window.history.back()}
-        className="fixed left-4 top-4 z-50 flex items-center gap-1.5 rounded-full bg-white/80 backdrop-blur border border-gray-200 px-4 py-2 text-sm text-gray-600 shadow-sm hover:bg-white transition-all"
+      {/* ── NAVBAR STICKY ─────────────────────────────────────── */}
+      <div
+        ref={navRef}
+        className="sticky top-0 z-50 transition-all duration-300"
+        style={{
+          background: navStuck ? "rgba(248,247,244,0.92)" : "transparent",
+          backdropFilter: navStuck ? "blur(20px) saturate(1.5)" : "none",
+          WebkitBackdropFilter: navStuck ? "blur(20px) saturate(1.5)" : "none",
+          borderBottom: navStuck ? "1px solid rgba(0,0,0,0.07)" : "1px solid transparent",
+        }}
       >
-        <ChevronLeft className="h-4 w-4" />
-        Voltar
-      </button>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-4 h-[60px]">
 
-      {/* ── HERO ────────────────────────────────────────────────── */}
-      <div ref={heroRef} className="bg-white pt-16 pb-12 text-center px-4 border-b border-gray-100">
-        <img
-          src="/logo-transparent.png"
-          alt="Ampla Facial"
-          className="mx-auto mb-6 h-16 object-contain"
-        />
-        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900 leading-tight max-w-3xl mx-auto">
-          Escolha como quer<br />
-          <span className="text-[#D4A843]">evoluir na estética</span>
-        </h1>
-        <p className="mt-4 text-lg text-gray-500 max-w-xl mx-auto">
-          Acesso liberado imediatamente após o pagamento. Sem contratos, sem mensalidades.
-        </p>
-        {/* Trust badges */}
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-6">
-          {[
-            { icon: "🔒", label: "Pagamento seguro via Stripe" },
-            { icon: "⚡", label: "Acesso imediato" },
-            { icon: "🔄", label: "Upgrade com crédito a qualquer momento" },
-          ].map((b) => (
-            <div key={b.label} className="flex items-center gap-2 text-sm text-gray-500">
-              <span>{b.icon}</span>
-              <span>{b.label}</span>
-            </div>
-          ))}
-        </div>
+            {/* Voltar */}
+            <button
+              onClick={() => window.history.back()}
+              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors shrink-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Voltar</span>
+            </button>
 
-        {/* Código de indicação */}
-        {couponCode && (
-          <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-green-50 border border-green-200 px-5 py-2.5 text-sm text-green-700">
-            <Gift className="h-4 w-4" />
-            <span>Indicação <strong>{couponCode}</strong> ativa — informe ao falar com a equipe.</span>
+            {/* Logo */}
+            <img
+              src="/logo-transparent.png"
+              alt="Ampla Facial"
+              className="h-7 object-contain shrink-0"
+              style={{ opacity: 0.9 }}
+            />
+
+            {/* Espaço */}
+            <div className="flex-1" />
+
+            {/* Tabs de categoria */}
+            <nav className="flex items-center gap-1">
+              {TABS.map((tab) => {
+                const Icon = tab.key === "online" ? IconOnline : tab.key === "observacao" ? IconObservacao : IconMentoria;
+                const isActive = activeTab === tab.key;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => handleTab(tab.key)}
+                    className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium transition-all duration-200"
+                    style={{
+                      background: isActive ? "#0A1628" : "transparent",
+                      color: isActive ? "#fff" : "#6B7280",
+                    }}
+                  >
+                    <Icon />
+                    <span className="hidden md:inline whitespace-nowrap">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Login */}
+            <a
+              href="/#/"
+              className="hidden sm:flex items-center text-xs text-gray-400 hover:text-gray-700 transition-colors shrink-0 ml-2"
+            >
+              Login
+            </a>
           </div>
-        )}
+        </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-
-        {/* ── SEÇÃO: MÓDULOS INDIVIDUAIS ─────────────────────────── */}
-        <section className="pt-16 pb-8">
-          <div className="text-center mb-10">
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#D4A843] mb-2">Comece por onde quiser</p>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">Módulos individuais</h2>
-            <p className="mt-3 text-gray-500 max-w-lg mx-auto">
-              Foque na técnica que você mais precisa. Cada módulo inclui aulas gravadas e materiais científicos completos.
+      {/* ── HERO ──────────────────────────────────────────────── */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+          <div className="max-w-2xl">
+            {couponCode && (
+              <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 border border-amber-200 px-4 py-1.5 text-xs font-medium text-amber-700 mb-6">
+                <Gift className="h-3.5 w-3.5" />
+                Indicação <strong>{couponCode}</strong> ativa
+              </div>
+            )}
+            <h1
+              className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 leading-[1.08]"
+            >
+              Aprenda estética<br />
+              <span style={{ color: "#D4A843" }}>do jeito certo.</span>
+            </h1>
+            <p className="mt-5 text-lg text-gray-500 leading-relaxed max-w-xl">
+              Cursos clínicos do Dr. Gustavo Martins. Acesso liberado imediatamente após o pagamento.
             </p>
-          </div>
 
-          {/* Grid de módulos individuais */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-            <ModuleCard
-              icon={IllustrationToxina}
-              title="Toxina Botulínica"
-              subtitle="Protocolos, doses, anatomia e complicações"
-              color="#2B6CB0"
-            />
-            <ModuleCard
-              icon={IllustrationPreenchedor}
-              title="Preenchedores Faciais"
-              subtitle="Ácido hialurônico, técnicas e segurança vascular"
-              color="#C53030"
-            />
-            <ModuleCard
-              icon={IllustrationBioestimulador}
-              title="Bioestimuladores de Colágeno"
-              subtitle="Radiesse, Sculptra, Ellansé — indicações e técnicas"
-              color="#276749"
-            />
-            <ModuleCard
-              icon={IllustrationBiorregenerador}
-              title="Biorregeneradores"
-              subtitle="Matriz extracelular e moduladores modernos"
-              color="#C05621"
-            />
-            <ModuleCard
-              icon={IllustrationNaturalUp}
-              title="Método NaturalUp®"
-              subtitle="Abordagem full face exclusiva do Dr. Gustavo"
-              color="#6B46C1"
-            />
-          </div>
-
-          {/* Card de módulo avulso */}
-          {moduloAvulso && (
-            <div className="max-w-md mx-auto bg-white rounded-3xl shadow-lg ring-1 ring-gray-100 overflow-hidden">
-              <div className="h-32 px-8 pt-6">
-                <IllustrationCompleto />
-              </div>
-              <div className="p-6">
-                <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">Módulo Avulso</p>
-                <h3 className="text-lg font-bold text-gray-900">Escolha 1 módulo</h3>
-                <p className="text-sm text-gray-500 mt-1 mb-4">{moduloAvulso.description}</p>
-                <div className="flex items-end justify-between">
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">{moduloAvulso.priceFormatted}</div>
-                    <p className="text-xs text-gray-400 mt-0.5">à vista · acesso por 1 ano</p>
-                  </div>
-                  <button
-                    onClick={() => handleAcessar(moduloAvulso.key)}
-                    disabled={checkoutMutation.isPending && loadingKey === moduloAvulso.key}
-                    className="flex items-center gap-2 rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
-                  >
-                    {checkoutMutation.isPending && loadingKey === moduloAvulso.key ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>Acessar agora <ArrowRight className="h-3.5 w-3.5" /></>
-                    )}
-                  </button>
+            {/* Trust */}
+            <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2">
+              {[
+                { icon: Shield, label: "Pagamento seguro via Stripe" },
+                { icon: Star,   label: "Acesso vitalício ao conteúdo" },
+                { icon: Check,  label: "Upgrade com crédito a qualquer momento" },
+              ].map(({ icon: Icon, label }) => (
+                <div key={label} className="flex items-center gap-1.5 text-sm text-gray-400">
+                  <Icon className="h-3.5 w-3.5 text-gray-300" />
+                  {label}
                 </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── CONTEÚDO PRINCIPAL ────────────────────────────────── */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-20">
+
+        {/* ── SEÇÃO ONLINE ─────────────────────────────────────── */}
+        <div ref={sectionRefs.online} className="pt-16">
+
+          {/* Label de seção */}
+          <div className="flex items-center gap-4 mb-10">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="h-px w-8" style={{ background: "#D4A843" }} />
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400">Online</p>
               </div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Estude no seu ritmo</h2>
+              <p className="mt-1.5 text-gray-500 text-sm max-w-lg">
+                Aulas gravadas com protocolo clínico completo, materiais científicos e acesso imediato.
+              </p>
+            </div>
+          </div>
+
+          {/* Módulo avulso */}
+          {avulso && (
+            <div className="mb-5">
+              <ModuloAvulsoCard
+                plan={avulso}
+                onAcessar={handleAcessar}
+                isLoading={checkoutMutation.isPending && loadingKey === avulso.key}
+              />
             </div>
           )}
-        </section>
 
-        {/* Divisor */}
-        <div className="flex items-center gap-6 py-8">
+          {/* Módulos individuais — linha de chips informativos */}
+          <div className="flex flex-wrap gap-2 mb-8 pl-1">
+            {[
+              { label: "Toxina Botulínica",           color: "#1A56A4" },
+              { label: "Preenchedores Faciais",        color: "#9B1C1C" },
+              { label: "Bioestimuladores de Colágeno", color: "#065F46" },
+              { label: "Biorregeneradores",            color: "#92400E" },
+              { label: "Método NaturalUp®",            color: "#5521B5" },
+            ].map(({ label, color }) => (
+              <span
+                key={label}
+                className="rounded-full px-3.5 py-1.5 text-xs font-medium border"
+                style={{
+                  borderColor: color + "30",
+                  color,
+                  background: color + "0D",
+                }}
+              >
+                {label}
+              </span>
+            ))}
+            <span className="rounded-full px-3.5 py-1.5 text-xs font-medium text-gray-400 border border-gray-200 bg-white">
+              → incluso no Curso Completo
+            </span>
+          </div>
+
+          {/* Cards digitais (sem avulso) */}
+          {digSemAvulso.length > 0 && (
+            <div className={`grid gap-5 ${
+              digSemAvulso.length === 1 ? "max-w-sm" : "grid-cols-1 sm:grid-cols-2 max-w-3xl"
+            }`}>
+              {digSemAvulso.map((plan) => (
+                <PlanCard
+                  key={plan.key}
+                  plan={plan}
+                  onAcessar={handleAcessar}
+                  isLoading={checkoutMutation.isPending && loadingKey === plan.key}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div className="my-16 flex items-center gap-6">
           <div className="h-px flex-1 bg-gray-200" />
-          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">Ou veja nossos planos completos</p>
           <div className="h-px flex-1 bg-gray-200" />
         </div>
 
-        {/* ── SEÇÃO: PLANOS DIGITAIS ─────────────────────────────── */}
-        {digitalSemAvulso.length > 0 && (
-          <section className="pb-16">
-            <div className="text-center mb-10">
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#D4A843] mb-2">Acesso Digital</p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">Curso completo</h2>
-              <p className="mt-3 text-gray-500 max-w-lg mx-auto">
-                Domine todas as técnicas no seu ritmo, com aulas gravadas e materiais científicos de todos os módulos.
-              </p>
+        {/* ── SEÇÃO OBSERVAÇÃO CLÍNICA ─────────────────────────── */}
+        <div ref={sectionRefs.observacao}>
+          <div className="mb-10">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="h-px w-8" style={{ background: "#D4A843" }} />
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400">Presencial</p>
             </div>
-            <div className={`grid gap-6 items-stretch ${
-              digitalSemAvulso.length === 1 ? "max-w-sm mx-auto" : "grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto"
-            }`}>
-              {digitalSemAvulso.map((plan) => (
-                <PlanCard
-                  key={plan.key}
-                  plan={plan}
-                  onAcessar={handleAcessar}
-                  isLoading={checkoutMutation.isPending && loadingKey === plan.key}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── SEÇÃO: OBSERVAÇÃO CLÍNICA ──────────────────────────── */}
-        {observador.length > 0 && (
-          <section className="pb-16">
-            <div className="text-center mb-10">
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#D4A843] mb-2">Presencial</p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">Observação Clínica</h2>
-              <p className="mt-3 text-gray-500 max-w-lg mx-auto">
-                Acompanhe atendimentos reais do Dr. Gustavo. Aprenda vendo a teoria virar prática na pele do paciente.
-              </p>
-            </div>
-            <div className={`grid gap-6 items-stretch ${
-              observador.length <= 2
-                ? "grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto"
-                : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-            }`}>
-              {observador.map((plan) => (
-                <PlanCard
-                  key={plan.key}
-                  plan={plan}
-                  onAcessar={handleAcessar}
-                  isLoading={checkoutMutation.isPending && loadingKey === plan.key}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── SEÇÃO: VIP ─────────────────────────────────────────── */}
-        {vip.length > 0 && (
-          <section className="pb-16">
-            <div className="text-center mb-10">
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#D4A843] mb-2">Mentoria exclusiva</p>
-              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900">Formação VIP</h2>
-              <p className="mt-3 text-gray-500 max-w-lg mx-auto">
-                Acompanhamento individual de 3 a 6 meses direto com o Dr. Gustavo. Vagas limitadas por turma.
-              </p>
-            </div>
-            <div className={`grid gap-6 items-stretch ${
-              vip.length === 1
-                ? "max-w-sm mx-auto"
-                : vip.length === 2
-                ? "grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto"
-                : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-            }`}>
-              {vip.map((plan) => (
-                <PlanCard
-                  key={plan.key}
-                  plan={plan}
-                  onAcessar={handleAcessar}
-                  isLoading={checkoutMutation.isPending && loadingKey === plan.key}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── RODAPÉ DE CONFIANÇA ─────────────────────────────────── */}
-        <div className="pb-16 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Upgrade com crédito */}
-          <div className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-gray-100">
-            <Star className="h-5 w-5 text-[#D4A843] mb-3" />
-            <h3 className="font-bold text-gray-900">Upgrade com crédito total</h3>
-            <p className="mt-1.5 text-sm text-gray-500">
-              Começou num plano menor? Dentro de 60 dias, 100% do que pagou vira crédito. Você paga apenas a diferença.
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Com Observação Clínica</h2>
+            <p className="mt-1.5 text-gray-500 text-sm max-w-lg">
+              Acompanhe atendimentos reais do Dr. Gustavo. Teoria e prática no mesmo programa.
             </p>
           </div>
 
-          {/* Sistema de indicação */}
-          <div className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-gray-100">
-            <Gift className="h-5 w-5 text-[#D4A843] mb-3" />
-            <h3 className="font-bold text-gray-900">Indique e ganhe R$1.000</h3>
-            <p className="mt-1.5 text-sm text-gray-500">
-              Alunos matriculados recebem um código único. Quando o indicado fechar qualquer plano, você recebe R$1.000 em crédito para upgrade.
-            </p>
+          <div className={`grid gap-5 ${
+            observador.length <= 2
+              ? "grid-cols-1 sm:grid-cols-2 max-w-3xl"
+              : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+          }`}>
+            {observador.map((plan) => (
+              <PlanCard
+                key={plan.key}
+                plan={plan}
+                onAcessar={handleAcessar}
+                isLoading={checkoutMutation.isPending && loadingKey === plan.key}
+              />
+            ))}
           </div>
         </div>
 
-        {/* Link de login */}
-        <div className="pb-12 text-center">
-          <a href="/#/" className="text-sm text-gray-400 hover:text-gray-700 transition-colors">
-            <ChevronLeft className="inline h-3.5 w-3.5" /> Já tenho conta — fazer login
-          </a>
+        {/* Divider */}
+        <div className="my-16 flex items-center gap-6">
+          <div className="h-px flex-1 bg-gray-200" />
+          <div className="h-px flex-1 bg-gray-200" />
+        </div>
+
+        {/* ── SEÇÃO MENTORIA VIP ───────────────────────────────── */}
+        <div ref={sectionRefs.mentoria}>
+          <div className="mb-10">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="h-px w-8" style={{ background: "#D4A843" }} />
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400">Formação exclusiva</p>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Mentoria VIP</h2>
+            <p className="mt-1.5 text-gray-500 text-sm max-w-lg">
+              Acompanhamento individual de 3 a 6 meses direto com o Dr. Gustavo. Vagas limitadas por turma.
+            </p>
+          </div>
+
+          <div className={`grid gap-5 ${
+            vip.length === 1 ? "max-w-sm" :
+            vip.length === 2 ? "grid-cols-1 sm:grid-cols-2 max-w-3xl" :
+            "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+          }`}>
+            {vip.map((plan) => (
+              <PlanCard
+                key={plan.key}
+                plan={plan}
+                onAcessar={handleAcessar}
+                isLoading={checkoutMutation.isPending && loadingKey === plan.key}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* ── RODAPÉ ───────────────────────────────────────────── */}
+        <div className="mt-20 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="rounded-3xl bg-white p-7 ring-1 ring-gray-100">
+            <Star className="h-4 w-4 text-[#D4A843] mb-3" />
+            <h3 className="font-semibold text-gray-900 mb-1.5">Upgrade com crédito integral</h3>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Começou num plano menor? Em até 60 dias, 100% do valor pago vira crédito para o próximo. Paga apenas a diferença.
+            </p>
+          </div>
+          <div className="rounded-3xl bg-white p-7 ring-1 ring-gray-100">
+            <Gift className="h-4 w-4 text-[#D4A843] mb-3" />
+            <h3 className="font-semibold text-gray-900 mb-1.5">Indique e ganhe R$1.000</h3>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Cada aluno recebe um código único. Quando o indicado fechar qualquer plano, você ganha R$1.000 em crédito para upgrade.
+            </p>
+          </div>
         </div>
 
       </div>
