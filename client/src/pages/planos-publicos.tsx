@@ -458,7 +458,7 @@ export default function PlanosPublicos() {
               </div>
             )}
             <h1 className="text-4xl sm:text-5xl lg:text-[52px] font-bold tracking-tight text-gray-900 leading-[1.07]">
-              Aprenda estética<br />
+              Aprenda Harmonização Facial<br />
               <span style={{ color: "#D4A843" }}>do jeito certo.</span>
             </h1>
             <p className="mt-4 text-base sm:text-lg text-gray-500 leading-relaxed max-w-lg">
@@ -545,7 +545,7 @@ export default function PlanosPublicos() {
             title="Com Observação Clínica"
             sub="Acompanhe atendimentos reais do Dr. Gustavo. Teoria e prática no mesmo programa."
           />
-          <div className={`grid gap-5 ${
+          <div className={`grid gap-5 mx-auto ${
             observador.length <= 2 ? "grid-cols-1 sm:grid-cols-2 max-w-3xl"
               : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
             {observador.map((p) => (
