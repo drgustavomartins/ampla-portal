@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronUp, ArrowRight, Loader2,
   TrendingUp, Timer, MessageCircle,} from "lucide-react";
 
-const NEGOCIACAO_DIRETA = ["imersao", "vip_online", "vip_presencial", "vip_completo"];
+const NEGOCIACAO_DIRETA = ["vip_online", "vip_presencial", "vip_completo"];
 
 const WHATSAPP_NEGOCIACAO = (planName: string) =>
   `https://wa.me/5521976263881?text=${encodeURIComponent(
@@ -252,7 +252,7 @@ export default function PlanosPage() {
 
         {/* Header */}
         <div className="mb-10 text-center">
-          <img src="/logo-transparent.png" alt="Ampla Facial" className="mx-auto mb-5 h-12 object-contain" />
+          <img src="/logo-transparent.png" alt="Ampla Facial" className="mx-auto mb-5 h-24 object-contain" />
           <h1 className="text-4xl font-bold text-white">Escolha seu caminho</h1>
           <p className="mt-2 text-gray-400">
             Do iniciante ao avançado — cada plano é uma etapa da sua evolução em HOF
@@ -271,7 +271,7 @@ export default function PlanosPage() {
         {/* Como funciona o processo */}
         <div className="mb-10 rounded-2xl border border-[#1e3a5f] bg-[#0D1E35] p-6">
           <div className="flex items-center gap-2 mb-4">
-            <MessageCircle className="h-4 w-4 text-[#25D366]" />
+            <MessageCircle className="h-4 w-4 text-[#D4A843]" />
             <p className="text-sm font-semibold text-white">Como funciona</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-400">
@@ -281,11 +281,11 @@ export default function PlanosPage() {
             </div>
             <div className="flex items-start gap-3">
               <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#D4A843]">2</span>
-              <span>Clique em "Falar com especialista" — ela te atende pelo WhatsApp</span>
+              <span>Clique em "Pagar e acessar agora" — você é redirecionado para o checkout seguro</span>
             </div>
             <div className="flex items-start gap-3">
               <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#D4A843]">3</span>
-              <span>Acesso liberado após confirmação — geralmente no mesmo dia</span>
+              <span>Acesso liberado imediatamente após o pagamento confirmado</span>
             </div>
           </div>
         </div>

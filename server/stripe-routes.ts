@@ -324,28 +324,152 @@ export function registerStripeRoutes(app: Express) {
         // Pagamento confirmado — liberar acesso completo
         const paymentIntentId = session.payment_intent as string;
         const accessExpiry = new Date(Date.now() + plan.accessDays * 86400000).toISOString();
+        const now = new Date().toISOString();
 
         // Buscar valor pago
         let amountPaid = plan.price;
         if (session.amount_total) amountPaid = session.amount_total;
 
+        // ─── Mapa de módulos por plano ────────────────────────────────────────
+        // IDs reais do banco: 6=Boas-vindas, 2=Toxina, 3=Preenchedores,
+        //                     5=Bioestimuladores, 7=Moduladores, 4=NaturalUp
+        const MODULE_BOAS_VINDAS = 6;
+        const MODULE_TOXINA = 2;
+        const MODULE_PREENCHEDORES = 3;
+        const MODULE_BIOESTIMULADORES = 5;
+        const MODULE_MODULADORES = 7;
+        const MODULE_NATURALUP = 4;
+
+        const MODULES_4_CORE = [MODULE_BOAS_VINDAS, MODULE_TOXINA, MODULE_PREENCHEDORES, MODULE_BIOESTIMULADORES, MODULE_MODULADORES];
+        const MODULES_COMPLETO = [...MODULES_4_CORE, MODULE_NATURALUP];
+
+        // ─── Mapa de materiais por plano ──────────────────────────────────────
+        const MAT_TOXINA        = "Toxina Botulínica";
+        const MAT_PREENCHEDORES = "Preenchedores Faciais";
+        const MAT_BIOESTIM      = "Bioestimuladores de Colágeno";
+        const MAT_MODULADORES   = "Moduladores de Matriz Extracelular";
+        const MAT_NATURALUP     = "Método NaturalUp®";
+        const MATS_4_CORE = [MAT_TOXINA, MAT_PREENCHEDORES, MAT_BIOESTIM, MAT_MODULADORES];
+        const MATS_COMPLETO = [...MATS_4_CORE, MAT_NATURALUP];
+
+        type ModuleAccess = { moduleId: number; enabled: boolean };
+        type PlanProvisioning = {
+          modules: ModuleAccess[];
+          materials: string[];
+          mentorshipMonths: number;
+          supportMonths: number;
+        };
+
+        const PLAN_PROVISIONING: Record<string, PlanProvisioning> = {
+          modulo_avulso: {
+            modules: [MODULE_BOAS_VINDAS].map(id => ({ moduleId: id, enabled: true })),
+            materials: [],   // acesso a 1 módulo à escolha — admin confirma qual
+            mentorshipMonths: 0,
+            supportMonths: 0,
+          },
+          pacote_completo: {
+            modules: MODULES_4_CORE.map(id => ({ moduleId: id, enabled: true })),
+            materials: MATS_4_CORE,
+            mentorshipMonths: 0,
+            supportMonths: 0,
+          },
+          observador_essencial: {
+            modules: MODULES_4_CORE.map(id => ({ moduleId: id, enabled: true })),
+            materials: MATS_4_CORE,
+            mentorshipMonths: 0,
+            supportMonths: 6,
+          },
+          observador_avancado: {
+            modules: MODULES_4_CORE.map(id => ({ moduleId: id, enabled: true })),
+            materials: MATS_4_CORE,
+            mentorshipMonths: 0,
+            supportMonths: 6,
+          },
+          observador_intensivo: {
+            modules: MODULES_4_CORE.map(id => ({ moduleId: id, enabled: true })),
+            materials: MATS_4_CORE,
+            mentorshipMonths: 0,
+            supportMonths: 6,
+          },
+          imersao: {
+            modules: MODULES_4_CORE.map(id => ({ moduleId: id, enabled: true })),
+            materials: MATS_4_CORE,
+            mentorshipMonths: 3,
+            supportMonths: 3,
+          },
+          vip_online: {
+            modules: MODULES_COMPLETO.map(id => ({ moduleId: id, enabled: true })),
+            materials: MATS_COMPLETO,
+            mentorshipMonths: 6,
+            supportMonths: 6,
+          },
+          vip_presencial: {
+            modules: MODULES_COMPLETO.map(id => ({ moduleId: id, enabled: true })),
+            materials: MATS_COMPLETO,
+            mentorshipMonths: 3,
+            supportMonths: 3,
+          },
+          vip_completo: {
+            modules: MODULES_COMPLETO.map(id => ({ moduleId: id, enabled: true })),
+            materials: MATS_COMPLETO,
+            mentorshipMonths: 6,
+            supportMonths: 6,
+          },
+        };
+
+        const provisioning = PLAN_PROVISIONING[planKey];
+
+        // ─── Calcular datas de mentoria e suporte ─────────────────────────────
+        const mentorshipEndDate = provisioning.mentorshipMonths > 0
+          ? new Date(Date.now() + provisioning.mentorshipMonths * 30 * 86400000).toISOString().slice(0, 10)
+          : null;
+        const supportExpiresAt = provisioning.supportMonths > 0
+          ? new Date(Date.now() + provisioning.supportMonths * 30 * 86400000).toISOString()
+          : accessExpiry;
+
+        // ─── 1. Atualizar campos do usuário ───────────────────────────────────
         await db.execute(sql`
           UPDATE users SET
             plan_key = ${planKey},
             stripe_payment_intent_id = ${paymentIntentId},
-            plan_paid_at = ${new Date().toISOString()},
+            plan_paid_at = ${now},
             plan_amount_paid = ${amountPaid},
             approved = true,
             access_expires_at = ${accessExpiry},
             materials_access = true,
             community_access = true,
             support_access = true,
+            support_expires_at = ${supportExpiresAt},
             clinical_practice_access = ${plan.clinicalHours > 0},
-            clinical_practice_hours = ${plan.clinicalHours}
+            clinical_practice_hours = ${plan.clinicalHours},
+            mentorship_start_date = ${provisioning.mentorshipMonths > 0 ? now.slice(0, 10) : null},
+            mentorship_end_date = ${mentorshipEndDate}
           WHERE id = ${userId}
         `);
 
-        console.log(`[stripe webhook] Aluno ${userId} liberado no plano ${planKey} até ${accessExpiry}`);
+        // ─── 2. Provisionar módulos ───────────────────────────────────────────
+        if (provisioning.modules.length > 0) {
+          await db.execute(sql`DELETE FROM user_modules WHERE user_id = ${userId}`);
+          for (const m of provisioning.modules) {
+            await db.execute(sql`
+              INSERT INTO user_modules (user_id, module_id, enabled, start_date, end_date)
+              VALUES (${userId}, ${m.moduleId}, ${m.enabled}, ${now.slice(0, 10)}, ${accessExpiry.slice(0, 10)})
+              ON CONFLICT (user_id, module_id) DO UPDATE SET enabled = ${m.enabled}
+            `);
+          }
+        }
+
+        // ─── 3. Provisionar materiais ─────────────────────────────────────────
+        await db.execute(sql`DELETE FROM user_material_categories WHERE user_id = ${userId}`);
+        for (const cat of provisioning.materials) {
+          await db.execute(sql`
+            INSERT INTO user_material_categories (user_id, category_name, enabled)
+            VALUES (${userId}, ${cat}, true)
+            ON CONFLICT (user_id, category_name) DO UPDATE SET enabled = true
+          `);
+        }
+
+        console.log(`[stripe webhook] Aluno ${userId} provisionado no plano ${planKey} até ${accessExpiry} | módulos: ${provisioning.modules.length} | materiais: ${provisioning.materials.length} | mentoria: ${provisioning.mentorshipMonths}m`);
       }
     }
 
