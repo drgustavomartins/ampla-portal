@@ -10,7 +10,6 @@ import ModulePage from "./pages/module-page";
 import AdminDashboard from "./pages/admin-dashboard";
 import ResetPasswordPage from "./pages/reset-password";
 import NotFound from "./pages/not-found";
-import PlanosPage from "./pages/planos";
 import UpgradePage from "./pages/upgrade";
 import PagamentoSucesso from "./pages/pagamento-sucesso";
 import PlanosPublicos from "./pages/planos-publicos";
@@ -55,7 +54,7 @@ function App() {
             <Route path="/" component={AppContent} />
             <Route path="/module/:id" component={ProtectedModulePage} />
             <Route path="/reset-password/:token" component={ResetPasswordPage} />
-            <Route path="/planos" component={() => <ProtectedPage component={PlanosPage} />} />
+            <Route path="/planos" component={PlanosPublicos} />
             <Route path="/upgrade" component={() => <ProtectedPage component={UpgradePage} />} />
             <Route path="/pagamento/sucesso" component={() => <ProtectedPage component={PagamentoSucesso} />} />
             <Route path="/trial/ativo" component={() => <ProtectedPage component={PagamentoSucesso} />} />
