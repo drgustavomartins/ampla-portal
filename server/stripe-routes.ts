@@ -502,6 +502,26 @@ export function registerStripeRoutes(app: Express) {
 
         console.log(`[stripe webhook] Aluno ${userId} provisionado no plano ${planKey} até ${accessExpiry} | módulos: ${provisioning.modules.length} | materiais: ${provisioning.materials.length} | mentoria: ${provisioning.mentorshipMonths}m`);
 
+        // Registrar no audit log
+        try {
+          const buyerResult = await db.execute(sql`SELECT name FROM users WHERE id = ${userId}`);
+          const buyer = (buyerResult as any).rows?.[0];
+          const actionType = isRenewal ? "plan_renewed" : isUpgrade ? "plan_upgraded" : "plan_purchased";
+          const details = JSON.stringify({
+            planKey,
+            planName: plan.name,
+            amountPaid: amountPaid,
+            amountFormatted: (amountPaid / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
+            isRenewal,
+            isUpgrade,
+            stripeSession: session.id,
+          });
+          await db.execute(sql`INSERT INTO audit_logs (admin_id, admin_name, action, target_type, target_id, target_name, details, created_at)
+            VALUES (${0}, ${'Sistema Stripe'}, ${actionType}, ${'payment'}, ${userId}, ${buyer?.name || 'Aluno ' + userId}, ${details}, ${new Date().toISOString()})`);
+        } catch (logErr: any) {
+          console.error("[stripe webhook] Audit log error:", logErr.message);
+        }
+
         // ─── Auto-cashback ──────────────────────────────────────────────
         // Renovação = 10% fixo | Nova compra = % variável por plano
         try {
