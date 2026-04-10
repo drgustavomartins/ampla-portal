@@ -2529,14 +2529,36 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
     try {
       const { db } = await import("./db");
-      const result = await db.execute(sql`SELECT id, type, amount, description, created_at FROM credit_transactions WHERE user_id = ${auth.userId} ORDER BY created_at DESC`);
-      const transactions = ((result as any).rows || []).map((r: any) => ({
-        id: r.id,
-        type: r.type,
-        amount: r.amount,
-        description: r.description,
-        createdAt: r.created_at,
-      }));
+      const result = await db.execute(sql`SELECT id, type, amount, description, reference_id, created_at FROM credit_transactions WHERE user_id = ${auth.userId} ORDER BY created_at DESC`);
+      const rows = (result as any).rows || [];
+      // Para bônus, extrair o admin_id do reference_id (formato: admin_bonus_<adminId>_<timestamp>)
+      const adminIds = new Set<number>();
+      for (const r of rows) {
+        if (r.type === 'bonus' && r.reference_id) {
+          const match = r.reference_id.match(/admin_bonus_(\d+)_/);
+          if (match) adminIds.add(Number(match[1]));
+        }
+      }
+      const adminNames: Record<number, string> = {};
+      for (const aid of adminIds) {
+        const admin = await storage.getUser(aid);
+        if (admin) adminNames[aid] = admin.name;
+      }
+      const transactions = rows.map((r: any) => {
+        let creditedBy: string | null = null;
+        if (r.type === 'bonus' && r.reference_id) {
+          const match = r.reference_id.match(/admin_bonus_(\d+)_/);
+          if (match) creditedBy = adminNames[Number(match[1])] || null;
+        }
+        return {
+          id: r.id,
+          type: r.type,
+          amount: r.amount,
+          description: r.description,
+          creditedBy,
+          createdAt: r.created_at,
+        };
+      });
       res.json({ transactions });
     } catch (e: any) {
       console.error("[credits/transactions] Error:", e.message);

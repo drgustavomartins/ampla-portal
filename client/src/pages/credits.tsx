@@ -25,7 +25,7 @@ export default function CreditsPage() {
     enabled: !!user,
   });
 
-  const { data: txData } = useQuery<{ transactions: Array<{ id: number; type: string; amount: number; description: string; createdAt: string }> }>({
+  const { data: txData } = useQuery<{ transactions: Array<{ id: number; type: string; amount: number; description: string; creditedBy: string | null; createdAt: string }> }>({
     queryKey: ["/api/credits/transactions"],
     enabled: !!user,
   });
@@ -59,6 +59,7 @@ export default function CreditsPage() {
     referral: "Indicacao",
     usage: "Uso",
     adjustment: "Ajuste",
+    bonus: "Bonus",
   };
 
   const typeColors: Record<string, string> = {
@@ -66,6 +67,11 @@ export default function CreditsPage() {
     referral: "bg-blue-500/15 text-blue-400 border-blue-500/30",
     usage: "bg-orange-500/15 text-orange-400 border-orange-500/30",
     adjustment: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+    bonus: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  };
+
+  const typeIcons: Record<string, typeof ArrowUpRight> = {
+    bonus: Gift,
   };
 
   return (
@@ -178,27 +184,36 @@ export default function CreditsPage() {
           ) : (
             <div className="space-y-2">
               {transactions.map((tx) => (
-                <Card key={tx.id} className="border-border/25 bg-card/40">
+                <Card key={tx.id} className={`border-border/25 ${tx.type === 'bonus' ? 'bg-amber-500/5 border-amber-500/20' : 'bg-card/40'}`}>
                   <CardContent className="p-4 flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${tx.amount > 0 ? 'bg-emerald-500/10' : 'bg-orange-500/10'}`}>
-                      {tx.amount > 0 ? (
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                      tx.type === 'bonus' ? 'bg-amber-500/15' : tx.amount > 0 ? 'bg-emerald-500/10' : 'bg-orange-500/10'
+                    }`}>
+                      {tx.type === 'bonus' ? (
+                        <Gift className="w-4 h-4 text-amber-400" />
+                      ) : tx.amount > 0 ? (
                         <ArrowUpRight className="w-4 h-4 text-emerald-400" />
                       ) : (
                         <ArrowDownRight className="w-4 h-4 text-orange-400" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="outline" className={`text-[10px] px-1.5 ${typeColors[tx.type] || 'border-border/30 text-muted-foreground'}`}>
                           {typeLabels[tx.type] || tx.type}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(tx.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                          {new Date(tx.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </div>
                       <p className="text-sm text-foreground mt-1 truncate">{tx.description}</p>
+                      {tx.creditedBy && (
+                        <p className="text-xs text-amber-400/70 mt-0.5">Creditado por {tx.creditedBy}</p>
+                      )}
                     </div>
-                    <span className={`text-sm font-semibold shrink-0 ${tx.amount > 0 ? 'text-emerald-400' : 'text-orange-400'}`}>
+                    <span className={`text-sm font-semibold shrink-0 ${
+                      tx.type === 'bonus' ? 'text-amber-400' : tx.amount > 0 ? 'text-emerald-400' : 'text-orange-400'
+                    }`}>
                       {tx.amount > 0 ? '+' : ''}{formatBRL(tx.amount)}
                     </span>
                   </CardContent>
