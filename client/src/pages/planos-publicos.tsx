@@ -61,19 +61,19 @@ const CARD_THEMES: Record<string, { grad: string; accent: string; dark: boolean;
     pattern: `<circle cx="200" cy="25" r="95" fill="#D4A843" fill-opacity="0.08"/><circle cx="25" cy="135" r="70" fill="#D4A843" fill-opacity="0.05"/>`,
   },
   vip_online: {
-    dark: true, accent: "#D4A843",
-    grad: "linear-gradient(145deg,#1C0F00 0%,#2D1A00 50%,#3D2400 100%)",
-    pattern: `<circle cx="220" cy="15" r="110" fill="#D4A843" fill-opacity="0.1"/><circle cx="15" cy="145" r="75" fill="#D4A843" fill-opacity="0.07"/>`,
+    dark: true, accent: "#60A5FA",
+    grad: "linear-gradient(145deg,#0A1628 0%,#0F2040 50%,#162C52 100%)",
+    pattern: `<circle cx="220" cy="15" r="110" fill="#60A5FA" fill-opacity="0.08"/><circle cx="15" cy="145" r="75" fill="#3B82F6" fill-opacity="0.06"/>`,
   },
   vip_presencial: {
-    dark: true, accent: "#D4A843",
-    grad: "linear-gradient(145deg,#100800 0%,#231500 50%,#2D1C00 100%)",
-    pattern: `<circle cx="215" cy="20" r="100" fill="#D4A843" fill-opacity="0.1"/><path d="M75 20 L130 105 L75 160 L20 105 Z" fill="#D4A843" fill-opacity="0.04"/>`,
+    dark: true, accent: "#60A5FA",
+    grad: "linear-gradient(145deg,#0B1A30 0%,#112240 50%,#19305A 100%)",
+    pattern: `<circle cx="215" cy="20" r="100" fill="#60A5FA" fill-opacity="0.08"/><path d="M75 20 L130 105 L75 160 L20 105 Z" fill="#3B82F6" fill-opacity="0.04"/>`,
   },
   vip_completo: {
-    dark: true, accent: "#D4A843",
-    grad: "linear-gradient(145deg,#0A0500 0%,#1A0E00 45%,#251500 100%)",
-    pattern: `<circle cx="220" cy="10" r="115" fill="#D4A843" fill-opacity="0.13"/><circle cx="10" cy="150" r="80" fill="#D4A843" fill-opacity="0.08"/><circle cx="125" cy="80" r="38" fill="#D4A843" fill-opacity="0.05"/>`,
+    dark: true, accent: "#93C5FD",
+    grad: "linear-gradient(145deg,#060E1E 0%,#0C1A35 45%,#12244A 100%)",
+    pattern: `<circle cx="220" cy="10" r="115" fill="#93C5FD" fill-opacity="0.1"/><circle cx="10" cy="150" r="80" fill="#60A5FA" fill-opacity="0.07"/><circle cx="125" cy="80" r="38" fill="#3B82F6" fill-opacity="0.04"/>`,
   },
 };
 
@@ -239,12 +239,13 @@ function ModuloAvulsoCard({ plan, onAcessar, isLoading }: {
 }
 
 // ─── Rótulo de seção ───────────────────────────────────────────────────────
-function SectionLabel({ eyebrow, title, sub }: { eyebrow: string; title: string; sub: string }) {
+function SectionLabel({ eyebrow, title, sub, color }: { eyebrow: string; title: string; sub: string; color?: string }) {
+  const c = color || "#D4A843";
   return (
     <div className="mb-10">
       <div className="flex items-center gap-3 mb-2">
-        <div className="h-px w-6 bg-[#D4A843]" />
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A843]">{eyebrow}</p>
+        <div className="h-px w-6" style={{ background: c }} />
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: c }}>{eyebrow}</p>
       </div>
       <h2 className="text-2xl sm:text-[28px] font-bold text-gray-900 leading-tight">{title}</h2>
       <p className="mt-1.5 text-sm text-gray-500 max-w-lg leading-relaxed">{sub}</p>
@@ -390,7 +391,7 @@ export default function PlanosPublicos() {
                   className="relative flex flex-col items-start rounded-2xl px-6 py-2 transition-all duration-200 group"
                   style={{
                     background: active
-                      ? isVip ? "#0A0500" : "#0A1628"
+                      ? isVip ? "#0C1A35" : "#0A1628"
                       : "transparent",
                     minWidth: 0,
                   }}
@@ -399,7 +400,7 @@ export default function PlanosPublicos() {
                   {isVip && !active && (
                     <span
                       className="absolute -top-2 -right-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide"
-                      style={{ background: "#D4A843", color: "#0A0500", lineHeight: 1.6 }}
+                      style={{ background: "#3B82F6", color: "#fff", lineHeight: 1.6 }}
                     >
                       VIP
                     </span>
@@ -407,7 +408,7 @@ export default function PlanosPublicos() {
 
                   <span
                     className="text-[13px] font-semibold leading-none whitespace-nowrap transition-colors duration-200"
-                    style={{ color: active ? (isVip ? "#D4A843" : "#fff") : "#374151" }}
+                    style={{ color: active ? "#fff" : "#374151" }}
                   >
                     {tab.label}
                   </span>
@@ -422,7 +423,7 @@ export default function PlanosPublicos() {
                   {active && (
                     <span
                       className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full"
-                      style={{ background: isVip ? "#D4A843" : "transparent" }}
+                      style={{ background: isVip ? "#60A5FA" : "transparent" }}
                     />
                   )}
                 </button>
@@ -557,17 +558,17 @@ export default function PlanosPublicos() {
 
         {/* Divider especial antes da seção VIP */}
         <div className="my-16 flex items-center gap-5">
-          <div className="h-px flex-1 bg-gradient-to-r from-gray-200 to-[#D4A843]/30" />
+          <div className="h-px flex-1 bg-gradient-to-r from-gray-200 to-blue-400/30" />
           <div className="flex items-center gap-2 shrink-0">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M7 1l1.5 3.5L12 5 9.5 7.5 10 11l-3-1.5L4 11l.5-3.5L2 5l3.5-.5z" fill="#D4A843"/>
+              <path d="M7 1l1.5 3.5L12 5 9.5 7.5 10 11l-3-1.5L4 11l.5-3.5L2 5l3.5-.5z" fill="#60A5FA"/>
             </svg>
-            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#D4A843]">Formação exclusiva</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-400">Formação exclusiva</span>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M7 1l1.5 3.5L12 5 9.5 7.5 10 11l-3-1.5L4 11l.5-3.5L2 5l3.5-.5z" fill="#D4A843"/>
+              <path d="M7 1l1.5 3.5L12 5 9.5 7.5 10 11l-3-1.5L4 11l.5-3.5L2 5l3.5-.5z" fill="#60A5FA"/>
             </svg>
           </div>
-          <div className="h-px flex-1 bg-gradient-to-l from-gray-200 to-[#D4A843]/30" />
+          <div className="h-px flex-1 bg-gradient-to-l from-gray-200 to-blue-400/30" />
         </div>
 
         {/* ── SEÇÃO MENTORIA VIP — com destaque ─────────────── */}
@@ -577,15 +578,15 @@ export default function PlanosPublicos() {
           <div
             className="relative rounded-[32px] overflow-hidden mb-10 px-8 sm:px-12 py-10"
             style={{
-              background: "linear-gradient(130deg, #0A0500 0%, #1A0E00 45%, #251500 100%)",
-              boxShadow: "0 8px 56px rgba(212,168,67,0.18), 0 0 0 1px rgba(212,168,67,0.12)",
+              background: "linear-gradient(130deg, #060E1E 0%, #0C1A35 45%, #12244A 100%)",
+              boxShadow: "0 8px 56px rgba(59,130,246,0.15), 0 0 0 1px rgba(96,165,250,0.10)",
             }}
           >
             {/* SVG decorativo fundo */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 900 200" fill="none" preserveAspectRatio="xMaxYMin slice">
-              <circle cx="820" cy="20" r="160" fill="#D4A843" fillOpacity="0.07"/>
-              <circle cx="20" cy="180" r="110" fill="#D4A843" fillOpacity="0.05"/>
-              <circle cx="500" cy="100" r="60" fill="#D4A843" fillOpacity="0.04"/>
+              <circle cx="820" cy="20" r="160" fill="#60A5FA" fillOpacity="0.06"/>
+              <circle cx="20" cy="180" r="110" fill="#3B82F6" fillOpacity="0.04"/>
+              <circle cx="500" cy="100" r="60" fill="#93C5FD" fillOpacity="0.03"/>
             </svg>
 
             {/* Conteúdo do banner */}
@@ -594,27 +595,27 @@ export default function PlanosPublicos() {
                 {/* Coroa SVG */}
                 <div className="flex items-center gap-3 mb-3">
                   <svg width="24" height="20" viewBox="0 0 24 20" fill="none">
-                    <path d="M2 16h20V18H2zM2 16L4 8l4 5 4-8 4 8 4-5 2 8z" fill="#D4A843"/>
-                    <circle cx="4" cy="7" r="2" fill="#D4A843"/>
-                    <circle cx="12" cy="4" r="2" fill="#D4A843"/>
-                    <circle cx="20" cy="7" r="2" fill="#D4A843"/>
+                    <path d="M2 16h20V18H2zM2 16L4 8l4 5 4-8 4 8 4-5 2 8z" fill="#60A5FA"/>
+                    <circle cx="4" cy="7" r="2" fill="#60A5FA"/>
+                    <circle cx="12" cy="4" r="2" fill="#60A5FA"/>
+                    <circle cx="20" cy="7" r="2" fill="#60A5FA"/>
                   </svg>
-                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#D4A843]">Mentoria VIP</span>
+                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#93C5FD]">Mentoria VIP</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-white leading-tight">
                   Acompanhamento individual<br />com o Dr. Gustavo
                 </h2>
-                <p className="mt-2 text-[#D4A843]/60 text-sm max-w-md leading-relaxed">
+                <p className="mt-2 text-blue-300/60 text-sm max-w-md leading-relaxed">
                   De 3 a 6 meses de mentoria exclusiva, canal direto, encontros ao vivo e suporte contínuo. Vagas limitadas por turma.
                 </p>
               </div>
               <div className="flex flex-wrap sm:flex-col gap-2 shrink-0">
                 {["Canal direto exclusivo", "Encontros ao vivo quinzenais", "Suporte por 6 meses", "Vagas limitadas por turma"].map((t) => (
                   <div key={t} className="flex items-center gap-2">
-                    <div className="h-4 w-4 rounded-full flex items-center justify-center" style={{ background: "rgba(212,168,67,0.15)" }}>
-                      <Check className="h-2.5 w-2.5 text-[#D4A843]" />
+                    <div className="h-4 w-4 rounded-full flex items-center justify-center" style={{ background: "rgba(96,165,250,0.15)" }}>
+                      <Check className="h-2.5 w-2.5 text-blue-400" />
                     </div>
-                    <span className="text-[12px] text-[#D4A843]/75 whitespace-nowrap">{t}</span>
+                    <span className="text-[12px] text-blue-300/75 whitespace-nowrap">{t}</span>
                   </div>
                 ))}
               </div>
