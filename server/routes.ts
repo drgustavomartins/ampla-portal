@@ -2613,7 +2613,7 @@ export async function registerRoutes(server: Server, app: Express) {
     try {
       const { db } = await import("./db");
       const result = await db.execute(sql`
-        SELECT ct.id, ct.user_id, ct.type, ct.amount, ct.description, ct.reference_id, ct.created_at, u.name as user_name, u.email as user_email
+        SELECT ct.id, ct.user_id, ct.type, ct.amount, ct.description, ct.reference_id, ct.created_at, u.name as user_name, u.email as user_email, u.plan_key as plan_key
         FROM credit_transactions ct
         LEFT JOIN users u ON u.id = ct.user_id
         ORDER BY ct.created_at DESC
@@ -2624,6 +2624,7 @@ export async function registerRoutes(server: Server, app: Express) {
         userId: r.user_id,
         userName: r.user_name,
         userEmail: r.user_email,
+        planKey: r.plan_key || null,
         type: r.type,
         amount: r.amount,
         description: r.description,
@@ -2632,16 +2633,17 @@ export async function registerRoutes(server: Server, app: Express) {
       }));
       // Also get per-user balances
       const balancesResult = await db.execute(sql`
-        SELECT ct.user_id, u.name as user_name, u.email as user_email, SUM(ct.amount) as balance
+        SELECT ct.user_id, u.name as user_name, u.email as user_email, u.plan_key as plan_key, SUM(ct.amount) as balance
         FROM credit_transactions ct
         LEFT JOIN users u ON u.id = ct.user_id
-        GROUP BY ct.user_id, u.name, u.email
+        GROUP BY ct.user_id, u.name, u.email, u.plan_key
         ORDER BY balance DESC
       `);
       const balances = ((balancesResult as any).rows || []).map((r: any) => ({
         userId: r.user_id,
         userName: r.user_name,
         userEmail: r.user_email,
+        planKey: r.plan_key || null,
         balance: Number(r.balance),
       }));
       const totalOutstanding = balances.reduce((sum: number, b: any) => sum + Math.max(0, b.balance), 0);

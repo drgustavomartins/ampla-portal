@@ -273,8 +273,8 @@ export default function AdminDashboard() {
     queryFn: async () => { const res = await apiRequest("GET", "/api/materials"); return res.json(); },
   });
   // Credits data
-  type CreditTransaction = { id: number; userId: number; userName: string; userEmail: string; type: string; amount: number; description: string; referenceId: string; createdAt: string };
-  type CreditBalance = { userId: number; userName: string; userEmail: string; balance: number };
+  type CreditTransaction = { id: number; userId: number; userName: string; userEmail: string; planKey: string | null; type: string; amount: number; description: string; referenceId: string; createdAt: string };
+  type CreditBalance = { userId: number; userName: string; userEmail: string; planKey: string | null; balance: number };
   const { data: creditsAdminData } = useQuery<{ transactions: CreditTransaction[]; balances: CreditBalance[]; totalOutstanding: number }>({
     queryKey: ["/api/admin/credits"],
     queryFn: async () => { const res = await apiRequest("GET", "/api/admin/credits"); return res.json(); },
@@ -283,6 +283,8 @@ export default function AdminDashboard() {
   const creditBalances = creditsAdminData?.balances || [];
   const totalCreditOutstanding = creditsAdminData?.totalOutstanding || 0;
   const [creditFilter, setCreditFilter] = useState<string>("all");
+  const [creditPlanFilter, setCreditPlanFilter] = useState<string>("all");
+  const [creditPeriod, setCreditPeriod] = useState<string>("all");
   const [expandedThemeId, setExpandedThemeId] = useState<number | null>(null);
   const [expandedSubcatId, setExpandedSubcatId] = useState<number | null>(null);
   // Theme dialogs
@@ -2351,12 +2353,21 @@ export default function AdminDashboard() {
                 <Card className="border-border/30 bg-card/40"><CardContent className="p-12 text-center"><Coins className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" /><p className="text-sm text-muted-foreground">Nenhum credito registrado</p></CardContent></Card>
               ) : (
                 <div className="space-y-1">
-                  {creditBalances.map(b => (
+                  {creditBalances
+                    .filter(b => creditPlanFilter === "all" || b.planKey === creditPlanFilter)
+                    .map(b => (
                     <Card key={b.userId} className="border-border/25 bg-card/40">
                       <CardContent className="p-3 flex items-center gap-3">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-foreground truncate">{b.userName || 'ID ' + b.userId}</p>
-                          <p className="text-xs text-muted-foreground truncate">{b.userEmail}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs text-muted-foreground truncate">{b.userEmail}</p>
+                            {b.planKey && (
+                              <Badge variant="outline" className="text-[9px] px-1 border-border/30 text-muted-foreground shrink-0">
+                                {b.planKey.replace(/_/g, ' ')}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                         <Badge variant="outline" className={`shrink-0 ${b.balance > 0 ? 'text-emerald-400 border-emerald-500/30' : 'text-orange-400 border-orange-500/30'}`}>
                           {(b.balance / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
@@ -2371,20 +2382,54 @@ export default function AdminDashboard() {
             {/* Transactions table */}
             <div className="space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-3">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Transacoes ({creditTransactions.length})</h3>
-                <Select value={creditFilter} onValueChange={setCreditFilter}>
-                  <SelectTrigger className="bg-background/50 border-border/40 w-36 h-8 text-xs"><SelectValue placeholder="Filtrar tipo" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="cashback">Cashback</SelectItem>
-                    <SelectItem value="referral">Indicacao</SelectItem>
-                    <SelectItem value="usage">Uso</SelectItem>
-                    <SelectItem value="adjustment">Ajuste</SelectItem>
-                  </SelectContent>
-                </Select>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Transacoes</h3>
+                <div className="flex gap-2 flex-wrap">
+                  <Select value={creditFilter} onValueChange={setCreditFilter}>
+                    <SelectTrigger className="bg-background/50 border-border/40 w-32 h-8 text-xs"><SelectValue placeholder="Tipo" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os tipos</SelectItem>
+                      <SelectItem value="cashback">Cashback</SelectItem>
+                      <SelectItem value="referral">Indicacao</SelectItem>
+                      <SelectItem value="usage">Uso</SelectItem>
+                      <SelectItem value="adjustment">Ajuste</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={creditPlanFilter} onValueChange={setCreditPlanFilter}>
+                    <SelectTrigger className="bg-background/50 border-border/40 w-40 h-8 text-xs"><SelectValue placeholder="Plano" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os planos</SelectItem>
+                      <SelectItem value="modulo_avulso">Modulo Avulso</SelectItem>
+                      <SelectItem value="pacote_completo">Pacote Completo</SelectItem>
+                      <SelectItem value="observador_essencial">Obs. Essencial</SelectItem>
+                      <SelectItem value="observador_avancado">Obs. Avancado</SelectItem>
+                      <SelectItem value="observador_intensivo">Obs. Intensivo</SelectItem>
+                      <SelectItem value="imersao">Imersao</SelectItem>
+                      <SelectItem value="vip_online">VIP Online</SelectItem>
+                      <SelectItem value="vip_presencial">VIP Presencial</SelectItem>
+                      <SelectItem value="vip_completo">VIP Completo</SelectItem>
+                      <SelectItem value="horas_clinicas">Horas Clinicas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={creditPeriod} onValueChange={setCreditPeriod}>
+                    <SelectTrigger className="bg-background/50 border-border/40 w-32 h-8 text-xs"><SelectValue placeholder="Periodo" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todo periodo</SelectItem>
+                      <SelectItem value="7d">Ultimos 7 dias</SelectItem>
+                      <SelectItem value="30d">Ultimos 30 dias</SelectItem>
+                      <SelectItem value="90d">Ultimos 90 dias</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               {(() => {
-                const filtered = creditFilter === "all" ? creditTransactions : creditTransactions.filter(t => t.type === creditFilter);
+                let filtered = creditTransactions;
+                if (creditFilter !== "all") filtered = filtered.filter(t => t.type === creditFilter);
+                if (creditPlanFilter !== "all") filtered = filtered.filter(t => t.planKey === creditPlanFilter);
+                if (creditPeriod !== "all") {
+                  const days = creditPeriod === "7d" ? 7 : creditPeriod === "30d" ? 30 : 90;
+                  const cutoff = new Date(Date.now() - days * 86400000).toISOString();
+                  filtered = filtered.filter(t => t.createdAt >= cutoff);
+                }
                 if (filtered.length === 0) return (
                   <Card className="border-border/30 bg-card/40"><CardContent className="p-12 text-center"><p className="text-sm text-muted-foreground">Nenhuma transacao encontrada</p></CardContent></Card>
                 );
