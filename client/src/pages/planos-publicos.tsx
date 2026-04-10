@@ -363,17 +363,22 @@ export default function PlanosPublicos() {
         <div className="mx-auto max-w-7xl h-full px-5 sm:px-8 flex items-center gap-6">
 
           {/* Voltar */}
-          <button
-            onClick={() => window.history.back()}
+          <a
+            href="/#/"
             className="flex items-center gap-1 text-[13px] text-gray-400 hover:text-gray-700 transition-colors shrink-0"
           >
             <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Voltar</span>
-          </button>
+          </a>
 
           {/* Logo */}
-          <a href="/#/comecar" className="shrink-0 flex items-center">
-            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-12 w-auto object-contain" />
+          <a href="/#/comecar" className="shrink-0 flex items-center gap-2.5">
+            <img src="/logo-icon.png" alt="" className="h-10 w-10 object-contain" />
+            <div className="flex flex-col">
+              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#8B7A55]">Portal de Aulas</span>
+              <span className="text-[15px] font-bold uppercase tracking-[0.06em] text-gray-900 leading-tight">Ampla Facial</span>
+              <span className="text-[9px] text-[#8B7A55] tracking-wide">Dr. Gustavo Martins</span>
+            </div>
           </a>
 
           {/* Separador */}
