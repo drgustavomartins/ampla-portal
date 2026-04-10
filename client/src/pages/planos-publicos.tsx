@@ -372,7 +372,7 @@ export default function PlanosPublicos() {
 
           {/* Logo */}
           <a href="/#/comecar" className="shrink-0 flex items-center">
-            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-8 w-auto object-contain" />
+            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-12 w-auto object-contain" />
           </a>
 
           {/* Separador */}
