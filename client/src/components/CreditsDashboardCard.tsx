@@ -37,14 +37,18 @@ export function CreditsDashboardCard() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    const token = localStorage.getItem("ampla_token");
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+    const opts = { credentials: "include" as RequestCredentials, headers };
     Promise.all([
-      fetch("/api/credits/balance", { credentials: "include" }).then(r => r.json()),
-      fetch("/api/credits/transactions", { credentials: "include" }).then(r => r.json()),
+      fetch("/api/credits/balance", opts).then(r => r.ok ? r.json() : null),
+      fetch("/api/credits/transactions", opts).then(r => r.ok ? r.json() : null),
     ]).then(([balanceData, txData]) => {
+      if (!balanceData) return;
       setData({
         balance: balanceData.balance || 0,
         referralCode: balanceData.referralCode || "",
-        transactions: Array.isArray(txData) ? txData.slice(0, 5) : [],
+        transactions: (txData?.transactions || []).slice(0, 5),
       });
     }).catch(() => {});
   }, []);

@@ -44,10 +44,13 @@ export function CreditsFullSection() {
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
+    const token = localStorage.getItem("ampla_token");
+    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+    const opts = { credentials: "include" as RequestCredentials, headers };
     Promise.all([
-      fetch("/api/credits/balance", { credentials: "include" }).then(r => r.ok ? r.json() : null),
-      fetch("/api/credits/transactions", { credentials: "include" }).then(r => r.ok ? r.json() : null),
-      fetch("/api/credits/referral-stats", { credentials: "include" }).then(r => r.ok ? r.json() : null),
+      fetch("/api/credits/balance", opts).then(r => r.ok ? r.json() : null),
+      fetch("/api/credits/transactions", opts).then(r => r.ok ? r.json() : null),
+      fetch("/api/credits/referral-stats", opts).then(r => r.ok ? r.json() : null),
     ]).then(([bal, tx, stats]) => {
       if (bal) {
         setData({
