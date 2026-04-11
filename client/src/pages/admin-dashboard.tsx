@@ -28,7 +28,7 @@ import {
   Clock, Video, Shield, GraduationCap, Eye, Pencil, Calendar, Settings,
   CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library,
   GripVertical, CalendarDays, FolderOpen, Search, FileText, FileIcon, Headphones, ChevronDown, ChevronUp,
-  Sparkles, MessageCircle, Phone, Coins, Gift, Stethoscope, FileSignature
+  Sparkles, MessageCircle, Phone, Coins, Gift, Stethoscope, FileSignature, AlertTriangle
 } from "lucide-react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -1004,6 +1004,68 @@ export default function AdminDashboard() {
             </Card>
           ))}
         </div>
+
+        {/* ─── Alerta: Acessos expirando nos próximos 30 dias ─── */}
+        {(() => {
+          const now = Date.now();
+          const in30d = now + 30 * 86400000;
+          const expiringSoon = students.filter(s => {
+            if (!s.approved || !s.accessExpiresAt) return false;
+            const exp = new Date(s.accessExpiresAt).getTime();
+            return exp > now && exp <= in30d;
+          }).sort((a, b) => new Date(a.accessExpiresAt!).getTime() - new Date(b.accessExpiresAt!).getTime());
+
+          if (expiringSoon.length === 0) return null;
+          return (
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-4 h-4 text-amber-400" />
+                <p className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Acessos expirando nos proximos 30 dias ({expiringSoon.length})</p>
+              </div>
+              <div className="space-y-2">
+                {expiringSoon.map(s => {
+                  const daysLeft = Math.ceil((new Date(s.accessExpiresAt!).getTime() - now) / 86400000);
+                  return (
+                    <div key={s.id} className="flex items-center justify-between bg-background/30 rounded-lg px-3 py-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{s.name}</p>
+                        <p className="text-xs text-muted-foreground">{s.email} · {(s as any).planKey?.replace(/_/g, ' ') || 'Sem perfil'}</p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className={`text-xs font-semibold ${daysLeft <= 7 ? 'text-red-400' : daysLeft <= 15 ? 'text-amber-400' : 'text-yellow-500'}`}>
+                          {daysLeft}d restantes
+                        </span>
+                        <button
+                          className="text-xs text-gold hover:underline"
+                          onClick={() => {
+                            setEditingStudent(s);
+                            setEditStudentForm({
+                              name: s.name,
+                              phone: s.phone || "",
+                              accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
+                              approved: s.approved,
+                              communityAccess: s.communityAccess ?? true,
+                              supportAccess: s.supportAccess ?? true,
+                              supportExpiresAt: s.supportExpiresAt ? s.supportExpiresAt.slice(0, 16) : "",
+                              clinicalPracticeAccess: s.clinicalPracticeAccess ?? true,
+                              clinicalPracticeHours: (s as any).clinicalPracticeHours ?? 0,
+                              materialsAccess: s.materialsAccess ?? false,
+                              mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
+                              mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
+                              planKey: (s as any).planKey || "",
+                            });
+                          }}
+                        >
+                          Renovar
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ─── Main Content Tabs ─── */}
         <Tabs defaultValue="lessons" className="space-y-6">
