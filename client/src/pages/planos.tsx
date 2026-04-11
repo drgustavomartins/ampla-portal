@@ -11,7 +11,7 @@ function formatBRL(c: number) {
   return (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-const NEGOCIACAO_DIRETA = ["vip_online", "vip_presencial", "vip_completo"];
+const NEGOCIACAO_DIRETA = ["vip_online", "vip_presencial", "vip_completo", "imersao"];
 
 const WHATSAPP_NEGOCIACAO = (planName: string) =>
   `https://wa.me/5521976263881?text=${encodeURIComponent(
@@ -266,12 +266,14 @@ export default function PlanosPage() {
   };
 
   const handlePagar = async (planKey: string) => {
+    console.log("[handlePagar] called with planKey:", planKey, "user:", !!user);
     // Bloquear horas clínicas se não tem mentoria ativa
     if (planKey.startsWith("horas_clinicas") && !MENTORIA_PLANS.includes(user?.planKey || "")) {
       alert("Para adquirir horas clínicas extras, você precisa ter um plano de Mentoria VIP ativo.");
       return;
     }
     if (!user) {
+      console.log("[handlePagar] no user, going straight to checkout");
       setLoadingKey(planKey);
       checkoutMutation.mutate(planKey);
       return;
@@ -279,20 +281,27 @@ export default function PlanosPage() {
     // Check if contract already accepted
     setContractLoading(true);
     try {
+      console.log("[handlePagar] checking contract status...");
       const checkRes = await apiRequest("GET", `/api/contracts/check/${planKey}`);
       const checkData = await checkRes.json();
+      console.log("[handlePagar] check result:", checkData);
       if (checkData.accepted) {
+        console.log("[handlePagar] contract already accepted, going to checkout");
         proceedToCheckout(planKey);
         return;
       }
       // Fetch contract terms
+      console.log("[handlePagar] fetching contract terms...");
       const termsRes = await apiRequest("GET", `/api/contracts/terms/${planKey}`);
       const termsData = await termsRes.json();
+      console.log("[handlePagar] terms fetched, html length:", termsData.html?.length);
       setContractHtml(termsData.html);
       setContractPlanKey(planKey);
       setContractAccepted(false);
       setContractDialogOpen(true);
-    } catch {
+      console.log("[handlePagar] dialog should be open now");
+    } catch (err: any) {
+      console.error("[handlePagar] ERROR:", err?.message || err);
       // If contract check fails, proceed to checkout anyway
       proceedToCheckout(planKey);
     } finally {
