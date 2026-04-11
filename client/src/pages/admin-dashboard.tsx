@@ -1207,6 +1207,7 @@ export default function AdminDashboard() {
                                     supportAccess: s.supportAccess ?? true,
                                     supportExpiresAt: s.supportExpiresAt ? s.supportExpiresAt.slice(0, 16) : "",
                                     clinicalPracticeAccess: s.clinicalPracticeAccess ?? true,
+                                    clinicalPracticeHours: (s as any).clinicalPracticeHours ?? 0,
                                     materialsAccess: s.materialsAccess ?? false,
                                     mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
                                     mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
@@ -1395,6 +1396,7 @@ export default function AdminDashboard() {
                                     supportAccess: s.supportAccess ?? true,
                                     supportExpiresAt: s.supportExpiresAt ? s.supportExpiresAt.slice(0, 16) : "",
                                     clinicalPracticeAccess: s.clinicalPracticeAccess ?? true,
+                                    clinicalPracticeHours: (s as any).clinicalPracticeHours ?? 0,
                                     materialsAccess: s.materialsAccess ?? false,
                                     mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
                                     mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
@@ -1697,6 +1699,24 @@ export default function AdminDashboard() {
                           onCheckedChange={(checked) => setEditStudentForm(f => ({ ...f, clinicalPracticeAccess: checked }))}
                         />
                       </div>
+                      {/* Campo de horas clínicas */}
+                      <div className="flex items-center justify-between pl-2">
+                        <div>
+                          <Label className="text-sm font-medium">Banco de horas</Label>
+                          <p className="text-xs text-muted-foreground">Horas de pratica clinica disponiveis</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min={0}
+                            step={1}
+                            value={editStudentForm.clinicalPracticeHours ?? 0}
+                            onChange={(e) => setEditStudentForm(f => ({ ...f, clinicalPracticeHours: Number(e.target.value) }))}
+                            className="w-20 h-8 text-sm text-center bg-background/50 border-border/40"
+                          />
+                          <span className="text-xs text-muted-foreground">horas</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -1719,6 +1739,7 @@ export default function AdminDashboard() {
                       data.supportAccess = editStudentForm.supportAccess;
                       data.supportExpiresAt = editStudentForm.supportExpiresAt ? new Date(editStudentForm.supportExpiresAt).toISOString() : null;
                       data.clinicalPracticeAccess = editStudentForm.clinicalPracticeAccess;
+                      data.clinicalPracticeHours = editStudentForm.clinicalPracticeHours ?? 0;
                       data.materialsAccess = editStudentForm.materialsAccess;
 
                       // Build user modules data (only entries that were explicitly set)
