@@ -1137,19 +1137,17 @@ export default function StudentDashboard() {
             </div>
             <div className="rounded-lg border border-gold/20 bg-gold/5 p-4 text-center space-y-3">
               <p className="text-sm text-foreground font-medium">
-                Deseja adquirir este módulo?
+                Adquira um plano que inclui este módulo
               </p>
               <p className="text-xs text-muted-foreground">
-                Entre em contato pelo WhatsApp para adquirir acesso a este módulo individualmente.
+                Seus créditos serão aplicados automaticamente como desconto.
               </p>
               <a
-                href={purchaseModule ? getWhatsAppUrl(purchaseModule) : "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg bg-[#25D366] hover:bg-[#22c55e] text-white font-semibold px-6 py-3 text-sm transition-colors"
+                href="/planos-publicos"
+                className="inline-flex items-center gap-2 rounded-xl bg-gold/90 hover:bg-gold text-[#0A0D14] font-semibold px-6 py-3 text-sm transition-colors"
               >
-                <ExternalLink className="w-4 h-4" />
-                Adquirir este módulo
+                <ShoppingCart className="w-4 h-4" />
+                Ver planos disponíveis
               </a>
             </div>
           </div>

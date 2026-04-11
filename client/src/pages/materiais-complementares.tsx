@@ -282,9 +282,9 @@ function ThemeDetail({ theme, onBack, isTrial = false }: { theme: Theme; onBack:
       </div>
 
       {isTrial && (
-        <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-4 py-2.5">
-          <Lock className="w-4 h-4 text-yellow-500 shrink-0" />
-          <p className="text-xs text-yellow-500">Você está no período de teste — apenas o primeiro material está disponível. <a href="https://wa.me/5521976263881" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Assine para liberar tudo.</a></p>
+        <div className="flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-lg px-4 py-2.5">
+          <Lock className="w-4 h-4 text-gold shrink-0" />
+          <p className="text-xs text-gold/90">Você está no período de teste. <a href="/planos-publicos" className="underline font-semibold hover:text-gold">Adquira um plano</a> para liberar todos os materiais.</p>
         </div>
       )}
 
@@ -404,9 +404,9 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
       </div>
 
       {isTrial && (
-        <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-4 py-2.5">
-          <Lock className="w-4 h-4 text-yellow-500 shrink-0" />
-          <p className="text-xs text-yellow-500">Período de teste — apenas 1 material disponível. <a href="https://wa.me/5521976263881" target="_blank" rel="noopener noreferrer" className="underline font-semibold">Assine para liberar tudo.</a></p>
+        <div className="flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-lg px-4 py-2.5">
+          <Lock className="w-4 h-4 text-gold shrink-0" />
+          <p className="text-xs text-gold/90">Período de teste. <a href="/planos-publicos" className="underline font-semibold hover:text-gold">Adquira um plano</a> para liberar todos os materiais.</p>
         </div>
       )}
 

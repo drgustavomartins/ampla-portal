@@ -722,14 +722,12 @@ export default function ModulePage() {
             <div className="space-y-2">
               <h3 className="font-semibold text-foreground text-lg">Este módulo não está incluso no seu plano atual</h3>
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                Entre em contato pelo WhatsApp para adquirir acesso a este módulo individualmente.
+                Adquira um plano que inclui este conteudo. Seus creditos serao aplicados como desconto.
               </p>
             </div>
             <a
-              href={getWhatsAppUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg bg-[#25D366] hover:bg-[#22c55e] text-white font-semibold px-6 py-3 text-sm transition-colors"
+              href="/planos-publicos"
+              className="inline-flex items-center gap-2 rounded-xl bg-gold/90 hover:bg-gold text-[#0A0D14] font-semibold px-6 py-3 text-sm transition-colors"
             >
               <ShoppingCart className="w-4 h-4" />
               Adquirir este módulo
