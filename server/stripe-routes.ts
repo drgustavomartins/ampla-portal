@@ -154,7 +154,7 @@ export function registerStripeRoutes(app: Express) {
     // Apply credits if requested
     let creditDeduction = 0;
     if (creditsToUse && creditsToUse > 0) {
-      const balanceResult = await db.execute(sql`SELECT COALESCE(SUM(amount), 0) as balance FROM credit_transactions WHERE user_id = ${auth.userId}`);
+      const balanceResult = await db.execute(sql`SELECT COALESCE(SUM(amount), 0) as balance FROM credit_transactions WHERE (expires_at IS NULL OR expires_at > NOW()::text OR amount < 0) AND user_id = ${auth.userId}`);
       const balance = Number((balanceResult as any).rows?.[0]?.balance || 0);
       if (creditsToUse > balance) return res.status(400).json({ message: "Saldo de créditos insuficiente" });
       creditDeduction = Math.min(creditsToUse, amountToPay);
@@ -619,6 +619,81 @@ export function registerStripeRoutes(app: Express) {
         } catch (failErr: any) {
           console.error(`[stripe webhook] Erro ao processar falha de pagamento:`, failErr.message);
         }
+      }
+    }
+
+    // ─── invoice.payment_failed — falha em renovação/cobrança recorrente ─────────
+    if (event.type === "invoice.payment_failed") {
+      const invoice = event.data.object as Stripe.Invoice;
+      const customerEmail = invoice.customer_email;
+      const customerId = typeof invoice.customer === "string" ? invoice.customer : (invoice.customer as any)?.id;
+
+      console.warn(`[stripe webhook] invoice.payment_failed | customer: ${customerId} | email: ${customerEmail}`);
+
+      try {
+        // Buscar aluno por stripe_customer_id ou email
+        let userRow = null;
+        if (customerId) {
+          const byCustomer = await db.execute(sql`SELECT id, name, email, role, plan_key FROM users WHERE stripe_customer_id = ${customerId} LIMIT 1`);
+          userRow = (byCustomer as any).rows?.[0];
+        }
+        if (!userRow && customerEmail) {
+          const byEmail = await db.execute(sql`SELECT id, name, email, role, plan_key FROM users WHERE email = ${customerEmail} LIMIT 1`);
+          userRow = (byEmail as any).rows?.[0];
+        }
+
+        if (userRow) {
+          const failedUserId = userRow.id;
+
+          // Bloquear acesso
+          await db.execute(sql`UPDATE users SET access_expires_at = ${new Date().toISOString()} WHERE id = ${failedUserId}`);
+          console.warn(`[stripe webhook] Acesso bloqueado por invoice.payment_failed: userId ${failedUserId} (${userRow.email})`);
+
+          // Audit log
+          await db.execute(sql`INSERT INTO audit_logs (admin_id, admin_name, action, target_type, target_id, target_name, details, created_at)
+            VALUES (${0}, ${'Sistema Stripe'}, ${'invoice_payment_failed'}, ${'payment'}, ${failedUserId}, ${userRow.name || 'Aluno'}, ${JSON.stringify({
+              invoiceId: invoice.id,
+              customerId,
+              amountDue: invoice.amount_due,
+              attemptCount: invoice.attempt_count,
+              nextAttempt: invoice.next_payment_attempt ? new Date((invoice.next_payment_attempt as number) * 1000).toISOString() : null,
+              planKey: userRow.plan_key,
+            })}, ${new Date().toISOString()})`);
+
+          // E-mail de recuperação
+          const RESEND_KEY = process.env.RESEND_API_KEY;
+          if (RESEND_KEY && userRow.email) {
+            try {
+              const { Resend } = await import("resend");
+              const resendClient = new Resend(RESEND_KEY);
+              const firstName = (userRow.name || '').split(' ')[0] || 'aluno(a)';
+              await resendClient.emails.send({
+                from: "Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",
+                to: userRow.email,
+                subject: "Problema na renova\u00e7\u00e3o do seu plano",
+                html: `
+                  <div style="font-family:Georgia,serif;max-width:600px;margin:0 auto;padding:40px 20px;color:#1a1a2e">
+                    <h2 style="color:#0A1628;margin-bottom:16px">Ol\u00e1, ${firstName}!</h2>
+                    <p style="line-height:1.7;color:#333">A cobran\u00e7a da renova\u00e7\u00e3o do seu plano na Ampla Facial n\u00e3o foi processada com sucesso.</p>
+                    <p style="line-height:1.7;color:#333">Seu acesso foi temporariamente suspenso at\u00e9 a regulariza\u00e7\u00e3o. Para resolver, acesse o portal e atualize sua forma de pagamento:</p>
+                    <div style="text-align:center;margin:32px 0">
+                      <a href="https://portal.amplafacial.com.br/#/planos" style="display:inline-block;padding:14px 36px;background:#D4A843;color:#0A1628;font-weight:bold;text-decoration:none;border-radius:10px;font-family:Georgia,serif">Regularizar pagamento</a>
+                    </div>
+                    <p style="line-height:1.7;color:#333">Se precisar de ajuda, entre em contato pelo WhatsApp: (21) 99552-3509.</p>
+                    <p style="line-height:1.7;color:#333;margin-top:24px">Atenciosamente,<br><strong>Dr. Gustavo Martins</strong><br>Ampla Facial</p>
+                  </div>
+                `,
+              });
+              console.log(`[stripe webhook] Email de falha de renova\u00e7\u00e3o enviado para ${userRow.email}`);
+            } catch (emailErr: any) {
+              console.error(`[stripe webhook] Erro ao enviar email de falha de renova\u00e7\u00e3o:`, emailErr.message);
+            }
+          }
+        } else {
+          console.warn(`[stripe webhook] invoice.payment_failed: aluno n\u00e3o encontrado para customer ${customerId} / ${customerEmail}`);
+        }
+      } catch (invErr: any) {
+        console.error(`[stripe webhook] Erro ao processar invoice.payment_failed:`, invErr.message);
       }
     }
 
