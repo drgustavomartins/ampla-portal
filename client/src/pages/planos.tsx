@@ -199,10 +199,13 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
 
 export default function PlanosPage() {
   const { user } = useAuth();
-  // Ler grupo da URL (ex: ?grupo=horas)
+  // Ler parâmetros da URL (ex: ?grupo=horas&ref=GUSTAVO-AF7K)
   const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
   const [selectedGroup, setSelectedGroup] = useState<string | null>(urlParams.get('grupo'));
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
+  const [referralCode, setReferralCode] = useState<string>(urlParams.get('ref') || '');
+  const [referralValid, setReferralValid] = useState<boolean | null>(null);
+  const [referralName, setReferralName] = useState<string>('');
   const { data, isLoading } = useQuery<{ plans: PlanData[] }>({
     queryKey: ["/api/stripe/plans"],
   });
@@ -225,7 +228,11 @@ export default function PlanosPage() {
         method: "POST",
         headers,
         credentials: "include",
-        body: JSON.stringify({ planKey, creditsToUse: creditsToUse > 0 ? creditsToUse : undefined }),
+        body: JSON.stringify({
+          planKey,
+          creditsToUse: creditsToUse > 0 ? creditsToUse : undefined,
+          referralCode: referralValid ? referralCode.trim().toUpperCase() : undefined,
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || "Erro ao gerar link");
@@ -299,6 +306,44 @@ export default function PlanosPage() {
               Escolha um plano para continuar com acesso completo.
             </div>
           )}
+        </div>
+
+        {/* Campo de código de indicação */}
+        <div className="mb-6 rounded-2xl border border-[#1e3a5f] bg-[#0D1E35] p-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="flex-1 w-full">
+              <label className="text-xs font-medium text-gray-400 mb-1 block">Codigo de indicacao (opcional)</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Ex: GUSTAVO-AF7K"
+                  value={referralCode}
+                  onChange={(e) => {
+                    const val = e.target.value.toUpperCase();
+                    setReferralCode(val);
+                    setReferralValid(null);
+                    setReferralName('');
+                  }}
+                  onBlur={async () => {
+                    if (!referralCode.trim()) { setReferralValid(null); return; }
+                    try {
+                      const res = await fetch(`/api/credits/validate-referral?code=${encodeURIComponent(referralCode.trim())}`);
+                      const data = await res.json();
+                      setReferralValid(data.valid);
+                      setReferralName(data.name || '');
+                    } catch { setReferralValid(false); }
+                  }}
+                  className="flex-1 rounded-lg border border-[#1e3a5f] bg-[#0A1628] px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-[#D4A843] focus:outline-none font-mono tracking-wider"
+                />
+              </div>
+              {referralValid === true && (
+                <p className="text-xs text-emerald-400 mt-1.5">Indicado por <strong>{referralName}</strong>. Quem indicou vai ganhar 10% em creditos!</p>
+              )}
+              {referralValid === false && referralCode.trim() && (
+                <p className="text-xs text-red-400 mt-1.5">Codigo nao encontrado. Verifique e tente novamente.</p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Credit balance banner — desconto aplicado automaticamente */}

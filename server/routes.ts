@@ -2613,6 +2613,24 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   });
 
+  // GET /api/credits/validate-referral?code=XXXX — valida código de indicação (público)
+  app.get("/api/credits/validate-referral", async (req: Request, res: Response) => {
+    try {
+      const code = (req.query.code as string || "").trim().toUpperCase();
+      if (!code) return res.json({ valid: false });
+      const { db } = await import("./db");
+      const result = await db.execute(sql`SELECT rc.user_id, u.name FROM referral_codes rc LEFT JOIN users u ON u.id = rc.user_id WHERE UPPER(rc.code) = ${code} LIMIT 1`);
+      const row = (result as any).rows?.[0];
+      if (row) {
+        const firstName = (row.name || "").split(" ")[0];
+        return res.json({ valid: true, name: firstName });
+      }
+      res.json({ valid: false });
+    } catch (e: any) {
+      res.json({ valid: false });
+    }
+  });
+
   // GET /api/credits/referral-stats — how many people used my code
   app.get("/api/credits/referral-stats", async (req: Request, res: Response) => {
     const auth = authenticateRequest(req);
