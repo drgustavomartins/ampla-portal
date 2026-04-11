@@ -664,7 +664,7 @@ export default function AdminDashboard() {
   const [editStudentForm, setEditStudentForm] = useState({
     name: "", phone: "", planId: 0, accessExpiresAt: "", approved: false,
     communityAccess: true, supportAccess: true, supportExpiresAt: "",
-    clinicalPracticeAccess: true,
+    clinicalPracticeAccess: true, clinicalPracticeHours: 0,
     materialsAccess: false,
     mentorshipStartDate: "", mentorshipEndDate: "",
   });
