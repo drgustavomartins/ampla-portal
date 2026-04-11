@@ -862,6 +862,7 @@ export default function AdminDashboard() {
   };
 
   const [logFilterGroup, setLogFilterGroup] = useState<string>("all");
+  const [logFilterStudent, setLogFilterStudent] = useState<string>("all");
 
   const filteredLogs = auditLogs.filter(log => {
     if (logFilterAdmin !== "all" && String(log.adminId) !== logFilterAdmin) return false;
@@ -870,8 +871,12 @@ export default function AdminDashboard() {
       const group = ACTION_GROUPS[logFilterGroup];
       if (group && !group.actions.includes(log.action)) return false;
     }
+    if (logFilterStudent !== "all" && String(log.targetId) !== logFilterStudent) return false;
     return true;
   });
+
+  // Alunos únicos que aparecem no histórico (como target)
+  const uniqueTargets = Array.from(new Map(auditLogs.filter(l => l.targetName && l.targetId).map(l => [l.targetId, l.targetName])).entries());
 
   const uniqueActions = Array.from(new Set(auditLogs.map(l => l.action)));
   const uniqueAdmins = Array.from(new Map(auditLogs.map(l => [l.adminId, l.adminName])).entries());
@@ -2824,6 +2829,13 @@ export default function AdminDashboard() {
                     <SelectContent>
                       <SelectItem value="all">Todas as acoes</SelectItem>
                       {uniqueActions.map(a => <SelectItem key={a} value={a}>{actionLabels[a] || a}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select value={logFilterStudent} onValueChange={setLogFilterStudent}>
+                    <SelectTrigger className="bg-background/50 border-border/40 w-44 h-8 text-xs"><SelectValue placeholder="Aluno" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os alunos</SelectItem>
+                      {uniqueTargets.map(([id, name]) => <SelectItem key={id} value={String(id)}>{name as string}</SelectItem>)}
                     </SelectContent>
                   </Select>
                   <Select value={logFilterAdmin} onValueChange={setLogFilterAdmin}>
