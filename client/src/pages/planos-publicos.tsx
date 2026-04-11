@@ -258,6 +258,7 @@ export default function PlanosPublicos() {
   const [activeTab, setActiveTab] = useState<Tab>("online");
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const sectionRefs = {
     online:     useRef<HTMLDivElement>(null),
@@ -384,8 +385,8 @@ export default function PlanosPublicos() {
           {/* Separador */}
           <div className="hidden md:block h-5 w-px bg-gray-200 shrink-0" />
 
-          {/* Tabs — scroll horizontal no mobile */}
-          <nav className="flex items-center gap-2 sm:gap-3 flex-1 overflow-x-auto scrollbar-hide sm:justify-center">
+          {/* Tabs — desktop only */}
+          <nav className="hidden md:flex items-center gap-3 flex-1 justify-center">
             {TABS.map((tab) => {
               const active = activeTab === tab.key;
               const isVip  = tab.key === "mentoria";
@@ -401,7 +402,6 @@ export default function PlanosPublicos() {
                     minWidth: 0,
                   }}
                 >
-                  {/* Pill de "Exclusivo" na Mentoria VIP quando inativa */}
                   {isVip && !active && (
                     <span
                       className="absolute -top-2 -right-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide"
@@ -410,7 +410,6 @@ export default function PlanosPublicos() {
                       VIP
                     </span>
                   )}
-
                   <span
                     className="text-[13px] font-semibold leading-none whitespace-nowrap transition-colors duration-200"
                     style={{ color: active ? "#fff" : "#374151" }}
@@ -418,13 +417,11 @@ export default function PlanosPublicos() {
                     {tab.label}
                   </span>
                   <span
-                    className="text-[11px] leading-none mt-0.5 whitespace-nowrap transition-colors duration-200 hidden sm:block"
+                    className="text-[11px] leading-none mt-0.5 whitespace-nowrap transition-colors duration-200"
                     style={{ color: active ? (isVip ? "rgba(212,168,67,0.7)" : "rgba(255,255,255,0.55)") : "#9CA3AF" }}
                   >
                     {tab.desc}
                   </span>
-
-                  {/* Underline ativo (somente quando não pill) */}
                   {active && (
                     <span
                       className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full"
@@ -436,15 +433,66 @@ export default function PlanosPublicos() {
             })}
           </nav>
 
-          {/* Login */}
+          {/* Spacer no mobile */}
+          <div className="flex-1 md:hidden" />
+
+          {/* Login — desktop */}
           <a
             href="/#/"
-            className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-[13px] font-medium text-gray-600 hover:border-gray-300 hover:text-gray-900 transition-all shrink-0"
+            className="hidden md:inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-[13px] font-medium text-gray-600 hover:border-gray-300 hover:text-gray-900 transition-all shrink-0"
           >
             Entrar
           </a>
+
+          {/* Hamburger — mobile only */}
+          <button
+            className="md:hidden flex items-center justify-center w-10 h-10 shrink-0"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Menu"
+          >
+            <svg width="18" height="12" viewBox="0 0 18 12" fill="none">
+              <path d="M0 0h18M0 6h18M0 12h18" stroke="#1a1a1a" strokeWidth="1.5" />
+            </svg>
+          </button>
         </div>
       </header>
+
+      {/* Mobile menu overlay — estilo Apple */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-[60] bg-white animate-in fade-in duration-200">
+          <div className="flex justify-end p-5">
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-10 h-10 flex items-center justify-center"
+              aria-label="Fechar menu"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M1 1l16 16M17 1L1 17" stroke="#1a1a1a" strokeWidth="1.5" />
+              </svg>
+            </button>
+          </div>
+          <nav className="px-8 pt-4 space-y-1">
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setTimeout(() => scrollTo(tab.key), 100);
+                }}
+                className="block w-full text-left py-3 border-b border-gray-100"
+              >
+                <span className="text-[22px] font-semibold text-gray-900">{tab.label}</span>
+              </button>
+            ))}
+            <a
+              href="/#/"
+              className="block w-full text-left py-3 border-b border-gray-100"
+            >
+              <span className="text-[22px] font-semibold text-gray-900">Entrar</span>
+            </a>
+          </nav>
+        </div>
+      )}
 
       {/* Espaço do header fixo */}
       <div style={{ height: `${HEADER_H}px` }} />
