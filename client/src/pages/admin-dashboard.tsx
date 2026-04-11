@@ -1672,6 +1672,7 @@ export default function AdminDashboard() {
                           <SelectItem value="vip_online">VIP Online</SelectItem>
                           <SelectItem value="vip_presencial">VIP Presencial</SelectItem>
                           <SelectItem value="vip_completo">VIP Completo</SelectItem>
+                          <SelectItem value="extensao_acompanhamento">Extensao de Acompanhamento (+3 meses)</SelectItem>
                           <SelectItem value="horas_clinicas_1">Horas Clinicas (1 encontro)</SelectItem>
                           <SelectItem value="horas_clinicas_2">Horas Clinicas (2 encontros)</SelectItem>
                           <SelectItem value="horas_clinicas_3">Horas Clinicas (3 encontros)</SelectItem>

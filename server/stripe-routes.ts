@@ -162,6 +162,16 @@ export function registerStripeRoutes(app: Express) {
       }
     }
 
+    // Validar extensao: só para VIP atuais ou passados
+    if (planKey === "extensao_acompanhamento") {
+      const userCheck = await db.execute(sql`SELECT plan_key FROM users WHERE id = ${auth.userId}`);
+      const userPlanKey = (userCheck as any).rows?.[0]?.plan_key;
+      const vipPlans = ["vip_online", "vip_presencial", "vip_completo"];
+      if (!vipPlans.includes(userPlanKey)) {
+        return res.status(400).json({ message: "A Extens\u00e3o de Acompanhamento \u00e9 exclusiva para alunos de Mentoria VIP." });
+      }
+    }
+
     // Apply credits if requested
     let creditDeduction = 0;
     if (creditsToUse && creditsToUse > 0) {
@@ -389,6 +399,8 @@ export function registerStripeRoutes(app: Express) {
         const totalHours = plan.clinicalHours + plan.practiceHours;
         const isHorasExtra = plan.group === "horas";
 
+        const isExtensao = planKey === "extensao_acompanhamento";
+
         if (isHorasExtra) {
           // Horas extras: SOMA ao banco existente, não altera plano/acesso
           await db.execute(sql`
@@ -399,6 +411,29 @@ export function registerStripeRoutes(app: Express) {
               clinical_practice_hours = clinical_practice_hours + ${totalHours}
             WHERE id = ${userId}
           `);
+        } else if (isExtensao) {
+          // Extensão: SOMA meses de mentoria/suporte ao existente
+          const extMonths = plan.mentorshipMonths;
+          const extMs = extMonths * 30 * 86400000;
+          // Buscar datas atuais do aluno
+          const currentUser = await db.execute(sql`SELECT support_expires_at, mentorship_end_date FROM users WHERE id = ${userId}`);
+          const cu = (currentUser as any).rows?.[0];
+          const currentSupport = cu?.support_expires_at ? new Date(cu.support_expires_at).getTime() : 0;
+          const currentMentorship = cu?.mentorship_end_date ? new Date(cu.mentorship_end_date).getTime() : 0;
+          const nowMs = Date.now();
+          // Se já expirou, começa de hoje; se não, soma a partir da data atual
+          const newSupportExpiry = new Date(Math.max(currentSupport, nowMs) + extMs).toISOString();
+          const newMentorshipEnd = new Date(Math.max(currentMentorship, nowMs) + extMs).toISOString().slice(0, 10);
+          await db.execute(sql`
+            UPDATE users SET
+              stripe_payment_intent_id = ${paymentIntentId},
+              plan_amount_paid = COALESCE(plan_amount_paid, 0) + ${amountPaid},
+              support_access = true,
+              support_expires_at = ${newSupportExpiry},
+              mentorship_end_date = ${newMentorshipEnd}
+            WHERE id = ${userId}
+          `);
+          console.log(`[stripe webhook] Extensão de ${extMonths} meses para userId ${userId} | suporte até ${newSupportExpiry} | mentoria até ${newMentorshipEnd}`);
         } else {
           // Plano normal: define tudo do zero
           await db.execute(sql`
