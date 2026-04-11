@@ -104,8 +104,8 @@ function PlanCard({ plan, onAcessar, isLoading }: {
     >
       {/* Badge */}
       {plan.highlight && (
-        <div className="absolute top-4 right-4 z-10">
-          <span className="rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide"
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10">
+          <span className="rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[9px] sm:text-[11px] font-semibold tracking-wide"
             style={{ background: accent, color: dark ? "#0A0500" : "#fff" }}>
             {plan.highlight}
           </span>
@@ -121,8 +121,8 @@ function PlanCard({ plan, onAcessar, isLoading }: {
 
       {/* Cabeçalho */}
       <div className="relative px-7 pt-6 pb-0">
-        <p className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5" style={{ color: accent }}>
-          {plan.group === "digital" ? "Online" : plan.group === "observador" ? "Observação Clínica" : "Mentoria VIP"}
+        <p className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5 pr-20 sm:pr-0" style={{ color: accent }}>
+          {plan.group === "digital" ? "Online" : plan.group === "observador" ? "Observação Clínica" : plan.group === "horas" ? "Horas Clínicas" : "Mentoria VIP"}
         </p>
         <h3 className="text-xl font-bold leading-snug" style={{ color: tp }}>{plan.name}</h3>
         <p className="mt-1 text-sm leading-relaxed" style={{ color: ts }}>{plan.description}</p>
@@ -384,8 +384,8 @@ export default function PlanosPublicos() {
           {/* Separador */}
           <div className="hidden md:block h-5 w-px bg-gray-200 shrink-0" />
 
-          {/* Tabs — centralizam no espaço disponível */}
-          <nav className="flex items-center gap-3 flex-1 justify-center">
+          {/* Tabs — scroll horizontal no mobile */}
+          <nav className="flex items-center gap-2 sm:gap-3 flex-1 overflow-x-auto scrollbar-hide sm:justify-center">
             {TABS.map((tab) => {
               const active = activeTab === tab.key;
               const isVip  = tab.key === "mentoria";
@@ -630,7 +630,7 @@ export default function PlanosPublicos() {
                   Acompanhamento individual<br />com o Dr. Gustavo
                 </h2>
                 <p className="mt-2 text-blue-300/60 text-sm max-w-md leading-relaxed">
-                  De 3 a 6 meses de mentoria exclusiva, canal direto, encontros ao vivo e suporte contínuo. Vagas limitadas por turma.
+                  Mentoria exclusiva com o Dr. Gustavo, canal direto, encontros ao vivo e suporte contínuo. Cada plano com sua carga horária. Vagas limitadas por turma.
                 </p>
               </div>
               <div className="flex flex-wrap sm:flex-col gap-2 shrink-0">
@@ -662,9 +662,9 @@ export default function PlanosPublicos() {
         <div className="mt-20 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="rounded-3xl bg-white p-7 ring-1 ring-gray-100">
             <Star className="h-4 w-4 text-[#D4A843] mb-3" />
-            <h3 className="font-semibold text-gray-900 mb-1.5">Upgrade com crédito integral</h3>
+            <h3 className="font-semibold text-gray-900 mb-1.5">Upgrade com cashback integral</h3>
             <p className="text-sm text-gray-500 leading-relaxed">
-              Em até 60 dias, 100% do valor pago vira crédito para o próximo plano. Paga apenas a diferença.
+              Em até 60 dias, 100% do valor pago vira cashback para o próximo plano. Após 60 dias, 70%. Você paga apenas a diferença.
             </p>
           </div>
           <div className="rounded-3xl bg-white p-7 ring-1 ring-gray-100">
