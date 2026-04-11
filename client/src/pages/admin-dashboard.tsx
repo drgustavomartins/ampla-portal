@@ -842,12 +842,34 @@ export default function AdminDashboard() {
     password_reset: "Reset de senha",
     admin_created: "Admin criado",
     admin_deleted: "Admin excluído",
+    admin_role_changed: "Role alterada",
     access_toggled: "Acesso alterado",
+    credit_bonus: "Bonus creditado",
+    broadcast_email: "Email enviado",
+    plan_purchased: "Nova compra",
+    plan_upgraded: "Upgrade de plano",
+    plan_renewed: "Renovacao",
+    payment_failed: "Falha de pagamento",
+    invoice_payment_failed: "Falha de renovacao",
   };
+
+  // Grupos de ações para filtro rápido
+  const ACTION_GROUPS: Record<string, { label: string; actions: string[] }> = {
+    stripe: { label: "Eventos Stripe", actions: ["plan_purchased", "plan_upgraded", "plan_renewed", "payment_failed", "invoice_payment_failed"] },
+    creditos: { label: "Creditos", actions: ["credit_bonus"] },
+    alunos: { label: "Gestao de alunos", actions: ["student_approved", "student_revoked", "student_deleted", "student_updated", "access_toggled", "password_reset"] },
+    conteudo: { label: "Conteudo", actions: ["module_created", "module_updated", "module_deleted", "lesson_created", "lesson_updated", "lesson_deleted", "plan_created", "plan_updated", "plan_deleted"] },
+  };
+
+  const [logFilterGroup, setLogFilterGroup] = useState<string>("all");
 
   const filteredLogs = auditLogs.filter(log => {
     if (logFilterAdmin !== "all" && String(log.adminId) !== logFilterAdmin) return false;
     if (logFilterAction !== "all" && log.action !== logFilterAction) return false;
+    if (logFilterGroup !== "all") {
+      const group = ACTION_GROUPS[logFilterGroup];
+      if (group && !group.actions.includes(log.action)) return false;
+    }
     return true;
   });
 
@@ -2787,18 +2809,28 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Histórico de ações ({filteredLogs.length})</h3>
                 <div className="flex items-center gap-2">
-                  <Select value={logFilterAdmin} onValueChange={setLogFilterAdmin}>
-                    <SelectTrigger className="bg-background/50 border-border/40 w-40 h-8 text-xs"><SelectValue placeholder="Filtrar por admin" /></SelectTrigger>
+                  <Select value={logFilterGroup} onValueChange={(v) => { setLogFilterGroup(v); setLogFilterAction("all"); }}>
+                    <SelectTrigger className="bg-background/50 border-border/40 w-36 h-8 text-xs"><SelectValue placeholder="Categoria" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todos os admins</SelectItem>
-                      {uniqueAdmins.map(([id, name]) => <SelectItem key={id} value={String(id)}>{name}</SelectItem>)}
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="stripe">Eventos Stripe</SelectItem>
+                      <SelectItem value="creditos">Creditos</SelectItem>
+                      <SelectItem value="alunos">Gestao de alunos</SelectItem>
+                      <SelectItem value="conteudo">Conteudo</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={logFilterAction} onValueChange={setLogFilterAction}>
-                    <SelectTrigger className="bg-background/50 border-border/40 w-40 h-8 text-xs"><SelectValue placeholder="Filtrar por ação" /></SelectTrigger>
+                    <SelectTrigger className="bg-background/50 border-border/40 w-40 h-8 text-xs"><SelectValue placeholder="Acao" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todas as ações</SelectItem>
+                      <SelectItem value="all">Todas as acoes</SelectItem>
                       {uniqueActions.map(a => <SelectItem key={a} value={a}>{actionLabels[a] || a}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select value={logFilterAdmin} onValueChange={setLogFilterAdmin}>
+                    <SelectTrigger className="bg-background/50 border-border/40 w-40 h-8 text-xs"><SelectValue placeholder="Origem" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as origens</SelectItem>
+                      {uniqueAdmins.map(([id, name]) => <SelectItem key={id} value={String(id)}>{name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
