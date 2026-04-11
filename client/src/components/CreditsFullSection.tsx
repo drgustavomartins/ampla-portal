@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import {
   DollarSign, Gift, TrendingUp, Copy, Check, Share2,
-  ChevronRight, Clock, ArrowUpRight, ArrowDownRight, Sparkles, HelpCircle
+  ChevronRight, Clock, ArrowUpRight, ArrowDownRight, Sparkles, HelpCircle, Star
 } from "lucide-react";
 
 interface Transaction {
@@ -18,7 +18,8 @@ interface Transaction {
 
 interface CreditsData {
   balance: number;
-  referralCode: string;
+  referralCode: string | null;
+  isTrial: boolean;
   transactions: Transaction[];
   referralStats: { totalReferrals: number; totalEarned: number };
 }
@@ -55,7 +56,8 @@ export function CreditsFullSection() {
       if (bal) {
         setData({
           balance: bal.balance || 0,
-          referralCode: bal.referralCode || "",
+          referralCode: bal.referralCode || null,
+          isTrial: !!bal.isTrial,
           transactions: tx?.transactions || [],
           referralStats: stats || { totalReferrals: 0, totalEarned: 0 },
         });
@@ -65,14 +67,57 @@ export function CreditsFullSection() {
 
   if (!data) return null;
 
+  // Trial users: show upgrade prompt instead of full credits section
+  if (data.isTrial) {
+    return (
+      <section className="space-y-6">
+        <div>
+          <h2 className="text-[22px] font-semibold text-foreground tracking-tight">Meus Créditos</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Cashback, indicações e bonificações em um só lugar</p>
+        </div>
+        <div className="rounded-2xl border border-gold/20 bg-gradient-to-br from-gold/5 via-card to-card p-8 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-gold/10 flex items-center justify-center mx-auto mb-4 ring-1 ring-gold/20">
+            <DollarSign className="w-8 h-8 text-gold/50" />
+          </div>
+          <h3 className="text-lg font-semibold text-foreground mb-2">Créditos disponíveis com plano ativo</h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+            Ao adquirir um plano, você começa a acumular créditos automaticamente:
+            cashback em cada compra, bônus de indicação e recompensas especiais.
+          </p>
+          <div className="grid grid-cols-3 gap-3 mt-6 max-w-sm mx-auto">
+            <div className="bg-background/50 rounded-lg p-3 text-center">
+              <TrendingUp className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+              <p className="text-[10px] text-muted-foreground">Cashback 3-10%</p>
+            </div>
+            <div className="bg-background/50 rounded-lg p-3 text-center">
+              <Gift className="w-5 h-5 text-blue-400 mx-auto mb-1" />
+              <p className="text-[10px] text-muted-foreground">Indicação 10%</p>
+            </div>
+            <div className="bg-background/50 rounded-lg p-3 text-center">
+              <Sparkles className="w-5 h-5 text-amber-400 mx-auto mb-1" />
+              <p className="text-[10px] text-muted-foreground">Bônus especiais</p>
+            </div>
+          </div>
+          <a
+            href="/#/planos"
+            className="inline-flex items-center gap-2 mt-6 px-6 py-2.5 rounded-xl bg-gold/90 hover:bg-gold text-[#0A0D14] text-sm font-semibold transition-colors"
+          >
+            <Star className="w-4 h-4" />
+            Ver planos e ativar créditos
+          </a>
+        </div>
+      </section>
+    );
+  }
+
   const copyCode = () => {
-    navigator.clipboard.writeText(data.referralCode);
+    navigator.clipboard.writeText(data.referralCode || "");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const shareWhatsApp = () => {
-    const msg = `Estou estudando na Ampla Facial e quero te indicar! Use meu código ${data.referralCode} na hora da inscrição. Conheça: portal.amplafacial.com.br`;
+    const msg = `Estou estudando na Ampla Facial e quero te indicar! Use meu código ${data.referralCode || ""} na hora da inscrição. Conheça: portal.amplafacial.com.br`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
