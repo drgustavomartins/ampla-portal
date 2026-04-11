@@ -3002,17 +3002,11 @@ export async function registerRoutes(server: Server, app: Express) {
       const { db } = await import("./db");
       const userResult = await db.execute(sql`SELECT name, email, phone FROM users WHERE id = ${auth.userId}`);
       const user = (userResult as any).rows?.[0];
-      const fmtBRL = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
       const group = getContractGroup(planKey);
-      const html = getContractHTML(group, {
+      const html = getContractHTML(planKey, {
         studentName: user?.name || "N/A",
         studentEmail: user?.email || "N/A",
         studentPhone: user?.phone || "",
-        planName: plan.name,
-        planPrice: fmtBRL(plan.price),
-        planFeatures: plan.features,
-        accessDays: plan.accessDays,
-        mentorshipMonths: plan.mentorshipMonths,
         startDate: new Date().toLocaleDateString("pt-BR"),
       });
       res.json({ html, planKey, planName: plan.name, group });
@@ -3036,17 +3030,11 @@ export async function registerRoutes(server: Server, app: Express) {
       if (!plan) return res.status(404).json({ message: "Plano não encontrado" });
       const userResult = await db.execute(sql`SELECT name, email, phone FROM users WHERE id = ${auth.userId}`);
       const user = (userResult as any).rows?.[0];
-      const fmtBRL = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
       const group = getContractGroup(planKey);
-      const contractHtml = getContractHTML(group, {
+      const contractHtml = getContractHTML(planKey, {
         studentName: user?.name || "N/A",
         studentEmail: user?.email || "N/A",
         studentPhone: user?.phone || "",
-        planName: plan.name,
-        planPrice: fmtBRL(plan.price),
-        planFeatures: plan.features,
-        accessDays: plan.accessDays,
-        mentorshipMonths: plan.mentorshipMonths,
         startDate: new Date().toLocaleDateString("pt-BR"),
       });
       const now = new Date().toISOString();
