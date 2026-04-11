@@ -9,7 +9,7 @@ export interface PlanConfig {
   description: string;
   price: number; // centavos à vista
   installments12x: number | null; // valor de cada parcela em centavos (null = não disponível)
-  group: "digital" | "observador" | "vip";
+  group: "digital" | "observador" | "vip" | "horas";
   features: string[];
   highlight?: string; // ex: "Mais popular"
   // Regras de acesso no portal
