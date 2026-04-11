@@ -337,7 +337,7 @@ export default function PlanosPage() {
                 />
               </div>
               {referralValid === true && (
-                <p className="text-xs text-emerald-400 mt-1.5">Indicado por <strong>{referralName}</strong>. Quem indicou vai ganhar 10% em creditos!</p>
+                <p className="text-xs text-emerald-400 mt-1.5">Indicado por <strong>{referralName}</strong>. Voce ganha <strong>10% de desconto</strong> e quem indicou ganha 10% em creditos!</p>
               )}
               {referralValid === false && referralCode.trim() && (
                 <p className="text-xs text-red-400 mt-1.5">Codigo nao encontrado. Verifique e tente novamente.</p>

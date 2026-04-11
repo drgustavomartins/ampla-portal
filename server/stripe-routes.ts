@@ -151,6 +151,17 @@ export function registerStripeRoutes(app: Express) {
       upgradeDescription = `Upgrade para ${plan.name} (crédito de ${formatBRL(upgradeCredit)} aplicado)`;
     }
 
+    // Desconto de 10% para quem usa codigo de indicacao valido
+    let referralDiscount = 0;
+    if (referralCode) {
+      const refCheck = await db.execute(sql`SELECT user_id FROM referral_codes WHERE UPPER(code) = ${referralCode.trim().toUpperCase()}`);
+      if ((refCheck as any).rows?.length > 0) {
+        referralDiscount = Math.floor(amountToPay * 0.10);
+        amountToPay -= referralDiscount;
+        console.log(`[checkout] Desconto indicacao 10% = ${referralDiscount} centavos para userId ${auth.userId}`);
+      }
+    }
+
     // Apply credits if requested
     let creditDeduction = 0;
     if (creditsToUse && creditsToUse > 0) {
@@ -752,6 +763,19 @@ export function registerPublicStripeRoutes(app: Express) {
     const plan = PLANS[planKey];
     if (!plan) return res.status(400).json({ message: "Plano inválido" });
 
+    // Desconto de 10% para quem usa codigo de indicacao valido
+    let finalPrice = plan.price;
+    let referralDiscount = 0;
+    if (referralCode) {
+      const { db } = await import("./db");
+      const refCheck = await db.execute(sql`SELECT user_id FROM referral_codes WHERE UPPER(code) = ${referralCode.trim().toUpperCase()}`);
+      if ((refCheck as any).rows?.length > 0) {
+        referralDiscount = Math.floor(finalPrice * 0.10);
+        finalPrice -= referralDiscount;
+        console.log(`[public-checkout] Desconto indicacao 10% = ${referralDiscount} centavos`);
+      }
+    }
+
     const baseUrl = process.env.APP_URL || "https://portal.amplafacial.com.br";
 
     // Aceita cartão + PIX dinâmico nativo do Stripe
@@ -776,11 +800,11 @@ export function registerPublicStripeRoutes(app: Express) {
           price_data: {
             currency: "brl",
             product_data: {
-              name: `Ampla Facial — ${plan.name}`,
+              name: `Ampla Facial — ${plan.name}${referralDiscount > 0 ? ' (10% indicacao)' : ''}`,
               description: plan.features.slice(0, 3).join(" · "),
               metadata: { planKey },
             },
-            unit_amount: plan.price,
+            unit_amount: finalPrice,
           },
           quantity: 1,
         },
