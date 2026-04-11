@@ -361,8 +361,10 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setLgpdAccepted(!lgpdAccepted);
-                      if (formError?.includes("termos")) setFormError("");
+                      const next = !lgpdAccepted;
+                      setLgpdAccepted(next);
+                      trialForm.setValue("lgpdAccepted", next);
+                      if (formError?.includes("termos") || formError?.includes("Termos")) setFormError("");
                     }}
                     className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
                       lgpdAccepted
