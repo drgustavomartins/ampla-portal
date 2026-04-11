@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import {
   DollarSign, Gift, TrendingUp, Copy, Check, Share2,
-  ChevronRight, Clock, ArrowUpRight, ArrowDownRight, Sparkles, HelpCircle
+  ChevronRight, Clock, ArrowUpRight, ArrowDownRight, Sparkles, HelpCircle,
+  ShoppingCart, ArrowRight
 } from "lucide-react";
 
 interface Transaction {
@@ -111,7 +112,16 @@ export function CreditsFullSection() {
             </div>
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">Saldo disponível</p>
             <p className="text-4xl font-bold text-gold mt-1">{formatBRL(data.balance)}</p>
-            <p className="text-[10px] text-muted-foreground mt-2">Use como desconto em qualquer produto</p>
+            <p className="text-[10px] text-muted-foreground mt-2">Aplicado automaticamente no checkout</p>
+            {data.balance > 0 && (
+              <a
+                href="/#/planos"
+                className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gold/90 hover:bg-gold text-[#0A0D14] text-sm font-semibold transition-colors"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                Usar créditos agora
+              </a>
+            )}
           </div>
 
           {/* Código de indicação */}
@@ -180,9 +190,20 @@ export function CreditsFullSection() {
           {/* Próximos a expirar */}
           {nextToExpire.length > 0 && (
             <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Clock className="w-4 h-4 text-amber-400" />
-                <p className="text-xs font-semibold text-amber-400">Próximos a expirar</p>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  <p className="text-xs font-semibold text-amber-400">Próximos a expirar</p>
+                </div>
+                {data.balance > 0 && (
+                  <a
+                    href="/#/planos"
+                    className="flex items-center gap-1 text-[11px] font-semibold text-amber-400 hover:text-amber-300 transition-colors"
+                  >
+                    Usar antes que expirem
+                    <ArrowRight className="w-3 h-3" />
+                  </a>
+                )}
               </div>
               <div className="space-y-2">
                 {nextToExpire.map(tx => (
@@ -273,6 +294,24 @@ export function CreditsFullSection() {
                 )}
               </>
             )}
+          {/* CTA usar créditos */}
+          {data.balance > 0 && (
+            <a
+              href="/#/planos"
+              className="flex items-center justify-between rounded-2xl border border-gold/20 bg-gradient-to-r from-gold/10 via-gold/5 to-transparent p-5 hover:border-gold/40 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center ring-1 ring-gold/20">
+                  <ShoppingCart className="w-5 h-5 text-gold" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Tem {formatBRL(data.balance)} em créditos</p>
+                  <p className="text-xs text-muted-foreground">Use como desconto na compra de qualquer produto</p>
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5 text-gold/50 group-hover:text-gold transition-colors shrink-0" />
+            </a>
+          )}
           </div>
         </div>
       </div>
