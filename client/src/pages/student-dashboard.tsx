@@ -897,10 +897,7 @@ export default function StudentDashboard() {
                 </a>
               )}
 
-              {/* Indicação — apenas para alunos com plano ativo */}
-              {!isTrial && user?.planKey && (
-                <ReferralCard planKey={user.planKey} />
-              )}
+
 
               {/* Materiais Complementares shortcut card */}
               <button
