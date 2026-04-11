@@ -668,6 +668,7 @@ export default function AdminDashboard() {
     clinicalPracticeAccess: true, clinicalPracticeHours: 0,
     materialsAccess: false,
     mentorshipStartDate: "", mentorshipEndDate: "",
+    planKey: "",
   });
   // Per-user module permissions state: { [moduleId]: { enabled, startDate, endDate } }
   const [editUserModules, setEditUserModules] = useState<Record<number, { enabled: boolean; startDate: string; endDate: string }>>({});
@@ -1212,6 +1213,7 @@ export default function AdminDashboard() {
                                     materialsAccess: s.materialsAccess ?? false,
                                     mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
                                     mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
+                                    planKey: (s as any).planKey || "",
                                   });
                                   // Load user module permissions
                                   try {
@@ -1401,6 +1403,7 @@ export default function AdminDashboard() {
                                     materialsAccess: s.materialsAccess ?? false,
                                     mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
                                     mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
+                                    planKey: (s as any).planKey || "",
                                   });
                                 }}
                               >
@@ -1548,13 +1551,35 @@ export default function AdminDashboard() {
                       <Calendar className="w-3.5 h-3.5" /> Plano e Vigencia
                     </h4>
                     <div className="space-y-1.5">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Plano</Label>
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Plano (legado)</Label>
                       <Select value={editStudentForm.planId ? String(editStudentForm.planId) : ""} onValueChange={(v) => setEditStudentForm(f => ({ ...f, planId: parseInt(v) }))}>
                         <SelectTrigger className="bg-background/50 border-border/40"><SelectValue placeholder="Selecione o plano" /></SelectTrigger>
                         <SelectContent>
                           {plans.map((p) => (<SelectItem key={p.id} value={String(p.id)}>{p.name} ({p.durationDays} dias)</SelectItem>))}
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs uppercase tracking-wider text-gold">Perfil de Acesso (Stripe)</Label>
+                      <Select value={editStudentForm.planKey || ""} onValueChange={(v) => setEditStudentForm(f => ({ ...f, planKey: v }))}>
+                        <SelectTrigger className="bg-background/50 border-gold/30 border"><SelectValue placeholder="Selecione o perfil" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Sem perfil</SelectItem>
+                          <SelectItem value="modulo_avulso">Modulo Avulso</SelectItem>
+                          <SelectItem value="pacote_completo">Pacote Completo</SelectItem>
+                          <SelectItem value="observador_essencial">Observador Essencial</SelectItem>
+                          <SelectItem value="observador_avancado">Observador Avancado</SelectItem>
+                          <SelectItem value="observador_intensivo">Observador Intensivo</SelectItem>
+                          <SelectItem value="imersao">Imersao</SelectItem>
+                          <SelectItem value="vip_online">VIP Online</SelectItem>
+                          <SelectItem value="vip_presencial">VIP Presencial</SelectItem>
+                          <SelectItem value="vip_completo">VIP Completo</SelectItem>
+                          <SelectItem value="horas_clinicas_1">Horas Clinicas (1 encontro)</SelectItem>
+                          <SelectItem value="horas_clinicas_2">Horas Clinicas (2 encontros)</SelectItem>
+                          <SelectItem value="horas_clinicas_3">Horas Clinicas (3 encontros)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[10px] text-muted-foreground">Define em qual grupo o aluno aparece na aba Perfis</p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
@@ -1742,6 +1767,11 @@ export default function AdminDashboard() {
                       data.clinicalPracticeAccess = editStudentForm.clinicalPracticeAccess;
                       data.clinicalPracticeHours = editStudentForm.clinicalPracticeHours ?? 0;
                       data.materialsAccess = editStudentForm.materialsAccess;
+                      if (editStudentForm.planKey && editStudentForm.planKey !== "none") {
+                        data.planKey = editStudentForm.planKey;
+                      } else if (editStudentForm.planKey === "none") {
+                        data.planKey = null;
+                      }
 
                       // Build user modules data (only entries that were explicitly set)
                       const userModulesData = Object.entries(editUserModules)
@@ -2631,6 +2661,7 @@ export default function AdminDashboard() {
                                   materialsAccess: student.materialsAccess ?? false,
                                   mentorshipStartDate: (student as any).mentorshipStartDate ? (student as any).mentorshipStartDate.slice(0, 10) : "",
                                   mentorshipEndDate: (student as any).mentorshipEndDate ? (student as any).mentorshipEndDate.slice(0, 10) : "",
+                                  planKey: (student as any).planKey || "",
                                 });
                               }}
                             >
