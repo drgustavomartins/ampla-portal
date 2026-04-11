@@ -302,12 +302,13 @@ export default function AdminDashboard() {
   const [clinicalForm, setClinicalForm] = useState({ studentId: 0, sessionDate: "", startTime: "", endTime: "", durationHours: 0, procedures: [] as string[], notes: "" });
   const [clinicalLoading, setClinicalLoading] = useState(false);
   // Contracts data
-  type ContractEntry = { id: number; userId: number; userName: string; userEmail: string; planKey: string; planName: string; amountPaid: number; status: string; signedAt: string | null; createdAt: string };
+  type ContractEntry = { id: number; userId: number; userName: string; userEmail: string; planKey: string; planName: string; amountPaid: number; status: string; signedAt: string | null; contractGroup: string | null; acceptedAt: string | null; acceptedIp: string | null; contractHtml: string | null; createdAt: string };
   const { data: contractsData } = useQuery<{ contracts: ContractEntry[] }>({
     queryKey: ["/api/admin/contracts"],
     queryFn: async () => { const res = await apiRequest("GET", "/api/admin/contracts"); return res.json(); },
   });
   const contracts = contractsData?.contracts || [];
+  const [viewContractHtml, setViewContractHtml] = useState<string | null>(null);
   const [expandedThemeId, setExpandedThemeId] = useState<number | null>(null);
   const [expandedSubcatId, setExpandedSubcatId] = useState<number | null>(null);
   // Theme dialogs
@@ -2105,29 +2106,59 @@ export default function AdminDashboard() {
                 <p className="text-sm text-muted-foreground">Nenhum contrato gerado ainda.</p>
               ) : (
                 <div className="space-y-2">
-                  {contracts.slice(0, 20).map(contract => (
+                  {contracts.slice(0, 30).map(contract => (
                     <Card key={contract.id} className="bg-card/50 border-border/20">
-                      <CardContent className="p-3 flex items-center justify-between">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <FileSignature className="w-4 h-4 text-gold shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">{contract.userName}</p>
-                            <p className="text-xs text-muted-foreground">{contract.planName}</p>
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <FileSignature className="w-4 h-4 text-gold shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{contract.userName}</p>
+                              <p className="text-xs text-muted-foreground">{contract.planName}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {contract.contractGroup && (
+                              <Badge variant="outline" className="text-[10px] border-gold/30 text-gold">
+                                {contract.contractGroup === "digital" ? "Digital" : contract.contractGroup === "observacao" ? "Observação" : contract.contractGroup === "vip" ? "VIP" : contract.contractGroup === "horas" ? "Horas" : contract.contractGroup}
+                              </Badge>
+                            )}
+                            <Badge variant="outline" className={contract.status === "accepted" ? "border-emerald-500/30 text-emerald-400" : contract.status === "active" ? "border-green-500/30 text-green-400" : "border-yellow-500/30 text-yellow-400"}>
+                              {contract.status === "accepted" ? "Aceito" : contract.status === "active" ? "Ativo" : contract.status}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">R$ {(contract.amountPaid / 100).toFixed(2)}</span>
+                            <span className="text-xs text-muted-foreground">{new Date(contract.createdAt).toLocaleDateString("pt-BR")}</span>
+                            {contract.contractHtml && (
+                              <Button size="sm" variant="ghost" className="h-6 px-2 text-xs text-gold hover:text-gold/80" onClick={() => setViewContractHtml(contract.contractHtml)}>
+                                Ver contrato
+                              </Button>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Badge variant="outline" className={contract.status === "active" ? "border-green-500/30 text-green-400" : "border-yellow-500/30 text-yellow-400"}>
-                            {contract.status === "active" ? "Ativo" : contract.status}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">R$ {(contract.amountPaid / 100).toFixed(2)}</span>
-                          <span className="text-xs text-muted-foreground">{new Date(contract.createdAt).toLocaleDateString("pt-BR")}</span>
-                        </div>
+                        {contract.acceptedAt && (
+                          <p className="text-[11px] text-muted-foreground mt-1 ml-7">
+                            Aceito em {new Date(contract.acceptedAt).toLocaleString("pt-BR")} · IP: {contract.acceptedIp || "—"}
+                          </p>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
                 </div>
               )}
             </div>
+
+            {/* Contract HTML viewer modal */}
+            <Dialog open={!!viewContractHtml} onOpenChange={(open) => !open && setViewContractHtml(null)}>
+              <DialogContent className="bg-card border-border/40 max-w-3xl max-h-[85vh] flex flex-col">
+                <DialogHeader>
+                  <DialogTitle>Contrato</DialogTitle>
+                  <DialogDescription>Visualização do contrato aceito pelo aluno</DialogDescription>
+                </DialogHeader>
+                <div className="flex-1 overflow-y-auto rounded-lg bg-white p-1">
+                  <div dangerouslySetInnerHTML={{ __html: viewContractHtml || "" }} />
+                </div>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           {/* ========== PROFILES TAB ========== */}

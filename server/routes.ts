@@ -270,6 +270,12 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`CREATE TABLE IF NOT EXISTS clinical_sessions (id SERIAL PRIMARY KEY, student_id INTEGER NOT NULL, session_date TEXT NOT NULL, start_time TEXT NOT NULL, end_time TEXT NOT NULL, duration_hours REAL NOT NULL, procedures TEXT NOT NULL DEFAULT '[]', notes TEXT, status TEXT NOT NULL DEFAULT 'completed', admin_id INTEGER NOT NULL, created_at TEXT NOT NULL)`).catch(() => {});
     // Contracts table
     await db.execute(`CREATE TABLE IF NOT EXISTS contracts (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, plan_key TEXT NOT NULL, plan_name TEXT NOT NULL, amount_paid INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'active', signed_at TEXT, created_at TEXT NOT NULL)`).catch(() => {});
+    // Contracts — new columns for digital acceptance
+    await db.execute(`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS accepted_at TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS accepted_ip TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS accepted_user_agent TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS contract_group TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS contract_html TEXT`).catch(() => {});
     console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts tables ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
@@ -2947,6 +2953,10 @@ export async function registerRoutes(server: Server, app: Express) {
         amountPaid: r.amount_paid,
         status: r.status,
         signedAt: r.signed_at,
+        contractGroup: r.contract_group || null,
+        acceptedAt: r.accepted_at || null,
+        acceptedIp: r.accepted_ip || null,
+        contractHtml: r.contract_html || null,
         createdAt: r.created_at,
       }));
       res.json({ contracts });
@@ -2979,55 +2989,92 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   });
 
-  // GET /api/contracts/template/:planKey — contract HTML template
-  app.get("/api/contracts/template/:planKey", async (req: Request, res: Response) => {
+  // GET /api/contracts/terms/:planKey — full contract HTML for acceptance flow
+  app.get("/api/contracts/terms/:planKey", async (req: Request, res: Response) => {
     const auth = authenticateRequest(req);
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
     try {
       const { PLANS } = await import("./stripe-plans");
-      const planKey = req.params.planKey;
+      const { getContractHTML, getContractGroup } = await import("./contract-templates");
+      const planKey = req.params.planKey as string;
       const plan = PLANS[planKey as keyof typeof PLANS];
       if (!plan) return res.status(404).json({ message: "Plano não encontrado" });
       const { db } = await import("./db");
       const userResult = await db.execute(sql`SELECT name, email, phone FROM users WHERE id = ${auth.userId}`);
       const user = (userResult as any).rows?.[0];
-      const formatBRL = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-      const html = `
-<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Contrato — ${plan.name}</title>
-<style>body{font-family:sans-serif;max-width:700px;margin:40px auto;color:#333;line-height:1.6}h1{color:#0A1628;border-bottom:2px solid #D4A843;padding-bottom:12px}h2{color:#0A1628;margin-top:24px}.gold{color:#D4A843}.info-box{background:#f5f5f5;border-left:4px solid #D4A843;padding:16px;margin:16px 0;border-radius:4px}ul{padding-left:20px}li{margin:4px 0}.signature{margin-top:48px;border-top:1px solid #ccc;padding-top:24px}.sig-line{border-bottom:1px solid #333;width:280px;margin:32px 0 4px;display:inline-block}</style>
-</head><body>
-<h1>Contrato de Prestacao de Servicos Educacionais</h1>
-<p><strong>Ampla Facial — Harmonizacao Orofacial</strong></p>
-<div class="info-box">
-<p><strong>Aluno:</strong> ${user?.name || 'N/A'}</p>
-<p><strong>Email:</strong> ${user?.email || 'N/A'}</p>
-<p><strong>Telefone:</strong> ${user?.phone || 'N/A'}</p>
-</div>
-<h2>Plano Contratado</h2>
-<div class="info-box">
-<p><strong>Plano:</strong> <span class="gold">${plan.name}</span></p>
-<p><strong>Descricao:</strong> ${plan.description}</p>
-<p><strong>Valor:</strong> ${formatBRL(plan.price)}</p>
-<p><strong>Acesso:</strong> ${plan.accessDays} dias</p>
-</div>
-<h2>Itens Inclusos</h2>
-<ul>${plan.features.map(f => `<li>${f}</li>`).join('')}</ul>
-<h2>Termos</h2>
-<p>1. O acesso ao portal sera disponibilizado imediatamente apos a confirmacao do pagamento.</p>
-<p>2. O prazo de acesso e de ${plan.accessDays} dias corridos a partir da ativacao.</p>
-<p>3. O conteudo e de uso pessoal e intransferivel.</p>
-<p>4. Nao ha reembolso apos o inicio do acesso, salvo nos termos do Codigo de Defesa do Consumidor.</p>
-<div class="signature">
-<p><strong>Data:</strong> ${new Date().toLocaleDateString("pt-BR")}</p>
-<div><span class="sig-line"></span><br><small>Assinatura do Aluno</small></div>
-<div style="margin-top:24px"><span class="sig-line"></span><br><small>Dr. Gustavo Martins — Ampla Facial</small></div>
-</div>
-</body></html>`;
-      res.json({ html, planKey, planName: plan.name });
+      const fmtBRL = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+      const group = getContractGroup(planKey);
+      const html = getContractHTML(group, {
+        studentName: user?.name || "N/A",
+        studentEmail: user?.email || "N/A",
+        studentPhone: user?.phone || "",
+        planName: plan.name,
+        planPrice: fmtBRL(plan.price),
+        planFeatures: plan.features,
+        accessDays: plan.accessDays,
+        mentorshipMonths: plan.mentorshipMonths,
+        startDate: new Date().toLocaleDateString("pt-BR"),
+      });
+      res.json({ html, planKey, planName: plan.name, group });
     } catch (e: any) {
-      console.error("[contracts/template] Error:", e.message);
-      res.status(500).json({ message: "Erro ao gerar template" });
+      console.error("[contracts/terms] Error:", e.message);
+      res.status(500).json({ message: "Erro ao gerar contrato" });
+    }
+  });
+
+  // POST /api/contracts/accept — student accepts contract terms
+  app.post("/api/contracts/accept", async (req: Request, res: Response) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const { db } = await import("./db");
+      const { PLANS } = await import("./stripe-plans");
+      const { getContractHTML, getContractGroup } = await import("./contract-templates");
+      const { planKey } = req.body as { planKey: string };
+      if (!planKey) return res.status(400).json({ message: "planKey obrigatório" });
+      const plan = PLANS[planKey as keyof typeof PLANS];
+      if (!plan) return res.status(404).json({ message: "Plano não encontrado" });
+      const userResult = await db.execute(sql`SELECT name, email, phone FROM users WHERE id = ${auth.userId}`);
+      const user = (userResult as any).rows?.[0];
+      const fmtBRL = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+      const group = getContractGroup(planKey);
+      const contractHtml = getContractHTML(group, {
+        studentName: user?.name || "N/A",
+        studentEmail: user?.email || "N/A",
+        studentPhone: user?.phone || "",
+        planName: plan.name,
+        planPrice: fmtBRL(plan.price),
+        planFeatures: plan.features,
+        accessDays: plan.accessDays,
+        mentorshipMonths: plan.mentorshipMonths,
+        startDate: new Date().toLocaleDateString("pt-BR"),
+      });
+      const now = new Date().toISOString();
+      const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() || req.ip || "unknown";
+      const userAgent = req.headers["user-agent"] || "unknown";
+      const result = await db.execute(sql`INSERT INTO contracts (user_id, plan_key, plan_name, amount_paid, status, contract_group, contract_html, accepted_at, accepted_ip, accepted_user_agent, created_at)
+        VALUES (${auth.userId}, ${planKey}, ${plan.name}, ${plan.price}, 'accepted', ${group}, ${contractHtml}, ${now}, ${ip}, ${userAgent}, ${now}) RETURNING id`);
+      const contractId = (result as any).rows?.[0]?.id;
+      res.json({ contractId, accepted: true });
+    } catch (e: any) {
+      console.error("[contracts/accept] Error:", e.message);
+      res.status(500).json({ message: "Erro ao aceitar contrato" });
+    }
+  });
+
+  // GET /api/contracts/check/:planKey — check if user already accepted contract
+  app.get("/api/contracts/check/:planKey", async (req: Request, res: Response) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const { db } = await import("./db");
+      const planKey = req.params.planKey;
+      const result = await db.execute(sql`SELECT id FROM contracts WHERE user_id = ${auth.userId} AND plan_key = ${planKey} AND status = 'accepted' ORDER BY created_at DESC LIMIT 1`);
+      const row = (result as any).rows?.[0];
+      res.json({ accepted: !!row, contractId: row?.id || null });
+    } catch (e: any) {
+      console.error("[contracts/check] Error:", e.message);
+      res.status(500).json({ message: "Erro ao verificar contrato" });
     }
   });
 

@@ -6,7 +6,7 @@ interface PlanData {
   key: string;
   name: string;
   description: string;
-  group: "digital" | "observador" | "vip";
+  group: "digital" | "observador" | "vip" | "horas";
   highlight?: string;
   price: number;
   priceFormatted: string;

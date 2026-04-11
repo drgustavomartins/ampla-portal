@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Check, Star, Clock, Zap, Users, Video,
   ChevronDown, ChevronUp, ArrowRight, Loader2,
-  TrendingUp, Timer, MessageCircle,} from "lucide-react";
+  TrendingUp, Timer, MessageCircle, FileSignature,} from "lucide-react";
 
 function formatBRL(c: number) {
   return (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -251,14 +252,65 @@ export default function PlanosPage() {
     },
   });
 
-  const handlePagar = (planKey: string) => {
+  // Contract acceptance state
+  const [contractDialogOpen, setContractDialogOpen] = useState(false);
+  const [contractHtml, setContractHtml] = useState("");
+  const [contractAccepted, setContractAccepted] = useState(false);
+  const [contractPlanKey, setContractPlanKey] = useState("");
+  const [contractLoading, setContractLoading] = useState(false);
+  const contractScrollRef = useRef<HTMLDivElement>(null);
+
+  const proceedToCheckout = (planKey: string) => {
+    setLoadingKey(planKey);
+    checkoutMutation.mutate(planKey);
+  };
+
+  const handlePagar = async (planKey: string) => {
     // Bloquear horas clínicas se não tem mentoria ativa
     if (planKey.startsWith("horas_clinicas") && !MENTORIA_PLANS.includes(user?.planKey || "")) {
       alert("Para adquirir horas clínicas extras, você precisa ter um plano de Mentoria VIP ativo.");
       return;
     }
-    setLoadingKey(planKey);
-    checkoutMutation.mutate(planKey);
+    if (!user) {
+      setLoadingKey(planKey);
+      checkoutMutation.mutate(planKey);
+      return;
+    }
+    // Check if contract already accepted
+    setContractLoading(true);
+    try {
+      const checkRes = await apiRequest("GET", `/api/contracts/check/${planKey}`);
+      const checkData = await checkRes.json();
+      if (checkData.accepted) {
+        proceedToCheckout(planKey);
+        return;
+      }
+      // Fetch contract terms
+      const termsRes = await apiRequest("GET", `/api/contracts/terms/${planKey}`);
+      const termsData = await termsRes.json();
+      setContractHtml(termsData.html);
+      setContractPlanKey(planKey);
+      setContractAccepted(false);
+      setContractDialogOpen(true);
+    } catch {
+      // If contract check fails, proceed to checkout anyway
+      proceedToCheckout(planKey);
+    } finally {
+      setContractLoading(false);
+    }
+  };
+
+  const handleAcceptContract = async () => {
+    setContractLoading(true);
+    try {
+      await apiRequest("POST", "/api/contracts/accept", { planKey: contractPlanKey });
+      setContractDialogOpen(false);
+      proceedToCheckout(contractPlanKey);
+    } catch {
+      alert("Erro ao aceitar contrato. Tente novamente.");
+    } finally {
+      setContractLoading(false);
+    }
   };
 
   const { data: myPlan } = useQuery<{
@@ -458,6 +510,54 @@ export default function PlanosPage() {
         )}
 
       </div>
+
+      {/* Contract Acceptance Modal */}
+      {contractDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setContractDialogOpen(false)}>
+          <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl border border-[#1e3a5f] bg-[#0D1E35] shadow-2xl" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center gap-3 border-b border-[#1e3a5f] px-6 py-4">
+              <FileSignature className="h-5 w-5 text-[#D4A843]" />
+              <h2 className="text-lg font-bold text-white">Termos de Contratação</h2>
+              <button onClick={() => setContractDialogOpen(false)} className="ml-auto text-gray-400 hover:text-white text-xl leading-none">&times;</button>
+            </div>
+
+            {/* Contract HTML */}
+            <div ref={contractScrollRef} className="flex-1 overflow-y-auto p-1">
+              <div
+                className="rounded-xl bg-white p-6 text-sm"
+                dangerouslySetInnerHTML={{ __html: contractHtml }}
+              />
+            </div>
+
+            {/* Accept */}
+            <div className="border-t border-[#1e3a5f] px-6 py-4 space-y-3">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={contractAccepted}
+                  onChange={e => setContractAccepted(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-gray-600 text-[#D4A843] focus:ring-[#D4A843] accent-[#D4A843]"
+                />
+                <span className="text-sm text-gray-300">
+                  Li e aceito integralmente os termos de contratação acima
+                </span>
+              </label>
+              <button
+                disabled={!contractAccepted || contractLoading}
+                onClick={handleAcceptContract}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#D4A843] py-3 font-semibold text-[#0A1628] transition-all hover:bg-[#e8b84d] disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {contractLoading ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Processando...</>
+                ) : (
+                  <><Check className="h-4 w-4" /> Aceitar e continuar</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

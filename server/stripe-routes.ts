@@ -541,9 +541,12 @@ export function registerStripeRoutes(app: Express) {
         // ─── Auto-generate contract ─────────────────────────────────────
         try {
           if (!isUpgrade) {
-            await db.execute(sql`INSERT INTO contracts (user_id, plan_key, plan_name, amount_paid, status, created_at)
-              VALUES (${userId}, ${planKey}, ${plan.name}, ${amountPaid}, 'active', ${new Date().toISOString()})`);
-            console.log(`[stripe webhook] Contrato gerado para userId ${userId} plano ${planKey}`);
+            const { getContractGroup } = await import("./contract-templates");
+            const group = getContractGroup(planKey);
+            const now = new Date().toISOString();
+            await db.execute(sql`INSERT INTO contracts (user_id, plan_key, plan_name, amount_paid, status, contract_group, created_at)
+              VALUES (${userId}, ${planKey}, ${plan.name}, ${amountPaid}, 'active', ${group}, ${now})`);
+            console.log(`[stripe webhook] Contrato gerado para userId ${userId} plano ${planKey} grupo ${group}`);
           }
         } catch (e: any) {
           console.error("[stripe webhook] Contract generation error:", e.message);
