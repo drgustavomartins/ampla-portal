@@ -290,6 +290,7 @@ export default function AdminDashboard() {
   const [bonusAmount, setBonusAmount] = useState<string>("");
   const [bonusDesc, setBonusDesc] = useState<string>("");
   const [bonusLoading, setBonusLoading] = useState(false);
+  const [expandedProfile, setExpandedProfile] = useState<string | null>(null);
   const [expandedThemeId, setExpandedThemeId] = useState<number | null>(null);
   const [expandedSubcatId, setExpandedSubcatId] = useState<number | null>(null);
   // Theme dialogs
@@ -981,12 +982,12 @@ export default function AdminDashboard() {
               )}
             </TabsTrigger>
             <TabsTrigger
-              value="plans"
-              data-testid="tab-plans"
+              value="profiles"
+              data-testid="tab-profiles"
               className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
             >
-              <CreditCard className="w-4 h-4 sm:mr-2 shrink-0" />
-              <span className="hidden sm:inline">Planos</span>
+              <Users className="w-4 h-4 sm:mr-2 shrink-0" />
+              <span className="hidden sm:inline">Perfis</span>
             </TabsTrigger>
             <TabsTrigger
               value="modules"
@@ -1819,163 +1820,136 @@ export default function AdminDashboard() {
             </Dialog>
           </TabsContent>
 
-          {/* ========== PLANS TAB ========== */}
-          <TabsContent value="plans" className="space-y-6 mt-0">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Planos ({plans.length})</h3>
-              <Dialog open={planDialogOpen} onOpenChange={setPlanDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" className="bg-gold text-background hover:bg-gold/90 font-medium" data-testid="button-add-plan">
-                    <Plus className="w-4 h-4 mr-1.5" /> Novo plano
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-card border-border/40 max-h-[85vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle className="text-lg">Novo plano</DialogTitle>
-                    <DialogDescription className="text-muted-foreground">Crie um novo plano de acesso</DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 pt-2">
-                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label><Input value={planForm.name} onChange={e => setPlanForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Experiência 48h" className="bg-background/50 border-border/40" /></div>
-                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label><Textarea value={planForm.description} onChange={e => setPlanForm(f => ({ ...f, description: e.target.value }))} placeholder="Descrição do plano..." className="bg-background/50 border-border/40" /></div>
-                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração (dias)</Label><Input type="number" min={1} value={planForm.durationDays || ""} onChange={e => setPlanForm(f => ({ ...f, durationDays: parseInt(e.target.value) || 0 }))} placeholder="Ex: 2 (para 48 horas)" className="bg-background/50 border-border/40" /></div>
-                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Preço</Label><Input value={planForm.price} onChange={e => setPlanForm(f => ({ ...f, price: e.target.value }))} placeholder="Ex: R$ 497" className="bg-background/50 border-border/40" /></div>
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Módulos inclusos</Label>
-                      <p className="text-xs text-muted-foreground">Sem seleção = acesso a todos os módulos</p>
-                      <div className="space-y-2 max-h-48 overflow-y-auto border border-border/30 rounded-lg p-3">
-                        {[...modules].sort((a, b) => a.order - b.order).map(mod => (
-                          <label key={mod.id} className="flex items-center gap-2 cursor-pointer">
-                            <Checkbox
-                              checked={planForm.moduleIds.includes(mod.id)}
-                              onCheckedChange={(checked) => {
-                                setPlanForm(f => ({
-                                  ...f,
-                                  moduleIds: checked
-                                    ? [...f.moduleIds, mod.id]
-                                    : f.moduleIds.filter(id => id !== mod.id),
-                                }));
-                              }}
-                            />
-                            <span className="text-sm text-foreground">{mod.title}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Materiais complementares inclusos</Label>
-                      <p className="text-xs text-muted-foreground">Sem seleção = sem acesso a materiais complementares</p>
-                      <div className="space-y-2 max-h-48 overflow-y-auto border border-border/30 rounded-lg p-3">
-                        {MATERIAL_TOPIC_OPTIONS.map(topic => (
-                          <label key={topic} className="flex items-center gap-2 cursor-pointer">
-                            <Checkbox
-                              checked={planForm.materialTopics.includes(topic)}
-                              onCheckedChange={(checked) => {
-                                setPlanForm(f => ({
-                                  ...f,
-                                  materialTopics: checked
-                                    ? [...f.materialTopics, topic]
-                                    : f.materialTopics.filter(t => t !== topic),
-                                }));
-                              }}
-                            />
-                            <span className="text-sm text-foreground">{topic}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                    <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createPlanMutation.mutate()} disabled={!planForm.name || !planForm.durationDays || createPlanMutation.isPending}>{createPlanMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar plano</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
+          {/* ========== PROFILES TAB ========== */}
+          <TabsContent value="profiles" className="space-y-6 mt-0">
+            {(() => {
+              // Profile grouping definitions
+              const profileGroups: { key: string; label: string; match: (s: SafeUser) => boolean }[] = [
+                { key: "trial", label: "Trial", match: (s) => !s.planKey || s.role === "student" && !s.planPaidAt },
+                { key: "modulo_avulso", label: "Modulo Avulso", match: (s) => s.planKey === "modulo_avulso" },
+                { key: "pacote_completo", label: "Pacote Completo", match: (s) => s.planKey === "pacote_completo" },
+                { key: "observador", label: "Observador (Essencial/Avancado/Intensivo)", match: (s) => s.planKey === "observador_essencial" || s.planKey === "observador_avancado" || s.planKey === "observador_intensivo" },
+                { key: "imersao", label: "Imersao", match: (s) => s.planKey === "imersao" },
+                { key: "vip", label: "VIP (Online/Presencial/Completo)", match: (s) => s.planKey === "vip_online" || s.planKey === "vip_presencial" || s.planKey === "vip_completo" },
+                { key: "horas_clinicas", label: "Horas Clinicas", match: (s) => !!s.planKey && s.planKey.startsWith("horas_clinicas") },
+              ];
 
-            {plans.length === 0 ? (
-              <Card className="border-border/30 bg-card/40"><CardContent className="p-12 text-center"><div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4"><CreditCard className="w-7 h-7 text-muted-foreground/40" /></div><p className="text-sm text-muted-foreground">Nenhum plano criado ainda</p></CardContent></Card>
-            ) : (
-              <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handlePlanDragEnd}>
-                <SortableContext items={planIds} strategy={verticalListSortingStrategy}>
+              // Only students (not admins)
+              const studentList = students.filter(s => s.role === "student");
+
+              // Build grouped data
+              const grouped = profileGroups.map(pg => {
+                const groupStudents = studentList.filter(pg.match);
+                const totalRevenue = groupStudents.reduce((sum, s) => sum + (s.planAmountPaid || 0), 0);
+                return { ...pg, students: groupStudents, totalRevenue };
+              });
+
+              // Credit balance lookup
+              const creditMap = new Map<number, number>();
+              creditBalances.forEach(b => creditMap.set(b.userId, b.balance));
+
+              const now = Date.now();
+              const formatBRL = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+              return (
+                <>
+                  {/* Summary cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {grouped.map(g => (
+                      <Card key={g.key} className="border-border/30 bg-card/40 cursor-pointer hover:border-gold/30 transition-colors" onClick={() => setExpandedProfile(expandedProfile === g.key ? null : g.key)}>
+                        <CardContent className="p-4 space-y-2">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">{g.label}</p>
+                          <p className="text-2xl font-bold text-foreground">{g.students.length}</p>
+                          <p className="text-xs text-gold">{formatBRL(g.totalRevenue)}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+
+                  {/* Expandable sections */}
                   <div className="space-y-3">
-                    {sortedPlans.map((plan) => {
-                      const planStudents = students.filter(s => s.planId === plan.id);
-                      const planMods = allPlanModules.filter(pm => pm.planId === plan.id);
-                      const matTopics: string[] = plan.materialTopics ? (() => { try { return JSON.parse(plan.materialTopics); } catch { return []; } })() : [];
-                      return (
-                        <SortablePlanCard
-                          key={plan.id}
-                          plan={plan}
-                          planStudents={planStudents}
-                          planMods={planMods}
-                          matTopics={matTopics}
-                          modules={modules}
-                          isSuperAdmin={isSuperAdmin}
-                          reorderPending={reorderPlansMutation.isPending}
-                          onEdit={() => { setEditingPlan(plan); setEditPlanForm({ name: plan.name, description: plan.description || "", durationDays: plan.durationDays, price: plan.price || "", moduleIds: allPlanModules.filter(pm => pm.planId === plan.id).map(pm => pm.moduleId), materialTopics: plan.materialTopics ? (() => { try { return JSON.parse(plan.materialTopics); } catch { return []; } })() : [] }); }}
-                          onDelete={() => deletePlanMutation.mutate(plan.id)}
-                        />
-                      );
-                    })}
+                    {grouped.map(g => (
+                      <Card key={g.key} className="border-border/30 bg-card/40">
+                        <CardContent className="p-0">
+                          <button
+                            className="w-full flex items-center justify-between p-4 text-left hover:bg-card/60 transition-colors"
+                            onClick={() => setExpandedProfile(expandedProfile === g.key ? null : g.key)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-gold/10 flex items-center justify-center">
+                                <Users className="w-4 h-4 text-gold" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-foreground">{g.label}</p>
+                                <p className="text-xs text-muted-foreground">{g.students.length} aluno{g.students.length !== 1 ? 's' : ''} &middot; {formatBRL(g.totalRevenue)} receita</p>
+                              </div>
+                            </div>
+                            {expandedProfile === g.key ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                          </button>
+                          {expandedProfile === g.key && (
+                            <div className="border-t border-border/20 px-4 pb-4">
+                              {g.students.length === 0 ? (
+                                <p className="text-sm text-muted-foreground py-6 text-center">Nenhum aluno neste perfil</p>
+                              ) : (
+                                <div className="overflow-x-auto mt-3">
+                                  <table className="w-full text-sm">
+                                    <thead>
+                                      <tr className="border-b border-border/20">
+                                        <th className="text-left py-2 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Nome</th>
+                                        <th className="text-left py-2 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Email</th>
+                                        <th className="text-center py-2 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
+                                        <th className="text-center py-2 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Dias rest.</th>
+                                        <th className="text-center py-2 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Horas clin.</th>
+                                        <th className="text-right py-2 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Creditos</th>
+                                        <th className="text-right py-2 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Inicio</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {g.students.map(s => {
+                                        const isActive = s.accessExpiresAt ? new Date(s.accessExpiresAt).getTime() > now : false;
+                                        const isTrial = !s.planPaidAt && !s.planKey;
+                                        const daysLeft = s.accessExpiresAt ? Math.max(0, Math.ceil((new Date(s.accessExpiresAt).getTime() - now) / 86400000)) : 0;
+                                        const creditBal = creditMap.get(s.id) || 0;
+                                        const startDate = s.planPaidAt || s.createdAt;
+                                        return (
+                                          <tr key={s.id} className="border-b border-border/10 hover:bg-card/30">
+                                            <td className="py-2 px-2 text-foreground font-medium truncate max-w-[150px]">{s.name}</td>
+                                            <td className="py-2 px-2 text-muted-foreground truncate max-w-[180px] hidden sm:table-cell">{s.email}</td>
+                                            <td className="py-2 px-2 text-center">
+                                              {isTrial ? (
+                                                <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 text-[10px]">Trial</Badge>
+                                              ) : isActive ? (
+                                                <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-[10px]">Ativo</Badge>
+                                              ) : (
+                                                <Badge className="bg-red-500/15 text-red-400 border-red-500/30 text-[10px]">Expirado</Badge>
+                                              )}
+                                            </td>
+                                            <td className="py-2 px-2 text-center text-muted-foreground hidden md:table-cell">{isActive ? `${daysLeft}d` : '-'}</td>
+                                            <td className="py-2 px-2 text-center hidden lg:table-cell">
+                                              <span className={s.clinicalPracticeHours > 0 ? 'text-foreground' : 'text-muted-foreground/50'}>{s.clinicalPracticeHours || 0}h</span>
+                                            </td>
+                                            <td className="py-2 px-2 text-right hidden md:table-cell">
+                                              <span className={creditBal > 0 ? 'text-emerald-400' : 'text-muted-foreground/50'}>{creditBal > 0 ? formatBRL(creditBal) : '-'}</span>
+                                            </td>
+                                            <td className="py-2 px-2 text-right text-muted-foreground text-xs hidden lg:table-cell">
+                                              {startDate ? new Date(startDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" }) : '-'}
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
-                </SortableContext>
-              </DndContext>
-            )}
-
-            {/* Edit Plan Dialog */}
-            <Dialog open={!!editingPlan} onOpenChange={(open) => !open && setEditingPlan(null)}>
-              <DialogContent className="bg-card border-border/40 max-h-[85vh] overflow-y-auto">
-                <DialogHeader><DialogTitle className="text-lg">Editar plano</DialogTitle><DialogDescription className="text-muted-foreground">Altere os dados do plano</DialogDescription></DialogHeader>
-                <div className="space-y-4 pt-2">
-                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label><Input value={editPlanForm.name} onChange={e => setEditPlanForm(f => ({ ...f, name: e.target.value }))} className="bg-background/50 border-border/40" /></div>
-                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label><Textarea value={editPlanForm.description} onChange={e => setEditPlanForm(f => ({ ...f, description: e.target.value }))} className="bg-background/50 border-border/40" /></div>
-                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração (dias)</Label><Input type="number" min={1} value={editPlanForm.durationDays || ""} onChange={e => setEditPlanForm(f => ({ ...f, durationDays: parseInt(e.target.value) || 0 }))} className="bg-background/50 border-border/40" /></div>
-                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Preço</Label><Input value={editPlanForm.price} onChange={e => setEditPlanForm(f => ({ ...f, price: e.target.value }))} className="bg-background/50 border-border/40" /></div>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Módulos inclusos</Label>
-                    <p className="text-xs text-muted-foreground">Sem seleção = acesso a todos os módulos</p>
-                    <div className="space-y-2 max-h-48 overflow-y-auto border border-border/30 rounded-lg p-3">
-                      {[...modules].sort((a, b) => a.order - b.order).map(mod => (
-                        <label key={mod.id} className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox
-                            checked={editPlanForm.moduleIds.includes(mod.id)}
-                            onCheckedChange={(checked) => {
-                              setEditPlanForm(f => ({
-                                ...f,
-                                moduleIds: checked
-                                  ? [...f.moduleIds, mod.id]
-                                  : f.moduleIds.filter(id => id !== mod.id),
-                              }));
-                            }}
-                          />
-                          <span className="text-sm text-foreground">{mod.title}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Materiais complementares inclusos</Label>
-                    <p className="text-xs text-muted-foreground">Sem seleção = sem acesso a materiais complementares</p>
-                    <div className="space-y-2 max-h-48 overflow-y-auto border border-border/30 rounded-lg p-3">
-                      {MATERIAL_TOPIC_OPTIONS.map(topic => (
-                        <label key={topic} className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox
-                            checked={editPlanForm.materialTopics.includes(topic)}
-                            onCheckedChange={(checked) => {
-                              setEditPlanForm(f => ({
-                                ...f,
-                                materialTopics: checked
-                                  ? [...f.materialTopics, topic]
-                                  : f.materialTopics.filter(t => t !== topic),
-                              }));
-                            }}
-                          />
-                          <span className="text-sm text-foreground">{topic}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => editingPlan && updatePlanMutation.mutate({ id: editingPlan.id, data: editPlanForm })} disabled={!editPlanForm.name || !editPlanForm.durationDays || updatePlanMutation.isPending}>{updatePlanMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar alterações</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+                </>
+              );
+            })()}
           </TabsContent>
 
           {/* ========== MODULES TAB ========== */}
