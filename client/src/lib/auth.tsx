@@ -12,6 +12,7 @@ interface AuthContextType {
   isSuperAdmin: boolean;
   isStudent: boolean;
   isTrial: boolean;
+  isTrialExpired: boolean;
   trialDaysLeft: number | null;
   isLoading: boolean;
 }
@@ -127,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const trialDaysLeft = isTrial && user?.accessExpiresAt
     ? Math.max(0, Math.ceil((new Date(user.accessExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : null;
+  const isTrialExpired = isTrial && trialDaysLeft !== null && trialDaysLeft <= 0;
 
   if (isLoading) {
     return (
@@ -140,7 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin, isSuperAdmin, isStudent, isTrial, trialDaysLeft, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isAdmin, isSuperAdmin, isStudent, isTrial, isTrialExpired, trialDaysLeft, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

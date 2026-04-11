@@ -65,7 +65,7 @@ function getFirstDescLine(desc: string): string | null {
 }
 
 export default function StudentDashboard() {
-  const { user, logout, login, isTrial, trialDaysLeft } = useAuth();
+  const { user, logout, login, isTrial, isTrialExpired, trialDaysLeft } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [selectedModule, setSelectedModule] = useState<number | null>(null);
@@ -627,7 +627,26 @@ export default function StudentDashboard() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 lg:py-10 space-y-10">
 
           {/* Access expiry banners */}
-          {isExpired && (
+          {isTrialExpired && (
+            <div className="rounded-2xl border border-gold/30 bg-gradient-to-r from-gold/10 via-gold/5 to-transparent p-5 flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-start gap-3">
+                <Lock className="w-5 h-5 text-gold shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-foreground">Seu periodo de teste encerrou</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    Seus creditos continuam salvos. Adquira um plano para desbloquear as aulas e usar seu saldo.
+                  </p>
+                </div>
+              </div>
+              <a
+                href="/planos-publicos"
+                className="shrink-0 rounded-xl bg-gold/90 hover:bg-gold px-5 py-2.5 text-sm font-semibold text-[#0A0D14] transition-colors"
+              >
+                Ver planos
+              </a>
+            </div>
+          )}
+          {isExpired && !isTrialExpired && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
@@ -679,10 +698,16 @@ export default function StudentDashboard() {
             <div className="relative grid lg:grid-cols-[1fr_340px] gap-6 items-start p-6 sm:p-8 lg:p-10">
             <div className="space-y-3">
               <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-foreground leading-tight">
-                Boas-vindas à sua mentoria, <span className="text-gold">{firstName}</span>
+                {isTrialExpired
+                  ? <>Olá, <span className="text-gold">{firstName}</span></>
+                  : <>Boas-vindas à sua mentoria, <span className="text-gold">{firstName}</span></>
+                }
               </h1>
               <p className="text-muted-foreground text-sm sm:text-base max-w-lg leading-relaxed">
-                Explore os cursos do Método NaturalUp&reg; e evolua sua prática clínica em harmonização facial com excelência e naturalidade.
+                {isTrialExpired
+                  ? "Seu periodo de teste encerrou, mas seus creditos continuam aqui. Adquira um plano para desbloquear todo o conteudo."
+                  : <>Explore os cursos do Método NaturalUp&reg; e evolua sua prática clínica em harmonização facial com excelência e naturalidade.</>
+                }
               </p>
             </div>
             {/* Plan card */}
@@ -707,6 +732,15 @@ export default function StudentDashboard() {
                 <span className="font-medium text-gold">{completedCount}/{totalLessons}</span>
               </div>
               {/* CTA de planos no card */}
+              {isTrialExpired ? (
+                <a
+                  href="/planos-publicos"
+                  className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gold/90 hover:bg-gold px-3 py-2.5 text-xs font-semibold text-[#0A0D14] transition-colors"
+                >
+                  <Star className="w-3 h-3" />
+                  Adquirir um plano
+                </a>
+              ) : (
               <Link
                 href="/planos"
                 className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-gold/30 bg-gold/5 hover:bg-gold/15 px-3 py-2 text-xs font-semibold text-gold transition-colors"
@@ -714,12 +748,13 @@ export default function StudentDashboard() {
                 <Star className="w-3 h-3" />
                 {isTrial ? `Trial — ${trialDaysLeft} dia${trialDaysLeft !== 1 ? "s" : ""} restante${trialDaysLeft !== 1 ? "s" : ""}` : "Ver planos e upgrade"}
               </Link>
+              )}
             </div>
             </div>
           </section>
 
           {/* ===== BOAS VINDAS (Featured/Hero Section) ===== */}
-          {introModule && introLessons.length > 0 && (
+          {introModule && introLessons.length > 0 && !isTrialExpired && (
             <section className="space-y-4">
               <h2 className="font-serif text-2xl font-semibold text-foreground">Boas-Vindas</h2>
               <div
@@ -789,7 +824,7 @@ export default function StudentDashboard() {
                 const modLessons = getLessonsForModule(mod.id);
                 const allLessons = idx === 0 ? [...introLessons, ...modLessons] : modLessons;
                 const hasContent = allLessons.length > 0;
-                const accessible = hasModuleAccess(mod);
+                const accessible = isTrialExpired ? false : hasModuleAccess(mod);
                 const isUnlocked = hasContent && accessible;
                 const isPurchasable = hasContent && !accessible;
                 const isLocked = !hasContent;
@@ -802,10 +837,12 @@ export default function StudentDashboard() {
                   <div
                     key={mod.id}
                     className={`shelf-card shrink-0 group transition-all duration-500 ${
-                      isUnlocked || isPurchasable ? "cursor-pointer" : "cursor-default"
+                      isUnlocked || isPurchasable || isTrialExpired ? "cursor-pointer" : "cursor-default"
                     }`}
                     onClick={() => {
-                      if (isPurchasable) {
+                      if (isTrialExpired) {
+                        window.location.href = "/planos-publicos";
+                      } else if (isPurchasable) {
                         setPurchaseModule(mod);
                       } else if (isUnlocked) {
                         setLocation(`/module/${mod.id}`);
@@ -833,7 +870,13 @@ export default function StudentDashboard() {
                       </span>
 
                       {/* Frosted lock overlay */}
-                      {(isPurchasable || isLocked) && (
+                      {isTrialExpired && (
+                        <div className="absolute inset-0 bg-black/50 backdrop-blur-[3px] flex flex-col items-center justify-center gap-2">
+                          <Lock className="w-5 h-5 text-gold/60" />
+                          <span className="text-xs font-semibold text-gold/80 bg-black/40 px-3 py-1 rounded-full">Ver planos</span>
+                        </div>
+                      )}
+                      {!isTrialExpired && (isPurchasable || isLocked) && (
                         <div className="absolute inset-0 bg-black/40 backdrop-blur-[3px] flex items-center justify-center">
                           <Lock className={`w-5 h-5 ${isPurchasable ? "text-white/40" : "text-white/20"}`} />
                         </div>

@@ -1254,14 +1254,8 @@ export async function registerRoutes(server: Server, app: Express) {
           return res.status(403).json({ message: "Seu acesso expirou. Entre em contato com o administrador." });
         }
       }
-      // Trial users: check expiry with a specific message
-      if (user.role === "trial" && user.accessExpiresAt) {
-        const now = new Date();
-        const expires = new Date(user.accessExpiresAt);
-        if (now > expires) {
-          return res.status(403).json({ message: "Seu período de teste gratuito encerrou. Assine a plataforma para continuar acessando." });
-        }
-      }
+      // Trial users: allow login even if expired (they keep portal access for credits)
+      // The frontend will show locked modules and CTA to buy a plan
 
       const { password, lockedUntil: _l, loginAttempts: _a, ...safeUser } = user;
       const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "30d" });
