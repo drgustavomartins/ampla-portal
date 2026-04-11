@@ -470,24 +470,40 @@ export function registerStripeRoutes(app: Express) {
           : accessExpiry;
 
         // ─── 1. Atualizar campos do usuário ───────────────────────────────────
-        await db.execute(sql`
-          UPDATE users SET
-            plan_key = ${planKey},
-            stripe_payment_intent_id = ${paymentIntentId},
-            plan_paid_at = ${now},
-            plan_amount_paid = ${amountPaid},
-            approved = true,
-            access_expires_at = ${accessExpiry},
-            materials_access = true,
-            community_access = true,
-            support_access = true,
-            support_expires_at = ${supportExpiresAt},
-            clinical_practice_access = ${plan.clinicalHours > 0},
-            clinical_practice_hours = ${plan.clinicalHours},
-            mentorship_start_date = ${provisioning.mentorshipMonths > 0 ? now.slice(0, 10) : null},
-            mentorship_end_date = ${mentorshipEndDate}
-          WHERE id = ${userId}
-        `);
+        const totalHours = plan.clinicalHours + plan.practiceHours;
+        const isHorasExtra = plan.group === "horas";
+
+        if (isHorasExtra) {
+          // Horas extras: SOMA ao banco existente, não altera plano/acesso
+          await db.execute(sql`
+            UPDATE users SET
+              stripe_payment_intent_id = ${paymentIntentId},
+              plan_amount_paid = COALESCE(plan_amount_paid, 0) + ${amountPaid},
+              clinical_practice_access = true,
+              clinical_practice_hours = clinical_practice_hours + ${totalHours}
+            WHERE id = ${userId}
+          `);
+        } else {
+          // Plano normal: define tudo do zero
+          await db.execute(sql`
+            UPDATE users SET
+              plan_key = ${planKey},
+              stripe_payment_intent_id = ${paymentIntentId},
+              plan_paid_at = ${now},
+              plan_amount_paid = ${amountPaid},
+              approved = true,
+              access_expires_at = ${accessExpiry},
+              materials_access = true,
+              community_access = true,
+              support_access = true,
+              support_expires_at = ${supportExpiresAt},
+              clinical_practice_access = ${totalHours > 0},
+              clinical_practice_hours = ${totalHours},
+              mentorship_start_date = ${provisioning.mentorshipMonths > 0 ? now.slice(0, 10) : null},
+              mentorship_end_date = ${mentorshipEndDate}
+            WHERE id = ${userId}
+          `);
+        }
 
         // ─── 2. Provisionar módulos ───────────────────────────────────────────
         if (provisioning.modules.length > 0) {
