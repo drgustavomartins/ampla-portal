@@ -71,6 +71,7 @@ export default function StudentDashboard() {
   const [selectedModule, setSelectedModule] = useState<number | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "" });
   const materiaisRef = useRef<HTMLDivElement>(null);
   const shelfRef = useRef<HTMLDivElement>(null);
@@ -475,24 +476,23 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          {/* Right: User info */}
-          <div className="flex items-center gap-3">
-            {/* Link de planos sempre visível */}
+          {/* Right: Desktop nav */}
+          <div className="hidden md:flex items-center gap-3">
             <Link
               href="/creditos"
-              className="flex items-center gap-1 sm:gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/15 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-semibold text-emerald-400 transition-colors"
+              className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-400 transition-colors"
             >
               <DollarSign className="w-3 h-3" />
-              <span className="hidden sm:inline">Créditos</span>
+              Créditos
             </Link>
             <Link
               href="/planos"
-              className="flex items-center gap-1 sm:gap-1.5 rounded-full border border-gold/30 bg-gold/5 hover:bg-gold/15 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-semibold text-gold transition-colors"
+              className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/5 hover:bg-gold/15 px-3 py-1.5 text-xs font-semibold text-gold transition-colors"
             >
               <Star className="w-3 h-3" />
-              <span className="hidden sm:inline">Planos</span>
+              Planos
             </Link>
-            <div className="hidden sm:flex flex-col items-end mr-1">
+            <div className="flex flex-col items-end mr-1">
               <span className="text-sm font-medium text-foreground leading-none">{firstName}</span>
               {userPlan && <span className="text-[10px] text-gold-muted mt-0.5">{userPlan.name}</span>}
             </div>
@@ -523,8 +523,105 @@ export default function StudentDashboard() {
               <LogOut className="w-4 h-4" />
             </Button>
           </div>
+
+          {/* Right: Mobile hamburger */}
+          <button
+            className="md:hidden flex items-center justify-center w-10 h-10 shrink-0"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Menu"
+          >
+            <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
+              <path d="M0 1h20M0 7h20M0 13h20" stroke="#D4A843" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
       </header>
+
+      {/* ===== MOBILE MENU OVERLAY (estilo Apple) ===== */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 bg-[#0A0D14] animate-in fade-in duration-200">
+          <div className="flex items-center justify-between px-5 py-4">
+            <div className="flex items-center gap-2.5">
+              <img src="/logo-icon.png" alt="Ampla Facial" className="w-8 h-8 object-contain" />
+              <span className="text-sm font-extrabold tracking-wide text-white">AMPLA FACIAL</span>
+            </div>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-10 h-10 flex items-center justify-center"
+              aria-label="Fechar menu"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M1 1l16 16M17 1L1 17" stroke="#D4A843" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+          <nav className="px-6 pt-6 space-y-1">
+            {/* Nome do aluno */}
+            <div className="pb-4 mb-2 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center">
+                  <span className="text-sm font-semibold text-gold">{initials}</span>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-white">{firstName}</p>
+                  {userPlan && <p className="text-xs text-gold/70">{userPlan.name}</p>}
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => { setMobileMenuOpen(false); setLocation("/"); }}
+              className="flex items-center gap-4 w-full text-left py-3.5 border-b border-white/5"
+            >
+              <BookOpen className="w-5 h-5 text-gold/60" />
+              <span className="text-[20px] font-semibold text-white">Minhas Aulas</span>
+            </button>
+
+            <button
+              onClick={() => { setMobileMenuOpen(false); setLocation("/creditos"); }}
+              className="flex items-center gap-4 w-full text-left py-3.5 border-b border-white/5"
+            >
+              <DollarSign className="w-5 h-5 text-emerald-400/70" />
+              <span className="text-[20px] font-semibold text-white">Créditos</span>
+            </button>
+
+            <button
+              onClick={() => { setMobileMenuOpen(false); setLocation("/planos"); }}
+              className="flex items-center gap-4 w-full text-left py-3.5 border-b border-white/5"
+            >
+              <Star className="w-5 h-5 text-gold/60" />
+              <span className="text-[20px] font-semibold text-white">Planos</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                setProfileForm({
+                  name: user?.name || "",
+                  email: user?.email || "",
+                  phone: (user as any)?.phone || "",
+                  currentPassword: "",
+                  newPassword: "",
+                  confirmNewPassword: "",
+                });
+                setProfileOpen(true);
+              }}
+              className="flex items-center gap-4 w-full text-left py-3.5 border-b border-white/5"
+            >
+              <Settings className="w-5 h-5 text-white/40" />
+              <span className="text-[20px] font-semibold text-white">Configurações</span>
+            </button>
+
+            <button
+              onClick={() => { setMobileMenuOpen(false); logout(); }}
+              className="flex items-center gap-4 w-full text-left py-3.5"
+            >
+              <LogOut className="w-5 h-5 text-white/40" />
+              <span className="text-[20px] font-semibold text-white/60">Sair</span>
+            </button>
+          </nav>
+        </div>
+      )}
 
       <main className="flex-1">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 lg:py-10 space-y-10">
