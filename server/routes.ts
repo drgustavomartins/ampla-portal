@@ -2593,18 +2593,6 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
     try {
       const { db } = await import("./db");
-
-      // Check if user is trial
-      const userRow = await db.execute(sql`SELECT name, role FROM users WHERE id = ${auth.userId}`);
-      const userRole = (userRow as any).rows?.[0]?.role;
-      const userName = (userRow as any).rows?.[0]?.name || "USER";
-      const isTrial = userRole === "trial";
-
-      // Trial users: return zero balance, no referral code
-      if (isTrial) {
-        return res.json({ balance: 0, referralCode: null, isTrial: true });
-      }
-
       // Calculate balance from all transactions
       const balanceResult = await db.execute(sql`SELECT COALESCE(SUM(amount), 0) as balance FROM credit_transactions WHERE (expires_at IS NULL OR expires_at > NOW()::text OR amount < 0) AND user_id = ${auth.userId}`);
       const balance = Number((balanceResult as any).rows?.[0]?.balance || 0);
@@ -2613,15 +2601,16 @@ export async function registerRoutes(server: Server, app: Express) {
       const existingCode = await db.execute(sql`SELECT code FROM referral_codes WHERE user_id = ${auth.userId}`);
       let referralCode = (existingCode as any).rows?.[0]?.code;
       if (!referralCode) {
+        const userResult = await db.execute(sql`SELECT name FROM users WHERE id = ${auth.userId}`);
+        const userName = (userResult as any).rows?.[0]?.name || "USER";
         const firstName = userName.split(" ")[0].toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const randomChars = Math.random().toString(36).substring(2, 6).toUpperCase();
         referralCode = `${firstName}-${randomChars}`;
         await db.execute(sql`INSERT INTO referral_codes (user_id, code, created_at) VALUES (${auth.userId}, ${referralCode}, ${new Date().toISOString()}) ON CONFLICT (user_id) DO NOTHING`);
-        // Re-fetch in case of race condition
         const refetch = await db.execute(sql`SELECT code FROM referral_codes WHERE user_id = ${auth.userId}`);
         referralCode = (refetch as any).rows?.[0]?.code || referralCode;
       }
-      res.json({ balance, referralCode, isTrial: false });
+      res.json({ balance, referralCode });
     } catch (e: any) {
       console.error("[credits/balance] Error:", e.message);
       res.status(500).json({ message: "Erro ao buscar saldo" });
