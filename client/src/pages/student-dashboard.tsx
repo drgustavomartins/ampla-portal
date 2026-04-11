@@ -480,17 +480,17 @@ export default function StudentDashboard() {
             {/* Link de planos sempre visível */}
             <Link
               href="/creditos"
-              className="hidden sm:flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-400 transition-colors"
+              className="flex items-center gap-1 sm:gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/15 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-semibold text-emerald-400 transition-colors"
             >
               <DollarSign className="w-3 h-3" />
-              Créditos
+              <span className="hidden sm:inline">Créditos</span>
             </Link>
             <Link
               href="/planos"
-              className="hidden sm:flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/5 hover:bg-gold/15 px-3 py-1.5 text-xs font-semibold text-gold transition-colors"
+              className="flex items-center gap-1 sm:gap-1.5 rounded-full border border-gold/30 bg-gold/5 hover:bg-gold/15 px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-semibold text-gold transition-colors"
             >
               <Star className="w-3 h-3" />
-              Planos
+              <span className="hidden sm:inline">Planos</span>
             </Link>
             <div className="hidden sm:flex flex-col items-end mr-1">
               <span className="text-sm font-medium text-foreground leading-none">{firstName}</span>
