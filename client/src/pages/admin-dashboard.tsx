@@ -2653,6 +2653,7 @@ export default function AdminDashboard() {
                                   supportAccess: student.supportAccess ?? true,
                                   supportExpiresAt: student.supportExpiresAt ? student.supportExpiresAt.slice(0, 16) : "",
                                   clinicalPracticeAccess: student.clinicalPracticeAccess ?? true,
+                                  clinicalPracticeHours: (student as any).clinicalPracticeHours ?? 0,
                                   materialsAccess: student.materialsAccess ?? false,
                                   mentorshipStartDate: (student as any).mentorshipStartDate ? (student as any).mentorshipStartDate.slice(0, 10) : "",
                                   mentorshipEndDate: (student as any).mentorshipEndDate ? (student as any).mentorshipEndDate.slice(0, 10) : "",
