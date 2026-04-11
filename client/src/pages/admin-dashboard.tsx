@@ -28,7 +28,7 @@ import {
   Clock, Video, Shield, GraduationCap, Eye, Pencil, Calendar, Settings,
   CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library,
   GripVertical, CalendarDays, FolderOpen, Search, FileText, FileIcon, Headphones, ChevronDown, ChevronUp,
-  Sparkles, MessageCircle, Phone, Coins, Gift
+  Sparkles, MessageCircle, Phone, Coins, Gift, Stethoscope, FileSignature
 } from "lucide-react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -291,6 +291,23 @@ export default function AdminDashboard() {
   const [bonusDesc, setBonusDesc] = useState<string>("");
   const [bonusLoading, setBonusLoading] = useState(false);
   const [expandedProfile, setExpandedProfile] = useState<string | null>(null);
+  // Clinical sessions state & data
+  type ClinicalSession = { id: number; studentId: number; studentName: string; studentEmail: string; sessionDate: string; startTime: string; endTime: string; durationHours: number; procedures: string[]; notes: string | null; status: string; adminName: string; createdAt: string };
+  const { data: clinicalSessionsData } = useQuery<{ sessions: ClinicalSession[] }>({
+    queryKey: ["/api/admin/clinical-sessions"],
+    queryFn: async () => { const res = await apiRequest("GET", "/api/admin/clinical-sessions"); return res.json(); },
+  });
+  const clinicalSessions = clinicalSessionsData?.sessions || [];
+  const [clinicalDialogOpen, setClinicalDialogOpen] = useState(false);
+  const [clinicalForm, setClinicalForm] = useState({ studentId: 0, sessionDate: "", startTime: "", endTime: "", durationHours: 0, procedures: [] as string[], notes: "" });
+  const [clinicalLoading, setClinicalLoading] = useState(false);
+  // Contracts data
+  type ContractEntry = { id: number; userId: number; userName: string; userEmail: string; planKey: string; planName: string; amountPaid: number; status: string; signedAt: string | null; createdAt: string };
+  const { data: contractsData } = useQuery<{ contracts: ContractEntry[] }>({
+    queryKey: ["/api/admin/contracts"],
+    queryFn: async () => { const res = await apiRequest("GET", "/api/admin/contracts"); return res.json(); },
+  });
+  const contracts = contractsData?.contracts || [];
   const [expandedThemeId, setExpandedThemeId] = useState<number | null>(null);
   const [expandedSubcatId, setExpandedSubcatId] = useState<number | null>(null);
   // Theme dialogs
@@ -663,7 +680,7 @@ export default function AdminDashboard() {
   // ── Student Edit ──
   const [editingStudent, setEditingStudent] = useState<SafeUser | null>(null);
   const [editStudentForm, setEditStudentForm] = useState({
-    name: "", phone: "", planId: 0, accessExpiresAt: "", approved: false,
+    name: "", phone: "", accessExpiresAt: "", approved: false,
     communityAccess: true, supportAccess: true, supportExpiresAt: "",
     clinicalPracticeAccess: true, clinicalPracticeHours: 0,
     materialsAccess: false,
@@ -681,8 +698,11 @@ export default function AdminDashboard() {
   ];
 
   const updateStudentMutation = useMutation({
-    mutationFn: async ({ id, data, userModulesData, userMaterialCatsData }: { id: number; data: any; userModulesData?: any; userMaterialCatsData?: any }) => {
+    mutationFn: async ({ id, data, userModulesData, userMaterialCatsData, provisionPlanKey }: { id: number; data: any; userModulesData?: any; userMaterialCatsData?: any; provisionPlanKey?: string }) => {
       await apiRequest("PATCH", `/api/admin/students/${id}`, data);
+      if (provisionPlanKey) {
+        await apiRequest("POST", `/api/admin/students/${id}/provision`, { planKey: provisionPlanKey });
+      }
       if (userModulesData) {
         await apiRequest("PUT", `/api/admin/students/${id}/modules`, { modules: userModulesData });
       }
@@ -1229,7 +1249,6 @@ export default function AdminDashboard() {
                                   setEditStudentForm({
                                     name: s.name,
                                     phone: s.phone || "",
-                                    planId: s.planId || 0,
                                     accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
                                     approved: s.approved,
                                     communityAccess: s.communityAccess ?? true,
@@ -1419,7 +1438,6 @@ export default function AdminDashboard() {
                                   setEditStudentForm({
                                     name: s.name,
                                     phone: s.phone || "",
-                                    planId: s.planId || 0,
                                     accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
                                     approved: s.approved,
                                     communityAccess: s.communityAccess ?? true,
@@ -1578,16 +1596,7 @@ export default function AdminDashboard() {
                       <Calendar className="w-3.5 h-3.5" /> Plano e Vigencia
                     </h4>
                     <div className="space-y-1.5">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Plano (legado)</Label>
-                      <Select value={editStudentForm.planId ? String(editStudentForm.planId) : ""} onValueChange={(v) => setEditStudentForm(f => ({ ...f, planId: parseInt(v) }))}>
-                        <SelectTrigger className="bg-background/50 border-border/40"><SelectValue placeholder="Selecione o plano" /></SelectTrigger>
-                        <SelectContent>
-                          {plans.map((p) => (<SelectItem key={p.id} value={String(p.id)}>{p.name} ({p.durationDays} dias)</SelectItem>))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs uppercase tracking-wider text-gold">Perfil de Acesso (Stripe)</Label>
+                      <Label className="text-xs uppercase tracking-wider text-gold">Perfil de Acesso</Label>
                       <Select value={editStudentForm.planKey || ""} onValueChange={(v) => setEditStudentForm(f => ({ ...f, planKey: v }))}>
                         <SelectTrigger className="bg-background/50 border-gold/30 border"><SelectValue placeholder="Selecione o perfil" /></SelectTrigger>
                         <SelectContent>
@@ -1606,7 +1615,7 @@ export default function AdminDashboard() {
                           <SelectItem value="horas_clinicas_3">Horas Clinicas (3 encontros)</SelectItem>
                         </SelectContent>
                       </Select>
-                      <p className="text-[10px] text-muted-foreground">Define em qual grupo o aluno aparece na aba Perfis</p>
+                      <p className="text-[10px] text-muted-foreground">Ao salvar com um perfil diferente, modulos e materiais serao provisionados automaticamente</p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
@@ -1781,7 +1790,6 @@ export default function AdminDashboard() {
                       const data: any = {};
                       if (editStudentForm.name && editStudentForm.name !== editingStudent.name) data.name = editStudentForm.name;
                       if (editStudentForm.phone !== (editingStudent.phone || "")) data.phone = editStudentForm.phone;
-                      if (editStudentForm.planId) data.planId = editStudentForm.planId;
                       if (editStudentForm.accessExpiresAt) data.accessExpiresAt = new Date(editStudentForm.accessExpiresAt).toISOString();
                       data.approved = editStudentForm.approved;
                       // Mentorship dates
@@ -1818,9 +1826,15 @@ export default function AdminDashboard() {
                           enabled,
                         }));
 
+                      // If planKey changed, trigger auto-provisioning
+                      const currentPlanKey = (editingStudent as any).planKey || "";
+                      const newPlanKey = editStudentForm.planKey && editStudentForm.planKey !== "none" ? editStudentForm.planKey : "";
+                      const planKeyChanged = newPlanKey && newPlanKey !== currentPlanKey;
+
                       updateStudentMutation.mutate({
                         id: editingStudent.id,
                         data,
+                        provisionPlanKey: planKeyChanged ? newPlanKey : undefined,
                         userModulesData: userModulesData.length > 0 ? userModulesData : undefined,
                         userMaterialCatsData: userMaterialCatsData.length > 0 || Object.keys(editUserMaterialCats).length > 0 ? Object.entries(editUserMaterialCats).map(([categoryTitle, enabled]) => ({ categoryTitle, enabled })) : undefined,
                       });
@@ -1875,6 +1889,182 @@ export default function AdminDashboard() {
                 </div>
               </DialogContent>
             </Dialog>
+
+            {/* ========== CLINICAL SESSIONS SECTION ========== */}
+            <div className="mt-8 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold flex items-center gap-2"><Stethoscope className="w-5 h-5 text-gold" /> Sessões Clínicas</h3>
+                <Dialog open={clinicalDialogOpen} onOpenChange={setClinicalDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="bg-gold text-background hover:bg-gold/90"><Plus className="w-4 h-4 mr-1" /> Registrar Sessão</Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-card border-border/40 max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>Registrar Sessão Clínica</DialogTitle>
+                      <DialogDescription>Selecione o aluno e preencha os dados da sessão.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-2">
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Aluno</Label>
+                        <Select value={clinicalForm.studentId ? String(clinicalForm.studentId) : ""} onValueChange={(v) => setClinicalForm(f => ({ ...f, studentId: parseInt(v) }))}>
+                          <SelectTrigger className="bg-background/50 border-border/40"><SelectValue placeholder="Selecione o aluno..." /></SelectTrigger>
+                          <SelectContent>
+                            {students.filter(s => s.role === "student" && (s as any).clinicalPracticeHours > 0).map(s => (
+                              <SelectItem key={s.id} value={String(s.id)}>{s.name} — {(s as any).clinicalPracticeHours}h restantes</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Data</Label>
+                          <Input type="date" value={clinicalForm.sessionDate} onChange={e => setClinicalForm(f => ({ ...f, sessionDate: e.target.value }))} className="bg-background/50 border-border/40" />
+                        </div>
+                        <div>
+                          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Início</Label>
+                          <Input type="time" value={clinicalForm.startTime} onChange={e => {
+                            const st = e.target.value;
+                            setClinicalForm(f => {
+                              const updated = { ...f, startTime: st };
+                              if (st && f.endTime) {
+                                const [sh, sm] = st.split(":").map(Number);
+                                const [eh, em] = f.endTime.split(":").map(Number);
+                                const diff = (eh * 60 + em - sh * 60 - sm) / 60;
+                                updated.durationHours = diff > 0 ? Math.round(diff * 100) / 100 : 0;
+                              }
+                              return updated;
+                            });
+                          }} className="bg-background/50 border-border/40" />
+                        </div>
+                        <div>
+                          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Fim</Label>
+                          <Input type="time" value={clinicalForm.endTime} onChange={e => {
+                            const et = e.target.value;
+                            setClinicalForm(f => {
+                              const updated = { ...f, endTime: et };
+                              if (f.startTime && et) {
+                                const [sh, sm] = f.startTime.split(":").map(Number);
+                                const [eh, em] = et.split(":").map(Number);
+                                const diff = (eh * 60 + em - sh * 60 - sm) / 60;
+                                updated.durationHours = diff > 0 ? Math.round(diff * 100) / 100 : 0;
+                              }
+                              return updated;
+                            });
+                          }} className="bg-background/50 border-border/40" />
+                        </div>
+                      </div>
+                      {clinicalForm.durationHours > 0 && (
+                        <p className="text-sm text-gold font-medium">Duração: {clinicalForm.durationHours}h</p>
+                      )}
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block">Procedimentos</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {["Toxina Botulínica", "Preenchedores", "Bioestimuladores", "Fios de PDO", "Skinbooster", "Peeling", "Microagulhamento", "Laser", "Ultrassom", "Outro"].map(proc => (
+                            <label key={proc} className="flex items-center gap-2 text-sm cursor-pointer">
+                              <Checkbox
+                                checked={clinicalForm.procedures.includes(proc)}
+                                onCheckedChange={(checked) => {
+                                  setClinicalForm(f => ({
+                                    ...f,
+                                    procedures: checked ? [...f.procedures, proc] : f.procedures.filter(p => p !== proc)
+                                  }));
+                                }}
+                              />
+                              {proc}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Observações</Label>
+                        <Textarea value={clinicalForm.notes} onChange={e => setClinicalForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notas sobre a sessão..." className="bg-background/50 border-border/40" rows={2} />
+                      </div>
+                      <Button
+                        className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
+                        disabled={!clinicalForm.studentId || !clinicalForm.sessionDate || clinicalForm.durationHours <= 0 || clinicalForm.procedures.length === 0 || clinicalLoading}
+                        onClick={async () => {
+                          setClinicalLoading(true);
+                          try {
+                            await apiRequest("POST", "/api/admin/clinical-sessions", clinicalForm);
+                            queryClient.invalidateQueries({ queryKey: ["/api/admin/clinical-sessions"] });
+                            queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
+                            setClinicalDialogOpen(false);
+                            setClinicalForm({ studentId: 0, sessionDate: "", startTime: "", endTime: "", durationHours: 0, procedures: [], notes: "" });
+                            toast({ title: "Sessão registrada com sucesso!" });
+                          } catch (err: any) {
+                            toast({ title: "Erro ao registrar sessão", description: err.message, variant: "destructive" });
+                          } finally {
+                            setClinicalLoading(false);
+                          }
+                        }}
+                      >
+                        {clinicalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Registrar Sessão
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              {clinicalSessions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhuma sessão clínica registrada ainda.</p>
+              ) : (
+                <div className="space-y-2">
+                  {clinicalSessions.slice(0, 20).map(session => (
+                    <Card key={session.id} className="bg-card/50 border-border/20">
+                      <CardContent className="p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Stethoscope className="w-4 h-4 text-gold shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{session.studentName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(session.sessionDate).toLocaleDateString("pt-BR")} · {session.startTime}–{session.endTime}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {session.procedures.map(p => (
+                            <Badge key={p} variant="outline" className="text-[10px] border-gold/30 text-gold">{p}</Badge>
+                          ))}
+                          <Badge className="bg-gold/20 text-gold border-0">{session.durationHours}h</Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ========== CONTRACTS SECTION ========== */}
+            <div className="mt-8 space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2"><FileSignature className="w-5 h-5 text-gold" /> Contratos Recentes</h3>
+              {contracts.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum contrato gerado ainda.</p>
+              ) : (
+                <div className="space-y-2">
+                  {contracts.slice(0, 20).map(contract => (
+                    <Card key={contract.id} className="bg-card/50 border-border/20">
+                      <CardContent className="p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <FileSignature className="w-4 h-4 text-gold shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{contract.userName}</p>
+                            <p className="text-xs text-muted-foreground">{contract.planName}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Badge variant="outline" className={contract.status === "active" ? "border-green-500/30 text-green-400" : "border-yellow-500/30 text-yellow-400"}>
+                            {contract.status === "active" ? "Ativo" : contract.status}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">R$ {(contract.amountPaid / 100).toFixed(2)}</span>
+                          <span className="text-xs text-muted-foreground">{new Date(contract.createdAt).toLocaleDateString("pt-BR")}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           </TabsContent>
 
           {/* ========== PROFILES TAB ========== */}
@@ -2677,7 +2867,6 @@ export default function AdminDashboard() {
                                 setEditStudentForm({
                                   name: student.name,
                                   phone: student.phone || "",
-                                  planId: student.planId || 0,
                                   accessExpiresAt: student.accessExpiresAt ? student.accessExpiresAt.slice(0, 16) : "",
                                   approved: student.approved,
                                   communityAccess: student.communityAccess ?? true,

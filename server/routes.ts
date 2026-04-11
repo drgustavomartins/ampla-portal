@@ -266,7 +266,11 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`CREATE TABLE IF NOT EXISTS credit_transactions (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, type TEXT NOT NULL, amount INTEGER NOT NULL, description TEXT NOT NULL, reference_id TEXT, created_at TEXT NOT NULL, expires_at TEXT)`).catch(() => {});
     // Adicionar coluna expires_at se nao existir (migracao segura)
     await db.execute(`ALTER TABLE credit_transactions ADD COLUMN IF NOT EXISTS expires_at TEXT`).catch(() => {});
-    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions tables ensured");
+    // Clinical sessions table
+    await db.execute(`CREATE TABLE IF NOT EXISTS clinical_sessions (id SERIAL PRIMARY KEY, student_id INTEGER NOT NULL, session_date TEXT NOT NULL, start_time TEXT NOT NULL, end_time TEXT NOT NULL, duration_hours REAL NOT NULL, procedures TEXT NOT NULL DEFAULT '[]', notes TEXT, status TEXT NOT NULL DEFAULT 'completed', admin_id INTEGER NOT NULL, created_at TEXT NOT NULL)`).catch(() => {});
+    // Contracts table
+    await db.execute(`CREATE TABLE IF NOT EXISTS contracts (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, plan_key TEXT NOT NULL, plan_name TEXT NOT NULL, amount_paid INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'active', signed_at TEXT, created_at TEXT NOT NULL)`).catch(() => {});
+    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts tables ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
@@ -1673,6 +1677,89 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json(safe);
   });
 
+  // ==================== ADMIN: Provision student by planKey ====================
+  app.post("/api/admin/students/:id/provision", async (req: Request, res: Response) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db } = await import("./db");
+      const userId = parseInt(req.params.id as string);
+      const { planKey } = req.body as { planKey: string };
+      if (!planKey) return res.status(400).json({ message: "planKey é obrigatório" });
+
+      const { PLAN_PROVISIONING } = await import("./plan-provisioning");
+      const { PLANS } = await import("./stripe-plans");
+      const provisioning = PLAN_PROVISIONING[planKey];
+      if (!provisioning) return res.status(400).json({ message: "planKey inválido para provisionamento" });
+
+      const plan = PLANS[planKey as keyof typeof PLANS];
+      const now = new Date().toISOString();
+      const accessDays = plan ? plan.accessDays : 180;
+      const accessExpiry = new Date(Date.now() + accessDays * 86400000).toISOString();
+
+      // Calculate mentorship and support dates
+      const mentorshipStartDate = provisioning.mentorshipMonths > 0 ? now.slice(0, 10) : null;
+      const mentorshipEndDate = provisioning.mentorshipMonths > 0
+        ? new Date(Date.now() + provisioning.mentorshipMonths * 30 * 86400000).toISOString().slice(0, 10)
+        : null;
+      const supportExpiresAt = provisioning.supportMonths > 0
+        ? new Date(Date.now() + provisioning.supportMonths * 30 * 86400000).toISOString()
+        : accessExpiry;
+
+      // Clinical + practice hours from plan config
+      const clinicalHours = plan ? (plan.clinicalHours + plan.practiceHours) : 0;
+
+      // 1. Update user fields
+      await db.execute(sql`UPDATE users SET
+        plan_key = ${planKey},
+        approved = true,
+        access_expires_at = ${accessExpiry},
+        materials_access = true,
+        community_access = true,
+        support_access = true,
+        support_expires_at = ${supportExpiresAt},
+        clinical_practice_access = ${clinicalHours > 0},
+        clinical_practice_hours = ${clinicalHours},
+        mentorship_start_date = ${mentorshipStartDate},
+        mentorship_end_date = ${mentorshipEndDate}
+      WHERE id = ${userId}`);
+
+      // 2. Provision modules
+      if (provisioning.modules.length > 0) {
+        await db.execute(sql`DELETE FROM user_modules WHERE user_id = ${userId}`);
+        for (const m of provisioning.modules) {
+          await db.execute(sql`INSERT INTO user_modules (user_id, module_id, enabled, start_date, end_date)
+            VALUES (${userId}, ${m.moduleId}, ${m.enabled}, ${now.slice(0, 10)}, ${accessExpiry.slice(0, 10)})
+            ON CONFLICT (user_id, module_id) DO UPDATE SET enabled = ${m.enabled}`);
+        }
+      }
+
+      // 3. Provision materials
+      if (provisioning.materials.length > 0) {
+        await db.execute(sql`DELETE FROM user_material_categories WHERE user_id = ${userId}`);
+        for (const cat of provisioning.materials) {
+          await db.execute(sql`INSERT INTO user_material_categories (user_id, category_name, enabled)
+            VALUES (${userId}, ${cat}, true)
+            ON CONFLICT (user_id, category_name) DO UPDATE SET enabled = true`);
+        }
+      }
+
+      // 4. Audit log
+      const admin = await storage.getUser(auth.userId);
+      const student = await storage.getUser(userId);
+      await logAction(auth.userId, admin?.name || "Admin", "student_provisioned", "student", userId, student?.name || "?", {
+        planKey, modules: provisioning.modules.length, materials: provisioning.materials.length,
+        mentorshipMonths: provisioning.mentorshipMonths, supportMonths: provisioning.supportMonths,
+      });
+
+      console.log(`[admin provision] userId ${userId} provisionado no perfil ${planKey} | módulos: ${provisioning.modules.length} | materiais: ${provisioning.materials.length}`);
+      res.json({ message: "Provisionamento concluído", planKey });
+    } catch (e: any) {
+      console.error("[admin provision] Error:", e.message);
+      res.status(500).json({ message: "Erro ao provisionar aluno" });
+    }
+  });
+
   // ==================== ADMIN: User Modules ====================
   app.get("/api/admin/students/:id/modules", async (req, res) => {
     if (!requireAdmin(req, res)) return;
@@ -2730,6 +2817,217 @@ export async function registerRoutes(server: Server, app: Express) {
     } catch (e: any) {
       console.error("[admin/credits/bonus] Error:", e.message);
       res.status(500).json({ message: "Erro ao creditar bônus" });
+    }
+  });
+
+  // ─── Clinical Sessions Routes ───────────────────────────────────────────────
+
+  // POST /api/admin/clinical-sessions — create a session
+  app.post("/api/admin/clinical-sessions", async (req: Request, res: Response) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db } = await import("./db");
+      const { studentId, sessionDate, startTime, endTime, durationHours, procedures, notes } = req.body as {
+        studentId: number; sessionDate: string; startTime: string; endTime: string;
+        durationHours: number; procedures: string[]; notes?: string;
+      };
+      if (!studentId || !sessionDate || !startTime || !endTime || !durationHours) {
+        return res.status(400).json({ message: "Campos obrigatórios faltando" });
+      }
+      const now = new Date().toISOString();
+      const proceduresJson = JSON.stringify(procedures || []);
+      await db.execute(sql`INSERT INTO clinical_sessions (student_id, session_date, start_time, end_time, duration_hours, procedures, notes, status, admin_id, created_at)
+        VALUES (${studentId}, ${sessionDate}, ${startTime}, ${endTime}, ${durationHours}, ${proceduresJson}, ${notes || null}, 'completed', ${auth.userId}, ${now})`);
+      // Deduct hours from user's bank
+      await db.execute(sql`UPDATE users SET clinical_practice_hours = GREATEST(0, clinical_practice_hours - ${durationHours}) WHERE id = ${studentId}`);
+      // Audit log
+      const studentResult = await db.execute(sql`SELECT name FROM users WHERE id = ${studentId}`);
+      const studentName = (studentResult as any).rows?.[0]?.name || `ID ${studentId}`;
+      const adminResult = await db.execute(sql`SELECT name FROM users WHERE id = ${auth.userId}`);
+      const adminName = (adminResult as any).rows?.[0]?.name || "Admin";
+      await logAction(auth.userId, adminName, "register_clinical_session", "user", studentId, studentName, { sessionDate, durationHours, procedures });
+      res.json({ message: "Sessão registrada", sessionDate, durationHours });
+    } catch (e: any) {
+      console.error("[admin/clinical-sessions] POST Error:", e.message);
+      res.status(500).json({ message: "Erro ao registrar sessão" });
+    }
+  });
+
+  // GET /api/admin/clinical-sessions — list all sessions
+  app.get("/api/admin/clinical-sessions", async (req: Request, res: Response) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const result = await db.execute(sql`
+        SELECT cs.*, u.name as student_name, u.email as student_email, a.name as admin_name
+        FROM clinical_sessions cs
+        LEFT JOIN users u ON u.id = cs.student_id
+        LEFT JOIN users a ON a.id = cs.admin_id
+        ORDER BY cs.session_date DESC, cs.created_at DESC
+        LIMIT 200
+      `);
+      const sessions = ((result as any).rows || []).map((r: any) => ({
+        id: r.id,
+        studentId: r.student_id,
+        studentName: r.student_name,
+        studentEmail: r.student_email,
+        sessionDate: r.session_date,
+        startTime: r.start_time,
+        endTime: r.end_time,
+        durationHours: r.duration_hours,
+        procedures: (() => { try { return JSON.parse(r.procedures); } catch { return []; } })(),
+        notes: r.notes,
+        status: r.status,
+        adminName: r.admin_name,
+        createdAt: r.created_at,
+      }));
+      res.json({ sessions });
+    } catch (e: any) {
+      console.error("[admin/clinical-sessions] GET Error:", e.message);
+      res.status(500).json({ message: "Erro ao listar sessões" });
+    }
+  });
+
+  // GET /api/admin/clinical-sessions/:id/pdf — session data for PDF
+  app.get("/api/admin/clinical-sessions/:id/pdf", async (req: Request, res: Response) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const sessionId = Number(req.params.id);
+      const result = await db.execute(sql`
+        SELECT cs.*, u.name as student_name, u.email as student_email, u.phone as student_phone
+        FROM clinical_sessions cs
+        LEFT JOIN users u ON u.id = cs.student_id
+        WHERE cs.id = ${sessionId}
+      `);
+      const row = (result as any).rows?.[0];
+      if (!row) return res.status(404).json({ message: "Sessão não encontrada" });
+      res.json({
+        id: row.id,
+        studentName: row.student_name,
+        studentEmail: row.student_email,
+        studentPhone: row.student_phone,
+        sessionDate: row.session_date,
+        startTime: row.start_time,
+        endTime: row.end_time,
+        durationHours: row.duration_hours,
+        procedures: (() => { try { return JSON.parse(row.procedures); } catch { return []; } })(),
+        notes: row.notes,
+        status: row.status,
+        createdAt: row.created_at,
+      });
+    } catch (e: any) {
+      console.error("[admin/clinical-sessions/:id/pdf] Error:", e.message);
+      res.status(500).json({ message: "Erro ao buscar sessão" });
+    }
+  });
+
+  // ─── Contracts Routes ─────────────────────────────────────────────────────
+
+  // GET /api/admin/contracts — list all contracts
+  app.get("/api/admin/contracts", async (req: Request, res: Response) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const result = await db.execute(sql`
+        SELECT c.*, u.name as user_name, u.email as user_email
+        FROM contracts c
+        LEFT JOIN users u ON u.id = c.user_id
+        ORDER BY c.created_at DESC
+        LIMIT 200
+      `);
+      const contracts = ((result as any).rows || []).map((r: any) => ({
+        id: r.id,
+        userId: r.user_id,
+        userName: r.user_name,
+        userEmail: r.user_email,
+        planKey: r.plan_key,
+        planName: r.plan_name,
+        amountPaid: r.amount_paid,
+        status: r.status,
+        signedAt: r.signed_at,
+        createdAt: r.created_at,
+      }));
+      res.json({ contracts });
+    } catch (e: any) {
+      console.error("[admin/contracts] Error:", e.message);
+      res.status(500).json({ message: "Erro ao listar contratos" });
+    }
+  });
+
+  // GET /api/contracts/my — student sees their own contracts
+  app.get("/api/contracts/my", async (req: Request, res: Response) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const { db } = await import("./db");
+      const result = await db.execute(sql`SELECT id, plan_key, plan_name, amount_paid, status, signed_at, created_at FROM contracts WHERE user_id = ${auth.userId} ORDER BY created_at DESC`);
+      const contracts = ((result as any).rows || []).map((r: any) => ({
+        id: r.id,
+        planKey: r.plan_key,
+        planName: r.plan_name,
+        amountPaid: r.amount_paid,
+        status: r.status,
+        signedAt: r.signed_at,
+        createdAt: r.created_at,
+      }));
+      res.json({ contracts });
+    } catch (e: any) {
+      console.error("[contracts/my] Error:", e.message);
+      res.status(500).json({ message: "Erro ao buscar contratos" });
+    }
+  });
+
+  // GET /api/contracts/template/:planKey — contract HTML template
+  app.get("/api/contracts/template/:planKey", async (req: Request, res: Response) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const { PLANS } = await import("./stripe-plans");
+      const planKey = req.params.planKey;
+      const plan = PLANS[planKey as keyof typeof PLANS];
+      if (!plan) return res.status(404).json({ message: "Plano não encontrado" });
+      const { db } = await import("./db");
+      const userResult = await db.execute(sql`SELECT name, email, phone FROM users WHERE id = ${auth.userId}`);
+      const user = (userResult as any).rows?.[0];
+      const formatBRL = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+      const html = `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Contrato — ${plan.name}</title>
+<style>body{font-family:sans-serif;max-width:700px;margin:40px auto;color:#333;line-height:1.6}h1{color:#0A1628;border-bottom:2px solid #D4A843;padding-bottom:12px}h2{color:#0A1628;margin-top:24px}.gold{color:#D4A843}.info-box{background:#f5f5f5;border-left:4px solid #D4A843;padding:16px;margin:16px 0;border-radius:4px}ul{padding-left:20px}li{margin:4px 0}.signature{margin-top:48px;border-top:1px solid #ccc;padding-top:24px}.sig-line{border-bottom:1px solid #333;width:280px;margin:32px 0 4px;display:inline-block}</style>
+</head><body>
+<h1>Contrato de Prestacao de Servicos Educacionais</h1>
+<p><strong>Ampla Facial — Harmonizacao Orofacial</strong></p>
+<div class="info-box">
+<p><strong>Aluno:</strong> ${user?.name || 'N/A'}</p>
+<p><strong>Email:</strong> ${user?.email || 'N/A'}</p>
+<p><strong>Telefone:</strong> ${user?.phone || 'N/A'}</p>
+</div>
+<h2>Plano Contratado</h2>
+<div class="info-box">
+<p><strong>Plano:</strong> <span class="gold">${plan.name}</span></p>
+<p><strong>Descricao:</strong> ${plan.description}</p>
+<p><strong>Valor:</strong> ${formatBRL(plan.price)}</p>
+<p><strong>Acesso:</strong> ${plan.accessDays} dias</p>
+</div>
+<h2>Itens Inclusos</h2>
+<ul>${plan.features.map(f => `<li>${f}</li>`).join('')}</ul>
+<h2>Termos</h2>
+<p>1. O acesso ao portal sera disponibilizado imediatamente apos a confirmacao do pagamento.</p>
+<p>2. O prazo de acesso e de ${plan.accessDays} dias corridos a partir da ativacao.</p>
+<p>3. O conteudo e de uso pessoal e intransferivel.</p>
+<p>4. Nao ha reembolso apos o inicio do acesso, salvo nos termos do Codigo de Defesa do Consumidor.</p>
+<div class="signature">
+<p><strong>Data:</strong> ${new Date().toLocaleDateString("pt-BR")}</p>
+<div><span class="sig-line"></span><br><small>Assinatura do Aluno</small></div>
+<div style="margin-top:24px"><span class="sig-line"></span><br><small>Dr. Gustavo Martins — Ampla Facial</small></div>
+</div>
+</body></html>`;
+      res.json({ html, planKey, planName: plan.name });
+    } catch (e: any) {
+      console.error("[contracts/template] Error:", e.message);
+      res.status(500).json({ message: "Erro ao gerar template" });
     }
   });
 
