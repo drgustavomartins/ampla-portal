@@ -1651,7 +1651,8 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!auth) return;
     const allowedFields = ['name', 'email', 'phone', 'planId', 'approved', 'accessExpiresAt',
       'communityAccess', 'supportAccess', 'supportExpiresAt', 'clinicalPracticeAccess',
-      'materialsAccess', 'mentorshipStartDate', 'mentorshipEndDate'];
+      'materialsAccess', 'mentorshipStartDate', 'mentorshipEndDate',
+      'planKey', 'planPaidAt', 'planAmountPaid'];
     const updateData: any = {};
     for (const key of allowedFields) {
       if (req.body[key] !== undefined) {
