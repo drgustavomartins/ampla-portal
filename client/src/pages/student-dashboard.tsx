@@ -905,8 +905,8 @@ export default function StudentDashboard() {
                   );
                 } else {
                   return (
-                    <Link
-                      href="/planos"
+                    <a
+                      href="/#/planos?grupo=horas"
                       className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 block transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
                     >
                       <div className="flex items-center justify-between">
@@ -926,9 +926,9 @@ export default function StudentDashboard() {
                         </span>
                       </div>
                       <span className="inline-flex items-center min-h-[44px] py-2 text-xs font-medium text-gold group-hover:underline">
-                        Ver pacote de horas <ChevronRight className="w-3 h-3 ml-1" />
+                        Ver pacotes de horas <ChevronRight className="w-3 h-3 ml-1" />
                       </span>
-                    </Link>
+                    </a>
                   );
                 }
               })()}

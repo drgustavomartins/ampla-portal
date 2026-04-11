@@ -24,7 +24,9 @@ export const PLAN_KEYS = [
   "vip_online",
   "vip_presencial",
   "vip_completo",
-  "horas_clinicas",
+  "horas_clinicas_1",
+  "horas_clinicas_2",
+  "horas_clinicas_3",
 ] as const;
 export type PlanKey = typeof PLAN_KEYS[number];
 

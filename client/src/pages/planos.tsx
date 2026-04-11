@@ -21,7 +21,7 @@ interface PlanData {
   key: string;
   name: string;
   description: string;
-  group: "digital" | "observador" | "vip";
+  group: "digital" | "observador" | "vip" | "horas";
   highlight?: string;
   price: number;
   priceFormatted: string;
@@ -42,15 +42,20 @@ const GROUP_LABELS: Record<string, string> = {
   digital: "Acesso Digital",
   observador: "Observação Clínica",
   vip: "Mentoria VIP",
+  horas: "Horas Clínicas Extras",
 };
 
 const GROUP_DESCRIPTIONS: Record<string, string> = {
   digital: "Aprenda no seu ritmo com aulas gravadas e materiais científicos",
   observador: "Observe a rotina clínica real do Dr. Gustavo presencialmente",
   vip: "Mentoria individual e formação completa em HOF",
+  horas: "Pacotes de prática presencial com pacientes modelo sob supervisão do Dr. Gustavo",
 };
 
-const GROUP_ORDER = ["digital", "observador", "vip"];
+const GROUP_ORDER = ["digital", "observador", "vip", "horas"];
+
+// Planos de mentoria que permitem comprar horas extras
+const MENTORIA_PLANS = ["vip_online", "vip_presencial", "vip_completo"];
 
 function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key: string) => void; isLoading: boolean }) {
   const [expanded, setExpanded] = useState(false);
@@ -194,7 +199,9 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
 
 export default function PlanosPage() {
   const { user } = useAuth();
-  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  // Ler grupo da URL (ex: ?grupo=horas)
+  const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(urlParams.get('grupo'));
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const { data, isLoading } = useQuery<{ plans: PlanData[] }>({
     queryKey: ["/api/stripe/plans"],
@@ -238,6 +245,11 @@ export default function PlanosPage() {
   });
 
   const handlePagar = (planKey: string) => {
+    // Bloquear horas clínicas se não tem mentoria ativa
+    if (planKey.startsWith("horas_clinicas") && !MENTORIA_PLANS.includes(user?.planKey || "")) {
+      alert("Para adquirir horas clínicas extras, você precisa ter um plano de Mentoria VIP ativo.");
+      return;
+    }
     setLoadingKey(planKey);
     checkoutMutation.mutate(planKey);
   };
@@ -388,6 +400,17 @@ export default function PlanosPage() {
             Você sempre paga apenas a diferença.
           </p>
         </div>
+
+        {/* Aviso de mentoria necessária para horas (aparece só se grupo horas está visível e aluno não tem mentoria) */}
+        {(!selectedGroup || selectedGroup === "horas") && user && !MENTORIA_PLANS.includes(user.planKey || "") && (groupedPlans["horas"] || []).length > 0 && (
+          <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6 text-center">
+            <Clock className="mx-auto mb-3 h-6 w-6 text-amber-400" />
+            <h3 className="text-lg font-semibold text-white">Mentoria ativa necessária</h3>
+            <p className="mt-2 text-sm text-gray-400">
+              Para adquirir pacotes de horas clínicas extras, você precisa ter um plano de Mentoria VIP ativo (Online, Presencial ou Completo).
+            </p>
+          </div>
+        )}
 
       </div>
     </div>
