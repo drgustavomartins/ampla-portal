@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { useLocation, Link } from "wouter";
 import { UpgradeBanner } from "@/components/UpgradeBanner";
 import { ReferralCard } from "@/components/ReferralCard";
-import { Gift, Copy, Check as CheckIcon } from "lucide-react";
+import { Gift, Copy, Check as CheckIcon, FileCheck, PenLine } from "lucide-react";
 import { TrialPlansToast } from "@/components/TrialPlansToast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -105,6 +105,14 @@ export default function StudentDashboard() {
     enabled: !!user?.id,
   });
   const [purchaseModule, setPurchaseModule] = useState<Module | null>(null);
+  const [signingSessionId, setSigningSessionId] = useState<number | null>(null);
+
+  const { data: myClinicalData, refetch: refetchClinical } = useQuery<{ sessions: any[] }>({
+    queryKey: ["/api/student/clinical-sessions"],
+    queryFn: async () => { const res = await apiRequest("GET", "/api/student/clinical-sessions"); return res.json(); },
+    enabled: !!user,
+  });
+  const myClinicalSessions = myClinicalData?.sessions || [];
 
   const completeMutation = useMutation({
     mutationFn: async ({ lessonId, complete }: { lessonId: number; complete: boolean }) => {
@@ -1096,6 +1104,138 @@ export default function StudentDashboard() {
               </button>
             </div>
           </section>
+
+          {/* ===== MINHAS PRATICAS CLINICAS ===== */}
+          {myClinicalSessions.length > 0 && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="font-serif text-2xl font-semibold text-foreground">Minhas Praticas Clinicas</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">Sessoes presenciais realizadas com o Dr. Gustavo</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {myClinicalSessions.map((session: any) => {
+                  const isPendingSign = !session.studentSignedAt;
+                  const isFullySigned = session.studentSignedAt && session.adminSignedAt;
+                  const statusLabel = isFullySigned ? "Concluida" : isPendingSign ? "Aguardando sua assinatura" : "Aguardando orientador";
+                  const statusColor = isFullySigned ? "text-emerald-400" : isPendingSign ? "text-amber-400" : "text-blue-400";
+                  const statusBg = isFullySigned ? "bg-emerald-500/10 border-emerald-500/20" : isPendingSign ? "bg-amber-500/10 border-amber-500/20" : "bg-blue-500/10 border-blue-500/20";
+
+                  return (
+                    <div key={session.id} className="rounded-2xl border border-border/40 bg-card/60 p-5 space-y-4">
+                      {/* Header */}
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-foreground">
+                              {new Date(session.sessionDate + 'T12:00:00').toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}
+                            </span>
+                            <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${statusBg} ${statusColor}`}>
+                              {statusLabel}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {session.startTime} - {session.endTime} ({session.durationHours}h) - Orientador: {session.adminName || "Dr. Gustavo Martins"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Details grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="rounded-lg bg-background/50 p-3 text-center">
+                          <p className="text-lg font-bold text-gold">{session.durationHours}h</p>
+                          <p className="text-[10px] text-muted-foreground">Carga horaria</p>
+                        </div>
+                        <div className="rounded-lg bg-background/50 p-3 text-center">
+                          <p className="text-lg font-bold text-gold">{session.patientsCount || 0}</p>
+                          <p className="text-[10px] text-muted-foreground">Pacientes</p>
+                        </div>
+                        <div className="rounded-lg bg-background/50 p-3 text-center col-span-2">
+                          <p className="text-xs font-medium text-foreground">{(session.procedures || []).join(", ") || "Nenhum"}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">Procedimentos</p>
+                        </div>
+                      </div>
+
+                      {/* Patient details if available */}
+                      {session.patientsDetails && session.patientsDetails.length > 0 && (
+                        <div className="rounded-lg bg-background/30 p-3">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Pacientes atendidos</p>
+                          <div className="space-y-1">
+                            {session.patientsDetails.map((p: string, i: number) => (
+                              <p key={i} className="text-xs text-foreground">{i + 1}. {p}</p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Notes */}
+                      {session.notes && (
+                        <p className="text-xs text-muted-foreground italic">Obs: {session.notes}</p>
+                      )}
+
+                      {/* Signatures status */}
+                      <div className="flex items-center gap-4 pt-2 border-t border-border/30">
+                        <div className="flex items-center gap-1.5">
+                          {session.adminSignedAt ? (
+                            <><CheckIcon className="w-3.5 h-3.5 text-emerald-400" /><span className="text-[11px] text-emerald-400">Orientador assinou</span></>
+                          ) : (
+                            <><Clock className="w-3.5 h-3.5 text-muted-foreground" /><span className="text-[11px] text-muted-foreground">Orientador pendente</span></>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {session.studentSignedAt ? (
+                            <><CheckIcon className="w-3.5 h-3.5 text-emerald-400" /><span className="text-[11px] text-emerald-400">Voce assinou em {new Date(session.studentSignedAt).toLocaleDateString("pt-BR")}</span></>
+                          ) : (
+                            <><Clock className="w-3.5 h-3.5 text-amber-400" /><span className="text-[11px] text-amber-400">Aguardando sua assinatura</span></>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Sign button */}
+                      {isPendingSign && (
+                        <button
+                          onClick={async () => {
+                            setSigningSessionId(session.id);
+                            try {
+                              const res = await apiRequest("POST", `/api/student/clinical-sessions/${session.id}/sign`);
+                              if (res.ok) {
+                                toast({ title: "Sessao assinada", description: "Sua assinatura foi registrada com sucesso." });
+                                refetchClinical();
+                              } else {
+                                const data = await res.json().catch(() => ({}));
+                                toast({ title: "Erro", description: data.message || "Erro ao assinar", variant: "destructive" });
+                              }
+                            } catch {
+                              toast({ title: "Erro", description: "Erro ao assinar sessao", variant: "destructive" });
+                            } finally {
+                              setSigningSessionId(null);
+                            }
+                          }}
+                          disabled={signingSessionId === session.id}
+                          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gold/90 hover:bg-gold text-[#0A0D14] text-sm font-semibold transition-colors disabled:opacity-50"
+                        >
+                          {signingSessionId === session.id ? (
+                            "Assinando..."
+                          ) : (
+                            <><PenLine className="w-4 h-4" /> Confirmo que realizei esta pratica clinica</>
+                          )}
+                        </button>
+                      )}
+
+                      {/* Completed badge */}
+                      {isFullySigned && (
+                        <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">
+                          <FileCheck className="w-4 h-4" />
+                          Pratica concluida e assinada por ambas as partes
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           {/* ===== MATERIAIS COMPLEMENTARES (inline) ===== */}
           <section ref={materiaisRef} className="space-y-4 scroll-mt-20">

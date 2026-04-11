@@ -281,6 +281,26 @@ export async function registerRoutes(server: Server, app: Express) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
 
+  // Migration: clinical session signatures
+  try {
+    const { db } = await import("./db");
+    await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`).catch(() => {});
+    const csSignMig = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${'clinical_sessions_signatures'} LIMIT 1`);
+    if (!((csSignMig as any).rows?.length > 0)) {
+      await db.execute(`ALTER TABLE clinical_sessions ADD COLUMN IF NOT EXISTS patients_count INTEGER NOT NULL DEFAULT 0`);
+      await db.execute(`ALTER TABLE clinical_sessions ADD COLUMN IF NOT EXISTS patients_details TEXT NOT NULL DEFAULT '[]'`);
+      await db.execute(`ALTER TABLE clinical_sessions ADD COLUMN IF NOT EXISTS student_signed_at TEXT`);
+      await db.execute(`ALTER TABLE clinical_sessions ADD COLUMN IF NOT EXISTS student_signed_ip TEXT`);
+      await db.execute(`ALTER TABLE clinical_sessions ADD COLUMN IF NOT EXISTS student_signed_user_agent TEXT`);
+      await db.execute(`ALTER TABLE clinical_sessions ADD COLUMN IF NOT EXISTS admin_signed_at TEXT`);
+      await db.execute(`ALTER TABLE clinical_sessions ADD COLUMN IF NOT EXISTS admin_signed_ip TEXT`);
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${'clinical_sessions_signatures'}, ${new Date().toISOString()})`);
+      console.log("[auto-migrate] clinical_sessions_signatures applied");
+    }
+  } catch (e: any) {
+    console.error("[auto-migrate] clinical_sessions_signatures failed:", e.message);
+  }
+
   // ==================== ONE-TIME: Grant all materials access to existing users ====================
   // This migration sets materials_access = true and inserts user_material_categories rows
   // for ALL 6 categories with enabled = true, for every existing user that doesn't already
@@ -2858,17 +2878,19 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!auth) return;
     try {
       const { db } = await import("./db");
-      const { studentId, sessionDate, startTime, endTime, durationHours, procedures, notes } = req.body as {
+      const { studentId, sessionDate, startTime, endTime, durationHours, procedures, notes, patientsCount, patientsDetails } = req.body as {
         studentId: number; sessionDate: string; startTime: string; endTime: string;
         durationHours: number; procedures: string[]; notes?: string;
+        patientsCount?: number; patientsDetails?: string[];
       };
       if (!studentId || !sessionDate || !startTime || !endTime || !durationHours) {
         return res.status(400).json({ message: "Campos obrigatórios faltando" });
       }
       const now = new Date().toISOString();
       const proceduresJson = JSON.stringify(procedures || []);
-      await db.execute(sql`INSERT INTO clinical_sessions (student_id, session_date, start_time, end_time, duration_hours, procedures, notes, status, admin_id, created_at)
-        VALUES (${studentId}, ${sessionDate}, ${startTime}, ${endTime}, ${durationHours}, ${proceduresJson}, ${notes || null}, 'completed', ${auth.userId}, ${now})`);
+      const patientsDetailsJson = JSON.stringify(patientsDetails || []);
+      await db.execute(sql`INSERT INTO clinical_sessions (student_id, session_date, start_time, end_time, duration_hours, procedures, notes, patients_count, patients_details, status, admin_id, created_at)
+        VALUES (${studentId}, ${sessionDate}, ${startTime}, ${endTime}, ${durationHours}, ${proceduresJson}, ${notes || null}, ${patientsCount || 0}, ${patientsDetailsJson}, 'pending_signatures', ${auth.userId}, ${now})`);
       // Deduct hours from user's bank
       await db.execute(sql`UPDATE users SET clinical_practice_hours = GREATEST(0, clinical_practice_hours - ${durationHours}) WHERE id = ${studentId}`);
       // Audit log
@@ -2907,9 +2929,13 @@ export async function registerRoutes(server: Server, app: Express) {
         endTime: r.end_time,
         durationHours: r.duration_hours,
         procedures: (() => { try { return JSON.parse(r.procedures); } catch { return []; } })(),
+        patientsCount: r.patients_count,
+        patientsDetails: (() => { try { return JSON.parse(r.patients_details); } catch { return []; } })(),
         notes: r.notes,
         status: r.status,
         adminName: r.admin_name,
+        studentSignedAt: r.student_signed_at,
+        adminSignedAt: r.admin_signed_at,
         createdAt: r.created_at,
       }));
       res.json({ sessions });
@@ -2943,13 +2969,123 @@ export async function registerRoutes(server: Server, app: Express) {
         endTime: row.end_time,
         durationHours: row.duration_hours,
         procedures: (() => { try { return JSON.parse(row.procedures); } catch { return []; } })(),
+        patientsCount: row.patients_count,
+        patientsDetails: (() => { try { return JSON.parse(row.patients_details); } catch { return []; } })(),
         notes: row.notes,
         status: row.status,
+        studentSignedAt: row.student_signed_at,
+        studentSignedIp: row.student_signed_ip,
+        adminSignedAt: row.admin_signed_at,
+        adminSignedIp: row.admin_signed_ip,
         createdAt: row.created_at,
       });
     } catch (e: any) {
       console.error("[admin/clinical-sessions/:id/pdf] Error:", e.message);
       res.status(500).json({ message: "Erro ao buscar sessão" });
+    }
+  });
+
+  // POST /api/admin/clinical-sessions/:id/sign - admin signs the session
+  app.post("/api/admin/clinical-sessions/:id/sign", async (req: Request, res: Response) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db } = await import("./db");
+      const sessionId = Number(req.params.id);
+      const ip = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
+      const now = new Date().toISOString();
+
+      // Check session exists and is not already admin-signed
+      const existing = await db.execute(sql`SELECT id, admin_signed_at, student_signed_at, status FROM clinical_sessions WHERE id = ${sessionId}`);
+      const session = (existing as any).rows?.[0];
+      if (!session) return res.status(404).json({ message: "Sessao nao encontrada" });
+      if (session.admin_signed_at) return res.status(400).json({ message: "Sessao ja assinada pelo orientador" });
+
+      // Sign
+      await db.execute(sql`UPDATE clinical_sessions SET admin_signed_at = ${now}, admin_signed_ip = ${ip} WHERE id = ${sessionId}`);
+
+      // If student already signed, mark as completed
+      if (session.student_signed_at) {
+        await db.execute(sql`UPDATE clinical_sessions SET status = 'completed' WHERE id = ${sessionId}`);
+      } else {
+        await db.execute(sql`UPDATE clinical_sessions SET status = 'pending_student' WHERE id = ${sessionId}`);
+      }
+
+      res.json({ message: "Sessao assinada pelo orientador", signedAt: now });
+    } catch (e: any) {
+      console.error("[admin/clinical-sessions/sign] Error:", e.message);
+      res.status(500).json({ message: "Erro ao assinar sessao" });
+    }
+  });
+
+  // GET /api/student/clinical-sessions - student sees their sessions
+  app.get("/api/student/clinical-sessions", async (req: Request, res: Response) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Nao autorizado" });
+    try {
+      const { db } = await import("./db");
+      const result = await db.execute(sql`
+        SELECT cs.*, a.name as admin_name
+        FROM clinical_sessions cs
+        LEFT JOIN users a ON a.id = cs.admin_id
+        WHERE cs.student_id = ${auth.userId}
+        ORDER BY cs.session_date DESC
+      `);
+      const sessions = ((result as any).rows || []).map((r: any) => ({
+        id: r.id,
+        sessionDate: r.session_date,
+        startTime: r.start_time,
+        endTime: r.end_time,
+        durationHours: r.duration_hours,
+        procedures: (() => { try { return JSON.parse(r.procedures); } catch { return []; } })(),
+        patientsCount: r.patients_count,
+        patientsDetails: (() => { try { return JSON.parse(r.patients_details); } catch { return []; } })(),
+        notes: r.notes,
+        status: r.status,
+        adminName: r.admin_name,
+        studentSignedAt: r.student_signed_at,
+        adminSignedAt: r.admin_signed_at,
+        createdAt: r.created_at,
+      }));
+      res.json({ sessions });
+    } catch (e: any) {
+      console.error("[student/clinical-sessions] Error:", e.message);
+      res.status(500).json({ message: "Erro ao listar sessoes" });
+    }
+  });
+
+  // POST /api/student/clinical-sessions/:id/sign - student signs the session
+  app.post("/api/student/clinical-sessions/:id/sign", async (req: Request, res: Response) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Nao autorizado" });
+    try {
+      const { db } = await import("./db");
+      const sessionId = Number(req.params.id);
+      const ip = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
+      const userAgent = req.headers["user-agent"] || "unknown";
+      const now = new Date().toISOString();
+
+      // Check session belongs to student and not already signed
+      const existing = await db.execute(sql`SELECT id, student_id, student_signed_at, admin_signed_at, status FROM clinical_sessions WHERE id = ${sessionId}`);
+      const session = (existing as any).rows?.[0];
+      if (!session) return res.status(404).json({ message: "Sessao nao encontrada" });
+      if (session.student_id !== auth.userId) return res.status(403).json({ message: "Sessao nao pertence a voce" });
+      if (session.student_signed_at) return res.status(400).json({ message: "Sessao ja assinada" });
+
+      // Sign
+      await db.execute(sql`UPDATE clinical_sessions SET student_signed_at = ${now}, student_signed_ip = ${ip}, student_signed_user_agent = ${userAgent} WHERE id = ${sessionId}`);
+
+      // If admin already signed, mark as completed
+      if (session.admin_signed_at) {
+        await db.execute(sql`UPDATE clinical_sessions SET status = 'completed' WHERE id = ${sessionId}`);
+      } else {
+        await db.execute(sql`UPDATE clinical_sessions SET status = 'pending_admin' WHERE id = ${sessionId}`);
+      }
+
+      res.json({ message: "Sessao assinada pelo aluno", signedAt: now });
+    } catch (e: any) {
+      console.error("[student/clinical-sessions/sign] Error:", e.message);
+      res.status(500).json({ message: "Erro ao assinar sessao" });
     }
   });
 

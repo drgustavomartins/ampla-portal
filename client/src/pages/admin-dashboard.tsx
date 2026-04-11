@@ -28,7 +28,7 @@ import {
   Clock, Video, Shield, GraduationCap, Eye, Pencil, Calendar, Settings,
   CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library,
   GripVertical, CalendarDays, FolderOpen, Search, FileText, FileIcon, Headphones, ChevronDown, ChevronUp,
-  Sparkles, MessageCircle, Phone, Coins, Gift, Stethoscope, FileSignature, AlertTriangle
+  Sparkles, MessageCircle, Phone, Coins, Gift, Stethoscope, FileSignature, AlertTriangle, PenLine
 } from "lucide-react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -292,15 +292,29 @@ export default function AdminDashboard() {
   const [bonusLoading, setBonusLoading] = useState(false);
   const [expandedProfile, setExpandedProfile] = useState<string | null>(null);
   // Clinical sessions state & data
-  type ClinicalSession = { id: number; studentId: number; studentName: string; studentEmail: string; sessionDate: string; startTime: string; endTime: string; durationHours: number; procedures: string[]; notes: string | null; status: string; adminName: string; createdAt: string };
+  type ClinicalSession = { id: number; studentId: number; studentName: string; studentEmail: string; sessionDate: string; startTime: string; endTime: string; durationHours: number; procedures: string[]; notes: string | null; status: string; adminName: string; createdAt: string; patientsCount?: number; patientsDetails?: string[]; adminSignedAt?: string | null; studentSignedAt?: string | null };
   const { data: clinicalSessionsData } = useQuery<{ sessions: ClinicalSession[] }>({
     queryKey: ["/api/admin/clinical-sessions"],
     queryFn: async () => { const res = await apiRequest("GET", "/api/admin/clinical-sessions"); return res.json(); },
   });
   const clinicalSessions = clinicalSessionsData?.sessions || [];
   const [clinicalDialogOpen, setClinicalDialogOpen] = useState(false);
-  const [clinicalForm, setClinicalForm] = useState({ studentId: 0, sessionDate: "", startTime: "", endTime: "", durationHours: 0, procedures: [] as string[], notes: "" });
+  const [clinicalForm, setClinicalForm] = useState({ studentId: 0, sessionDate: "", startTime: "", endTime: "", durationHours: 0, procedures: [] as string[], notes: "", patientsCount: 0, patientsDetails: [] as string[] });
   const [clinicalLoading, setClinicalLoading] = useState(false);
+  const handleAdminSign = async (sessionId: number) => {
+    try {
+      const res = await apiRequest("POST", `/api/admin/clinical-sessions/${sessionId}/sign`);
+      if (res.ok) {
+        toast({ title: "Sessao assinada", description: "Assinatura do orientador registrada." });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/clinical-sessions"] });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast({ title: "Erro", description: data.message || "Erro ao assinar", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Erro", description: "Erro ao assinar sessao", variant: "destructive" });
+    }
+  };
   // Contracts data
   type ContractEntry = { id: number; userId: number; userName: string; userEmail: string; planKey: string; planName: string; amountPaid: number; status: string; signedAt: string | null; contractGroup: string | null; acceptedAt: string | null; acceptedIp: string | null; contractHtml: string | null; createdAt: string };
   const { data: contractsData } = useQuery<{ contracts: ContractEntry[] }>({
@@ -2040,6 +2054,20 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                       <div>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Pacientes atendidos</Label>
+                        <Input type="number" min={0} value={clinicalForm.patientsCount || ""} onChange={e => setClinicalForm(f => ({ ...f, patientsCount: parseInt(e.target.value) || 0 }))} placeholder="Número de pacientes" className="bg-background/50 border-border/40" />
+                      </div>
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Detalhes dos pacientes</Label>
+                        <Textarea
+                          value={clinicalForm.patientsDetails.join("\n")}
+                          onChange={e => setClinicalForm(f => ({ ...f, patientsDetails: e.target.value.split("\n").filter(l => l.trim() !== "") }))}
+                          placeholder="Um detalhe por linha..."
+                          className="bg-background/50 border-border/40"
+                          rows={3}
+                        />
+                      </div>
+                      <div>
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground">Observações</Label>
                         <Textarea value={clinicalForm.notes} onChange={e => setClinicalForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notas sobre a sessão..." className="bg-background/50 border-border/40" rows={2} />
                       </div>
@@ -2049,11 +2077,15 @@ export default function AdminDashboard() {
                         onClick={async () => {
                           setClinicalLoading(true);
                           try {
-                            await apiRequest("POST", "/api/admin/clinical-sessions", clinicalForm);
+                            await apiRequest("POST", "/api/admin/clinical-sessions", {
+                              ...clinicalForm,
+                              patientsCount: clinicalForm.patientsCount,
+                              patientsDetails: clinicalForm.patientsDetails,
+                            });
                             queryClient.invalidateQueries({ queryKey: ["/api/admin/clinical-sessions"] });
                             queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
                             setClinicalDialogOpen(false);
-                            setClinicalForm({ studentId: 0, sessionDate: "", startTime: "", endTime: "", durationHours: 0, procedures: [], notes: "" });
+                            setClinicalForm({ studentId: 0, sessionDate: "", startTime: "", endTime: "", durationHours: 0, procedures: [], notes: "", patientsCount: 0, patientsDetails: [] });
                             toast({ title: "Sessão registrada com sucesso!" });
                           } catch (err: any) {
                             toast({ title: "Erro ao registrar sessão", description: err.message, variant: "destructive" });
@@ -2074,27 +2106,74 @@ export default function AdminDashboard() {
                 <p className="text-sm text-muted-foreground">Nenhuma sessão clínica registrada ainda.</p>
               ) : (
                 <div className="space-y-2">
-                  {clinicalSessions.slice(0, 20).map(session => (
-                    <Card key={session.id} className="bg-card/50 border-border/20">
-                      <CardContent className="p-3 flex items-center justify-between">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Stethoscope className="w-4 h-4 text-gold shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">{session.studentName}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(session.sessionDate).toLocaleDateString("pt-BR")} · {session.startTime}–{session.endTime}
-                            </p>
+                  {clinicalSessions.slice(0, 20).map(session => {
+                    const adminSigned = !!session.adminSignedAt;
+                    const studentSigned = !!session.studentSignedAt;
+                    const statusLabel = adminSigned && studentSigned
+                      ? "Concluida"
+                      : adminSigned && !studentSigned
+                        ? "Aguardando aluno"
+                        : !adminSigned && studentSigned
+                          ? "Aguardando orientador"
+                          : "Pendente";
+                    const statusClass = adminSigned && studentSigned
+                      ? "bg-green-500/20 text-green-400 border-0"
+                      : adminSigned && !studentSigned
+                        ? "bg-amber-500/20 text-amber-400 border-0"
+                        : !adminSigned && studentSigned
+                          ? "bg-blue-500/20 text-blue-400 border-0"
+                          : "bg-muted/30 text-muted-foreground border-0";
+                    return (
+                      <Card key={session.id} className="bg-card/50 border-border/20">
+                        <CardContent className="p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <Stethoscope className="w-4 h-4 text-gold shrink-0 mt-0.5" />
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate">{session.studentName}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(session.sessionDate).toLocaleDateString("pt-BR")} · {session.startTime}-{session.endTime}
+                                </p>
+                                {(session.patientsCount !== undefined && session.patientsCount > 0) && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">Pacientes: {session.patientsCount}</p>
+                                )}
+                                <div className="flex gap-2 mt-1">
+                                  {session.adminSignedAt && (
+                                    <span className="text-[10px] text-muted-foreground">Orientador: {new Date(session.adminSignedAt).toLocaleDateString("pt-BR")}</span>
+                                  )}
+                                  {session.studentSignedAt && (
+                                    <span className="text-[10px] text-muted-foreground">Aluno: {new Date(session.studentSignedAt).toLocaleDateString("pt-BR")}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-2 shrink-0">
+                              <div className="flex items-center gap-1 flex-wrap justify-end">
+                                {session.procedures.slice(0, 2).map(p => (
+                                  <Badge key={p} variant="outline" className="text-[10px] border-gold/30 text-gold">{p}</Badge>
+                                ))}
+                                {session.procedures.length > 2 && (
+                                  <Badge variant="outline" className="text-[10px] border-gold/20 text-muted-foreground">+{session.procedures.length - 2}</Badge>
+                                )}
+                                <Badge className="bg-gold/20 text-gold border-0">{session.durationHours}h</Badge>
+                              </div>
+                              <Badge className={statusClass}>{statusLabel}</Badge>
+                              {!adminSigned && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-xs border-gold/40 text-gold hover:bg-gold/10"
+                                  onClick={() => handleAdminSign(session.id)}
+                                >
+                                  <PenLine className="w-3 h-3 mr-1" /> Assinar
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          {session.procedures.map(p => (
-                            <Badge key={p} variant="outline" className="text-[10px] border-gold/30 text-gold">{p}</Badge>
-                          ))}
-                          <Badge className="bg-gold/20 text-gold border-0">{session.durationHours}h</Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </div>
