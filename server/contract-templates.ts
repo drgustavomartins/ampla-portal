@@ -15,6 +15,16 @@ export interface ContractData {
   startDate: string;
 }
 
+// ─── Security helpers ───────────────────────────────────────────────────────
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // ─── Backwards-compat helpers ────────────────────────────────────────────────
 export function getContractGroup(planKey: string): string {
   if (["modulo_avulso", "pacote_completo"].includes(planKey)) return "digital";
@@ -78,7 +88,7 @@ export function getContractHTML(planKey: string, data: ContractData): string {
   body += `
 <h2>DAS PARTES</h2>
 <p><strong>CONTRATANTE:</strong> ${COMPANY.name}, inscrita no CNPJ sob nº ${COMPANY.cnpj}, com sede em ${COMPANY.address}, doravante denominada <strong>AMPLA FACIAL</strong>, representada pelo ${COMPANY.responsible}.</p>
-<p><strong>CONTRATADO(A):</strong> ${data.studentName}, e-mail ${data.studentEmail}${data.studentPhone ? `, telefone ${data.studentPhone}` : ""}, doravante denominado(a) <strong>ALUNO(A)</strong>.</p>
+<p><strong>CONTRATADO(A):</strong> ${escapeHtml(data.studentName)}, e-mail ${escapeHtml(data.studentEmail)}${data.studentPhone ? `, telefone ${escapeHtml(data.studentPhone)}` : ""}, doravante denominado(a) <strong>ALUNO(A)</strong>.</p>
 `;
 
   // ─── Cláusula 1 — Objeto ────────────────────────────────────────────────────
@@ -128,7 +138,7 @@ export function getContractHTML(planKey: string, data: ContractData): string {
   body += `<h2>Cláusula ${c2} — Do Prazo de Acesso</h2>`;
 
   if (plan.accessDays > 0) {
-    body += `<p>O acesso ao portal será de <strong>${accessLabel(plan.accessDays)}</strong> a partir da data de ativação (${data.startDate}), podendo ser renovado mediante nova contratação.</p>`;
+    body += `<p>O acesso ao portal será de <strong>${accessLabel(plan.accessDays)}</strong> a partir da data de ativação (${escapeHtml(data.startDate)}), podendo ser renovado mediante nova contratação.</p>`;
   }
   if (plan.hasMentorship && plan.mentorshipMonths > 0) {
     body += `<p>O acompanhamento individual (mentoria) terá duração de <strong>${monthsLabel(plan.mentorshipMonths)}</strong> a partir da data de ativação.</p>`;
@@ -248,7 +258,7 @@ export function getContractHTML(planKey: string, data: ContractData): string {
   // ─── Footer / signature ────────────────────────────────────────────────────
   body += `
 <div style="margin-top:48px;border-top:1px solid #ccc;padding-top:24px;">
-<p>Rio de Janeiro, ${data.startDate}</p>
+<p>Rio de Janeiro, ${escapeHtml(data.startDate)}</p>
 <p style="font-size:12px;color:#666;margin-top:8px;">Este contrato é firmado eletronicamente. A aceitação digital tem validade jurídica nos termos da Medida Provisória nº 2.200-2/2001 e do art. 10 da Lei nº 12.965/2014 (Marco Civil da Internet). O registro de aceite inclui IP, data/hora e identificação do usuário.</p>
 <div style="display:flex;justify-content:space-between;margin-top:32px;">
 <div style="text-align:center;">
@@ -257,7 +267,7 @@ export function getContractHTML(planKey: string, data: ContractData): string {
 </div>
 <div style="text-align:center;">
 <div style="border-bottom:1px solid #333;width:260px;margin-bottom:4px;">&nbsp;</div>
-<small><strong>${data.studentName}</strong><br/>${data.studentEmail}</small>
+<small><strong>${escapeHtml(data.studentName)}</strong><br/>${escapeHtml(data.studentEmail)}</small>
 </div>
 </div>
 </div>

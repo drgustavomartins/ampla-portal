@@ -290,7 +290,7 @@ export async function registerRoutes(server: Server, app: Express) {
     const { db } = await import("./db");
     await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
     const migrationName = "grant_all_materials_access_2026_04";
-    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    const already = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migrationName} LIMIT 1`);
     const alreadyRows = Array.isArray(already) ? already : (already as any).rows || [];
     if (alreadyRows.length === 0) {
       // 1. Enable materials_access for all existing users who still have it as false
@@ -305,10 +305,10 @@ export async function registerRoutes(server: Server, app: Express) {
         "IA na Medicina",
       ];
       for (const cat of categories) {
-        await db.execute(`INSERT INTO user_material_categories (user_id, category_title, enabled) SELECT id, '${cat.replace(/'/g, "''")}', true FROM users WHERE NOT EXISTS (SELECT 1 FROM user_material_categories WHERE user_material_categories.user_id = users.id AND user_material_categories.category_title = '${cat.replace(/'/g, "''")}')`);
+        await db.execute(sql`INSERT INTO user_material_categories (user_id, category_title, enabled) SELECT id, ${cat}, true FROM users WHERE NOT EXISTS (SELECT 1 FROM user_material_categories WHERE user_material_categories.user_id = users.id AND user_material_categories.category_title = ${cat})`);
       }
       // 3. Mark migration as applied
-      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migrationName}, ${new Date().toISOString()})`);
       console.log("[one-time-migrate] Granted all materials access to existing users");
     } else {
       console.log("[one-time-migrate] grant_all_materials_access already applied, skipping");
@@ -322,7 +322,7 @@ export async function registerRoutes(server: Server, app: Express) {
     const { db } = await import("./db");
     await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
     const migrationName = "seed_materials_db_2026_04";
-    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    const already = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migrationName} LIMIT 1`);
     const alreadyRows = Array.isArray(already) ? already : (already as any).rows || [];
     if (alreadyRows.length === 0) {
       const themesData = [
@@ -465,7 +465,7 @@ export async function registerRoutes(server: Server, app: Express) {
           }
         }
       }
-      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migrationName}, ${new Date().toISOString()})`);
       console.log("[one-time-migrate] Seeded materials into DB");
     } else {
       console.log("[one-time-migrate] seed_materials_db already applied, skipping");
@@ -479,7 +479,7 @@ export async function registerRoutes(server: Server, app: Express) {
     const { db } = await import("./db");
     await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
     const migrationName = "seed_toxina_shorts_2Z9LwcqWohk_2026_04";
-    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    const already = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migrationName} LIMIT 1`);
     if (already.rows.length === 0) {
       const exists = await db.execute(`SELECT id FROM lessons WHERE module_id = 2 AND video_url = 'https://youtube.com/shorts/2Z9LwcqWohk' LIMIT 1`);
       if (exists.rows.length === 0) {
@@ -490,7 +490,7 @@ export async function registerRoutes(server: Server, app: Express) {
         `);
         console.log("[one-time-migrate] Seeded Toxina Shorts lesson 2Z9LwcqWohk");
       }
-      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migrationName}, ${new Date().toISOString()})`);
     } else {
       console.log("[one-time-migrate] seed_toxina_shorts_2Z9LwcqWohk already applied, skipping");
     }
@@ -503,7 +503,7 @@ export async function registerRoutes(server: Server, app: Express) {
     const { db } = await import("./db");
     await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
     const migrationName = "seed_toxina_patient_lesson_2026_04";
-    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    const already = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migrationName} LIMIT 1`);
     if (already.rows.length === 0) {
       // Module 2 = Toxina Botulínica, this lesson goes after the existing 26 (order 27)
       const exists = await db.execute(`SELECT id FROM lessons WHERE module_id = 2 AND video_url = 'https://youtu.be/7M53CQwFvK0' LIMIT 1`);
@@ -513,7 +513,7 @@ export async function registerRoutes(server: Server, app: Express) {
         `);
         console.log("[one-time-migrate] Seeded Toxina patient case lesson");
       }
-      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migrationName}, ${new Date().toISOString()})`);
     } else {
       console.log("[one-time-migrate] seed_toxina_patient_lesson already applied, skipping");
     }
@@ -526,7 +526,7 @@ export async function registerRoutes(server: Server, app: Express) {
     const { db } = await import("./db");
     await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
     const migrationName = "seed_toxina_tercosuperior_60mais_2026_04";
-    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    const already = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migrationName} LIMIT 1`);
     if (already.rows.length === 0) {
       const exists = await db.execute(`SELECT id FROM lessons WHERE module_id = 2 AND video_url = 'https://youtube.com/shorts/2Z9LwcqWohk' LIMIT 1`);
       if (exists.rows.length === 0) {
@@ -535,7 +535,7 @@ export async function registerRoutes(server: Server, app: Express) {
         `);
         console.log("[one-time-migrate] Seeded Toxina Terço Superior 60+ lesson");
       }
-      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migrationName}, ${new Date().toISOString()})`);
     } else {
       console.log("[one-time-migrate] seed_toxina_tercosuperior_60mais already applied, skipping");
     }
@@ -548,7 +548,7 @@ export async function registerRoutes(server: Server, app: Express) {
     const { db } = await import("./db");
     await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
     const migrationName = "seed_bioestimuladores_lessons_2026_04";
-    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    const already = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migrationName} LIMIT 1`);
     if (already.rows.length === 0) {
       // Module 5 = Bioestimuladores de Colágeno
       const moduleId = 5;
@@ -563,7 +563,7 @@ export async function registerRoutes(server: Server, app: Express) {
       } else {
         console.log("[one-time-migrate] Bioestimuladores module already has lessons, skipping insert");
       }
-      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migrationName}, ${new Date().toISOString()})`);
     } else {
       console.log("[one-time-migrate] seed_bioestimuladores_lessons already applied, skipping");
     }
@@ -576,10 +576,10 @@ export async function registerRoutes(server: Server, app: Express) {
     const { db } = await import("./db");
     await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
     const migrationName = "fix_toxina_cover_url_v3_2026_04";
-    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    const already = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migrationName} LIMIT 1`);
     if (already.rows.length === 0) {
       await db.execute(`UPDATE material_themes SET cover_url = '/images/covers/cover_toxina_botulinica.png?v=4' WHERE title = 'Toxina Botulínica'`);
-      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migrationName}, ${new Date().toISOString()})`);
       console.log("[one-time-migrate] Updated Toxina Botulínica cover URL to v3");
     } else {
       console.log("[one-time-migrate] fix_toxina_cover_url_v3 already applied, skipping");
@@ -593,10 +593,10 @@ export async function registerRoutes(server: Server, app: Express) {
     const { db } = await import("./db");
     await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
     const migrationName = "fix_moduladores_cover_url_v3_2026_04";
-    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    const already = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migrationName} LIMIT 1`);
     if (already.rows.length === 0) {
       await db.execute(`UPDATE material_themes SET cover_url = '/images/covers/cover_moduladores_matriz.png?v=3' WHERE title = 'Moduladores de Matriz Extracelular'`);
-      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migrationName}, ${new Date().toISOString()})`);
       console.log("[one-time-migrate] Updated Moduladores cover URL to v3");
     } else {
       console.log("[one-time-migrate] fix_moduladores_cover_url_v3 already applied, skipping");
@@ -610,14 +610,14 @@ export async function registerRoutes(server: Server, app: Express) {
     const { db } = await import("./db");
     await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
     const migrationName = "fix_all_cover_urls_v2026_04_09";
-    const already = await db.execute(`SELECT 1 FROM migrations_applied WHERE name = '${migrationName}' LIMIT 1`);
+    const already = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migrationName} LIMIT 1`);
     if (already.rows.length === 0) {
       await db.execute(`UPDATE material_themes SET cover_url = '/images/covers/cover_toxina_botulinica_v2026.png' WHERE title = 'Toxina Botulínica'`);
       await db.execute(`UPDATE material_themes SET cover_url = '/images/covers/cover_preenchedores_faciais_v2026.png' WHERE title = 'Preenchedores Faciais'`);
       await db.execute(`UPDATE material_themes SET cover_url = '/images/covers/cover_bioestimuladores_v2026.png' WHERE title = 'Bioestimuladores de Colágeno'`);
       await db.execute(`UPDATE material_themes SET cover_url = '/images/covers/cover_moduladores_matriz_v2026.png' WHERE title = 'Moduladores de Matriz Extracelular'`);
       await db.execute(`UPDATE material_themes SET cover_url = '/images/covers/cover_metodo_naturalup_v2026.png' WHERE title = 'Método NaturalUp®'`);
-      await db.execute(`INSERT INTO migrations_applied (name, applied_at) VALUES ('${migrationName}', '${new Date().toISOString()}')`);
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migrationName}, ${new Date().toISOString()})`);
       console.log("[one-time-migrate] Updated all cover URLs to v2026 (real filename change for CDN cache bust)");
     } else {
       console.log("[one-time-migrate] fix_all_cover_urls_v2026 already applied, skipping");
@@ -784,6 +784,18 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // POST /api/quiz/lead — salvar lead do quiz
   app.post("/api/quiz/lead", async (req, res) => {
+    // Rate limit: 5 leads per IP per 15 minutes
+    const quizIp = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
+    const quizRlKey = `quiz_lead_${quizIp}`;
+    const quizRl = rateLimitStore.get(quizRlKey);
+    if (quizRl && quizRl.count >= 5 && Date.now() - quizRl.first < 900000) {
+      return res.status(429).json({ message: "Muitas tentativas. Aguarde alguns minutos." });
+    }
+    if (!quizRl || Date.now() - quizRl.first >= 900000) {
+      rateLimitStore.set(quizRlKey, { count: 1, first: Date.now() });
+    } else {
+      quizRl.count++;
+    }
     try {
       const { db } = await import("./db");
       const { nome, email, whatsapp, resultado, respostas } = req.body;
@@ -1513,10 +1525,28 @@ export async function registerRoutes(server: Server, app: Express) {
   });
 
   // ==================== LESSONS ====================
+  // Helper: check if authenticated user has valid (non-expired) access
+  async function hasVideoAccess(auth: { userId: number; role: string } | null): Promise<boolean> {
+    if (!auth) return false;
+    if (auth.role === "admin" || auth.role === "super_admin") return true;
+    try {
+      const { db } = await import("./db");
+      const userRow = await db.execute(sql`SELECT role, approved, access_expires_at FROM users WHERE id = ${auth.userId}`);
+      const user = (userRow as any).rows?.[0];
+      if (!user || user.approved === false) return false;
+      if (user.access_expires_at) {
+        const expires = new Date(user.access_expires_at);
+        if (new Date() > expires) return false;
+      }
+      return true;
+    } catch { return false; }
+  }
+
   app.get("/api/lessons", async (req, res) => {
     const auth = authenticateRequest(req);
     const l = await storage.getLessons();
-    if (!auth) {
+    const canSeeVideo = await hasVideoAccess(auth);
+    if (!canSeeVideo) {
       res.json(l.map(({ videoUrl, ...rest }) => rest));
     } else {
       res.json(l);
@@ -1526,7 +1556,8 @@ export async function registerRoutes(server: Server, app: Express) {
   app.get("/api/modules/:id/lessons", async (req, res) => {
     const auth = authenticateRequest(req);
     const l = await storage.getLessonsByModule(parseInt(req.params.id));
-    if (!auth) {
+    const canSeeVideo = await hasVideoAccess(auth);
+    if (!canSeeVideo) {
       res.json(l.map(({ videoUrl, ...rest }) => rest));
     } else {
       res.json(l);
@@ -1537,7 +1568,8 @@ export async function registerRoutes(server: Server, app: Express) {
     const lesson = await storage.getLesson(parseInt(req.params.id));
     if (!lesson) return res.status(404).json({ message: "Aula não encontrada" });
     const auth = authenticateRequest(req);
-    if (!auth) {
+    const canSeeVideo = await hasVideoAccess(auth);
+    if (!canSeeVideo) {
       const { videoUrl, ...rest } = lesson;
       res.json(rest);
     } else {

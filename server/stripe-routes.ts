@@ -9,7 +9,10 @@ import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY || "";
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+if (!STRIPE_WEBHOOK_SECRET) {
+  console.error("[STRIPE] AVISO: STRIPE_WEBHOOK_SECRET nao configurado! Webhooks serao rejeitados.");
+}
 
 function getStripe(): Stripe | null {
   if (!STRIPE_SECRET) return null;
@@ -151,14 +154,17 @@ export function registerStripeRoutes(app: Express) {
       upgradeDescription = `Upgrade para ${plan.name} (crédito de ${formatBRL(upgradeCredit)} aplicado)`;
     }
 
-    // Desconto de 10% para quem usa codigo de indicacao valido
+    // Desconto de 10% para quem usa codigo de indicacao valido (bloqueio de self-referral)
     let referralDiscount = 0;
     if (referralCode) {
       const refCheck = await db.execute(sql`SELECT user_id FROM referral_codes WHERE UPPER(code) = ${referralCode.trim().toUpperCase()}`);
-      if ((refCheck as any).rows?.length > 0) {
+      const referrerId = (refCheck as any).rows?.[0]?.user_id;
+      if (referrerId && referrerId !== auth.userId) {
         referralDiscount = Math.floor(amountToPay * 0.10);
         amountToPay -= referralDiscount;
-        console.log(`[checkout] Desconto indicacao 10% = ${referralDiscount} centavos para userId ${auth.userId}`);
+        console.log(`[checkout] Desconto indicacao 10% = ${referralDiscount} centavos para userId ${auth.userId} (referrer: ${referrerId})`);
+      } else if (referrerId === auth.userId) {
+        console.log(`[checkout] Self-referral bloqueado para userId ${auth.userId}`);
       }
     }
 
@@ -172,32 +178,30 @@ export function registerStripeRoutes(app: Express) {
       }
     }
 
-    // Apply credits if requested
+    // Apply credits if requested (with unique ref to prevent double-spend)
     let creditDeduction = 0;
-    if (creditsToUse && creditsToUse > 0) {
+    if (creditsToUse && Number.isInteger(creditsToUse) && creditsToUse > 0) {
       const balanceResult = await db.execute(sql`SELECT COALESCE(SUM(amount), 0) as balance FROM credit_transactions WHERE (expires_at IS NULL OR expires_at > NOW()::text OR amount < 0) AND user_id = ${auth.userId}`);
       const balance = Number((balanceResult as any).rows?.[0]?.balance || 0);
       if (creditsToUse > balance) return res.status(400).json({ message: "Saldo de créditos insuficiente" });
       creditDeduction = Math.min(creditsToUse, amountToPay);
       amountToPay -= creditDeduction;
-    }
 
-    // If credits cover 100% of the price, skip Stripe and activate directly
-    if (amountToPay <= 0) {
+      // Debit immediately with unique reference
+      const uniqueRef = `checkout_${auth.userId}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
       const now = new Date().toISOString();
-      const accessExpiry = new Date(Date.now() + plan.accessDays * 86400000).toISOString();
-      // Debit credits
-      await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at) VALUES (${auth.userId}, 'usage', ${-creditDeduction}, ${'Pagamento integral com créditos: ' + plan.name}, ${'credits_' + Date.now()}, ${now})`);
-      // Activate access
-      await db.execute(sql`UPDATE users SET plan_key = ${planKey}, plan_paid_at = ${now}, plan_amount_paid = ${plan.price}, approved = true, access_expires_at = ${accessExpiry}, materials_access = true WHERE id = ${auth.userId}`);
-      return res.json({ url: null, sessionId: null, paidWithCredits: true });
-    }
 
-    // Debit credits now (will be applied regardless of Stripe outcome)
-    if (creditDeduction > 0) {
-      const now = new Date().toISOString();
-      await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at) VALUES (${auth.userId}, 'usage', ${-creditDeduction}, ${'Créditos aplicados: ' + plan.name}, ${'checkout_' + Date.now()}, ${now})`);
-      upgradeDescription = `${plan.name} (${formatBRL(creditDeduction)} em créditos aplicados)`;
+      if (amountToPay <= 0) {
+        // Credits cover 100% - activate directly
+        const accessExpiry = new Date(Date.now() + plan.accessDays * 86400000).toISOString();
+        await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at) VALUES (${auth.userId}, 'usage', ${-creditDeduction}, ${'Pagamento integral com creditos: ' + plan.name}, ${uniqueRef}, ${now})`);
+        await db.execute(sql`UPDATE users SET plan_key = ${planKey}, plan_paid_at = ${now}, plan_amount_paid = ${plan.price}, approved = true, access_expires_at = ${accessExpiry}, materials_access = true WHERE id = ${auth.userId}`);
+        return res.json({ url: null, sessionId: null, paidWithCredits: true });
+      } else {
+        // Partial credits - debit now
+        await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at) VALUES (${auth.userId}, 'usage', ${-creditDeduction}, ${'Creditos aplicados: ' + plan.name}, ${uniqueRef}, ${now})`);
+        upgradeDescription = `${plan.name} (${formatBRL(creditDeduction)} em creditos aplicados)`;
+      }
     }
 
     // Criar ou recuperar customer Stripe
@@ -527,11 +531,16 @@ export function registerStripeRoutes(app: Express) {
             const ref = await db.execute(sql`SELECT user_id FROM referral_codes WHERE code = ${referralCode}`);
             if ((ref as any).rows?.length > 0) {
               const referrerId = (ref as any).rows[0].user_id;
+              // Bloquear self-referral
+              if (referrerId === userId) {
+                console.log(`[stripe webhook] Self-referral bloqueado para userId ${userId}`);
+              } else {
               const referralCredit = Math.floor(amountPaid * 0.10);
               const refExpiresAt = new Date(Date.now() + 180 * 86400000).toISOString(); // 6 meses
               await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at, expires_at)
                 VALUES (${referrerId}, 'referral', ${referralCredit}, ${'Indicação: ' + planKey}, ${session.id}, ${new Date().toISOString()}, ${refExpiresAt})`);
               console.log(`[stripe webhook] Referral credit ${referralCredit} centavos para referrer userId ${referrerId} (expira ${refExpiresAt})`);
+              }
             }
           }
         } catch (e: any) {
