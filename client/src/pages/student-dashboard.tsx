@@ -418,8 +418,12 @@ export default function StudentDashboard() {
     ? "Comece por aqui"
     : isLastLessonDone ? "Continue assistindo" : "Continue assistindo";
 
-  // Plan progress (days)
-  const planDurationDays = userPlan?.durationDays || 365;
+  // Plan progress (days) — calcula duração real a partir das datas do usuário
+  const planStartDate = (user as any)?.planPaidAt || (user as any)?.trialStartedAt || user?.createdAt;
+  const planEndDate = user?.accessExpiresAt;
+  const planDurationDays = (planStartDate && planEndDate)
+    ? Math.max(1, Math.ceil((new Date(planEndDate).getTime() - new Date(planStartDate).getTime()) / (1000 * 60 * 60 * 24)))
+    : (userPlan?.durationDays || 365);
   const daysUsed = Math.max(0, planDurationDays - daysLeft);
   const dayProgressPercent = Math.min(100, Math.round((daysUsed / planDurationDays) * 100));
 
