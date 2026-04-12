@@ -105,7 +105,7 @@ export default function CreditsPage() {
             </p>
             <a
               href="/#/planos"
-              className="inline-flex items-center gap-2 mt-2 px-6 py-2.5 rounded-xl bg-gold/90 hover:bg-gold text-[#0A0D14] text-sm font-semibold transition-colors"
+              className="inline-flex items-center gap-2 mt-3 px-8 py-3 rounded-xl bg-[#D4A843] hover:bg-[#c49a3a] text-[#0A0D14] text-sm font-bold transition-colors shadow-md"
             >
               {balance > 0 ? "Usar creditos agora" : "Ver planos disponiveis"}
             </a>
@@ -235,6 +235,30 @@ export default function CreditsPage() {
           )}
         </div>
       </main>
+
+      {/* CTA final */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+        <div className="rounded-2xl border border-gold/20 bg-gradient-to-r from-gold/10 via-card to-card p-6 sm:p-8 text-center space-y-4">
+          <h3 className="text-lg font-semibold text-foreground">Evolua sua pratica clinica</h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            Acumule creditos indicando colegas, participando das aulas ao vivo e use como desconto em qualquer produto.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a
+              href="/#/planos"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-[#D4A843] hover:bg-[#c49a3a] text-[#0A0D14] text-sm font-bold transition-colors shadow-md"
+            >
+              Ver planos disponiveis
+            </a>
+            <a
+              href="/#/creditos/regras"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-border/40 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+            >
+              Como funciona o programa
+            </a>
+          </div>
+        </div>
+      </div>
 
       {/* Footer */}
       <footer className="border-t border-border/30 py-6 mt-4">
