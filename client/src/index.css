@@ -259,3 +259,22 @@
     inset: -1px;
   }
 }
+
+/* Botao dourado forcado - sobrescreve text-card-foreground */
+.btn-gold-forced {
+  background-color: #D4A843 !important;
+  color: #0A0D14 !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 32px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+  transition: opacity 0.2s;
+}
+.btn-gold-forced:hover {
+  opacity: 0.9;
+}

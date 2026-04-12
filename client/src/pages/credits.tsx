@@ -103,10 +103,7 @@ export default function CreditsPage() {
             <p className="text-xs text-muted-foreground">
               Use seus creditos como desconto na compra de qualquer plano.
             </p>
-            <a
-              href="/#/planos"
-              className="!bg-[#D4A843] !text-[#0A0D14] inline-flex items-center gap-2 mt-3 px-8 py-3 rounded-xl text-sm font-bold shadow-md no-underline"
-            >
+            <a href="/#/planos" className="btn-gold-forced mt-3">
               {balance > 0 ? "Usar creditos agora" : "Ver planos disponiveis"}
             </a>
           </CardContent>
@@ -246,7 +243,7 @@ export default function CreditsPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
               href="/#/planos"
-              className="!bg-[#D4A843] !text-[#0A0D14] inline-flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-bold shadow-md no-underline"
+              className="btn-gold-forced"
             >
               Ver planos disponiveis
             </a>

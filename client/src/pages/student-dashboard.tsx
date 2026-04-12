@@ -1304,7 +1304,7 @@ export default function StudentDashboard() {
                             }
                           }}
                           disabled={signingSessionId === session.id}
-                          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 !bg-[#D4A843] !text-[#0A0D14]"
+                          className="btn-gold-forced w-full justify-center py-3 disabled:opacity-50"
                         >
                           {signingSessionId === session.id ? (
                             "Assinando..."
