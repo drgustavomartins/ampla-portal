@@ -767,7 +767,7 @@ export default function StudentDashboard() {
                   <span className="text-muted-foreground">Progresso do plano</span>
                   <span className="font-medium text-gold">{daysUsed}/{planDurationDays} dias</span>
                 </div>
-                <Progress value={dayProgressPercent} className="h-2 bg-border/30" />
+                <Progress value={totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : dayProgressPercent} className="h-2 bg-border/30" />
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Dias restantes</span>
