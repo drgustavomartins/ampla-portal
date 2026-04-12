@@ -1485,9 +1485,10 @@ export default function AdminDashboard() {
 
         {/* ─── Main Content Tabs ─── */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          {/* ─── Mobile: single scrollable tab row ─── */}
-          <div className="sm:hidden -mx-4 px-4">
-            <TabsList className="inline-flex w-auto bg-transparent border-0 p-0 h-auto gap-1.5 overflow-x-auto pb-2 scrollbar-none">
+          {/* ─── Mobile: single scrollable tab row with fade hint ─── */}
+          <div className="sm:hidden -mx-4 px-4 relative">
+            <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-[#0A1628] to-transparent z-10 pointer-events-none" />
+            <TabsList className="inline-flex w-auto bg-transparent border-0 p-0 h-auto gap-1.5 overflow-x-auto pb-2 scrollbar-none pr-8">
               {([
                 { value: "students", label: "Alunos", icon: Users },
                 { value: "leads", label: "Leads", icon: Zap, badge: trialStudents.length > 0 ? trialStudents.length : undefined },
