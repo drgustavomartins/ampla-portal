@@ -1774,10 +1774,11 @@ export async function registerRoutes(server: Server, app: Express) {
       // Clinical + practice hours from plan config
       const clinicalHours = plan ? (plan.clinicalHours + plan.practiceHours) : 0;
 
-      // 1. Update user fields
+      // 1. Update user fields (plan_paid_at marks exit from trial)
       await db.execute(sql`UPDATE users SET
         plan_key = ${planKey},
         approved = true,
+        plan_paid_at = COALESCE(plan_paid_at, ${now}),
         access_expires_at = ${accessExpiry},
         materials_access = true,
         community_access = true,
