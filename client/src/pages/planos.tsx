@@ -11,7 +11,7 @@ function formatBRL(c: number) {
   return (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-const NEGOCIACAO_DIRETA = ["vip_online", "vip_presencial", "vip_completo", "imersao"];
+const NEGOCIACAO_DIRETA: string[] = []; // Todos os planos vao pelo Stripe
 
 const WHATSAPP_NEGOCIACAO = (planName: string) =>
   `https://wa.me/5521976263881?text=${encodeURIComponent(
@@ -69,7 +69,7 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
       className={`relative flex flex-col rounded-2xl border transition-all duration-200 ${
         isDestaque
           ? "border-[#D4A843] bg-gradient-to-b from-[#1a2d4d] to-[#0D1E35] shadow-[0_0_30px_rgba(212,168,67,0.15)]"
-          : "border-[#1e3a5f] bg-[#0D1E35] hover:border-[#D4A843]/30"
+          : "border-gray-200 bg-white hover:border-[#D4A843]/40"
       } p-6`}
     >
       {plan.highlight && (
@@ -80,8 +80,8 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
 
       {/* Header */}
       <div className="mb-3">
-        <h3 className="text-lg font-bold text-white">{plan.name}</h3>
-        <p className="mt-1 text-sm text-gray-400">{plan.description}</p>
+        <h3 className="text-lg font-bold text-[#1a1a1a]">{plan.name}</h3>
+        <p className="mt-1 text-sm text-gray-500">{plan.description}</p>
       </div>
 
       {/* Badges */}
@@ -111,8 +111,8 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
       {/* Features */}
       <ul className="mb-2 flex-1 space-y-2">
         {visibleFeatures.map((f, i) => (
-          <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
-            <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#D4A843]" />
+          <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#B8860B]" />
             <span>{f}</span>
           </li>
         ))}
@@ -121,7 +121,7 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
       {plan.features.length > 5 && (
         <button
           onClick={() => setExpanded(!expanded)}
-          className="mb-5 flex items-center gap-1 text-xs text-[#D4A843]/70 hover:text-[#D4A843] transition-colors"
+          className="mb-5 flex items-center gap-1 text-xs text-[#B8860B]/70 hover:text-[#B8860B] transition-colors"
         >
           {expanded ? (
             <><ChevronUp className="h-3.5 w-3.5" /> Ver menos</>
@@ -133,16 +133,16 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
 
       {/* Valor percebido */}
       {plan.valorMercado && (
-        <div className="mb-3 rounded-xl border border-[#D4A843]/20 bg-[#D4A843]/5 px-3 py-2">
-          <div className="flex items-center gap-1.5 text-xs text-gray-400">
-            <TrendingUp className="h-3.5 w-3.5 text-[#D4A843]" />
+        <div className="mb-3 rounded-xl border border-[#D4A843]/30 bg-[#D4A843]/10 px-3 py-2">
+          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <TrendingUp className="h-3.5 w-3.5 text-[#B8860B]" />
             <span>Se fosse curso a curso, pagaria</span>
           </div>
           <div className="mt-0.5 flex items-center gap-2">
             <span className="text-sm font-semibold text-gray-500 line-through">
               {(plan.valorMercado / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
             </span>
-            <span className="rounded-full bg-green-900/40 px-2 py-0.5 text-xs font-bold text-green-400">
+            <span className="rounded-full bg-green-900/40 px-2 py-0.5 text-xs font-bold text-green-600">
               -{Math.round((1 - plan.price / plan.valorMercado) * 100)}%
             </span>
           </div>
@@ -152,9 +152,9 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
       {/* Preço */}
       {plan.priceFormatted && (
         <div className="mb-4">
-          <div className="text-2xl font-bold text-[#D4A843]">{plan.priceFormatted}</div>
+          <div className="text-2xl font-bold text-[#B8860B]">{plan.priceFormatted}</div>
           {plan.installments12xFormatted && (
-            <div className="text-xs text-gray-400">ou 12x de {plan.installments12xFormatted}</div>
+            <div className="text-xs text-gray-500">ou 12x de {plan.installments12xFormatted}</div>
           )}
         </div>
       )}
@@ -162,7 +162,7 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
       {/* CTA */}
       {isNegociacao ? (
         <div className="space-y-2">
-          <p className="text-center text-xs text-[#D4A843]/70">
+          <p className="text-center text-xs text-[#B8860B]/70">
             {plan.practiceHours > 0
               ? "Inclui prática com paciente modelo — requer entrevista prévia."
               : "Requer entrevista com o Dr. Gustavo antes da matrícula."}
@@ -171,7 +171,7 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
             href={WHATSAPP_NEGOCIACAO(plan.name)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3 text-sm font-semibold text-white hover:bg-[#1ebe5d] transition-all"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] py-3 text-sm font-semibold text-[#1a1a1a] hover:bg-[#1ebe5d] transition-all"
           >
             <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
@@ -186,7 +186,7 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
           className={`mt-auto flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-all disabled:opacity-50 ${
             isDestaque
               ? "bg-[#D4A843] text-[#0A1628] hover:bg-[#e8b84d]"
-              : "border border-[#D4A843] text-[#D4A843] hover:bg-[#D4A843] hover:text-[#0A1628]"
+              : "border border-[#D4A843] text-[#B8860B] hover:bg-[#D4A843] hover:text-[#0A1628]"
           }`}
         >
           {isLoading
@@ -325,7 +325,7 @@ export default function PlanosPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0A1628]">
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F6F2]">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#D4A843] border-t-transparent" />
       </div>
     );
@@ -339,19 +339,19 @@ export default function PlanosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A1628] px-4 py-12">
+    <div className="min-h-screen bg-[#F7F6F2] px-4 py-12">
       <div className="mx-auto max-w-7xl">
 
         {/* Header */}
         <div className="mb-10 text-center">
           <img src="/logo-transparent.png" alt="Ampla Facial" className="mx-auto mb-5 h-24 object-contain" />
-          <h1 className="text-4xl font-bold text-white">Escolha seu caminho</h1>
-          <p className="mt-2 text-gray-400">
+          <h1 className="text-4xl font-bold text-[#1a1a1a]">Escolha seu caminho</h1>
+          <p className="mt-2 text-gray-500">
             Do iniciante ao avançado — cada plano é uma etapa da sua evolução em HOF
           </p>
 
           {myPlan?.isTrialActive && (
-            <div className="mt-5 inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-900/30 px-5 py-2.5 text-sm text-amber-300">
+            <div className="mt-5 inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-5 py-2.5 text-sm text-amber-600">
               <Clock className="h-4 w-4 shrink-0" />
               Seu período gratuito encerra em{" "}
               <strong>{myPlan.trialDaysLeft} dia{myPlan.trialDaysLeft !== 1 ? "s" : ""}</strong>.
@@ -361,10 +361,10 @@ export default function PlanosPage() {
         </div>
 
         {/* Campo de código de indicação */}
-        <div className="mb-6 rounded-2xl border border-[#1e3a5f] bg-[#0D1E35] p-5">
+        <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="flex-1 w-full">
-              <label className="text-xs font-medium text-gray-400 mb-1 block">Codigo de indicacao (opcional)</label>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">Codigo de indicacao (opcional)</label>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -385,7 +385,7 @@ export default function PlanosPage() {
                       setReferralName(data.name || '');
                     } catch { setReferralValid(false); }
                   }}
-                  className="flex-1 rounded-lg border border-[#1e3a5f] bg-[#0A1628] px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-[#D4A843] focus:outline-none font-mono tracking-wider"
+                  className="flex-1 rounded-lg border border-gray-200 bg-[#F7F6F2] px-3 py-2 text-sm text-[#1a1a1a] placeholder-gray-600 focus:border-[#D4A843] focus:outline-none font-mono tracking-wider"
                 />
               </div>
               {referralValid === true && (
@@ -400,36 +400,36 @@ export default function PlanosPage() {
 
         {/* Credit balance banner — desconto aplicado automaticamente */}
         {creditBalance > 0 && (
-          <div className="mb-8 rounded-2xl border border-[#D4A843]/30 bg-[#0D1E35] p-6">
+          <div className="mb-8 rounded-2xl border border-[#D4A843]/40 bg-white p-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-[#D4A843]/15 flex items-center justify-center shrink-0">
-                <Star className="h-5 w-5 text-[#D4A843]" />
+                <Star className="h-5 w-5 text-[#B8860B]" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">Desconto de <span className="text-[#D4A843]">{formatBRL(creditBalance)}</span> aplicado automaticamente</p>
-                <p className="text-xs text-gray-400 mt-0.5">Seu saldo de creditos sera usado como desconto no checkout. Se cobrir 100% do valor, o acesso e liberado na hora.</p>
+                <p className="text-sm font-semibold text-[#1a1a1a]">Desconto de <span className="text-[#B8860B]">{formatBRL(creditBalance)}</span> aplicado automaticamente</p>
+                <p className="text-xs text-gray-500 mt-0.5">Seu saldo de creditos sera usado como desconto no checkout. Se cobrir 100% do valor, o acesso e liberado na hora.</p>
               </div>
             </div>
           </div>
         )}
 
         {/* Como funciona o processo */}
-        <div className="mb-10 rounded-2xl border border-[#1e3a5f] bg-[#0D1E35] p-6">
+        <div className="mb-10 rounded-2xl border border-gray-200 bg-white p-6">
           <div className="flex items-center gap-2 mb-4">
-            <MessageCircle className="h-4 w-4 text-[#D4A843]" />
-            <p className="text-sm font-semibold text-white">Como funciona</p>
+            <MessageCircle className="h-4 w-4 text-[#B8860B]" />
+            <p className="text-sm font-semibold text-[#1a1a1a]">Como funciona</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-400">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-500">
             <div className="flex items-start gap-3">
-              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#D4A843]">1</span>
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#B8860B]">1</span>
               <span>Escolha o plano que faz sentido para o seu momento profissional</span>
             </div>
             <div className="flex items-start gap-3">
-              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#D4A843]">2</span>
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#B8860B]">2</span>
               <span>Clique em "Pagar e acessar agora" — você é redirecionado para o checkout seguro</span>
             </div>
             <div className="flex items-start gap-3">
-              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#D4A843]">3</span>
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#B8860B]">3</span>
               <span>Acesso liberado imediatamente após o pagamento confirmado</span>
             </div>
           </div>
@@ -440,7 +440,7 @@ export default function PlanosPage() {
           <button
             onClick={() => setSelectedGroup(null)}
             className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${
-              !selectedGroup ? "bg-[#D4A843] text-[#0A1628]" : "border border-[#1e3a5f] text-gray-400 hover:border-[#D4A843]/40"
+              !selectedGroup ? "bg-[#D4A843] text-[#0A1628]" : "border border-gray-200 text-gray-500 hover:border-[#D4A843]/40"
             }`}
           >
             Todos
@@ -450,7 +450,7 @@ export default function PlanosPage() {
               key={g}
               onClick={() => setSelectedGroup(g === selectedGroup ? null : g)}
               className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${
-                selectedGroup === g ? "bg-[#D4A843] text-[#0A1628]" : "border border-[#1e3a5f] text-gray-400 hover:border-[#D4A843]/40"
+                selectedGroup === g ? "bg-[#D4A843] text-[#0A1628]" : "border border-gray-200 text-gray-500 hover:border-[#D4A843]/40"
               }`}
             >
               {GROUP_LABELS[g]}
@@ -465,7 +465,7 @@ export default function PlanosPage() {
           return (
             <div key={group} className="mb-14">
               <div className="mb-6 text-center">
-                <div className="inline-block rounded-full border border-[#D4A843]/30 bg-[#D4A843]/10 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-[#D4A843]">
+                <div className="inline-block rounded-full border border-[#D4A843]/40 bg-[#D4A843]/10 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-[#B8860B]">
                   {GROUP_LABELS[group]}
                 </div>
                 <p className="mt-2 text-sm text-gray-500">{GROUP_DESCRIPTIONS[group]}</p>
@@ -489,10 +489,10 @@ export default function PlanosPage() {
         })}
 
         {/* Política de upgrade */}
-        <div className="mt-4 rounded-2xl border border-[#1e3a5f] bg-[#0D1E35] p-6 text-center">
-          <Star className="mx-auto mb-3 h-6 w-6 text-[#D4A843]" />
-          <h3 className="text-lg font-semibold text-white">Upgrade com crédito do que já pagou</h3>
-          <p className="mt-2 text-sm text-gray-400">
+        <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-6 text-center">
+          <Star className="mx-auto mb-3 h-6 w-6 text-[#B8860B]" />
+          <h3 className="text-lg font-semibold text-[#1a1a1a]">Upgrade com crédito do que já pagou</h3>
+          <p className="mt-2 text-sm text-gray-500">
             Dentro de 60 dias: 100% do valor pago vira crédito no próximo plano. Após 60 dias: 70%.
             Você sempre paga apenas a diferença.
           </p>
@@ -500,10 +500,10 @@ export default function PlanosPage() {
 
         {/* Aviso de mentoria necessária para horas (aparece só se grupo horas está visível e aluno não tem mentoria) */}
         {(!selectedGroup || selectedGroup === "horas") && user && !MENTORIA_PLANS.includes(user.planKey || "") && (groupedPlans["horas"] || []).length > 0 && (
-          <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6 text-center">
+          <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-500/5 p-6 text-center">
             <Clock className="mx-auto mb-3 h-6 w-6 text-amber-400" />
-            <h3 className="text-lg font-semibold text-white">Mentoria ativa necessária</h3>
-            <p className="mt-2 text-sm text-gray-400">
+            <h3 className="text-lg font-semibold text-[#1a1a1a]">Mentoria ativa necessária</h3>
+            <p className="mt-2 text-sm text-gray-500">
               Para adquirir pacotes de horas clínicas extras, você precisa ter um plano de Mentoria VIP ativo (Online, Presencial ou Completo).
             </p>
           </div>
@@ -514,12 +514,12 @@ export default function PlanosPage() {
       {/* Contract Acceptance Modal */}
       {contractDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setContractDialogOpen(false)}>
-          <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl border border-[#1e3a5f] bg-[#0D1E35] shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl border border-gray-200 bg-white shadow-2xl" onClick={e => e.stopPropagation()}>
             {/* Header */}
-            <div className="flex items-center gap-3 border-b border-[#1e3a5f] px-6 py-4">
-              <FileSignature className="h-5 w-5 text-[#D4A843]" />
-              <h2 className="text-lg font-bold text-white">Termos de Contratação</h2>
-              <button onClick={() => setContractDialogOpen(false)} className="ml-auto text-gray-400 hover:text-white text-xl leading-none">&times;</button>
+            <div className="flex items-center gap-3 border-b border-gray-200 px-6 py-4">
+              <FileSignature className="h-5 w-5 text-[#B8860B]" />
+              <h2 className="text-lg font-bold text-[#1a1a1a]">Termos de Contratação</h2>
+              <button onClick={() => setContractDialogOpen(false)} className="ml-auto text-gray-500 hover:text-[#1a1a1a] text-xl leading-none">&times;</button>
             </div>
 
             {/* Contract HTML */}
@@ -531,15 +531,15 @@ export default function PlanosPage() {
             </div>
 
             {/* Accept */}
-            <div className="border-t border-[#1e3a5f] px-6 py-4 space-y-3">
+            <div className="border-t border-gray-200 px-6 py-4 space-y-3">
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={contractAccepted}
                   onChange={e => setContractAccepted(e.target.checked)}
-                  className="mt-1 h-4 w-4 rounded border-gray-600 text-[#D4A843] focus:ring-[#D4A843] accent-[#D4A843]"
+                  className="mt-1 h-4 w-4 rounded border-gray-600 text-[#B8860B] focus:ring-[#D4A843] accent-[#D4A843]"
                 />
-                <span className="text-sm text-gray-300">
+                <span className="text-sm text-gray-600">
                   Li e aceito integralmente os termos de contratação acima
                 </span>
               </label>
