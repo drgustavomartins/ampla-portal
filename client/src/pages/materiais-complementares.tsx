@@ -367,9 +367,9 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
     return null;
   }
 
-  // Trial: only allow access to Toxina Botulínica theme
+  // Trial: show ALL themes but lock non-Toxina ones
   const visibleThemes = isTrial
-    ? allowedThemes.filter((t) => t.title === "Toxina Botulínica")
+    ? allThemes.filter((t) => t.fileCount > 0)
     : allowedThemes;
 
   if (selectedTheme) {
@@ -427,13 +427,15 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
         </button>
 
         <div ref={matShelfRef} className="shelf-scroll flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6">
-        {visibleThemes.map((theme) => (
+        {visibleThemes.map((theme) => {
+          const isLockedForTrial = isTrial && theme.title !== "Toxina Botul\u00ednica";
+          return (
           <div
             key={theme.id}
             className={`shelf-card shrink-0 group transition-all duration-500 ${
-              theme.fileCount > 0 ? "cursor-pointer" : "cursor-default"
+              theme.fileCount > 0 && !isLockedForTrial ? "cursor-pointer" : "cursor-default"
             }`}
-            onClick={() => theme.fileCount > 0 && setSelectedTheme(theme)}
+            onClick={() => !isLockedForTrial && theme.fileCount > 0 && setSelectedTheme(theme)}
           >
             {/* Book cover image */}
             <div className="relative rounded-[20px] overflow-hidden transition-all duration-500 group-hover:-translate-y-1.5 group-hover:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.5)]" style={{ aspectRatio: "4/5" }}>
@@ -446,10 +448,13 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
               {/* Soft vignette */}
               <div className="absolute inset-0 bg-gradient-to-t from-white/[0.06] via-transparent to-transparent" />
 
-              {/* Lock overlay for empty */}
-              {theme.fileCount === 0 && (
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-[3px] flex items-center justify-center">
-                  <Lock className="w-5 h-5 text-white/20" />
+              {/* Lock overlay for empty or trial-locked */}
+              {(theme.fileCount === 0 || isLockedForTrial) && (
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-[3px] flex flex-col items-center justify-center gap-2">
+                  <Lock className={`w-6 h-6 ${isLockedForTrial ? 'text-gold/60' : 'text-white/20'}`} />
+                  {isLockedForTrial && (
+                    <a href="/#/planos" className="text-[10px] text-gold/80 font-medium hover:text-gold transition-colors">Ver planos</a>
+                  )}
                 </div>
               )}
             </div>
@@ -466,7 +471,8 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
               </h3>
             </div>
           </div>
-        ))}
+          );
+        })}
         </div>
       </div>
     </div>

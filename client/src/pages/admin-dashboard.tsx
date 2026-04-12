@@ -968,7 +968,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             {
-              label: "Pendentes",
+              label: "Em Conversao",
               value: pendingStudents.length,
               icon: Clock,
               color: "text-amber-400",
@@ -1009,7 +1009,7 @@ export default function AdminDashboard() {
                   <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg ${stat.bg} flex items-center justify-center`}>
                     <stat.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${stat.color}`} />
                   </div>
-                  {stat.label === "Pendentes" && pendingStudents.length > 0 && (
+                  {stat.label === "Em Conversao" && pendingStudents.length > 0 && (
                     <span className="relative flex h-2.5 w-2.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400" />
@@ -1238,7 +1238,7 @@ export default function AdminDashboard() {
                             data-testid={`button-approve-${s.id}`}
                           >
                             <Check className="w-4 h-4 mr-1.5" />
-                            Aprovar
+                            Converter
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -1451,7 +1451,7 @@ export default function AdminDashboard() {
                             ) : (
                               <Button size="sm" className="bg-gold text-background hover:bg-gold/90 text-xs flex-1 sm:flex-none" onClick={() => { setApprovingStudent(s); setApprovePlanId(""); }} data-testid={`button-approve-list-${s.id}`}>
                                 <Check className="w-3 h-3 mr-1" />
-                                Aprovar
+                                Converter
                               </Button>
                             )}
                           </div>
@@ -3131,7 +3131,7 @@ export default function AdminDashboard() {
                       <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Telefone (opcional)</Label><Input value={adminForm.phone} onChange={e => setAdminForm(f => ({ ...f, phone: e.target.value }))} placeholder="+55 (11) 99999-9999" className="bg-background/50 border-border/40" /></div>
                       <div className="rounded-md bg-gold/5 border border-gold/20 p-3 text-xs text-muted-foreground space-y-1">
                         <p className="font-medium text-gold">Permissões do admin secundário:</p>
-                        <p>- Gerenciar alunos (aprovar, editar, renovar)</p>
+                        <p>- Gerenciar alunos (converter, editar, renovar)</p>
                         <p>- Alterar acessos dos entregáveis</p>
                         <p>- Criar/editar módulos e aulas</p>
                         <p className="text-destructive/70">- NÃO pode excluir módulos/aulas, criar admins ou ver histórico completo</p>
@@ -3370,7 +3370,7 @@ export default function AdminDashboard() {
       <Dialog open={!!approvingStudent} onOpenChange={(open) => { if (!open) { setApprovingStudent(null); setApprovePlanId(""); } }}>
         <DialogContent className="bg-card border-border/40 sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{approvingStudent?.role === "trial" ? "Converter para pacote pago" : "Aprovar aluno"}</DialogTitle>
+            <DialogTitle>{approvingStudent?.role === "trial" ? "Converter para pacote pago" : "Converter aluno"}</DialogTitle>
             <DialogDescription>
               {approvingStudent?.role === "trial"
                 ? <>Selecione o pacote para converter o trial de <span className="font-medium text-foreground">{approvingStudent?.name}</span> em aluno ativo.</>  
@@ -3389,7 +3389,7 @@ export default function AdminDashboard() {
               <Button variant="outline" className="border-border/40" onClick={() => { setApprovingStudent(null); setApprovePlanId(""); }}>Cancelar</Button>
               <Button className="bg-gold text-background hover:bg-gold/90 font-medium" disabled={!approvePlanId || approveMutation.isPending} onClick={() => { if (approvingStudent && approvePlanId) { approveMutation.mutate({ id: approvingStudent.id, planId: parseInt(approvePlanId) }); } }} data-testid="button-confirm-approve">
                 {approveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {approvingStudent?.role === "trial" ? "Converter" : "Aprovar"}
+                {"Converter"}
               </Button>
             </div>
           </div>
