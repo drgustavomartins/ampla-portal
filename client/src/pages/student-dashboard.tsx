@@ -73,7 +73,7 @@ export default function StudentDashboard() {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "" });
+  const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "", avatarUrl: "", username: "" });
   const materiaisRef = useRef<HTMLDivElement>(null);
   const shelfRef = useRef<HTMLDivElement>(null);
 
@@ -135,6 +135,8 @@ export default function StudentDashboard() {
       if (profileForm.phone !== (user as any)?.phone) body.phone = profileForm.phone;
       if (profileForm.email && profileForm.email !== user?.email) body.email = profileForm.email;
       if (profileForm.newPassword) body.newPassword = profileForm.newPassword;
+      if (profileForm.avatarUrl !== ((user as any)?.avatarUrl || "")) body.avatarUrl = profileForm.avatarUrl;
+      if (profileForm.username !== ((user as any)?.username || "")) body.username = profileForm.username;
       const res = await apiRequest("PATCH", "/api/auth/profile", body);
       return res.json();
     },
@@ -142,7 +144,7 @@ export default function StudentDashboard() {
       if (data.user) login(data.user);
       toast({ title: "Perfil atualizado", description: data.message });
       setProfileOpen(false);
-      setProfileForm({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "" });
+      setProfileForm({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "", avatarUrl: "", username: "" });
     },
     onError: (error: any) => {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -543,11 +545,13 @@ export default function StudentDashboard() {
                   currentPassword: "",
                   newPassword: "",
                   confirmNewPassword: "",
+                  avatarUrl: (user as any)?.avatarUrl || "",
+                  username: (user as any)?.username || "",
                 });
                 setProfileOpen(true);
               }}
               data-testid="button-settings"
-              title="Configurações"
+              title="Configuracoes"
             >
               <Settings className="w-4 h-4" />
             </Button>
@@ -652,13 +656,15 @@ export default function StudentDashboard() {
                   currentPassword: "",
                   newPassword: "",
                   confirmNewPassword: "",
+                  avatarUrl: (user as any)?.avatarUrl || "",
+                  username: (user as any)?.username || "",
                 });
                 setProfileOpen(true);
               }}
               className="flex items-center gap-4 w-full text-left py-3.5 border-b border-white/5"
             >
               <Settings className="w-5 h-5 text-white/40" />
-              <span className="text-[20px] font-semibold text-white">Configurações</span>
+              <span className="text-[20px] font-semibold text-white">Configuracoes</span>
             </button>
 
             <button
@@ -1417,6 +1423,31 @@ export default function StudentDashboard() {
                 onChange={(e) => setProfileForm((f) => ({ ...f, phone: e.target.value }))}
                 className="bg-background/50 border-border/40"
               />
+            </div>
+            <div className="w-full h-px bg-border/30" />
+            <p className="text-[11px] font-semibold text-gold uppercase tracking-wider">Perfil da Comunidade</p>
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full shrink-0 overflow-hidden border-2 border-gold/30 flex items-center justify-center bg-gradient-to-br from-gold/80 to-gold">
+                {profileForm.avatarUrl ? (
+                  <img src={profileForm.avatarUrl} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                ) : (
+                  <span className="text-lg font-semibold text-[#0A1628]">{(profileForm.name || user?.name)?.[0]?.toUpperCase() || "?"}</span>
+                )}
+              </div>
+              <div className="flex-1 space-y-2">
+                <Input
+                  value={profileForm.avatarUrl}
+                  onChange={(e) => setProfileForm((f) => ({ ...f, avatarUrl: e.target.value }))}
+                  placeholder="Cole a URL da sua foto"
+                  className="bg-background/50 border-border/40 text-sm h-8"
+                />
+                <Input
+                  value={profileForm.username}
+                  onChange={(e) => setProfileForm((f) => ({ ...f, username: e.target.value.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 30) }))}
+                  placeholder="@seu_usuario"
+                  className="bg-background/50 border-border/40 text-sm h-8"
+                />
+              </div>
             </div>
             <div className="w-full h-px bg-border/30" />
             <div className="space-y-2">

@@ -255,6 +255,8 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_amount_paid INTEGER DEFAULT 0`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_started_at TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS lgpd_accepted_at TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT`).catch(() => {});
     console.log("[auto-migrate] material_topics, order, materials_access, mentorship dates, user_modules, user_material_categories, material_themes/subcategories/files, stripe columns ensured");
     // Tabelas de quiz e funil
     await db.execute(`CREATE TABLE IF NOT EXISTS quiz_leads (id SERIAL PRIMARY KEY, nome TEXT NOT NULL, email TEXT NOT NULL, whatsapp TEXT NOT NULL, resultado TEXT NOT NULL, respostas JSONB, created_at TEXT NOT NULL)`).catch(() => {});
@@ -3475,7 +3477,7 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
       let posts;
       if (postType) {
         posts = await db.execute(sql`
-          SELECT cp.*, u.name as author_name
+          SELECT cp.*, u.name as author_name, u.avatar_url as author_avatar, u.username as author_username
           FROM community_posts cp
           JOIN users u ON u.id = cp.user_id
           WHERE cp.post_type = ${postType}
@@ -3484,7 +3486,7 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
         `);
       } else {
         posts = await db.execute(sql`
-          SELECT cp.*, u.name as author_name
+          SELECT cp.*, u.name as author_name, u.avatar_url as author_avatar, u.username as author_username
           FROM community_posts cp
           JOIN users u ON u.id = cp.user_id
           ORDER BY cp.created_at DESC
@@ -3517,6 +3519,8 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
         updatedAt: p.updated_at,
         authorName: p.author_name,
         authorInitial: (p.author_name || '?')[0].toUpperCase(),
+        authorAvatar: p.author_avatar || null,
+        authorUsername: p.author_username || null,
         liked: likedPostIds.has(p.id),
       }));
 
@@ -3609,7 +3613,7 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
       if (!postId) return res.status(400).json({ message: "ID inválido" });
 
       const comments = await db.execute(sql`
-        SELECT cc.*, u.name as author_name
+        SELECT cc.*, u.name as author_name, u.avatar_url as author_avatar, u.username as author_username
         FROM community_comments cc
         JOIN users u ON u.id = cc.user_id
         WHERE cc.post_id = ${postId}
@@ -3639,6 +3643,8 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
         createdAt: c.created_at,
         authorName: c.author_name,
         authorInitial: (c.author_name || '?')[0].toUpperCase(),
+        authorAvatar: c.author_avatar || null,
+        authorUsername: c.author_username || null,
         liked: likedCommentIds.has(c.id),
       }));
 
@@ -3660,7 +3666,7 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
       if (!lessonId) return res.status(400).json({ message: "ID inválido" });
 
       const comments = await db.execute(sql`
-        SELECT cc.*, u.name as author_name
+        SELECT cc.*, u.name as author_name, u.avatar_url as author_avatar, u.username as author_username
         FROM community_comments cc
         JOIN users u ON u.id = cc.user_id
         WHERE cc.lesson_id = ${lessonId}
@@ -3689,6 +3695,8 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
         createdAt: c.created_at,
         authorName: c.author_name,
         authorInitial: (c.author_name || '?')[0].toUpperCase(),
+        authorAvatar: c.author_avatar || null,
+        authorUsername: c.author_username || null,
         liked: likedCommentIds.has(c.id),
       }));
 
@@ -4094,6 +4102,91 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
       });
     } catch (e: any) {
       console.error("[GET /api/admin/community-stats]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── GET /api/profile ────────────────────────────────────────────────────────
+  app.get("/api/profile", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      const result = await db.execute(sql`SELECT name, email, phone, username, avatar_url FROM users WHERE id = ${auth.userId}`);
+      const user = (result as any).rows?.[0];
+      if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
+
+      res.json({
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        username: user.username,
+        avatarUrl: user.avatar_url,
+      });
+    } catch (e: any) {
+      console.error("[GET /api/profile]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── PUT /api/profile ────────────────────────────────────────────────────────
+  app.put("/api/profile", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      const { name, phone, username, avatarUrl } = req.body as { name?: string; phone?: string; username?: string; avatarUrl?: string };
+
+      // Validate username if provided
+      if (username !== undefined && username !== null && username !== "") {
+        if (!/^[a-zA-Z0-9_]{1,30}$/.test(username)) {
+          return res.status(400).json({ message: "Nome de usuario deve ter no maximo 30 caracteres (letras, numeros e _)" });
+        }
+        const existing = await db.execute(sql`SELECT id FROM users WHERE LOWER(username) = ${username.toLowerCase()} AND id != ${auth.userId} LIMIT 1`);
+        if ((existing as any).rows?.length > 0) {
+          return res.status(400).json({ message: "Nome de usuario ja esta em uso" });
+        }
+      }
+
+      await db.execute(sql`
+        UPDATE users SET
+          name = COALESCE(${name || null}, name),
+          phone = COALESCE(${phone || null}, phone),
+          username = ${username !== undefined ? (username || null) : null},
+          avatar_url = ${avatarUrl !== undefined ? (avatarUrl || null) : null}
+        WHERE id = ${auth.userId}
+      `);
+
+      res.json({ message: "Perfil atualizado" });
+    } catch (e: any) {
+      console.error("[PUT /api/profile]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── GET /api/users/:id/profile ─────────────────────────────────────────────
+  app.get("/api/users/:id/profile", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      const userId = Number(req.params.id);
+      if (!userId) return res.status(400).json({ message: "ID inválido" });
+
+      const result = await db.execute(sql`SELECT name, username, avatar_url FROM users WHERE id = ${userId}`);
+      const user = (result as any).rows?.[0];
+      if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
+
+      res.json({
+        name: user.name,
+        username: user.username,
+        avatarUrl: user.avatar_url,
+      });
+    } catch (e: any) {
+      console.error("[GET /api/users/:id/profile]", e.message);
       res.status(500).json({ message: "Erro interno" });
     }
   });

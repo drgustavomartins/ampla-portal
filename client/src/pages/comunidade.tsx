@@ -7,25 +7,55 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
   Heart, MessageCircle, Send, Image, Trash2, Award, ChevronLeft,
-  Plus, Loader2, Users
+  Plus, Loader2, Users, Settings, Camera, X
 } from "lucide-react";
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return "agora";
-  if (minutes < 60) return `${minutes}m atrás`;
+  if (minutes < 60) return `${minutes}m atras`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h atrás`;
+  if (hours < 24) return `${hours}h atras`;
   const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d atrás`;
+  if (days < 30) return `${days}d atras`;
   const months = Math.floor(days / 30);
-  return `${months}mo atrás`;
+  return `${months}mo atras`;
 }
 
+// ─── Avatar component ──────────────────────────────────────────────────────
+function UserAvatar({ name, avatarUrl, size = "md", className = "" }: {
+  name: string;
+  avatarUrl?: string | null;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
+  const sizeMap = { sm: "w-7 h-7 text-[10px]", md: "w-10 h-10 text-xs", lg: "w-20 h-20 text-2xl" };
+  const initial = name?.[0]?.toUpperCase() || "?";
+
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name}
+        className={`${sizeMap[size].split(" ").slice(0, 2).join(" ")} rounded-full object-cover border-2 border-gold/30 ${className}`}
+        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden"); }}
+      />
+    );
+  }
+
+  return (
+    <div className={`${sizeMap[size]} rounded-full bg-gradient-to-br from-gold/80 to-gold border-2 border-gold/30 flex items-center justify-center shrink-0 ${className}`}>
+      <span className="font-semibold text-[#0A1628]">{initial}</span>
+    </div>
+  );
+}
+
+// ─── Interfaces ────────────────────────────────────────────────────────────
 interface Post {
   id: number;
   userId: number;
@@ -37,6 +67,8 @@ interface Post {
   createdAt: string;
   authorName: string;
   authorInitial: string;
+  authorAvatar?: string | null;
+  authorUsername?: string | null;
   liked: boolean;
 }
 
@@ -48,20 +80,23 @@ interface Comment {
   createdAt: string;
   authorName: string;
   authorInitial: string;
+  authorAvatar?: string | null;
+  authorUsername?: string | null;
   liked: boolean;
 }
 
 const POST_TYPES = [
   { value: "general", label: "Geral" },
-  { value: "case_study", label: "Caso Clínico" },
+  { value: "case_study", label: "Caso Clinico" },
   { value: "before_after", label: "Antes/Depois" },
 ];
 
 const POST_TYPE_BADGES: Record<string, { label: string; className: string }> = {
-  case_study: { label: "Caso Clínico", className: "bg-gold/15 text-gold border-gold/30" },
+  case_study: { label: "Caso Clinico", className: "bg-gold/15 text-gold border-gold/30" },
   before_after: { label: "Antes/Depois", className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
 };
 
+// ─── Post Comments ─────────────────────────────────────────────────────────
 function PostComments({ postId }: { postId: number }) {
   const { user } = useAuth();
   const [comment, setComment] = useState("");
@@ -103,26 +138,25 @@ function PostComments({ postId }: { postId: number }) {
   const comments = data?.comments || [];
 
   return (
-    <div className="border-t border-border/30 pt-4 mt-4 space-y-3">
+    <div className="border-t border-white/5 pt-4 mt-4 space-y-3">
       {isLoading ? (
         <div className="flex justify-center py-4">
           <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
         </div>
       ) : comments.length === 0 ? (
-        <p className="text-xs text-muted-foreground text-center py-2">Nenhum comentário ainda. Seja o primeiro!</p>
+        <p className="text-xs text-muted-foreground text-center py-2">Nenhum comentario ainda. Seja o primeiro!</p>
       ) : (
         comments.map((c) => (
           <div key={c.id} className="flex gap-3 group">
-            <div className="w-7 h-7 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <span className="text-[10px] font-semibold text-gold">{c.authorInitial}</span>
-            </div>
+            <UserAvatar name={c.authorName} avatarUrl={c.authorAvatar} size="sm" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-foreground">{c.authorName}</span>
+                <span className="text-xs font-semibold text-foreground">{c.authorName}</span>
+                {c.authorUsername && <span className="text-[10px] text-muted-foreground/60">@{c.authorUsername}</span>}
                 <span className="text-[10px] text-muted-foreground">{timeAgo(c.createdAt)}</span>
               </div>
               <p className="text-sm text-muted-foreground mt-0.5 break-words">{c.content}</p>
-              <div className="flex items-center gap-3 mt-1">
+              <div className="flex items-center gap-3 mt-1.5">
                 <button
                   onClick={() => toggleLike.mutate(c.id)}
                   className="flex items-center gap-1 text-xs text-muted-foreground hover:text-rose-400 transition-colors"
@@ -144,35 +178,131 @@ function PostComments({ postId }: { postId: number }) {
         ))
       )}
 
-      <div className="flex gap-2 items-start pt-2">
-        <Textarea
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="Escreva um comentário..."
-          className="min-h-[36px] h-9 resize-none text-sm bg-background/50 border-border/40"
-          rows={1}
-        />
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={!comment.trim() || addComment.isPending}
-          onClick={() => addComment.mutate(comment.trim())}
-          className="text-gold hover:text-gold hover:bg-gold/10 h-9 px-3"
-        >
-          {addComment.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-        </Button>
+      {/* Add comment */}
+      <div className="flex gap-3 items-start pt-2">
+        <UserAvatar name={user?.name || ""} avatarUrl={(user as any)?.avatarUrl} size="sm" />
+        <div className="flex-1 flex gap-2">
+          <Textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Escreva um comentario..."
+            className="min-h-[36px] h-9 resize-none text-sm bg-[#0A1628]/60 border-white/5 focus:border-gold/30"
+            rows={1}
+          />
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={!comment.trim() || addComment.isPending}
+            onClick={() => addComment.mutate(comment.trim())}
+            className="text-gold hover:text-gold hover:bg-gold/10 h-9 px-3"
+          >
+            {addComment.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          </Button>
+        </div>
       </div>
-      <p className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
-        <Award className="w-3 h-3" /> Comentários geram R$ 50 em créditos
+      <p className="text-[10px] text-muted-foreground/50 flex items-center gap-1 pl-10">
+        <Award className="w-3 h-3" /> Comentarios geram R$ 50 em creditos
       </p>
     </div>
   );
 }
 
+// ─── Profile Editor ────────────────────────────────────────────────────────
+function ProfileEditor({ onClose }: { onClose: () => void }) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [avatarUrl, setAvatarUrl] = useState((user as any)?.avatarUrl || "");
+  const [username, setUsername] = useState((user as any)?.username || "");
+  const [name, setName] = useState(user?.name || "");
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("PUT", "/api/profile", {
+        name: name.trim(),
+        username: username.trim(),
+        avatarUrl: avatarUrl.trim(),
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Perfil salvo!" });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
+      onClose();
+    },
+    onError: (err: any) => {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const isValidUsername = !username || /^[a-zA-Z0-9_]{0,30}$/.test(username);
+
+  return (
+    <div className="rounded-2xl bg-[#0F1A2E] border border-white/5 p-5 space-y-5">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Camera className="w-4 h-4 text-gold" />
+          Perfil da Comunidade
+        </h3>
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="flex items-center gap-5">
+        <div className="relative">
+          <UserAvatar name={name || user?.name || ""} avatarUrl={avatarUrl || null} size="lg" />
+        </div>
+        <div className="flex-1 space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">URL da foto</Label>
+            <Input
+              value={avatarUrl}
+              onChange={(e) => setAvatarUrl(e.target.value)}
+              placeholder="Cole a URL da sua foto"
+              className="bg-[#0A1628]/60 border-white/5 text-sm h-9 focus:border-gold/30"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Nome de usuario</Label>
+            <Input
+              value={username}
+              onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 30))}
+              placeholder="@seu_usuario"
+              className={`bg-[#0A1628]/60 border-white/5 text-sm h-9 focus:border-gold/30 ${!isValidUsername ? "border-destructive" : ""}`}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Nome</Label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="bg-[#0A1628]/60 border-white/5 text-sm h-9 focus:border-gold/30"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <Button
+          size="sm"
+          disabled={saveMutation.isPending || !isValidUsername}
+          onClick={() => saveMutation.mutate()}
+          className="bg-gold hover:bg-gold/90 text-[#0A1628] font-semibold"
+        >
+          {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+          Salvar perfil
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ─────────────────────────────────────────────────────────────
 export default function ComunidadePage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [showCreate, setShowCreate] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [content, setContent] = useState("");
   const [postType, setPostType] = useState("general");
   const [imageUrls, setImageUrls] = useState<string[]>([]);
@@ -203,7 +333,7 @@ export default function ComunidadePage() {
       setShowCreate(false);
       setOffset(0);
       queryClient.invalidateQueries({ queryKey: ["/api/community/posts"] });
-      toast({ title: "Publicado!", description: "Seu post foi publicado. Créditos serão analisados em breve." });
+      toast({ title: "Publicado!", description: "Creditos serao analisados em breve." });
     },
     onError: (err: any) => {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
@@ -249,116 +379,148 @@ export default function ComunidadePage() {
     setImageUrls((prev) => prev.filter((_, i) => i !== index));
   }
 
+  const userName = user?.name || "";
+  const userAvatar = (user as any)?.avatarUrl || null;
+  const userUsername = (user as any)?.username || null;
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border/40">
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/">
-              <button className="w-9 h-9 rounded-full border border-border/40 flex items-center justify-center hover:bg-card transition-colors">
+              <button className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-colors">
                 <ChevronLeft className="w-4 h-4 text-muted-foreground" />
               </button>
             </Link>
             <div>
-              <h1 className="text-lg font-serif font-semibold text-foreground flex items-center gap-2">
-                <Users className="w-5 h-5 text-gold" />
-                Comunidade Ampla
+              <h1 className="text-lg font-serif font-semibold text-foreground">
+                Comunidade Ampla Facial&reg;
               </h1>
-              <p className="text-xs text-muted-foreground">Compartilhe cases, troque experiências com outros alunos</p>
+              <p className="text-[11px] text-muted-foreground">Compartilhe experiencias, cases clinicos e aprenda com outros profissionais</p>
             </div>
           </div>
-          <Button
-            size="sm"
-            onClick={() => setShowCreate(!showCreate)}
-            className="bg-gold hover:bg-gold/90 text-primary-foreground font-semibold"
-          >
-            <Plus className="w-4 h-4 mr-1" /> Novo Post
-          </Button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowProfile(!showProfile)}
+              className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-colors"
+              title="Editar perfil"
+            >
+              <Settings className="w-4 h-4 text-muted-foreground" />
+            </button>
+            <UserAvatar name={userName} avatarUrl={userAvatar} size="md" className="cursor-pointer" />
+          </div>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-        {/* Create Post Section */}
-        {showCreate && (
-          <div className="rounded-2xl border border-gold/30 bg-card/80 p-5 space-y-4">
-            <h3 className="text-sm font-semibold text-foreground">Nova publicação</h3>
+      <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+        {/* Profile Editor */}
+        {showProfile && <ProfileEditor onClose={() => setShowProfile(false)} />}
 
-            {/* Post type pills */}
-            <div className="flex gap-2">
-              {POST_TYPES.map((t) => (
-                <button
-                  key={t.value}
-                  onClick={() => setPostType(t.value)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
-                    postType === t.value
-                      ? "bg-gold/15 text-gold border-gold/40"
-                      : "bg-card border-border/40 text-muted-foreground hover:border-gold/30"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            <Textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Compartilhe um caso clínico, resultado ou experiência..."
-              className="min-h-[100px] bg-background/50 border-border/40 resize-none"
-              rows={4}
-            />
-
-            {/* Image URLs */}
-            <div className="space-y-2">
-              <div className="flex gap-2">
-                <Input
-                  value={imageInput}
-                  onChange={(e) => setImageInput(e.target.value)}
-                  placeholder="URL da imagem"
-                  className="bg-background/50 border-border/40 text-sm"
-                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addImageUrl(); }}}
+        {/* Create Post Area */}
+        {!showCreate ? (
+          <div
+            onClick={() => setShowCreate(true)}
+            className="rounded-2xl bg-[#0F1A2E] border border-white/5 p-4 flex items-center gap-3 cursor-pointer hover:border-gold/20 transition-colors"
+          >
+            <UserAvatar name={userName} avatarUrl={userAvatar} size="md" />
+            <span className="text-sm text-muted-foreground flex-1">No que voce esta pensando?</span>
+            <Button size="sm" className="bg-gold hover:bg-gold/90 text-[#0A1628] font-semibold">
+              <Plus className="w-4 h-4 mr-1" /> Publicar
+            </Button>
+          </div>
+        ) : (
+          <div className="rounded-2xl bg-[#0F1A2E] border border-gold/20 p-5 space-y-4">
+            <div className="flex gap-3">
+              <UserAvatar name={userName} avatarUrl={userAvatar} size="md" className="mt-1" />
+              <div className="flex-1 space-y-3">
+                <Textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Compartilhe um caso clinico, resultado ou experiencia..."
+                  className="min-h-[100px] bg-[#0A1628]/60 border-white/5 resize-none focus:border-gold/30"
+                  rows={4}
+                  autoFocus
                 />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={addImageUrl}
-                  className="border-border/40 text-muted-foreground hover:text-gold shrink-0"
-                >
-                  <Image className="w-4 h-4 mr-1" /> Adicionar
-                </Button>
-              </div>
-              {imageUrls.length > 0 && (
-                <div className="grid grid-cols-3 gap-2">
-                  {imageUrls.map((url, i) => (
-                    <div key={i} className="relative group rounded-lg overflow-hidden border border-border/30 aspect-square">
-                      <img src={url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = ""; }} />
-                      <button
-                        onClick={() => removeImage(i)}
-                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 className="w-3 h-3 text-white" />
-                      </button>
-                    </div>
+
+                {/* Post type pills */}
+                <div className="flex gap-2">
+                  {POST_TYPES.map((t) => (
+                    <button
+                      key={t.value}
+                      onClick={() => setPostType(t.value)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${
+                        postType === t.value
+                          ? "bg-gold/15 text-gold border-gold/40 shadow-[0_0_8px_rgba(212,168,67,0.1)]"
+                          : "bg-transparent border-white/10 text-muted-foreground hover:border-gold/20"
+                      }`}
+                    >
+                      {t.label}
+                    </button>
                   ))}
                 </div>
-              )}
+
+                {/* Image URLs */}
+                <div className="flex gap-2">
+                  <Input
+                    value={imageInput}
+                    onChange={(e) => setImageInput(e.target.value)}
+                    placeholder="URL da imagem"
+                    className="bg-[#0A1628]/60 border-white/5 text-sm h-9 focus:border-gold/30"
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addImageUrl(); }}}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={addImageUrl}
+                    className="text-muted-foreground hover:text-gold h-9 px-3"
+                  >
+                    <Image className="w-4 h-4" />
+                  </Button>
+                </div>
+                {imageUrls.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2">
+                    {imageUrls.map((url, i) => (
+                      <div key={i} className="relative group rounded-lg overflow-hidden border border-white/10 aspect-square">
+                        <img src={url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = ""; }} />
+                        <button
+                          onClick={() => removeImage(i)}
+                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3 text-white" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
-                <Award className="w-3 h-3" /> Publicações geram R$ 50 em créditos (sujeito a aprovação)
+            <div className="flex items-center justify-between pl-[52px]">
+              <p className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
+                <Award className="w-3 h-3" /> Gera R$ 50 em creditos
               </p>
-              <Button
-                size="sm"
-                disabled={!content.trim() || createPost.isPending}
-                onClick={() => createPost.mutate()}
-                className="bg-gold hover:bg-gold/90 text-primary-foreground font-semibold"
-              >
-                {createPost.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                Publicar
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => { setShowCreate(false); setContent(""); setImageUrls([]); }}
+                  className="text-muted-foreground h-8"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={!content.trim() || createPost.isPending}
+                  onClick={() => createPost.mutate()}
+                  className="bg-gold hover:bg-gold/90 text-[#0A1628] font-semibold h-8"
+                >
+                  {createPost.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                  Publicar
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -371,49 +533,56 @@ export default function ComunidadePage() {
           </div>
         ) : posts.length === 0 ? (
           <div className="text-center py-20 space-y-3">
-            <Users className="w-12 h-12 text-muted-foreground/30 mx-auto" />
-            <p className="text-muted-foreground">Nenhuma publicação ainda. Seja o primeiro a postar!</p>
+            <div className="w-16 h-16 rounded-full bg-[#0F1A2E] flex items-center justify-center mx-auto">
+              <Users className="w-8 h-8 text-muted-foreground/30" />
+            </div>
+            <p className="text-muted-foreground">Nenhuma publicacao ainda. Seja o primeiro a postar!</p>
           </div>
         ) : (
           <>
             {posts.map((post) => (
-              <div key={post.id} className="rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3">
+              <div key={post.id} className="rounded-2xl bg-[#0F1A2E] border border-white/5 overflow-hidden">
                 {/* Author header */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center">
-                      <span className="text-xs font-semibold text-gold">{post.authorInitial}</span>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-foreground">{post.authorName}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-muted-foreground">{timeAgo(post.createdAt)}</span>
-                        {POST_TYPE_BADGES[post.postType] && (
-                          <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${POST_TYPE_BADGES[post.postType].className}`}>
-                            {POST_TYPE_BADGES[post.postType].label}
-                          </Badge>
-                        )}
+                <div className="p-5 pb-0">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <UserAvatar name={post.authorName} avatarUrl={post.authorAvatar} size="md" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-foreground">{post.authorName}</span>
+                          {POST_TYPE_BADGES[post.postType] && (
+                            <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${POST_TYPE_BADGES[post.postType].className}`}>
+                              {POST_TYPE_BADGES[post.postType].label}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {post.authorUsername && <span className="text-[11px] text-muted-foreground/60">@{post.authorUsername}</span>}
+                          <span className="text-[11px] text-muted-foreground/40">{post.authorUsername ? " · " : ""}{timeAgo(post.createdAt)}</span>
+                        </div>
                       </div>
                     </div>
+                    {post.userId === user?.id && (
+                      <button
+                        onClick={() => deletePost.mutate(post.id)}
+                        className="text-muted-foreground/40 hover:text-destructive transition-colors p-2 -mr-2"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
-                  {post.userId === user?.id && (
-                    <button
-                      onClick={() => deletePost.mutate(post.id)}
-                      className="text-muted-foreground hover:text-destructive transition-colors p-1"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
                 </div>
 
                 {/* Content */}
-                <p className="text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">{post.content}</p>
+                <div className="px-5 py-3">
+                  <p className="text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">{post.content}</p>
+                </div>
 
                 {/* Images */}
                 {post.imageUrls && post.imageUrls.length > 0 && (
-                  <div className={`grid gap-2 ${post.imageUrls.length === 1 ? "grid-cols-1" : post.imageUrls.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+                  <div className={`px-5 pb-3 grid gap-1.5 ${post.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
                     {post.imageUrls.map((url, i) => (
-                      <div key={i} className="rounded-lg overflow-hidden border border-border/30 aspect-video">
+                      <div key={i} className={`rounded-xl overflow-hidden border border-white/5 ${post.imageUrls.length === 1 ? "aspect-video" : "aspect-square"}`}>
                         <img src={url} alt="" className="w-full h-full object-cover" />
                       </div>
                     ))}
@@ -421,27 +590,35 @@ export default function ComunidadePage() {
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center gap-4">
+                <div className="px-5 py-3 border-t border-white/5 flex items-center gap-5">
                   <button
                     onClick={() => toggleLike.mutate(post.id)}
-                    className={`flex items-center gap-1.5 text-sm transition-colors ${
-                      post.liked ? "text-rose-400" : "text-muted-foreground hover:text-rose-400"
+                    className={`flex items-center gap-1.5 transition-all ${
+                      post.liked ? "text-gold" : "text-muted-foreground/60 hover:text-gold"
                     }`}
                   >
-                    <Heart className={`w-4 h-4 ${post.liked ? "fill-rose-400" : ""}`} />
-                    <span className="text-xs">{post.likesCount || ""}</span>
+                    <Heart className={`w-[18px] h-[18px] transition-all ${post.liked ? "fill-gold scale-110" : ""}`} />
+                    <span className="text-xs font-medium">{post.likesCount || ""}</span>
                   </button>
                   <button
                     onClick={() => toggleComments(post.id)}
-                    className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-gold transition-colors"
+                    className="flex items-center gap-1.5 text-muted-foreground/60 hover:text-gold transition-colors"
                   >
-                    <MessageCircle className="w-4 h-4" />
-                    <span className="text-xs">{post.commentsCount || ""}</span>
+                    <MessageCircle className="w-[18px] h-[18px]" />
+                    <span className="text-xs font-medium">{post.commentsCount || ""}</span>
                   </button>
+                  <div className="flex items-center gap-1 text-muted-foreground/30 ml-auto" title="Gera R$ 50 em creditos">
+                    <Award className="w-3.5 h-3.5" />
+                    <span className="text-[10px]">R$50</span>
+                  </div>
                 </div>
 
                 {/* Comments section */}
-                {expandedComments.has(post.id) && <PostComments postId={post.id} />}
+                {expandedComments.has(post.id) && (
+                  <div className="px-5 pb-5">
+                    <PostComments postId={post.id} />
+                  </div>
+                )}
               </div>
             ))}
 
@@ -452,7 +629,7 @@ export default function ComunidadePage() {
                   variant="outline"
                   size="sm"
                   onClick={() => setOffset((prev) => prev + LIMIT)}
-                  className="border-border/40 text-muted-foreground hover:text-gold"
+                  className="border-white/10 text-muted-foreground hover:text-gold hover:border-gold/30"
                 >
                   Carregar mais
                 </Button>

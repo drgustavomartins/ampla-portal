@@ -63,6 +63,8 @@ export const users = pgTable("users", {
   planAmountPaid: integer("plan_amount_paid").default(0), // in centavos
   trialStartedAt: text("trial_started_at"), // ISO date trial began
   lgpdAcceptedAt: text("lgpd_accepted_at"), // ISO date user accepted LGPD terms
+  avatarUrl: text("avatar_url"),
+  username: text("username"),
 });
 
 // Modules

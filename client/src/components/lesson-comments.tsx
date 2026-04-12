@@ -29,6 +29,8 @@ interface Comment {
   createdAt: string;
   authorName: string;
   authorInitial: string;
+  authorAvatar?: string | null;
+  authorUsername?: string | null;
   liked: boolean;
 }
 
@@ -94,12 +96,17 @@ export default function LessonComments({ lessonId }: LessonCommentsProps) {
         <div className="space-y-3">
           {comments.map((c) => (
             <div key={c.id} className="flex gap-3 group">
-              <div className="w-7 h-7 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-[10px] font-semibold text-gold">{c.authorInitial}</span>
-              </div>
+              {c.authorAvatar ? (
+                <img src={c.authorAvatar} alt="" className="w-7 h-7 rounded-full object-cover border border-gold/30 flex-shrink-0 mt-0.5" />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gold/80 to-gold border border-gold/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-[10px] font-semibold text-[#0A1628]">{c.authorInitial}</span>
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-foreground">{c.authorName}</span>
+                  {c.authorUsername && <span className="text-[10px] text-muted-foreground/60">@{c.authorUsername}</span>}
                   <span className="text-[10px] text-muted-foreground">{timeAgo(c.createdAt)}</span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-0.5 break-words">{c.content}</p>

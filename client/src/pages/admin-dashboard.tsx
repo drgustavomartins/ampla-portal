@@ -289,7 +289,7 @@ function CommunityAdminTab() {
     queryKey: ["/api/admin/credit-requests"],
   });
 
-  const { data: postsData, isLoading: postsLoading } = useQuery<{ posts: Array<{ id: number; userId: number; content: string; imageUrls: string[]; postType: string; likesCount: number; commentsCount: number; createdAt: string; authorName: string; authorInitial: string; liked: boolean }> }>({
+  const { data: postsData, isLoading: postsLoading } = useQuery<{ posts: Array<{ id: number; userId: number; content: string; imageUrls: string[]; postType: string; likesCount: number; commentsCount: number; createdAt: string; authorName: string; authorInitial: string; authorAvatar?: string | null; authorUsername?: string | null; liked: boolean }> }>({
     queryKey: ["/api/community/posts", "?limit=20&offset=0"],
   });
 
@@ -351,21 +351,36 @@ function CommunityAdminTab() {
       {/* Section A: Stats */}
       <div className="grid grid-cols-3 gap-4">
         <Card className="border-border/30 bg-card/40">
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">{stats.totalPosts}</p>
-            <p className="text-xs text-muted-foreground mt-1">Posts</p>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center shrink-0">
+              <FileText className="w-5 h-5 text-gold" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-foreground leading-none">{stats.totalPosts}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Posts</p>
+            </div>
           </CardContent>
         </Card>
         <Card className="border-border/30 bg-card/40">
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">{stats.totalComments}</p>
-            <p className="text-xs text-muted-foreground mt-1">Comentários</p>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+              <MessageCircle className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-foreground leading-none">{stats.totalComments}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Comentarios</p>
+            </div>
           </CardContent>
         </Card>
         <Card className={`border-border/30 bg-card/40 ${stats.pendingCreditRequests > 0 ? "border-amber-500/40" : ""}`}>
-          <CardContent className="p-4 text-center">
-            <p className={`text-2xl font-bold ${stats.pendingCreditRequests > 0 ? "text-amber-400" : "text-foreground"}`}>{stats.pendingCreditRequests}</p>
-            <p className="text-xs text-muted-foreground mt-1">Créditos Pendentes</p>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${stats.pendingCreditRequests > 0 ? "bg-amber-500/10" : "bg-card/80"}`}>
+              <Coins className={`w-5 h-5 ${stats.pendingCreditRequests > 0 ? "text-amber-400" : "text-muted-foreground/40"}`} />
+            </div>
+            <div>
+              <p className={`text-2xl font-bold leading-none ${stats.pendingCreditRequests > 0 ? "text-amber-400" : "text-foreground"}`}>{stats.pendingCreditRequests}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Creditos Pendentes</p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -457,12 +472,17 @@ function CommunityAdminTab() {
                 <CardContent className="p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <div className="w-8 h-8 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0 mt-0.5">
-                        <span className="text-xs font-semibold text-gold">{post.authorInitial}</span>
-                      </div>
+                      {post.authorAvatar ? (
+                        <img src={post.authorAvatar} alt="" className="w-8 h-8 rounded-full object-cover border border-gold/30 shrink-0 mt-0.5" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gold/80 to-gold border border-gold/30 flex items-center justify-center shrink-0 mt-0.5">
+                          <span className="text-xs font-semibold text-[#0A1628]">{post.authorInitial}</span>
+                        </div>
+                      )}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium text-foreground">{post.authorName}</span>
+                          {post.authorUsername && <span className="text-[10px] text-muted-foreground">@{post.authorUsername}</span>}
                           {POST_TYPE_LABELS[post.postType] && (
                             <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${POST_TYPE_LABELS[post.postType].className}`}>
                               {POST_TYPE_LABELS[post.postType].label}
