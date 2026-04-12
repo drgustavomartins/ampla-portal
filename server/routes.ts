@@ -2262,7 +2262,8 @@ export async function registerRoutes(server: Server, app: Express) {
         const subcategories = await storage.getMaterialSubcategories(theme.id);
         const subsWithFiles = await Promise.all(subcategories.map(async (sub) => {
           const files = await storage.getMaterialFiles(sub.id);
-          const sanitizedFiles = isAdmin
+          // Include driveId for authenticated users (needed for view/download)
+          const sanitizedFiles = auth
             ? files
             : files.map(({ driveId: _d, ...rest }) => rest);
           return { ...sub, files: sanitizedFiles };
