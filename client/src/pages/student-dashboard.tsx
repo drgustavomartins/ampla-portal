@@ -511,6 +511,13 @@ export default function StudentDashboard() {
               Créditos
             </Link>
             <Link
+              href="/comunidade"
+              className="flex items-center gap-1.5 rounded-full border border-blue-400/30 bg-blue-400/5 hover:bg-blue-400/15 px-3 py-1.5 text-xs font-semibold text-blue-400 transition-colors"
+            >
+              <Users className="w-3 h-3" />
+              Comunidade
+            </Link>
+            <Link
               href="/planos"
               className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/5 hover:bg-gold/15 px-3 py-1.5 text-xs font-semibold text-gold transition-colors"
             >
@@ -617,6 +624,14 @@ export default function StudentDashboard() {
             >
               <DollarSign className="w-5 h-5 text-emerald-400/70" />
               <span className="text-[20px] font-semibold text-white">Créditos</span>
+            </button>
+
+            <button
+              onClick={() => { setMobileMenuOpen(false); setLocation("/comunidade"); }}
+              className="flex items-center gap-4 w-full text-left py-3.5 border-b border-white/5"
+            >
+              <Users className="w-5 h-5 text-blue-400/70" />
+              <span className="text-[20px] font-semibold text-white">Comunidade</span>
             </button>
 
             <button
@@ -999,10 +1014,8 @@ export default function StudentDashboard() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Comunidade — Lifetime access (respects communityAccess toggle) */}
               {communityEnabled ? (
-                <a
-                  href="https://chat.whatsapp.com/C8pP9ctYkso5kH89l1CHHl"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  href="/comunidade"
                   className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 transition-all duration-300 hover:-translate-y-1 hover:border-gold/30 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
                 >
                   <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
@@ -1018,7 +1031,7 @@ export default function StudentDashboard() {
                   <span className="inline-flex items-center min-h-[44px] py-2 text-xs font-medium text-gold group-hover:underline">
                     Acessar comunidade <ChevronRight className="w-3 h-3 ml-1" />
                   </span>
-                </a>
+                </Link>
               ) : (
                 <div className="rounded-2xl border border-destructive/30 bg-card/60 p-5 space-y-3 opacity-60 cursor-not-allowed">
                   <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">

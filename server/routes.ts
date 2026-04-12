@@ -276,7 +276,12 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS accepted_user_agent TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS contract_group TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS contract_html TEXT`).catch(() => {});
-    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts tables ensured");
+    // Community tables
+    await db.execute(`CREATE TABLE IF NOT EXISTS community_posts (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, content TEXT NOT NULL, image_urls TEXT DEFAULT '[]', post_type TEXT NOT NULL DEFAULT 'general', likes_count INTEGER NOT NULL DEFAULT 0, comments_count INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT)`).catch(() => {});
+    await db.execute(`CREATE TABLE IF NOT EXISTS community_comments (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, post_id INTEGER, lesson_id INTEGER, parent_comment_id INTEGER, content TEXT NOT NULL, likes_count INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)`).catch(() => {});
+    await db.execute(`CREATE TABLE IF NOT EXISTS community_likes (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, post_id INTEGER, comment_id INTEGER, created_at TEXT NOT NULL, UNIQUE(user_id, post_id), UNIQUE(user_id, comment_id))`).catch(() => {});
+    await db.execute(`CREATE TABLE IF NOT EXISTS credit_requests (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, action_type TEXT NOT NULL, reference_type TEXT NOT NULL, reference_id INTEGER NOT NULL, amount INTEGER NOT NULL DEFAULT 5000, status TEXT NOT NULL DEFAULT 'pending', admin_note TEXT, created_at TEXT NOT NULL, reviewed_at TEXT, reviewed_by INTEGER)`).catch(() => {});
+    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts, community tables ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
@@ -3449,6 +3454,647 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
     } catch (e: any) {
       console.error("[contracts/check] Error:", e.message);
       res.status(500).json({ message: "Erro ao verificar contrato" });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ─── COMMUNITY FEED ─────────────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // ─── GET /api/community/posts ─────────────────────────────────────────────
+  app.get("/api/community/posts", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      const limit = Math.min(Number(req.query.limit) || 20, 50);
+      const offset = Number(req.query.offset) || 0;
+      const postType = req.query.postType as string | undefined;
+
+      let posts;
+      if (postType) {
+        posts = await db.execute(sql`
+          SELECT cp.*, u.name as author_name
+          FROM community_posts cp
+          JOIN users u ON u.id = cp.user_id
+          WHERE cp.post_type = ${postType}
+          ORDER BY cp.created_at DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `);
+      } else {
+        posts = await db.execute(sql`
+          SELECT cp.*, u.name as author_name
+          FROM community_posts cp
+          JOIN users u ON u.id = cp.user_id
+          ORDER BY cp.created_at DESC
+          LIMIT ${limit} OFFSET ${offset}
+        `);
+      }
+
+      const rows = (posts as any).rows || [];
+
+      // Check which posts the current user has liked
+      let likedPostIds: Set<number> = new Set();
+      if (rows.length > 0) {
+        const postIds = rows.map((r: any) => r.id);
+        const likes = await db.execute(sql`
+          SELECT post_id FROM community_likes
+          WHERE user_id = ${auth.userId} AND post_id = ANY(${postIds}::int[])
+        `);
+        likedPostIds = new Set(((likes as any).rows || []).map((l: any) => l.post_id));
+      }
+
+      const result = rows.map((p: any) => ({
+        id: p.id,
+        userId: p.user_id,
+        content: p.content,
+        imageUrls: JSON.parse(p.image_urls || '[]'),
+        postType: p.post_type,
+        likesCount: p.likes_count,
+        commentsCount: p.comments_count,
+        createdAt: p.created_at,
+        updatedAt: p.updated_at,
+        authorName: p.author_name,
+        authorInitial: (p.author_name || '?')[0].toUpperCase(),
+        liked: likedPostIds.has(p.id),
+      }));
+
+      res.json({ posts: result });
+    } catch (e: any) {
+      console.error("[GET /api/community/posts]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── POST /api/community/posts ────────────────────────────────────────────
+  app.post("/api/community/posts", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      const { content, imageUrls, postType } = req.body as { content: string; imageUrls?: string[]; postType?: string };
+      if (!content || !content.trim()) return res.status(400).json({ message: "Conteúdo é obrigatório" });
+
+      const validTypes = ['general', 'case_study', 'before_after'];
+      const type = validTypes.includes(postType || '') ? postType! : 'general';
+      const now = new Date().toISOString();
+      const imgJson = JSON.stringify(imageUrls || []);
+
+      const result = await db.execute(sql`
+        INSERT INTO community_posts (user_id, content, image_urls, post_type, created_at)
+        VALUES (${auth.userId}, ${content.trim()}, ${imgJson}, ${type}, ${now})
+        RETURNING id
+      `);
+      const postId = (result as any).rows?.[0]?.id;
+
+      // Create credit request (prevent duplicate via unique reference)
+      const creditRef = `post_created_${auth.userId}_${postId}`;
+      await db.execute(sql`
+        INSERT INTO credit_requests (user_id, action_type, reference_type, reference_id, amount, status, created_at)
+        SELECT ${auth.userId}, ${'post_created'}, ${'post'}, ${postId}, ${5000}, ${'pending'}, ${now}
+        WHERE NOT EXISTS (
+          SELECT 1 FROM credit_requests WHERE user_id = ${auth.userId} AND action_type = 'post_created' AND reference_id = ${postId}
+        )
+      `);
+
+      res.json({ id: postId, message: "Post criado com sucesso" });
+    } catch (e: any) {
+      console.error("[POST /api/community/posts]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── DELETE /api/community/posts/:id ──────────────────────────────────────
+  app.delete("/api/community/posts/:id", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      const postId = Number(req.params.id);
+      if (!postId) return res.status(400).json({ message: "ID inválido" });
+
+      const isAdmin = auth.role === "admin" || auth.role === "super_admin";
+
+      // Check ownership (or admin)
+      if (!isAdmin) {
+        const post = await db.execute(sql`SELECT user_id FROM community_posts WHERE id = ${postId}`);
+        const owner = (post as any).rows?.[0]?.user_id;
+        if (owner !== auth.userId) return res.status(403).json({ message: "Sem permissão" });
+      }
+
+      // Delete related likes, comments, then the post
+      await db.execute(sql`DELETE FROM community_likes WHERE post_id = ${postId}`);
+      await db.execute(sql`DELETE FROM community_likes WHERE comment_id IN (SELECT id FROM community_comments WHERE post_id = ${postId})`);
+      await db.execute(sql`DELETE FROM community_comments WHERE post_id = ${postId}`);
+      await db.execute(sql`DELETE FROM community_posts WHERE id = ${postId}`);
+
+      res.json({ message: "Post removido" });
+    } catch (e: any) {
+      console.error("[DELETE /api/community/posts/:id]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── GET /api/community/posts/:postId/comments ────────────────────────────
+  app.get("/api/community/posts/:postId/comments", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      const postId = Number(req.params.postId);
+      if (!postId) return res.status(400).json({ message: "ID inválido" });
+
+      const comments = await db.execute(sql`
+        SELECT cc.*, u.name as author_name
+        FROM community_comments cc
+        JOIN users u ON u.id = cc.user_id
+        WHERE cc.post_id = ${postId}
+        ORDER BY cc.created_at ASC
+      `);
+
+      const rows = (comments as any).rows || [];
+
+      // Check which comments the current user has liked
+      let likedCommentIds: Set<number> = new Set();
+      if (rows.length > 0) {
+        const commentIds = rows.map((r: any) => r.id);
+        const likes = await db.execute(sql`
+          SELECT comment_id FROM community_likes
+          WHERE user_id = ${auth.userId} AND comment_id = ANY(${commentIds}::int[])
+        `);
+        likedCommentIds = new Set(((likes as any).rows || []).map((l: any) => l.comment_id));
+      }
+
+      const result = rows.map((c: any) => ({
+        id: c.id,
+        userId: c.user_id,
+        postId: c.post_id,
+        parentCommentId: c.parent_comment_id,
+        content: c.content,
+        likesCount: c.likes_count,
+        createdAt: c.created_at,
+        authorName: c.author_name,
+        authorInitial: (c.author_name || '?')[0].toUpperCase(),
+        liked: likedCommentIds.has(c.id),
+      }));
+
+      res.json({ comments: result });
+    } catch (e: any) {
+      console.error("[GET /api/community/posts/:postId/comments]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── GET /api/community/lessons/:lessonId/comments ────────────────────────
+  app.get("/api/community/lessons/:lessonId/comments", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      const lessonId = Number(req.params.lessonId);
+      if (!lessonId) return res.status(400).json({ message: "ID inválido" });
+
+      const comments = await db.execute(sql`
+        SELECT cc.*, u.name as author_name
+        FROM community_comments cc
+        JOIN users u ON u.id = cc.user_id
+        WHERE cc.lesson_id = ${lessonId}
+        ORDER BY cc.created_at ASC
+      `);
+
+      const rows = (comments as any).rows || [];
+
+      let likedCommentIds: Set<number> = new Set();
+      if (rows.length > 0) {
+        const commentIds = rows.map((r: any) => r.id);
+        const likes = await db.execute(sql`
+          SELECT comment_id FROM community_likes
+          WHERE user_id = ${auth.userId} AND comment_id = ANY(${commentIds}::int[])
+        `);
+        likedCommentIds = new Set(((likes as any).rows || []).map((l: any) => l.comment_id));
+      }
+
+      const result = rows.map((c: any) => ({
+        id: c.id,
+        userId: c.user_id,
+        lessonId: c.lesson_id,
+        parentCommentId: c.parent_comment_id,
+        content: c.content,
+        likesCount: c.likes_count,
+        createdAt: c.created_at,
+        authorName: c.author_name,
+        authorInitial: (c.author_name || '?')[0].toUpperCase(),
+        liked: likedCommentIds.has(c.id),
+      }));
+
+      res.json({ comments: result });
+    } catch (e: any) {
+      console.error("[GET /api/community/lessons/:lessonId/comments]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── GET /api/community/lessons/:lessonId/comment-count ───────────────────
+  app.get("/api/community/lessons/:lessonId/comment-count", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      const lessonId = Number(req.params.lessonId);
+      if (!lessonId) return res.status(400).json({ message: "ID inválido" });
+
+      const result = await db.execute(sql`
+        SELECT COUNT(*)::int as count FROM community_comments WHERE lesson_id = ${lessonId}
+      `);
+      const count = (result as any).rows?.[0]?.count || 0;
+
+      res.json({ count });
+    } catch (e: any) {
+      console.error("[GET /api/community/lessons/:lessonId/comment-count]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── POST /api/community/posts/:postId/comments ──────────────────────────
+  app.post("/api/community/posts/:postId/comments", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      const postId = Number(req.params.postId);
+      if (!postId) return res.status(400).json({ message: "ID inválido" });
+
+      const { content, parentCommentId } = req.body as { content: string; parentCommentId?: number };
+      if (!content || !content.trim()) return res.status(400).json({ message: "Conteúdo é obrigatório" });
+
+      const now = new Date().toISOString();
+      const result = await db.execute(sql`
+        INSERT INTO community_comments (user_id, post_id, parent_comment_id, content, created_at)
+        VALUES (${auth.userId}, ${postId}, ${parentCommentId || null}, ${content.trim()}, ${now})
+        RETURNING id
+      `);
+      const commentId = (result as any).rows?.[0]?.id;
+
+      // Update comments_count on the post
+      await db.execute(sql`
+        UPDATE community_posts SET comments_count = comments_count + 1 WHERE id = ${postId}
+      `);
+
+      // Create credit request (prevent duplicate)
+      await db.execute(sql`
+        INSERT INTO credit_requests (user_id, action_type, reference_type, reference_id, amount, status, created_at)
+        SELECT ${auth.userId}, ${'comment_on_post'}, ${'comment'}, ${commentId}, ${5000}, ${'pending'}, ${now}
+        WHERE NOT EXISTS (
+          SELECT 1 FROM credit_requests WHERE user_id = ${auth.userId} AND action_type = 'comment_on_post' AND reference_id = ${commentId}
+        )
+      `);
+
+      res.json({ id: commentId, message: "Comentário adicionado" });
+    } catch (e: any) {
+      console.error("[POST /api/community/posts/:postId/comments]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── POST /api/community/lessons/:lessonId/comments ──────────────────────
+  app.post("/api/community/lessons/:lessonId/comments", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      const lessonId = Number(req.params.lessonId);
+      if (!lessonId) return res.status(400).json({ message: "ID inválido" });
+
+      const { content, parentCommentId } = req.body as { content: string; parentCommentId?: number };
+      if (!content || !content.trim()) return res.status(400).json({ message: "Conteúdo é obrigatório" });
+
+      const now = new Date().toISOString();
+      const result = await db.execute(sql`
+        INSERT INTO community_comments (user_id, lesson_id, parent_comment_id, content, created_at)
+        VALUES (${auth.userId}, ${lessonId}, ${parentCommentId || null}, ${content.trim()}, ${now})
+        RETURNING id
+      `);
+      const commentId = (result as any).rows?.[0]?.id;
+
+      // Create credit request (prevent duplicate)
+      await db.execute(sql`
+        INSERT INTO credit_requests (user_id, action_type, reference_type, reference_id, amount, status, created_at)
+        SELECT ${auth.userId}, ${'comment_on_video'}, ${'comment'}, ${commentId}, ${5000}, ${'pending'}, ${now}
+        WHERE NOT EXISTS (
+          SELECT 1 FROM credit_requests WHERE user_id = ${auth.userId} AND action_type = 'comment_on_video' AND reference_id = ${commentId}
+        )
+      `);
+
+      res.json({ id: commentId, message: "Comentário adicionado" });
+    } catch (e: any) {
+      console.error("[POST /api/community/lessons/:lessonId/comments]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── DELETE /api/community/comments/:id ───────────────────────────────────
+  app.delete("/api/community/comments/:id", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      const commentId = Number(req.params.id);
+      if (!commentId) return res.status(400).json({ message: "ID inválido" });
+
+      const isAdmin = auth.role === "admin" || auth.role === "super_admin";
+
+      // Check ownership
+      const comment = await db.execute(sql`SELECT user_id, post_id FROM community_comments WHERE id = ${commentId}`);
+      const row = (comment as any).rows?.[0];
+      if (!row) return res.status(404).json({ message: "Comentário não encontrado" });
+
+      if (!isAdmin && row.user_id !== auth.userId) {
+        return res.status(403).json({ message: "Sem permissão" });
+      }
+
+      // Delete likes on this comment
+      await db.execute(sql`DELETE FROM community_likes WHERE comment_id = ${commentId}`);
+      await db.execute(sql`DELETE FROM community_comments WHERE id = ${commentId}`);
+
+      // Decrement comments_count on the parent post if applicable
+      if (row.post_id) {
+        await db.execute(sql`
+          UPDATE community_posts SET comments_count = GREATEST(comments_count - 1, 0) WHERE id = ${row.post_id}
+        `);
+      }
+
+      res.json({ message: "Comentário removido" });
+    } catch (e: any) {
+      console.error("[DELETE /api/community/comments/:id]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── POST /api/community/posts/:id/like ───────────────────────────────────
+  app.post("/api/community/posts/:id/like", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      const postId = Number(req.params.id);
+      if (!postId) return res.status(400).json({ message: "ID inválido" });
+
+      const now = new Date().toISOString();
+
+      // Check if already liked
+      const existing = await db.execute(sql`
+        SELECT id FROM community_likes WHERE user_id = ${auth.userId} AND post_id = ${postId}
+      `);
+
+      if ((existing as any).rows?.length > 0) {
+        // Unlike
+        await db.execute(sql`DELETE FROM community_likes WHERE user_id = ${auth.userId} AND post_id = ${postId}`);
+        await db.execute(sql`UPDATE community_posts SET likes_count = GREATEST(likes_count - 1, 0) WHERE id = ${postId}`);
+        res.json({ liked: false });
+      } else {
+        // Like
+        await db.execute(sql`
+          INSERT INTO community_likes (user_id, post_id, created_at)
+          VALUES (${auth.userId}, ${postId}, ${now})
+          ON CONFLICT (user_id, post_id) DO NOTHING
+        `);
+        await db.execute(sql`UPDATE community_posts SET likes_count = likes_count + 1 WHERE id = ${postId}`);
+        res.json({ liked: true });
+      }
+    } catch (e: any) {
+      console.error("[POST /api/community/posts/:id/like]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── POST /api/community/comments/:id/like ────────────────────────────────
+  app.post("/api/community/comments/:id/like", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      const commentId = Number(req.params.id);
+      if (!commentId) return res.status(400).json({ message: "ID inválido" });
+
+      const now = new Date().toISOString();
+
+      const existing = await db.execute(sql`
+        SELECT id FROM community_likes WHERE user_id = ${auth.userId} AND comment_id = ${commentId}
+      `);
+
+      if ((existing as any).rows?.length > 0) {
+        await db.execute(sql`DELETE FROM community_likes WHERE user_id = ${auth.userId} AND comment_id = ${commentId}`);
+        await db.execute(sql`UPDATE community_comments SET likes_count = GREATEST(likes_count - 1, 0) WHERE id = ${commentId}`);
+        res.json({ liked: false });
+      } else {
+        await db.execute(sql`
+          INSERT INTO community_likes (user_id, comment_id, created_at)
+          VALUES (${auth.userId}, ${commentId}, ${now})
+          ON CONFLICT (user_id, comment_id) DO NOTHING
+        `);
+        await db.execute(sql`UPDATE community_comments SET likes_count = likes_count + 1 WHERE id = ${commentId}`);
+        res.json({ liked: true });
+      }
+    } catch (e: any) {
+      console.error("[POST /api/community/comments/:id/like]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ─── ADMIN: CREDIT REQUESTS ─────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // ─── GET /api/admin/credit-requests ───────────────────────────────────────
+  app.get("/api/admin/credit-requests", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const admin = requireAdmin(req, res);
+      if (!admin) return;
+
+      const status = (req.query.status as string) || 'pending';
+
+      const result = await db.execute(sql`
+        SELECT cr.*, u.name as user_name, u.email as user_email
+        FROM credit_requests cr
+        JOIN users u ON u.id = cr.user_id
+        WHERE cr.status = ${status}
+        ORDER BY cr.created_at DESC
+      `);
+
+      const rows = ((result as any).rows || []).map((r: any) => ({
+        id: r.id,
+        userId: r.user_id,
+        userName: r.user_name,
+        userEmail: r.user_email,
+        actionType: r.action_type,
+        referenceType: r.reference_type,
+        referenceId: r.reference_id,
+        amount: r.amount,
+        status: r.status,
+        adminNote: r.admin_note,
+        createdAt: r.created_at,
+        reviewedAt: r.reviewed_at,
+        reviewedBy: r.reviewed_by,
+      }));
+
+      res.json({ requests: rows });
+    } catch (e: any) {
+      console.error("[GET /api/admin/credit-requests]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── POST /api/admin/credit-requests/:id/approve ──────────────────────────
+  app.post("/api/admin/credit-requests/:id/approve", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const admin = requireAdmin(req, res);
+      if (!admin) return;
+
+      const requestId = Number(req.params.id);
+      if (!requestId) return res.status(400).json({ message: "ID inválido" });
+
+      const now = new Date().toISOString();
+
+      // Fetch the request
+      const reqResult = await db.execute(sql`SELECT * FROM credit_requests WHERE id = ${requestId} AND status = 'pending'`);
+      const creditReq = (reqResult as any).rows?.[0];
+      if (!creditReq) return res.status(404).json({ message: "Solicitação não encontrada ou já processada" });
+
+      // Update status
+      await db.execute(sql`
+        UPDATE credit_requests SET status = 'approved', reviewed_at = ${now}, reviewed_by = ${admin.userId}
+        WHERE id = ${requestId}
+      `);
+
+      // Insert credit transaction
+      const description = creditReq.action_type === 'post_created'
+        ? 'Recompensa: post na comunidade'
+        : creditReq.action_type === 'comment_on_video'
+          ? 'Recompensa: comentário em aula'
+          : 'Recompensa: comentário na comunidade';
+      const refId = `credit_request_${requestId}`;
+      const expiresAt = new Date(Date.now() + 180 * 86400000).toISOString();
+
+      await db.execute(sql`
+        INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at, expires_at)
+        VALUES (${creditReq.user_id}, ${'community_reward'}, ${creditReq.amount}, ${description}, ${refId}, ${now}, ${expiresAt})
+      `);
+
+      res.json({ message: "Solicitação aprovada e crédito liberado" });
+    } catch (e: any) {
+      console.error("[POST /api/admin/credit-requests/:id/approve]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── POST /api/admin/credit-requests/:id/reject ───────────────────────────
+  app.post("/api/admin/credit-requests/:id/reject", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const admin = requireAdmin(req, res);
+      if (!admin) return;
+
+      const requestId = Number(req.params.id);
+      if (!requestId) return res.status(400).json({ message: "ID inválido" });
+
+      const { adminNote } = req.body as { adminNote?: string };
+      const now = new Date().toISOString();
+
+      const result = await db.execute(sql`
+        UPDATE credit_requests SET status = 'rejected', reviewed_at = ${now}, reviewed_by = ${admin.userId}, admin_note = ${adminNote || null}
+        WHERE id = ${requestId} AND status = 'pending'
+        RETURNING id
+      `);
+
+      if ((result as any).rows?.length === 0) {
+        return res.status(404).json({ message: "Solicitação não encontrada ou já processada" });
+      }
+
+      res.json({ message: "Solicitação rejeitada" });
+    } catch (e: any) {
+      console.error("[POST /api/admin/credit-requests/:id/reject]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── POST /api/admin/credit-requests/approve-all ──────────────────────────
+  app.post("/api/admin/credit-requests/approve-all", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const admin = requireAdmin(req, res);
+      if (!admin) return;
+
+      const now = new Date().toISOString();
+      const expiresAt = new Date(Date.now() + 180 * 86400000).toISOString();
+
+      // Fetch all pending requests
+      const pending = await db.execute(sql`SELECT * FROM credit_requests WHERE status = 'pending' ORDER BY id`);
+      const rows = (pending as any).rows || [];
+
+      if (rows.length === 0) return res.json({ message: "Nenhuma solicitação pendente", approved: 0 });
+
+      let approved = 0;
+      for (const creditReq of rows) {
+        // Update status
+        await db.execute(sql`
+          UPDATE credit_requests SET status = 'approved', reviewed_at = ${now}, reviewed_by = ${admin.userId}
+          WHERE id = ${creditReq.id}
+        `);
+
+        // Insert credit
+        const description = creditReq.action_type === 'post_created'
+          ? 'Recompensa: post na comunidade'
+          : creditReq.action_type === 'comment_on_video'
+            ? 'Recompensa: comentário em aula'
+            : 'Recompensa: comentário na comunidade';
+        const refId = `credit_request_${creditReq.id}`;
+
+        await db.execute(sql`
+          INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at, expires_at)
+          VALUES (${creditReq.user_id}, ${'community_reward'}, ${creditReq.amount}, ${description}, ${refId}, ${now}, ${expiresAt})
+        `);
+        approved++;
+      }
+
+      res.json({ message: `${approved} solicitações aprovadas`, approved });
+    } catch (e: any) {
+      console.error("[POST /api/admin/credit-requests/approve-all]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── GET /api/admin/community-stats ───────────────────────────────────────
+  app.get("/api/admin/community-stats", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const admin = requireAdmin(req, res);
+      if (!admin) return;
+
+      const postsResult = await db.execute(sql`SELECT COUNT(*)::int as count FROM community_posts`);
+      const commentsResult = await db.execute(sql`SELECT COUNT(*)::int as count FROM community_comments`);
+      const pendingResult = await db.execute(sql`SELECT COUNT(*)::int as count FROM credit_requests WHERE status = 'pending'`);
+
+      res.json({
+        totalPosts: (postsResult as any).rows?.[0]?.count || 0,
+        totalComments: (commentsResult as any).rows?.[0]?.count || 0,
+        pendingCreditRequests: (pendingResult as any).rows?.[0]?.count || 0,
+      });
+    } catch (e: any) {
+      console.error("[GET /api/admin/community-stats]", e.message);
+      res.status(500).json({ message: "Erro interno" });
     }
   });
 

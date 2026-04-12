@@ -19,6 +19,7 @@ import TermosPage from "./pages/termos";
 import PrivacidadePage from "./pages/privacidade";
 import CreditsPage from "./pages/credits";
 import CreditsRulesPage from "./pages/credits-rules";
+import ComunidadePage from "./pages/comunidade";
 
 function AppContent() {
   const { user, isAdmin } = useAuth();
@@ -71,6 +72,7 @@ function App() {
             <Route path="/quiz" component={QuizPage} />
             <Route path="/creditos" component={() => <ProtectedPage component={CreditsPage} />} />
             <Route path="/creditos/regras" component={() => <ProtectedPage component={CreditsRulesPage} />} />
+            <Route path="/comunidade" component={() => <ProtectedPage component={ComunidadePage} />} />
             <Route path="/termos" component={TermosPage} />
             <Route path="/privacidade" component={PrivacidadePage} />
             <Route component={NotFound} />
