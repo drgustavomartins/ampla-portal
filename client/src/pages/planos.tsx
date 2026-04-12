@@ -346,7 +346,7 @@ export default function PlanosPage() {
       {/* Sticky Header */}
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-14">
+          <div className="flex items-center justify-between h-20">
             {/* Back button */}
             <button onClick={() => window.history.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors">
               <ChevronLeft className="w-5 h-5" />
@@ -354,7 +354,7 @@ export default function PlanosPage() {
             </button>
             
             {/* Logo */}
-            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-10 object-contain" />
+            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-16 object-contain" />
             
             {/* Desktop: category tabs */}
             <nav className="hidden md:flex items-center gap-1">
@@ -391,7 +391,7 @@ export default function PlanosPage() {
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 bg-white animate-in fade-in duration-200">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-8 object-contain" />
+            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-10 object-contain" />
             <button onClick={() => setMobileMenuOpen(false)} className="w-10 h-10 flex items-center justify-center" aria-label="Fechar">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M1 1l16 16M17 1L1 17" stroke="#1a1a1a" strokeWidth="1.5" strokeLinecap="round" />
