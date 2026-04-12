@@ -487,6 +487,13 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* Link planos publicos */}
+          <div className="mt-6 text-center">
+            <a href="/#/planos-publicos" className="text-sm text-gold hover:text-gold/80 font-medium underline-offset-4 hover:underline transition-colors">
+              Ver todos os planos e precos
+            </a>
+          </div>
+
           {/* LGPD footer */}
           <p className="text-center text-[10px] text-white/15 leading-relaxed px-2">
             Seus dados são protegidos conforme a{" "}

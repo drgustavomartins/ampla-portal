@@ -706,6 +706,96 @@ export default function PlanosPublicos() {
           </div>
         </div>
 
+        {/* ── HORAS CLINICAS EXTRAS ──────────────────────────── */}
+        <div className="my-16 h-px bg-gray-200" />
+
+        <div>
+          <SectionLabel
+            eyebrow="Add-on"
+            title="Horas Clinicas Extras"
+            sub="Pacotes de encontros clinicos presenciais para aprofundar a pratica. Exclusivo para alunos com mentoria VIP ativa."
+            color="#0D7A5F"
+          />
+
+          <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 flex items-start gap-3">
+            <svg className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm text-amber-700">Exclusivo para alunos com mentoria VIP ativa. Para adquirir, acesse a area de planos apos o login.</p>
+          </div>
+
+          <div className="grid gap-5 grid-cols-1 sm:grid-cols-3 max-w-4xl">
+            {[
+              {
+                title: "1 Encontro Clinico",
+                hours: "4h",
+                price: "R$ 1.000",
+                features: ["1 sessao de 4 horas", "Observacao de atendimentos reais", "Suporte tecnico durante o encontro", "Certificado de participacao"],
+              },
+              {
+                title: "2 Encontros Clinicos",
+                hours: "8h",
+                price: "R$ 1.800",
+                highlight: "Mais escolhido",
+                features: ["2 sessoes de 4 horas cada", "Observacao de atendimentos reais", "Suporte tecnico durante os encontros", "Certificado de participacao", "10% de economia vs avulso"],
+              },
+              {
+                title: "3 Encontros Clinicos",
+                hours: "12h",
+                price: "R$ 2.400",
+                features: ["3 sessoes de 4 horas cada", "Observacao de atendimentos reais", "Suporte tecnico durante os encontros", "Certificado de participacao", "20% de economia vs avulso"],
+              },
+            ].map((pkg) => (
+              <div
+                key={pkg.title}
+                className="relative flex flex-col rounded-[28px] overflow-hidden"
+                style={{
+                  background: "linear-gradient(145deg,#ECFDF5 0%,#D1FAE5 60%,#A7F3D0 100%)",
+                  boxShadow: "0 4px 28px rgba(0,0,0,0.09), 0 0 0 1px rgba(0,0,0,0.06)",
+                }}
+              >
+                {pkg.highlight && (
+                  <div className="absolute top-3 right-3 z-10">
+                    <span className="rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide" style={{ background: "#0D7A5F", color: "#fff" }}>
+                      {pkg.highlight}
+                    </span>
+                  </div>
+                )}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 260 200" preserveAspectRatio="xMaxYMin slice" fill="none">
+                  <circle cx="200" cy="30" r="75" fill="#6EE7B7" fillOpacity="0.22"/>
+                  <circle cx="30" cy="130" r="50" fill="#A7F3D0" fillOpacity="0.28"/>
+                </svg>
+                <div className="h-[3px] w-full flex-shrink-0" style={{ background: "#0D7A5F" }} />
+                <div className="relative px-7 pt-6 pb-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5" style={{ color: "#0D7A5F" }}>Horas Clinicas</p>
+                  <h3 className="text-xl font-bold leading-snug text-gray-900">{pkg.title}</h3>
+                  <p className="mt-1 text-sm text-gray-500">{pkg.hours} de observacao clinica presencial</p>
+                </div>
+                <div className="relative px-7 pt-5 pb-0">
+                  <span className="text-[32px] font-bold tabular-nums leading-none" style={{ color: "#0D7A5F" }}>{pkg.price}</span>
+                  <p className="text-xs mt-1 text-gray-400">a vista</p>
+                </div>
+                <div className="mx-7 mt-5 h-px bg-black/[0.07]" />
+                <ul className="relative flex-1 px-7 pt-4 pb-7 space-y-2.5">
+                  {pkg.features.map((f, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.05)" }}>
+                        <Check className="h-[10px] w-[10px]" style={{ color: "#0D7A5F" }} />
+                      </div>
+                      <span className="text-[13px] leading-snug text-gray-500">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="relative px-7 pb-7">
+                  <div className="w-full flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold text-white" style={{ background: "#0D7A5F", opacity: 0.7 }}>
+                    Disponivel apos login
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* ── RODAPÉ ─────────────────────────────────────────── */}
         <div className="mt-20 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="rounded-3xl bg-white p-7 ring-1 ring-gray-100">

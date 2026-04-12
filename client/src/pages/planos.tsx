@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import {
   Check, Star, Clock, Zap, Users, Video,
   ChevronDown, ChevronUp, ArrowRight, Loader2,
-  TrendingUp, Timer, MessageCircle, FileSignature, ChevronLeft,} from "lucide-react";
+  TrendingUp, Timer, MessageCircle, FileSignature, ChevronLeft, Info,} from "lucide-react";
 
 function formatBRL(c: number) {
   return (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -207,9 +207,6 @@ export default function PlanosPage() {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(urlParams.get('grupo'));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
-  const [referralCode, setReferralCode] = useState<string>(urlParams.get('ref') || '');
-  const [referralValid, setReferralValid] = useState<boolean | null>(null);
-  const [referralName, setReferralName] = useState<string>('');
   const { data, isLoading } = useQuery<{ plans: PlanData[] }>({
     queryKey: ["/api/stripe/plans"],
   });
@@ -235,7 +232,6 @@ export default function PlanosPage() {
         body: JSON.stringify({
           planKey,
           creditsToUse: creditsToUse > 0 ? creditsToUse : undefined,
-          referralCode: referralValid ? referralCode.trim().toUpperCase() : undefined,
         }),
       });
       const json = await res.json();
@@ -416,8 +412,7 @@ export default function PlanosPage() {
 
       <div className="px-4 py-8 mx-auto max-w-7xl">
         {/* Title, referral, como funciona - only when showing all */}
-        {!selectedGroup && (
-        <div className="mb-8 text-center">
+        <div className={`mb-8 text-center ${selectedGroup ? 'hidden' : ''}`}>
           <h1 className="text-3xl sm:text-4xl font-bold text-[#1a1a1a]">Escolha seu caminho</h1>
           <p className="mt-2 text-gray-500">Do iniciante ao avancado, cada plano e uma etapa da sua evolucao em HOF</p>
           {myPlan?.isTrialActive && (
@@ -428,43 +423,13 @@ export default function PlanosPage() {
           )}
         </div>
 
-          {/* Campo de código de indicação */}
-          <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-5">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <div className="flex-1 w-full">
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Codigo de indicacao (opcional)</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Ex: GUSTAVO-AF7K"
-                  value={referralCode}
-                  onChange={(e) => {
-                    const val = e.target.value.toUpperCase();
-                    setReferralCode(val);
-                    setReferralValid(null);
-                    setReferralName('');
-                  }}
-                  onBlur={async () => {
-                    if (!referralCode.trim()) { setReferralValid(null); return; }
-                    try {
-                      const res = await fetch(`/api/credits/validate-referral?code=${encodeURIComponent(referralCode.trim())}`);
-                      const data = await res.json();
-                      setReferralValid(data.valid);
-                      setReferralName(data.name || '');
-                    } catch { setReferralValid(false); }
-                  }}
-                  className="flex-1 rounded-lg border border-gray-200 bg-[#F7F6F2] px-3 py-2 text-sm text-[#1a1a1a] placeholder-gray-600 focus:border-[#D4A843] focus:outline-none font-mono tracking-wider"
-                />
-              </div>
-              {referralValid === true && (
-                <p className="text-xs text-emerald-400 mt-1.5">Indicado por <strong>{referralName}</strong>. Voce ganha <strong>10% de desconto</strong> e quem indicou ganha 10% em creditos!</p>
-              )}
-              {referralValid === false && referralCode.trim() && (
-                <p className="text-xs text-red-400 mt-1.5">Codigo nao encontrado. Verifique e tente novamente.</p>
-              )}
-            </div>
+          {/* Info banner - codigo de indicacao so vale no cadastro */}
+          <div className="mb-6 rounded-xl bg-blue-50 border border-blue-200 px-5 py-3 flex items-start gap-3">
+            <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+            <p className="text-sm text-blue-700">
+              O codigo de indicacao da direito a 10% de desconto e e valido apenas na primeira compra. Se voce recebeu um codigo, use-o na <a href="/#/planos-publicos" className="underline font-semibold">pagina de cadastro</a>.
+            </p>
           </div>
-        </div>
 
           {/* Credit balance banner — desconto aplicado automaticamente */}
           {creditBalance > 0 && (
@@ -502,7 +467,6 @@ export default function PlanosPage() {
               </div>
             </div>
           </div>
-        )}
 
           {/* Grupos */}
           {GROUP_ORDER.filter((g) => !selectedGroup || selectedGroup === g).map((group) => {
