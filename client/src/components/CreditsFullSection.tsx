@@ -113,13 +113,15 @@ export function CreditsFullSection() {
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">Saldo disponível</p>
             <p className="text-4xl font-bold text-gold mt-1">{formatBRL(data.balance)}</p>
             <p className="text-[10px] text-muted-foreground mt-2">Aplicado automaticamente no checkout</p>
-            <a
-              href="/#/planos"
-              className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gold/90 hover:bg-gold text-[#0A0D14] text-sm font-semibold transition-colors"
+            <button
+              onClick={() => { window.location.hash = '/planos'; }}
+              type="button"
+              className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold"
+              style={{ backgroundColor: '#D4A843', color: '#0A0D14', border: 'none', cursor: 'pointer' }}
             >
               <ShoppingCart className="w-4 h-4" />
-              {data.balance > 0 ? "Usar cr\u00e9ditos agora" : "Ver planos disponiveis"}
-            </a>
+              {data.balance > 0 ? "Usar creditos agora" : "Ver planos disponiveis"}
+            </button>
           </div>
 
           {/* Código de indicação */}
