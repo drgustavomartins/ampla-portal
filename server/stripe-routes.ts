@@ -701,6 +701,84 @@ export function registerStripeRoutes(app: Express) {
     res.json({ received: true });
   });
 
+  // GET /api/cron/abandoned-checkout — send email to users with pending checkouts
+  app.get("/api/cron/abandoned-checkout", async (req: Request, res: Response) => {
+    const cronSecret = req.headers["x-cron-secret"] || req.query.secret;
+    if (cronSecret !== (process.env.CRON_SECRET || "ampla-cron-x8k2m9p4")) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const { db } = await import("./db");
+      // Find contracts accepted in last 48h where user hasn't purchased the plan
+      const abandoned = await db.execute(sql`
+        SELECT c.user_id, c.plan_key, c.accepted_at, u.name, u.email, u.plan_key as current_plan
+        FROM contracts c
+        JOIN users u ON u.id = c.user_id
+        WHERE c.accepted_at > ${new Date(Date.now() - 48 * 3600000).toISOString()}
+        AND (u.plan_key IS NULL OR u.plan_key = '' OR u.plan_key != c.plan_key)
+        AND u.role != 'admin' AND u.role != 'super_admin'
+      `);
+
+      const rows = (abandoned as any).rows || [];
+      let sent = 0;
+
+      const RESEND_API_KEY = process.env.RESEND_API_KEY;
+      if (!RESEND_API_KEY || rows.length === 0) {
+        return res.json({ message: "Nenhum carrinho abandonado", checked: rows.length });
+      }
+
+      for (const row of rows) {
+        // Check if we already sent this email (avoid spam)
+        const alreadySent = await db.execute(sql`SELECT 1 FROM audit_logs WHERE action = 'abandoned_checkout_email' AND user_id = ${row.user_id} AND created_at > ${new Date(Date.now() - 48 * 3600000).toISOString()} LIMIT 1`);
+        if ((alreadySent as any).rows?.length > 0) continue;
+
+        const firstName = row.name?.split(" ")[0] || "Aluno";
+
+        // Check if user has credits
+        const creditsResult = await db.execute(sql`SELECT COALESCE(SUM(amount), 0) as balance FROM credit_transactions WHERE user_id = ${row.user_id} AND (expires_at IS NULL OR expires_at > NOW()::text OR amount < 0)`);
+        const creditBalance = Number((creditsResult as any).rows?.[0]?.balance || 0);
+        const creditMsg = creditBalance > 0 ? `\n\nVoce tem R$ ${(creditBalance / 100).toFixed(2).replace(".", ",")} em creditos que serao aplicados automaticamente como desconto.` : "";
+
+        try {
+          const emailRes = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${RESEND_API_KEY}` },
+            body: JSON.stringify({
+              from: "Ampla Facial <noreply@amplafacial.com.br>",
+              to: [row.email],
+              subject: `${firstName}, voce deixou seu plano esperando`,
+              html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#333">
+                <div style="background:#0A0D14;padding:30px;text-align:center">
+                  <h1 style="color:#D4A843;margin:0;font-size:24px">Ampla Facial</h1>
+                </div>
+                <div style="padding:30px">
+                  <p>Oi, ${firstName}!</p>
+                  <p>Notei que voce comecou a adquirir um plano na Ampla Facial mas nao finalizou. Aconteceu algum problema?</p>
+                  <p>Se tiver qualquer duvida sobre os planos ou sobre o Metodo NaturalUp, estou a disposicao.${creditMsg}</p>
+                  <div style="text-align:center;margin:30px 0">
+                    <a href="https://portal.amplafacial.com.br/#/planos" style="background:#D4A843;color:#0A0D14;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:bold;display:inline-block">Finalizar minha inscricao</a>
+                  </div>
+                  <p style="color:#666;font-size:13px">Dr. Gustavo Martins<br>Ampla Facial</p>
+                </div>
+              </div>`
+            }),
+          });
+          if (emailRes.ok) {
+            sent++;
+            await db.execute(sql`INSERT INTO audit_logs (user_id, action, details, created_at) VALUES (${row.user_id}, 'abandoned_checkout_email', ${'plan: ' + row.plan_key}, ${new Date().toISOString()})`);
+          }
+        } catch (emailErr: any) {
+          console.error("[cron/abandoned] Email error:", emailErr.message);
+        }
+      }
+
+      res.json({ message: `${sent} emails enviados`, checked: rows.length, sent });
+    } catch (e: any) {
+      console.error("[cron/abandoned-checkout] Error:", e.message);
+      res.status(500).json({ message: "Erro" });
+    }
+  });
+
   // ─── GET /api/stripe/my-plan ───────────────────────────────────────────────
   // Retorna info do plano atual do aluno logado
   app.get("/api/stripe/my-plan", async (req: Request, res: Response) => {

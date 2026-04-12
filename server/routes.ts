@@ -945,7 +945,7 @@ export async function registerRoutes(server: Server, app: Express) {
   app.post("/api/cron/reengajamento-quiz", async (req, res) => {
     // Autenticacao simples via header secret
     const secret = req.headers["x-cron-secret"];
-    const CRON_SECRET = process.env.CRON_SECRET || "ampla-cron-2026";
+    const CRON_SECRET = process.env.CRON_SECRET || "ampla-cron-x8k2m9p4";
     if (secret !== CRON_SECRET) {
       return res.status(401).json({ message: "Nao autorizado" });
     }
@@ -1184,7 +1184,7 @@ export async function registerRoutes(server: Server, app: Express) {
       } as any);
 
       // Issue JWT so frontend can log in immediately without a second request
-      const token = jwt.sign({ userId: user.id, role: "trial" }, JWT_SECRET, { expiresIn: "30d" });
+      const token = jwt.sign({ userId: user.id, role: "trial" }, JWT_SECRET, { expiresIn: "7d" });
       res.cookie("ampla_token", token, { httpOnly: true, secure: true, sameSite: "none", maxAge: 30 * 24 * 60 * 60 * 1000 });
 
       // Send welcome email and notify admin (non-blocking)
@@ -1295,7 +1295,7 @@ export async function registerRoutes(server: Server, app: Express) {
       // The frontend will show locked modules and CTA to buy a plan
 
       const { password, lockedUntil: _l, loginAttempts: _a, ...safeUser } = user;
-      const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "30d" });
+      const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
 
       // Log admin login
       if (user.role === "admin" || user.role === "super_admin") {
@@ -1332,7 +1332,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
     // Sliding session: issue a fresh token on every auth check
     // This keeps iOS PWA sessions alive across app restarts
-    const freshToken = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "30d" });
+    const freshToken = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
     res.cookie("ampla_token", freshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -2254,7 +2254,10 @@ export async function registerRoutes(server: Server, app: Express) {
         const subcategories = await storage.getMaterialSubcategories(theme.id);
         const subsWithFiles = await Promise.all(subcategories.map(async (sub) => {
           const files = await storage.getMaterialFiles(sub.id);
-          return { ...sub, files };
+          const sanitizedFiles = isAdmin
+            ? files
+            : files.map(({ driveId: _d, ...rest }) => rest);
+          return { ...sub, files: sanitizedFiles };
         }));
         const fileCount = subsWithFiles.reduce((acc, sub) => acc + sub.files.length, 0);
         // Sempre usa o mapa canônico; só cai no banco se o titulo nao estiver mapeado
@@ -2875,6 +2878,84 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   });
 
+  // GET /api/cron/credit-expiry-notify — notify users about expiring credits
+  app.get("/api/cron/credit-expiry-notify", async (req: Request, res: Response) => {
+    const cronSecret = req.headers["x-cron-secret"] || req.query.secret;
+    if (cronSecret !== (process.env.CRON_SECRET || "ampla-cron-x8k2m9p4")) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const { db } = await import("./db");
+      const RESEND_API_KEY = process.env.RESEND_API_KEY;
+      if (!RESEND_API_KEY) return res.json({ message: "RESEND_API_KEY not set" });
+
+      // Find credits expiring in 7 days
+      const sevenDays = new Date(Date.now() + 7 * 86400000).toISOString();
+      const today = new Date().toISOString();
+      const expiring = await db.execute(sql`
+        SELECT ct.user_id, ct.amount, ct.description, ct.expires_at, u.name, u.email
+        FROM credit_transactions ct
+        JOIN users u ON u.id = ct.user_id
+        WHERE ct.amount > 0 AND ct.expires_at IS NOT NULL
+        AND ct.expires_at > ${today} AND ct.expires_at <= ${sevenDays}
+      `);
+
+      const rows = (expiring as any).rows || [];
+      // Group by user
+      const byUser: Record<number, { name: string; email: string; credits: any[] }> = {};
+      for (const r of rows) {
+        if (!byUser[r.user_id]) byUser[r.user_id] = { name: r.name, email: r.email, credits: [] };
+        byUser[r.user_id].credits.push({ amount: r.amount, description: r.description, expiresAt: r.expires_at });
+      }
+
+      let sent = 0;
+      for (const [userId, data] of Object.entries(byUser)) {
+        // Check if already notified this week
+        const alreadySent = await db.execute(sql`SELECT 1 FROM audit_logs WHERE action = 'credit_expiry_email' AND user_id = ${Number(userId)} AND created_at > ${new Date(Date.now() - 7 * 86400000).toISOString()} LIMIT 1`);
+        if ((alreadySent as any).rows?.length > 0) continue;
+
+        const firstName = data.name?.split(" ")[0] || "Aluno";
+        const totalExpiring = data.credits.reduce((sum: number, c: any) => sum + c.amount, 0);
+        const totalBRL = (totalExpiring / 100).toFixed(2).replace(".", ",");
+
+        try {
+          const emailRes = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${RESEND_API_KEY}` },
+            body: JSON.stringify({
+              from: "Ampla Facial <noreply@amplafacial.com.br>",
+              to: [data.email],
+              subject: `${firstName}, seus R$ ${totalBRL} em creditos vao expirar em breve`,
+              html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#333">
+                <div style="background:#0A0D14;padding:30px;text-align:center">
+                  <h1 style="color:#D4A843;margin:0;font-size:24px">Ampla Facial</h1>
+                </div>
+                <div style="padding:30px">
+                  <p>Oi, ${firstName}!</p>
+                  <p>Voce tem <strong>R$ ${totalBRL}</strong> em creditos que vao expirar nos proximos 7 dias.</p>
+                  <p>Use seus creditos como desconto na compra de qualquer produto ou mentoria antes que expirem.</p>
+                  <div style="text-align:center;margin:30px 0">
+                    <a href="https://portal.amplafacial.com.br/#/planos" style="background:#D4A843;color:#0A0D14;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:bold;display:inline-block">Usar meus creditos agora</a>
+                  </div>
+                  <p style="color:#666;font-size:13px">Dr. Gustavo Martins<br>Ampla Facial</p>
+                </div>
+              </div>`
+            }),
+          });
+          if (emailRes.ok) {
+            sent++;
+            await db.execute(sql`INSERT INTO audit_logs (user_id, action, details, created_at) VALUES (${Number(userId)}, 'credit_expiry_email', ${'R$ ' + totalBRL + ' expiring'}, ${new Date().toISOString()})`);
+          }
+        } catch {}
+      }
+
+      res.json({ message: `${sent} emails enviados`, usersWithExpiring: Object.keys(byUser).length, sent });
+    } catch (e: any) {
+      console.error("[cron/credit-expiry] Error:", e.message);
+      res.status(500).json({ message: "Erro" });
+    }
+  });
+
   // ─── Clinical Sessions Routes ───────────────────────────────────────────────
 
   // POST /api/admin/clinical-sessions — create a session
@@ -2957,18 +3038,21 @@ export async function registerRoutes(server: Server, app: Express) {
       const { db } = await import("./db");
       const sessionId = Number(req.params.id);
       const result = await db.execute(sql`
-        SELECT cs.*, u.name as student_name, u.email as student_email, u.phone as student_phone
+        SELECT cs.*, u.name as student_name, u.email as student_email, u.phone as student_phone,
+        a.name as admin_name
         FROM clinical_sessions cs
         LEFT JOIN users u ON u.id = cs.student_id
+        LEFT JOIN users a ON a.id = cs.admin_id
         WHERE cs.id = ${sessionId}
       `);
       const row = (result as any).rows?.[0];
-      if (!row) return res.status(404).json({ message: "Sessão não encontrada" });
+      if (!row) return res.status(404).json({ message: "Sessao nao encontrada" });
       res.json({
         id: row.id,
         studentName: row.student_name,
         studentEmail: row.student_email,
         studentPhone: row.student_phone,
+        adminName: row.admin_name,
         sessionDate: row.session_date,
         startTime: row.start_time,
         endTime: row.end_time,
@@ -2986,7 +3070,124 @@ export async function registerRoutes(server: Server, app: Express) {
       });
     } catch (e: any) {
       console.error("[admin/clinical-sessions/:id/pdf] Error:", e.message);
-      res.status(500).json({ message: "Erro ao buscar sessão" });
+      res.status(500).json({ message: "Erro ao buscar sessao" });
+    }
+  });
+
+  // GET /api/clinical-sessions/:id/certificate — HTML certificate for print/PDF
+  app.get("/api/clinical-sessions/:id/certificate", async (req: Request, res: Response) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Nao autorizado" });
+    try {
+      const { db } = await import("./db");
+      const sessionId = Number(req.params.id);
+      const result = await db.execute(sql`
+        SELECT cs.*, u.name as student_name, u.email as student_email, u.phone as student_phone,
+        a.name as admin_name
+        FROM clinical_sessions cs
+        LEFT JOIN users u ON u.id = cs.student_id
+        LEFT JOIN users a ON a.id = cs.admin_id
+        WHERE cs.id = ${sessionId}
+      `);
+      const row = (result as any).rows?.[0];
+      if (!row) return res.status(404).json({ message: "Sessao nao encontrada" });
+      // Only admin or the student themselves can view
+      if (auth.role !== "admin" && auth.role !== "super_admin" && row.student_id !== auth.userId) {
+        return res.status(403).json({ message: "Sem permissao" });
+      }
+      const procedures = (() => { try { return JSON.parse(row.procedures); } catch { return []; } })();
+      const patients = (() => { try { return JSON.parse(row.patients_details); } catch { return []; } })();
+      const dateFormatted = row.session_date ? new Date(row.session_date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }) : "";
+      const adminSignDate = row.admin_signed_at ? new Date(row.admin_signed_at).toLocaleDateString("pt-BR") + " " + new Date(row.admin_signed_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : null;
+      const studentSignDate = row.student_signed_at ? new Date(row.student_signed_at).toLocaleDateString("pt-BR") + " " + new Date(row.student_signed_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : null;
+
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Comprovante de Pratica Clinica</title>
+<style>
+  @page { margin: 20mm; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a1a; line-height: 1.6; max-width: 700px; margin: 0 auto; padding: 40px 20px; }
+  .header { text-align: center; border-bottom: 2px solid #D4A843; padding-bottom: 20px; margin-bottom: 30px; }
+  .header h1 { font-size: 22px; color: #0A0D14; margin: 0; }
+  .header h2 { font-size: 14px; color: #D4A843; margin: 4px 0 0; font-weight: normal; }
+  .header p { font-size: 11px; color: #666; margin: 8px 0 0; }
+  .section { margin-bottom: 24px; }
+  .section h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #D4A843; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 12px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .field { font-size: 13px; }
+  .field .label { color: #888; font-size: 11px; }
+  .field .value { font-weight: 600; }
+  ul { padding-left: 20px; margin: 0; }
+  li { font-size: 13px; margin-bottom: 4px; }
+  .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee; }
+  .sig-box { text-align: center; }
+  .sig-box .line { border-top: 1px solid #333; margin-top: 40px; padding-top: 8px; }
+  .sig-box .name { font-weight: 600; font-size: 14px; }
+  .sig-box .role { font-size: 11px; color: #666; }
+  .sig-box .stamp { font-size: 10px; color: #22c55e; margin-top: 4px; }
+  .sig-box .pending { font-size: 10px; color: #f59e0b; margin-top: 4px; }
+  .footer { text-align: center; font-size: 10px; color: #999; margin-top: 40px; border-top: 1px solid #eee; padding-top: 16px; }
+  @media print { body { padding: 0; } }
+</style></head><body>
+<div class="header">
+  <h1>COMPROVANTE DE PRATICA CLINICA</h1>
+  <h2>Ampla Facial - Metodo NaturalUp</h2>
+  <p>Instituto Medeiros Martins LTDA - CNPJ 50.421.964/0001-81</p>
+</div>
+
+<div class="section">
+  <h3>Dados da Sessao</h3>
+  <div class="grid">
+    <div class="field"><span class="label">Data</span><br><span class="value">${dateFormatted}</span></div>
+    <div class="field"><span class="label">Horario</span><br><span class="value">${row.start_time || ""} - ${row.end_time || ""}</span></div>
+    <div class="field"><span class="label">Carga Horaria</span><br><span class="value">${row.duration_hours || 0} horas</span></div>
+    <div class="field"><span class="label">Pacientes Atendidos</span><br><span class="value">${row.patients_count || 0}</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Aluno</h3>
+  <div class="grid">
+    <div class="field"><span class="label">Nome</span><br><span class="value">${row.student_name || ""}</span></div>
+    <div class="field"><span class="label">Email</span><br><span class="value">${row.student_email || ""}</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Procedimentos Realizados</h3>
+  <ul>${procedures.map((p: string) => "<li>" + p + "</li>").join("")}</ul>
+</div>
+
+${patients.length > 0 ? '<div class="section"><h3>Detalhes dos Pacientes</h3><ul>' + patients.map((p: string, i: number) => "<li>Paciente " + (i + 1) + ": " + p + "</li>").join("") + "</ul></div>" : ""}
+
+${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px">' + row.notes + "</p></div>" : ""}
+
+<div class="signatures">
+  <div class="sig-box">
+    <div class="line">
+      <p class="name">${row.admin_name || "Dr. Gustavo Martins"}</p>
+      <p class="role">Orientador</p>
+      ${adminSignDate ? '<p class="stamp">Assinado digitalmente em ' + adminSignDate + '</p><p class="stamp">IP: ' + (row.admin_signed_ip || "") + '</p>' : '<p class="pending">Assinatura pendente</p>'}
+    </div>
+  </div>
+  <div class="sig-box">
+    <div class="line">
+      <p class="name">${row.student_name || ""}</p>
+      <p class="role">Aluno(a)</p>
+      ${studentSignDate ? '<p class="stamp">Assinado digitalmente em ' + studentSignDate + '</p><p class="stamp">IP: ' + (row.student_signed_ip || "") + '</p>' : '<p class="pending">Assinatura pendente</p>'}
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <p>Documento gerado eletronicamente pela plataforma Ampla Facial</p>
+  <p>portal.amplafacial.com.br - Sessao #${row.id}</p>
+</div>
+</body></html>`;
+
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(html);
+    } catch (e: any) {
+      console.error("[clinical-sessions/certificate] Error:", e.message);
+      res.status(500).json({ message: "Erro ao gerar comprovante" });
     }
   });
 

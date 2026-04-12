@@ -20,7 +20,8 @@ import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
   ChevronLeft, ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle, Star,
-  Users, MessageCircle, Lock, ShoppingCart, ExternalLink, Paperclip, DollarSign
+  Users, MessageCircle, Lock, ShoppingCart, ExternalLink, Paperclip, DollarSign,
+  Search, Bell
 } from "lucide-react";
 import MateriaisComplementares from "./materiais-complementares";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
@@ -106,6 +107,7 @@ export default function StudentDashboard() {
   });
   const [purchaseModule, setPurchaseModule] = useState<Module | null>(null);
   const [signingSessionId, setSigningSessionId] = useState<number | null>(null);
+  const [lessonSearch, setLessonSearch] = useState("");
 
   const { data: myClinicalData, refetch: refetchClinical } = useQuery<{ sessions: any[] }>({
     queryKey: ["/api/student/clinical-sessions"],
@@ -486,6 +488,21 @@ export default function StudentDashboard() {
 
           {/* Right: Desktop nav */}
           <div className="hidden md:flex items-center gap-3">
+            {myClinicalSessions?.some((s: any) => !s.studentSignedAt) && (
+              <button
+                onClick={() => {
+                  const el = document.querySelector('[data-section="praticas"]');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="relative flex items-center justify-center w-9 h-9 rounded-full border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/15 transition-colors"
+                title="Sessoes pendentes de assinatura"
+              >
+                <Bell className="w-4 h-4 text-amber-400" />
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-[9px] font-bold text-white flex items-center justify-center">
+                  {myClinicalSessions.filter((s: any) => !s.studentSignedAt).length}
+                </span>
+              </button>
+            )}
             <Link
               href="/creditos"
               className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-400 transition-colors"
@@ -584,6 +601,15 @@ export default function StudentDashboard() {
               <BookOpen className="w-5 h-5 text-gold/60" />
               <span className="text-[20px] font-semibold text-white">Minhas Aulas</span>
             </button>
+
+            {myClinicalSessions?.some((s: any) => !s.studentSignedAt) && (
+              <div className="flex items-center gap-4 w-full text-left py-3.5 border-b border-white/5 pl-9">
+                <span className="w-5 h-5 rounded-full bg-amber-500 text-[9px] font-bold text-white flex items-center justify-center">
+                  {myClinicalSessions.filter((s: any) => !s.studentSignedAt).length}
+                </span>
+                <span className="text-sm text-amber-400">Sessao pendente de assinatura</span>
+              </div>
+            )}
 
             <button
               onClick={() => { setMobileMenuOpen(false); setLocation("/creditos"); }}
@@ -717,6 +743,14 @@ export default function StudentDashboard() {
                   : <>Explore os cursos do Método NaturalUp&reg; e evolua sua prática clínica em harmonização facial com excelência e naturalidade.</>
                 }
               </p>
+              {totalLessons > 0 && !isTrialExpired && (
+                <div className="mt-4 flex items-center gap-3">
+                  <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
+                    <div className="h-full rounded-full bg-gradient-to-r from-gold/80 to-gold transition-all duration-700" style={{ width: `${Math.round((completedCount / totalLessons) * 100)}%` }} />
+                  </div>
+                  <span className="text-xs font-medium text-gold shrink-0">{Math.round((completedCount / totalLessons) * 100)}%</span>
+                </div>
+              )}
             </div>
             {/* Plan card */}
             <div className="mt-4 lg:mt-0 rounded-2xl border border-border/40 bg-card/90 backdrop-blur-sm p-5 space-y-4">
@@ -802,9 +836,21 @@ export default function StudentDashboard() {
 
           {/* ===== SEUS CURSOS — APPLE-STYLE SHELF ===== */}
           <section className="space-y-6">
-            <div>
-              <h2 className="text-[22px] font-semibold text-foreground tracking-tight">Seus Cursos</h2>
-              <p className="text-[13px] text-muted-foreground/50 mt-0.5">{courseModules.length} módulos disponíveis</p>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="font-serif text-2xl font-semibold text-foreground">Seus Cursos</h2>
+                <p className="text-xs text-muted-foreground">{courseModules.length} modulos disponiveis</p>
+              </div>
+              <div className="relative w-48 sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Buscar aula..."
+                  value={lessonSearch}
+                  onChange={(e) => setLessonSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-background/50 border border-border/30 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-gold/50"
+                />
+              </div>
             </div>
 
             <div className="relative group/shelf">
@@ -828,7 +874,11 @@ export default function StudentDashboard() {
                 ref={shelfRef}
                 className="shelf-scroll flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6"
               >
-              {courseModules.map((mod, idx) => {
+              {(lessonSearch ? courseModules.filter(mod => {
+                const modLessons = getLessonsForModule(mod.id);
+                return mod.title.toLowerCase().includes(lessonSearch.toLowerCase()) ||
+                  modLessons.some(l => l.title.toLowerCase().includes(lessonSearch.toLowerCase()));
+              }) : courseModules).map((mod, idx) => {
                 const modLessons = getLessonsForModule(mod.id);
                 const allLessons = idx === 0 ? [...introLessons, ...modLessons] : modLessons;
                 const hasContent = allLessons.length > 0;
@@ -1107,7 +1157,7 @@ export default function StudentDashboard() {
 
           {/* ===== MINHAS PRATICAS CLINICAS ===== */}
           {myClinicalSessions.length > 0 && (
-            <section className="space-y-4">
+            <section data-section="praticas" className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="font-serif text-2xl font-semibold text-foreground">Minhas Praticas Clinicas</h2>
