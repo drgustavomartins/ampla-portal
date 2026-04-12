@@ -744,11 +744,14 @@ export default function StudentDashboard() {
                 }
               </p>
               {totalLessons > 0 && !isTrialExpired && (
-                <div className="mt-4 flex items-center gap-3">
-                  <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
-                    <div className="h-full rounded-full bg-gradient-to-r from-gold/80 to-gold transition-all duration-700" style={{ width: `${Math.round((completedCount / totalLessons) * 100)}%` }} />
+                <div className="mt-4 space-y-1.5">
+                  <p className="text-[11px] uppercase tracking-widest text-white/40 font-medium">Seu progresso na plataforma</p>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
+                      <div className="h-full rounded-full bg-gradient-to-r from-gold/80 to-gold transition-all duration-700" style={{ width: `${Math.round((completedCount / totalLessons) * 100)}%` }} />
+                    </div>
+                    <span className="text-xs font-medium text-gold shrink-0">{completedCount}/{totalLessons} aulas ({Math.round((completedCount / totalLessons) * 100)}%)</span>
                   </div>
-                  <span className="text-xs font-medium text-gold shrink-0">{Math.round((completedCount / totalLessons) * 100)}%</span>
                 </div>
               )}
             </div>
