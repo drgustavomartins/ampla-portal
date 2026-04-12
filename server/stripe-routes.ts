@@ -930,3 +930,4 @@ export function registerPublicStripeRoutes(app: Express) {
     }
   });
 }
+
