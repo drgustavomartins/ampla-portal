@@ -241,7 +241,8 @@ export default function PlanosPage() {
     onSuccess: (data) => {
       if (data.paidWithCredits) {
         queryClient.invalidateQueries();
-        window.location.hash = "/pagamento/sucesso?credits=true";
+        alert("Compra realizada com sucesso usando seus creditos!");
+        window.location.hash = "/";
         return;
       } else if (data.url) {
         window.location.href = data.url;
