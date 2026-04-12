@@ -115,6 +115,7 @@ export default function StudentDashboard() {
     enabled: !!user,
   });
   const myClinicalSessions = myClinicalData?.sessions || [];
+  const pendingSignCount = myClinicalSessions.filter((s: any) => s.adminSigned && !s.studentSigned).length;
 
   const completeMutation = useMutation({
     mutationFn: async ({ lessonId, complete }: { lessonId: number; complete: boolean }) => {
@@ -490,18 +491,19 @@ export default function StudentDashboard() {
 
           {/* Right: Desktop nav */}
           <div className="hidden md:flex items-center gap-3">
-            {myClinicalSessions?.some((s: any) => !s.studentSignedAt) && (
+            {pendingSignCount > 0 && (
               <button
                 onClick={() => {
                   const el = document.querySelector('[data-section="praticas"]');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="relative flex items-center justify-center w-9 h-9 rounded-full border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/15 transition-colors"
+                className="relative flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 transition-colors"
                 title="Sessoes pendentes de assinatura"
               >
-                <Bell className="w-4 h-4 text-amber-400" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-[9px] font-bold text-white flex items-center justify-center">
-                  {myClinicalSessions.filter((s: any) => !s.studentSignedAt).length}
+                <Bell className="w-3.5 h-3.5 text-red-400" />
+                <span className="text-xs font-semibold text-red-400">Assinar pratica</span>
+                <span className="w-5 h-5 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center animate-pulse">
+                  {pendingSignCount}
                 </span>
               </button>
             )}
@@ -562,13 +564,18 @@ export default function StudentDashboard() {
 
           {/* Right: Mobile hamburger */}
           <button
-            className="md:hidden flex items-center justify-center w-10 h-10 shrink-0"
+            className="md:hidden flex items-center justify-center w-10 h-10 shrink-0 relative"
             onClick={() => setMobileMenuOpen(true)}
             aria-label="Menu"
           >
             <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
               <path d="M0 1h20M0 7h20M0 13h20" stroke="#D4A843" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
+            {pendingSignCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                {pendingSignCount}
+              </span>
+            )}
           </button>
         </div>
       </header>
