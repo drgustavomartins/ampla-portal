@@ -3490,3 +3490,4 @@ async function db_getProgress() {
   const { lessonProgress } = await import("@shared/schema");
   return db.select().from(lessonProgress);
 }
+
