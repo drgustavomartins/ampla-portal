@@ -1487,7 +1487,7 @@ export default function AdminDashboard() {
         {/* ─── Main Content Tabs ─── */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* ─── Mobile: hamburger menu ─── */}
-          <div className="sm:hidden relative">
+          <div className="sm:hidden">
             {(() => {
               const allTabs: { value: string; label: string; icon: any; badge?: number; group: string }[] = [
                 { value: "students", label: "Alunos", icon: Users, group: "Pessoas" },
@@ -1496,6 +1496,7 @@ export default function AdminDashboard() {
                 { value: "modules", label: "Modulos", icon: Layers, group: "Conteudo" },
                 { value: "lessons", label: "Aulas", icon: Video, group: "Conteudo" },
                 { value: "materiais", label: "Materiais", icon: Library, group: "Conteudo" },
+                { value: "practices", label: "Praticas", icon: Stethoscope, group: "Conteudo" },
                 { value: "community", label: "Comunidade", icon: MessageCircle, group: "Engajamento" },
                 { value: "credits", label: "Creditos", icon: Coins, group: "Engajamento" },
                 ...(isSuperAdmin ? [
@@ -1522,40 +1523,55 @@ export default function AdminDashboard() {
                         </span>
                       )}
                     </div>
-                    <Menu className={`w-5 h-5 text-muted-foreground transition-transform ${mobileMenuOpen ? "rotate-90" : ""}`} />
+                    <Menu className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${mobileMenuOpen ? "rotate-90" : ""}`} />
                   </button>
 
                   {mobileMenuOpen && (
                     <>
-                      <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setMobileMenuOpen(false)} />
-                      <div className="absolute left-0 right-0 mt-2 bg-card border border-border/30 rounded-2xl shadow-2xl z-50 py-2 max-h-[70vh] overflow-y-auto">
-                        {groups.map((group) => (
-                          <div key={group}>
-                            <p className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-widest text-muted-foreground/50 font-semibold">{group}</p>
-                            {allTabs.filter(t => t.group === group).map((tab) => {
-                              const TabIcon = tab.icon;
-                              const isActive = activeTab === tab.value;
-                              return (
-                                <button
-                                  key={tab.value}
-                                  onClick={() => { setActiveTab(tab.value); setMobileMenuOpen(false); }}
-                                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-                                    isActive ? "text-gold bg-gold/5" : "text-foreground hover:bg-white/5"
-                                  }`}
-                                >
-                                  <TabIcon className={`w-4 h-4 ${isActive ? "text-gold" : "text-muted-foreground"}`} />
-                                  <span className="flex-1 text-left">{tab.label}</span>
-                                  {tab.badge && (
-                                    <span className="w-5 h-5 bg-gold text-[#0A1628] text-[10px] font-bold rounded-full flex items-center justify-center">
-                                      {tab.badge}
-                                    </span>
-                                  )}
-                                  {isActive && <ChevronRight className="w-3.5 h-3.5 text-gold" />}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ))}
+                      <div className="fixed inset-0 bg-black/60 z-40 animate-in fade-in duration-150" onClick={() => setMobileMenuOpen(false)} />
+                      <div className="fixed left-4 right-4 top-[130px] z-50 bg-[#0F1A2E] border border-border/30 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                        {/* Close button */}
+                        <div className="flex items-center justify-between px-4 pt-3 pb-1">
+                          <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-semibold">Navegacao</p>
+                          <button
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="max-h-[60vh] overflow-y-auto pb-2">
+                          {groups.map((group, gi) => (
+                            <div key={group}>
+                              {gi > 0 && <div className="mx-4 my-1 border-t border-border/20" />}
+                              <p className="px-4 pt-2.5 pb-1 text-[10px] uppercase tracking-widest text-muted-foreground/50 font-semibold">{group}</p>
+                              {allTabs.filter(t => t.group === group).map((tab) => {
+                                const TabIcon = tab.icon;
+                                const isActive = activeTab === tab.value;
+                                return (
+                                  <button
+                                    key={tab.value}
+                                    onClick={() => { setActiveTab(tab.value); setMobileMenuOpen(false); }}
+                                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                                      isActive
+                                        ? "text-gold bg-gold/5 border-l-2 border-gold"
+                                        : "text-foreground hover:bg-white/5 border-l-2 border-transparent"
+                                    }`}
+                                  >
+                                    <TabIcon className={`w-4 h-4 ${isActive ? "text-gold" : "text-muted-foreground"}`} />
+                                    <span className="flex-1 text-left font-medium">{tab.label}</span>
+                                    {tab.badge && (
+                                      <span className="w-5 h-5 bg-gold text-[#0A1628] text-[10px] font-bold rounded-full flex items-center justify-center">
+                                        {tab.badge}
+                                      </span>
+                                    )}
+                                    {isActive && <ChevronRight className="w-3.5 h-3.5 text-gold" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </>
                   )}
@@ -1630,6 +1646,14 @@ export default function AdminDashboard() {
                   >
                     <Library className="w-3.5 h-3.5" />
                     Materiais
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="practices"
+                    data-testid="tab-practices-d"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
+                  >
+                    <Stethoscope className="w-3.5 h-3.5" />
+                    Praticas
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -3515,6 +3539,265 @@ export default function AdminDashboard() {
           {/* ========== COMMUNITY TAB ========== */}
           <TabsContent value="community" className="space-y-6 mt-0">
             <CommunityAdminTab />
+          </TabsContent>
+
+          {/* ========== PRACTICES TAB ========== */}
+          <TabsContent value="practices" className="space-y-6 mt-0">
+            {/* Summary stats */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                {
+                  label: "Total Sessoes",
+                  value: clinicalSessions.length,
+                  icon: Stethoscope,
+                  color: "text-gold",
+                  bg: "bg-gold/10",
+                },
+                {
+                  label: "Este Mes",
+                  value: clinicalSessions.filter(s => {
+                    const d = new Date(s.sessionDate);
+                    const now = new Date();
+                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                  }).length,
+                  icon: Calendar,
+                  color: "text-blue-400",
+                  bg: "bg-blue-500/10",
+                },
+                {
+                  label: "Alunos c/ Pratica",
+                  value: students.filter(s => (s as any).clinicalPracticeAccess && (s as any).clinicalPracticeHours > 0).length,
+                  icon: Users,
+                  color: "text-emerald-400",
+                  bg: "bg-emerald-500/10",
+                },
+              ].map((stat) => (
+                <Card key={stat.label} className="border-border/30 bg-card/50">
+                  <CardContent className="p-3 sm:p-4">
+                    <div className={`w-8 h-8 rounded-lg ${stat.bg} flex items-center justify-center mb-2`}>
+                      <stat.icon className={`w-4 h-4 ${stat.color}`} />
+                    </div>
+                    <p className="text-lg sm:text-xl font-semibold text-foreground">{stat.value}</p>
+                    <p className="text-[10px] sm:text-[11px] text-muted-foreground uppercase tracking-brand mt-0.5">{stat.label}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* New session button */}
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">
+                Sessoes Clinicas ({clinicalSessions.length})
+              </h3>
+              <Dialog open={clinicalDialogOpen} onOpenChange={setClinicalDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="bg-gold text-background hover:bg-gold/90 font-medium">
+                    <Plus className="w-4 h-4 mr-1.5" /> Nova Sessao
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-card border-border/40 max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Registrar Sessao Clinica</DialogTitle>
+                    <DialogDescription>Selecione o aluno e preencha os dados da sessao.</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-2 max-h-[70vh] overflow-y-auto">
+                    <div>
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Aluno</Label>
+                      <Select value={clinicalForm.studentId ? String(clinicalForm.studentId) : ""} onValueChange={(v) => setClinicalForm(f => ({ ...f, studentId: parseInt(v) }))}>
+                        <SelectTrigger className="bg-background/50 border-border/40"><SelectValue placeholder="Selecione o aluno..." /></SelectTrigger>
+                        <SelectContent>
+                          {students.filter(s => s.role === "student" && (s as any).clinicalPracticeHours > 0).map(s => (
+                            <SelectItem key={s.id} value={String(s.id)}>{s.name} — {(s as any).clinicalPracticeHours}h restantes</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Data</Label>
+                        <Input type="date" value={clinicalForm.sessionDate} onChange={e => setClinicalForm(f => ({ ...f, sessionDate: e.target.value }))} className="bg-background/50 border-border/40" />
+                      </div>
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Inicio</Label>
+                        <Input type="time" value={clinicalForm.startTime} onChange={e => {
+                          const st = e.target.value;
+                          setClinicalForm(f => {
+                            const updated = { ...f, startTime: st };
+                            if (st && f.endTime) {
+                              const [sh, sm] = st.split(":").map(Number);
+                              const [eh, em] = f.endTime.split(":").map(Number);
+                              const diff = (eh * 60 + em - sh * 60 - sm) / 60;
+                              updated.durationHours = diff > 0 ? Math.round(diff * 100) / 100 : 0;
+                            }
+                            return updated;
+                          });
+                        }} className="bg-background/50 border-border/40" />
+                      </div>
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Fim</Label>
+                        <Input type="time" value={clinicalForm.endTime} onChange={e => {
+                          const et = e.target.value;
+                          setClinicalForm(f => {
+                            const updated = { ...f, endTime: et };
+                            if (f.startTime && et) {
+                              const [sh, sm] = f.startTime.split(":").map(Number);
+                              const [eh, em] = et.split(":").map(Number);
+                              const diff = (eh * 60 + em - sh * 60 - sm) / 60;
+                              updated.durationHours = diff > 0 ? Math.round(diff * 100) / 100 : 0;
+                            }
+                            return updated;
+                          });
+                        }} className="bg-background/50 border-border/40" />
+                      </div>
+                    </div>
+                    {clinicalForm.durationHours > 0 && (
+                      <p className="text-sm text-gold font-medium">Duracao: {clinicalForm.durationHours}h</p>
+                    )}
+                    <div>
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block">Procedimentos</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {["Toxina Botulinica", "Preenchedores", "Bioestimuladores", "Fios de PDO", "Skinbooster", "Peeling", "Microagulhamento", "Laser", "Ultrassom", "Outro"].map(proc => (
+                          <label key={proc} className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox
+                              checked={clinicalForm.procedures.includes(proc)}
+                              onCheckedChange={(checked) => {
+                                setClinicalForm(f => ({
+                                  ...f,
+                                  procedures: checked ? [...f.procedures, proc] : f.procedures.filter(p => p !== proc)
+                                }));
+                              }}
+                            />
+                            {proc}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Pacientes atendidos</Label>
+                      <Input type="number" min={0} value={clinicalForm.patientsCount || ""} onChange={e => setClinicalForm(f => ({ ...f, patientsCount: parseInt(e.target.value) || 0 }))} placeholder="Numero de pacientes" className="bg-background/50 border-border/40" />
+                    </div>
+                    <div>
+                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Observacoes</Label>
+                      <Textarea value={clinicalForm.notes} onChange={e => setClinicalForm(f => ({ ...f, notes: e.target.value }))} placeholder="Notas sobre a sessao..." className="bg-background/50 border-border/40" rows={2} />
+                    </div>
+                    <Button
+                      className="w-full bg-gold text-background hover:bg-gold/90 font-medium"
+                      disabled={!clinicalForm.studentId || !clinicalForm.sessionDate || clinicalForm.durationHours <= 0 || clinicalForm.procedures.length === 0 || clinicalLoading}
+                      onClick={async () => {
+                        setClinicalLoading(true);
+                        try {
+                          await apiRequest("POST", "/api/admin/clinical-sessions", {
+                            ...clinicalForm,
+                            patientsCount: clinicalForm.patientsCount,
+                            patientsDetails: clinicalForm.patientsDetails,
+                          });
+                          queryClient.invalidateQueries({ queryKey: ["/api/admin/clinical-sessions"] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
+                          setClinicalDialogOpen(false);
+                          setClinicalForm({ studentId: 0, sessionDate: "", startTime: "", endTime: "", durationHours: 0, procedures: [], notes: "", patientsCount: 0, patientsDetails: [] });
+                          toast({ title: "Sessao registrada com sucesso!" });
+                        } catch (err: any) {
+                          toast({ title: "Erro ao registrar sessao", description: err.message, variant: "destructive" });
+                        } finally {
+                          setClinicalLoading(false);
+                        }
+                      }}
+                    >
+                      {clinicalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Registrar Sessao
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Session list */}
+            {clinicalSessions.length === 0 ? (
+              <Card className="border-border/30 bg-card/40">
+                <CardContent className="p-12 text-center">
+                  <div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4">
+                    <Stethoscope className="w-7 h-7 text-muted-foreground/40" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">Nenhuma sessao clinica registrada ainda.</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Clique em "Nova Sessao" para registrar a primeira.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-2">
+                {clinicalSessions.map(session => {
+                  const adminSigned = !!session.adminSignedAt;
+                  const studentSigned = !!session.studentSignedAt;
+                  const statusLabel = adminSigned && studentSigned
+                    ? "Concluida"
+                    : adminSigned && !studentSigned
+                      ? "Aguardando aluno"
+                      : !adminSigned && studentSigned
+                        ? "Aguardando orientador"
+                        : "Pendente";
+                  const statusClass = adminSigned && studentSigned
+                    ? "bg-green-500/20 text-green-400 border-0"
+                    : adminSigned && !studentSigned
+                      ? "bg-amber-500/20 text-amber-400 border-0"
+                      : !adminSigned && studentSigned
+                        ? "bg-blue-500/20 text-blue-400 border-0"
+                        : "bg-muted/30 text-muted-foreground border-0";
+                  return (
+                    <Card key={session.id} className="bg-card/50 border-border/20 hover:bg-card/70 transition-colors">
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3 min-w-0 flex-1">
+                            <div className="w-9 h-9 rounded-lg bg-gold/10 flex items-center justify-center shrink-0">
+                              <Stethoscope className="w-4 h-4 text-gold" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-foreground truncate">{session.studentName}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {new Date(session.sessionDate).toLocaleDateString("pt-BR")} · {session.startTime}–{session.endTime} · {session.durationHours}h
+                              </p>
+                              {session.notes && (
+                                <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-1">{session.notes}</p>
+                              )}
+                              {(session.patientsCount !== undefined && session.patientsCount > 0) && (
+                                <p className="text-xs text-muted-foreground mt-0.5">{session.patientsCount} paciente{session.patientsCount !== 1 ? "s" : ""}</p>
+                              )}
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {session.procedures.slice(0, 3).map(p => (
+                                  <Badge key={p} variant="outline" className="text-[10px] border-gold/30 text-gold px-1.5">{p}</Badge>
+                                ))}
+                                {session.procedures.length > 3 && (
+                                  <Badge variant="outline" className="text-[10px] border-border/30 text-muted-foreground px-1.5">+{session.procedures.length - 3}</Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-2 shrink-0">
+                            <Badge className={statusClass}>{statusLabel}</Badge>
+                            <div className="text-right space-y-0.5">
+                              {session.adminSignedAt && (
+                                <p className="text-[10px] text-muted-foreground">Orientador: {new Date(session.adminSignedAt).toLocaleDateString("pt-BR")}</p>
+                              )}
+                              {session.studentSignedAt && (
+                                <p className="text-[10px] text-muted-foreground">Aluno: {new Date(session.studentSignedAt).toLocaleDateString("pt-BR")}</p>
+                              )}
+                            </div>
+                            {!adminSigned && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs border-gold/40 text-gold hover:bg-gold/10"
+                                onClick={() => handleAdminSign(session.id)}
+                              >
+                                <PenLine className="w-3 h-3 mr-1" /> Assinar
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="trial-legacy" className="space-y-6 mt-0">
