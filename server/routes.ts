@@ -1298,6 +1298,7 @@ export async function registerRoutes(server: Server, app: Express) {
       const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
 
       // Register last login for ALL users
+      const { db } = await import("./db");
       await db.execute(sql`UPDATE users SET last_login_at = ${new Date().toISOString()}, login_count = COALESCE(login_count, 0) + 1 WHERE id = ${user.id}`);
 
       // Log admin login
