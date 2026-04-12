@@ -28,7 +28,8 @@ import {
   Clock, Video, Shield, GraduationCap, Eye, Pencil, Calendar, Settings,
   CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library,
   GripVertical, CalendarDays, FolderOpen, Search, FileText, FileIcon, Headphones, ChevronDown, ChevronUp,
-  Sparkles, MessageCircle, Phone, Coins, Gift, Stethoscope, FileSignature, AlertTriangle, PenLine
+  Sparkles, MessageCircle, Phone, Coins, Gift, Stethoscope, FileSignature, AlertTriangle, PenLine,
+  TrendingUp, BarChart3, Zap, Mail
 } from "lucide-react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -561,6 +562,10 @@ export default function AdminDashboard() {
     queryKey: ["/api/admin/admins"],
     enabled: isSuperAdmin,
   });
+  const { data: communityStats } = useQuery<{ totalPosts: number; totalComments: number; pendingCreditRequests: number }>({
+    queryKey: ["/api/admin/community-stats"],
+  });
+  const [activeTab, setActiveTab] = useState("lessons");
 
   // Materials CRUD
   type MaterialThemeWithNested = MaterialTheme & { subcategories: (MaterialSubcategory & { files: MaterialFile[] })[]; fileCount: number };
@@ -1214,8 +1219,15 @@ export default function AdminDashboard() {
   const uniqueActions = Array.from(new Set(auditLogs.map(l => l.action)));
   const uniqueAdmins = Array.from(new Map(auditLogs.map(l => [l.adminId, l.adminName])).entries());
 
-  // Tab count: how many tabs to show
-  const tabCount = isSuperAdmin ? 8 : 6;
+  // Greeting helper
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Bom dia";
+    if (hour < 18) return "Boa tarde";
+    return "Boa noite";
+  };
+  const todayDate = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const completedLessons = allProgress.filter(p => p.completed).length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -1256,66 +1268,148 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-8">
-        {/* ─── Stats Grid ─── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        {/* ─── Welcome Header ─── */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
+              {getGreeting()}, {user?.name?.split(" ")[0] || "Admin"}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5 capitalize">{todayDate}</p>
+          </div>
+          <Badge
+            variant="secondary"
+            className="text-xs bg-gold/10 text-gold border border-gold/20 px-3 py-1 font-medium w-fit"
+          >
+            <Shield className="w-3.5 h-3.5 mr-1.5" />
+            {isSuperAdmin ? "Super Admin" : "Admin"}
+          </Badge>
+        </div>
+
+        {/* ─── Hero Stats Grid (2 rows x 3) ─── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
           {[
             {
-              label: "Em Conversao",
-              value: pendingStudents.length,
-              icon: Clock,
-              color: "text-amber-400",
-              bg: "bg-amber-500/10",
-              border: pendingStudents.length > 0 ? "border-amber-500/30" : "border-border/30",
-            },
-            {
-              label: "Ativos",
+              label: "Alunos Ativos",
               value: approvedStudents.length,
               icon: GraduationCap,
               color: "text-emerald-400",
-              bg: "bg-emerald-500/10",
-              border: "border-border/30",
+              gradient: "from-emerald-500/10 to-emerald-500/5",
+              border: "border-emerald-500/20",
             },
             {
-              label: "Módulos",
-              value: modules.length,
-              icon: Layers,
-              color: "text-gold",
-              bg: "bg-gold/10",
-              border: "border-border/30",
+              label: "Em Conversao",
+              value: pendingStudents.length,
+              icon: TrendingUp,
+              color: "text-amber-400",
+              gradient: "from-amber-500/10 to-amber-500/5",
+              border: pendingStudents.length > 0 ? "border-amber-500/30" : "border-amber-500/20",
+              pulse: pendingStudents.length > 0,
             },
             {
-              label: "Aulas",
-              value: lessons.length,
-              icon: Video,
+              label: "Receita Creditos",
+              value: `R$ ${((totalCreditOutstanding || 0) / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0 })}`,
+              icon: CreditCard,
               color: "text-gold",
-              bg: "bg-gold/10",
-              border: "border-border/30",
+              gradient: "from-gold/10 to-gold/5",
+              border: "border-gold/20",
+            },
+            {
+              label: "Posts Comunidade",
+              value: communityStats?.totalPosts ?? 0,
+              icon: MessageCircle,
+              color: "text-blue-400",
+              gradient: "from-blue-500/10 to-blue-500/5",
+              border: "border-blue-500/20",
+            },
+            {
+              label: "Creditos Pendentes",
+              value: communityStats?.pendingCreditRequests ?? 0,
+              icon: Coins,
+              color: "text-amber-400",
+              gradient: "from-amber-500/10 to-amber-500/5",
+              border: (communityStats?.pendingCreditRequests ?? 0) > 0 ? "border-amber-500/30" : "border-amber-500/20",
+              pulse: (communityStats?.pendingCreditRequests ?? 0) > 0,
+            },
+            {
+              label: "Aulas Completas",
+              value: completedLessons,
+              icon: BarChart3,
+              color: "text-violet-400",
+              gradient: "from-violet-500/10 to-violet-500/5",
+              border: "border-violet-500/20",
             },
           ].map((stat) => (
             <Card
               key={stat.label}
-              className={`${stat.border} bg-card/50 hover:bg-card/70 transition-colors`}
+              className={`${stat.border} bg-gradient-to-br ${stat.gradient} hover:scale-[1.02] transition-all duration-200 cursor-default`}
             >
-              <CardContent className="p-3 sm:p-5">
-                <div className="flex items-center justify-between mb-2 sm:mb-3">
-                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg ${stat.bg} flex items-center justify-center`}>
-                    <stat.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${stat.color}`} />
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-9 h-9 rounded-xl bg-background/60 flex items-center justify-center">
+                    <stat.icon className={`w-4.5 h-4.5 ${stat.color}`} />
                   </div>
-                  {stat.label === "Em Conversao" && pendingStudents.length > 0 && (
-                    <span className="relative flex h-2.5 w-2.5">
+                  {"pulse" in stat && stat.pulse && (
+                    <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400" />
                     </span>
                   )}
                 </div>
-                <p className="text-xl sm:text-2xl font-semibold text-foreground">{stat.value}</p>
-                <p className="text-xs text-muted-foreground uppercase tracking-brand mt-1">
+                <p className="text-lg sm:text-xl font-semibold text-foreground">{stat.value}</p>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-brand mt-0.5">
                   {stat.label}
                 </p>
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        {/* ─── Quick Actions ─── */}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            className="bg-gold text-[#0A1628] hover:bg-gold/90 font-medium gap-1.5"
+            onClick={() => setActiveTab("lessons")}
+          >
+            <Plus className="w-3.5 h-3.5" /> Nova Aula
+          </Button>
+          {(communityStats?.pendingCreditRequests ?? 0) > 0 && (
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium gap-1.5"
+              onClick={() => setActiveTab("community")}
+            >
+              <Coins className="w-3.5 h-3.5" />
+              Aprovar Creditos
+              <Badge className="bg-white/20 text-white border-0 text-[10px] px-1.5 py-0 ml-0.5">
+                {communityStats?.pendingCreditRequests}
+              </Badge>
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10 font-medium gap-1.5"
+            onClick={() => setActiveTab("leads")}
+          >
+            <Zap className="w-3.5 h-3.5" />
+            Ver Leads
+            {trialStudents.length > 0 && (
+              <Badge className="bg-blue-500/20 text-blue-400 border-0 text-[10px] px-1.5 py-0 ml-0.5">
+                {trialStudents.length}
+              </Badge>
+            )}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-border/40 text-muted-foreground hover:text-foreground font-medium gap-1.5"
+            onClick={() => setActiveTab("students")}
+          >
+            <Mail className="w-3.5 h-3.5" />
+            Gerenciar Alunos
+          </Button>
         </div>
 
         {/* ─── Alerta: Acessos expirando nos próximos 30 dias ─── */}
@@ -1381,98 +1475,127 @@ export default function AdminDashboard() {
         })()}
 
         {/* ─── Main Content Tabs ─── */}
-        <Tabs defaultValue="lessons" className="space-y-6">
-          <TabsList className={`w-full grid bg-card/60 border border-border/30 p-1 h-11 sm:h-12 ${isSuperAdmin ? "grid-cols-10" : "grid-cols-8"}`}>
-            <TabsTrigger
-              value="students"
-              data-testid="tab-students"
-              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
-            >
-              <Users className="w-4 h-4 sm:mr-2 shrink-0" />
-              <span className="hidden sm:inline">Alunos</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="leads"
-              data-testid="tab-leads"
-              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3 relative"
-            >
-              <Users className="w-4 h-4 sm:mr-2 shrink-0" />
-              <span className="hidden sm:inline">Leads</span>
-              {trialStudents.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-gold text-[#0A1628] text-[10px] font-bold rounded-full flex items-center justify-center">
-                  {trialStudents.length}
-                </span>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          {/* Grouped Navigation */}
+          <div className="space-y-3">
+            {/* Group labels + pills */}
+            <div className="flex flex-wrap gap-x-6 gap-y-3">
+              {/* Pessoas group */}
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest px-1">Pessoas</p>
+                <TabsList className="bg-card/60 border border-border/30 p-1 h-10 gap-0.5">
+                  <TabsTrigger
+                    value="students"
+                    data-testid="tab-students"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Alunos</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="leads"
+                    data-testid="tab-leads"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5 relative"
+                  >
+                    <Zap className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Leads</span>
+                    {trialStudents.length > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-gold text-[#0A1628] text-[10px] font-bold rounded-full flex items-center justify-center">
+                        {trialStudents.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="profiles"
+                    data-testid="tab-profiles"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Perfis</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              {/* Conteudo group */}
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest px-1">Conteudo</p>
+                <TabsList className="bg-card/60 border border-border/30 p-1 h-10 gap-0.5">
+                  <TabsTrigger
+                    value="modules"
+                    data-testid="tab-modules"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Modulos</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="lessons"
+                    data-testid="tab-lessons"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                  >
+                    <Video className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Aulas</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="materiais"
+                    data-testid="tab-materiais"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                  >
+                    <Library className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Materiais</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              {/* Engajamento group */}
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest px-1">Engajamento</p>
+                <TabsList className="bg-card/60 border border-border/30 p-1 h-10 gap-0.5">
+                  <TabsTrigger
+                    value="community"
+                    data-testid="tab-community"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Comunidade</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="credits"
+                    data-testid="tab-credits"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                  >
+                    <Coins className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Creditos</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              {/* Sistema group (super admin only) */}
+              {isSuperAdmin && (
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest px-1">Sistema</p>
+                  <TabsList className="bg-card/60 border border-border/30 p-1 h-10 gap-0.5">
+                    <TabsTrigger
+                      value="admins"
+                      data-testid="tab-admins"
+                      className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                    >
+                      <UserCog className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Admins</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="history"
+                      data-testid="tab-history"
+                      className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                    >
+                      <History className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Historico</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
               )}
-            </TabsTrigger>
-            <TabsTrigger
-              value="profiles"
-              data-testid="tab-profiles"
-              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
-            >
-              <Users className="w-4 h-4 sm:mr-2 shrink-0" />
-              <span className="hidden sm:inline">Perfis</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="modules"
-              data-testid="tab-modules"
-              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
-            >
-              <Layers className="w-4 h-4 sm:mr-2 shrink-0" />
-              <span className="hidden sm:inline">Módulos</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="lessons"
-              data-testid="tab-lessons"
-              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
-            >
-              <Video className="w-4 h-4 sm:mr-2 shrink-0" />
-              <span className="hidden sm:inline">Aulas</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="materiais"
-              data-testid="tab-materiais"
-              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
-            >
-              <Library className="w-4 h-4 sm:mr-2 shrink-0" />
-              <span className="hidden sm:inline">Materiais</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="credits"
-              data-testid="tab-credits"
-              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
-            >
-              <Coins className="w-4 h-4 sm:mr-2 shrink-0" />
-              <span className="hidden sm:inline">Créditos</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="community"
-              data-testid="tab-community"
-              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3 relative"
-            >
-              <MessageCircle className="w-4 h-4 sm:mr-2 shrink-0" />
-              <span className="hidden sm:inline">Comunidade</span>
-            </TabsTrigger>
-            {isSuperAdmin && (
-              <>
-                <TabsTrigger
-                  value="admins"
-                  data-testid="tab-admins"
-                  className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
-                >
-                  <UserCog className="w-4 h-4 sm:mr-2 shrink-0" />
-                  <span className="hidden sm:inline">Admins</span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="history"
-                  data-testid="tab-history"
-                  className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3"
-                >
-                  <History className="w-4 h-4 sm:mr-2 shrink-0" />
-                  <span className="hidden sm:inline">Histórico</span>
-                </TabsTrigger>
-              </>
-            )}
-          </TabsList>
+            </div>
+          </div>
 
           {/* ========== STUDENTS TAB ========== */}
           <TabsContent value="students" className="space-y-6 mt-0">
