@@ -1304,8 +1304,7 @@ export default function StudentDashboard() {
                             }
                           }}
                           disabled={signingSessionId === session.id}
-                          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50"
-                          style={{ background: '#D4A843', color: '#0A0D14' }}
+                          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 !bg-[#D4A843] !text-[#0A0D14]"
                         >
                           {signingSessionId === session.id ? (
                             "Assinando..."
