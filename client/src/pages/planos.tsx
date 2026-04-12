@@ -415,7 +415,8 @@ export default function PlanosPage() {
       )}
 
       <div className="px-4 py-8 mx-auto max-w-7xl">
-        {/* Title */}
+        {/* Title, referral, como funciona - only when showing all */}
+        {!selectedGroup && (
         <div className="mb-8 text-center">
           <h1 className="text-3xl sm:text-4xl font-bold text-[#1a1a1a]">Escolha seu caminho</h1>
           <p className="mt-2 text-gray-500">Do iniciante ao avancado, cada plano e uma etapa da sua evolucao em HOF</p>
@@ -501,8 +502,7 @@ export default function PlanosPage() {
               </div>
             </div>
           </div>
-
-
+        )}
 
           {/* Grupos */}
           {GROUP_ORDER.filter((g) => !selectedGroup || selectedGroup === g).map((group) => {
@@ -516,10 +516,11 @@ export default function PlanosPage() {
                   </div>
                   <p className="mt-2 text-sm text-gray-500">{GROUP_DESCRIPTIONS[group]}</p>
                 </div>
-                <div className={`grid gap-6 ${
-                  groupPlans.length === 1 ? "max-w-sm mx-auto" :
-                  groupPlans.length === 2 ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto" :
-                  "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                <div className={`grid gap-6 mx-auto ${
+                  groupPlans.length === 1 ? "max-w-md" :
+                  groupPlans.length === 2 ? "grid-cols-1 sm:grid-cols-2 max-w-3xl" :
+                  groupPlans.length === 3 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl" :
+                  "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl"
                 }`}>
                   {groupPlans.map((plan) => (
                     <PlanCard
