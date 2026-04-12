@@ -248,6 +248,279 @@ function SortableLessonCard({
   );
 }
 
+// ─── Community Admin Tab ─────────────────────────────────────────────────────
+
+const ACTION_TYPE_LABELS: Record<string, string> = {
+  post_created: "Criou post",
+  comment_on_video: "Comentou em video",
+  comment_on_post: "Comentou em post",
+};
+
+const POST_TYPE_LABELS: Record<string, { label: string; className: string }> = {
+  case_study: { label: "Caso Clínico", className: "bg-gold/15 text-gold border-gold/30" },
+  before_after: { label: "Antes/Depois", className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
+};
+
+function formatCreditBRL(centavos: number): string {
+  return (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function communityTimeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "agora";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `${days}d`;
+}
+
+function CommunityAdminTab() {
+  const { toast } = useToast();
+  const [deletingPostId, setDeletingPostId] = useState<number | null>(null);
+
+  // ─── Queries ───
+  const { data: statsData } = useQuery<{ totalPosts: number; totalComments: number; pendingCreditRequests: number }>({
+    queryKey: ["/api/admin/community-stats"],
+  });
+
+  const { data: creditData, isLoading: creditLoading } = useQuery<{ requests: Array<{ id: number; userId: number; userName: string; actionType: string; referenceType: string; referenceId: number; amount: number; status: string; createdAt: string }> }>({
+    queryKey: ["/api/admin/credit-requests"],
+  });
+
+  const { data: postsData, isLoading: postsLoading } = useQuery<{ posts: Array<{ id: number; userId: number; content: string; imageUrls: string[]; postType: string; likesCount: number; commentsCount: number; createdAt: string; authorName: string; authorInitial: string; liked: boolean }> }>({
+    queryKey: ["/api/community/posts", "?limit=20&offset=0"],
+  });
+
+  // ─── Mutations ───
+  const approveCreditMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("POST", `/api/admin/credit-requests/${id}/approve`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/credit-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/community-stats"] });
+      toast({ title: "Crédito aprovado" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const rejectCreditMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("POST", `/api/admin/credit-requests/${id}/reject`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/credit-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/community-stats"] });
+      toast({ title: "Crédito rejeitado" });
+    },
+  });
+
+  const approveAllMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/admin/credit-requests/approve-all");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/credit-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/community-stats"] });
+      toast({ title: "Todos os créditos aprovados" });
+    },
+  });
+
+  const deletePostMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/community/posts/${id}`);
+    },
+    onSuccess: () => {
+      setDeletingPostId(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/community/posts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/community-stats"] });
+      toast({ title: "Post removido" });
+    },
+  });
+
+  const stats = statsData || { totalPosts: 0, totalComments: 0, pendingCreditRequests: 0 };
+  const creditRequests = creditData?.requests || [];
+  const posts = postsData?.posts || [];
+
+  return (
+    <div className="space-y-6">
+      {/* Section A: Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card className="border-border/30 bg-card/40">
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-foreground">{stats.totalPosts}</p>
+            <p className="text-xs text-muted-foreground mt-1">Posts</p>
+          </CardContent>
+        </Card>
+        <Card className="border-border/30 bg-card/40">
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-foreground">{stats.totalComments}</p>
+            <p className="text-xs text-muted-foreground mt-1">Comentários</p>
+          </CardContent>
+        </Card>
+        <Card className={`border-border/30 bg-card/40 ${stats.pendingCreditRequests > 0 ? "border-amber-500/40" : ""}`}>
+          <CardContent className="p-4 text-center">
+            <p className={`text-2xl font-bold ${stats.pendingCreditRequests > 0 ? "text-amber-400" : "text-foreground"}`}>{stats.pendingCreditRequests}</p>
+            <p className="text-xs text-muted-foreground mt-1">Créditos Pendentes</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Section B: Creditos Pendentes */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Créditos Pendentes ({creditRequests.length})</h3>
+          {creditRequests.length > 0 && (
+            <Button
+              size="sm"
+              disabled={approveAllMutation.isPending}
+              onClick={() => approveAllMutation.mutate()}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium h-7 px-3"
+            >
+              {approveAllMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Check className="w-3 h-3 mr-1" />}
+              Aprovar Todos
+            </Button>
+          )}
+        </div>
+
+        {creditLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+        ) : creditRequests.length === 0 ? (
+          <Card className="border-border/30 bg-card/40">
+            <CardContent className="p-8 text-center">
+              <Coins className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Nenhum crédito pendente</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-2">
+            {creditRequests.map((req) => (
+              <Card key={req.id} className="border-border/25 bg-card/40">
+                <CardContent className="p-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-semibold text-gold">{req.userName?.[0]?.toUpperCase() || "?"}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{req.userName}</p>
+                      <p className="text-[11px] text-muted-foreground">{ACTION_TYPE_LABELS[req.actionType] || req.actionType} · {communityTimeAgo(req.createdAt)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant="outline" className="text-xs border-emerald-500/30 text-emerald-400 font-semibold">{formatCreditBRL(req.amount)}</Badge>
+                    <Button
+                      size="sm"
+                      disabled={approveCreditMutation.isPending}
+                      onClick={() => approveCreditMutation.mutate(req.id)}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 px-2 text-xs"
+                    >
+                      <Check className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={rejectCreditMutation.isPending}
+                      onClick={() => rejectCreditMutation.mutate(req.id)}
+                      className="border-destructive/40 text-destructive hover:bg-destructive/10 h-7 px-2 text-xs"
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Section C: Posts Recentes */}
+      <div className="space-y-3">
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Posts Recentes ({posts.length})</h3>
+
+        {postsLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+        ) : posts.length === 0 ? (
+          <Card className="border-border/30 bg-card/40">
+            <CardContent className="p-8 text-center">
+              <MessageCircle className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Nenhum post na comunidade</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-2">
+            {posts.map((post) => (
+              <Card key={post.id} className="border-border/25 bg-card/40">
+                <CardContent className="p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <div className="w-8 h-8 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="text-xs font-semibold text-gold">{post.authorInitial}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium text-foreground">{post.authorName}</span>
+                          {POST_TYPE_LABELS[post.postType] && (
+                            <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${POST_TYPE_LABELS[post.postType].className}`}>
+                              {POST_TYPE_LABELS[post.postType].label}
+                            </Badge>
+                          )}
+                          <span className="text-[10px] text-muted-foreground">{communityTimeAgo(post.createdAt)}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{post.content.length > 200 ? post.content.slice(0, 200) + "..." : post.content}</p>
+                        <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
+                          {post.imageUrls && post.imageUrls.length > 0 && (
+                            <span className="flex items-center gap-1"><FileIcon className="w-3 h-3" /> {post.imageUrls.length} {post.imageUrls.length === 1 ? "imagem" : "imagens"}</span>
+                          )}
+                          <span className="flex items-center gap-1">♥ {post.likesCount}</span>
+                          <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" /> {post.commentsCount}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <AlertDialog open={deletingPostId === post.id} onOpenChange={(open) => { if (!open) setDeletingPostId(null); }}>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setDeletingPostId(post.id)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 h-7 px-2 shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Deletar post?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Essa ação não pode ser desfeita. O post de {post.authorName} será removido permanentemente.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deletePostMutation.mutate(post.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            {deletePostMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                            Deletar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const { user, logout, isSuperAdmin } = useAuth();
   const { toast } = useToast();
@@ -1089,7 +1362,7 @@ export default function AdminDashboard() {
 
         {/* ─── Main Content Tabs ─── */}
         <Tabs defaultValue="lessons" className="space-y-6">
-          <TabsList className={`w-full grid bg-card/60 border border-border/30 p-1 h-11 sm:h-12 ${isSuperAdmin ? "grid-cols-9" : "grid-cols-7"}`}>
+          <TabsList className={`w-full grid bg-card/60 border border-border/30 p-1 h-11 sm:h-12 ${isSuperAdmin ? "grid-cols-10" : "grid-cols-8"}`}>
             <TabsTrigger
               value="students"
               data-testid="tab-students"
@@ -1150,6 +1423,14 @@ export default function AdminDashboard() {
             >
               <Coins className="w-4 h-4 sm:mr-2 shrink-0" />
               <span className="hidden sm:inline">Créditos</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="community"
+              data-testid="tab-community"
+              className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-md text-xs sm:text-sm font-medium transition-all px-1 sm:px-3 relative"
+            >
+              <MessageCircle className="w-4 h-4 sm:mr-2 shrink-0" />
+              <span className="hidden sm:inline">Comunidade</span>
             </TabsTrigger>
             {isSuperAdmin && (
               <>
@@ -2981,6 +3262,11 @@ export default function AdminDashboard() {
               trialStudents={trialStudents}
               onConvert={(id) => approveMutation.mutate({ id })}
             />
+          </TabsContent>
+
+          {/* ========== COMMUNITY TAB ========== */}
+          <TabsContent value="community" className="space-y-6 mt-0">
+            <CommunityAdminTab />
           </TabsContent>
 
           <TabsContent value="trial-legacy" className="space-y-6 mt-0">
