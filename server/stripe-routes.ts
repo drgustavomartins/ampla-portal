@@ -185,7 +185,7 @@ export function registerStripeRoutes(app: Express) {
       }
     }
 
-    // Apply credits if requested (with unique ref to prevent double-spend)
+    // Apply credits if requested — validate balance but only debit after payment confirmation
     let creditDeduction = 0;
     if (creditsToUse && Number.isInteger(creditsToUse) && creditsToUse > 0) {
       const balanceResult = await db.execute(sql`SELECT COALESCE(SUM(amount), 0) as balance FROM credit_transactions WHERE (expires_at IS NULL OR expires_at > NOW()::text OR amount < 0) AND user_id = ${auth.userId}`);
@@ -194,19 +194,16 @@ export function registerStripeRoutes(app: Express) {
       creditDeduction = Math.min(creditsToUse, amountToPay);
       amountToPay -= creditDeduction;
 
-      // Debit immediately with unique reference
-      const uniqueRef = `checkout_${auth.userId}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-      const now = new Date().toISOString();
-
       if (amountToPay <= 0) {
-        // Credits cover 100% - activate directly
+        // Credits cover 100% — debit and activate directly (no Stripe needed)
+        const uniqueRef = `checkout_${auth.userId}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+        const now = new Date().toISOString();
         const accessExpiry = new Date(Date.now() + plan.accessDays * 86400000).toISOString();
         await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at) VALUES (${auth.userId}, 'usage', ${-creditDeduction}, ${'Pagamento integral com creditos: ' + plan.name}, ${uniqueRef}, ${now})`);
         await db.execute(sql`UPDATE users SET plan_key = ${planKey}, plan_paid_at = ${now}, plan_amount_paid = ${plan.price}, approved = true, access_expires_at = ${accessExpiry}, materials_access = true WHERE id = ${auth.userId}`);
         return res.json({ url: null, sessionId: null, paidWithCredits: true });
       } else {
-        // Partial credits - debit now
-        await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at) VALUES (${auth.userId}, 'usage', ${-creditDeduction}, ${'Creditos aplicados: ' + plan.name}, ${uniqueRef}, ${now})`);
+        // Partial credits — do NOT debit now, will debit in webhook after payment confirmed
         upgradeDescription = `${plan.name} (${formatBRL(creditDeduction)} em creditos aplicados)`;
       }
     }
@@ -490,6 +487,24 @@ export function registerStripeRoutes(app: Express) {
         }
 
         console.log(`[stripe webhook] Aluno ${userId} provisionado no plano ${planKey} até ${accessExpiry} | módulos: ${provisioning.modules.length} | materiais: ${provisioning.materials.length} | mentoria: ${provisioning.mentorshipMonths}m`);
+
+        // ─── Debitar creditos usados (so apos pagamento confirmado) ──────
+        try {
+          const creditsUsed = Number(session.metadata?.creditsUsed || 0);
+          if (creditsUsed > 0) {
+            const uniqueRef = `webhook_credit_${userId}_${session.id}`;
+            // Verificar se ja foi debitado (idempotencia)
+            const existing = await db.execute(sql`SELECT id FROM credit_transactions WHERE reference_id = ${uniqueRef} LIMIT 1`);
+            if ((existing as any).rows?.length === 0) {
+              await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at) VALUES (${userId}, 'usage', ${-creditsUsed}, ${'Creditos aplicados: ' + plan.name}, ${uniqueRef}, ${new Date().toISOString()})`);
+              console.log(`[stripe webhook] Creditos debitados: ${creditsUsed} centavos para userId ${userId} (${plan.name})`);
+            } else {
+              console.log(`[stripe webhook] Creditos ja debitados anteriormente para ${uniqueRef}`);
+            }
+          }
+        } catch (e: any) {
+          console.error("[stripe webhook] Credit debit error:", e.message);
+        }
 
         // Registrar no audit log
         try {
