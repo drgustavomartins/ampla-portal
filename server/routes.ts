@@ -1713,13 +1713,26 @@ export async function registerRoutes(server: Server, app: Express) {
   });
 
   app.delete("/api/admin/students/:id", async (req, res) => {
-    const auth = requireSuperAdmin(req, res);
+    const auth = requireAdmin(req, res);
     if (!auth) return;
-    const student = await storage.getUser(parseInt(req.params.id));
-    const ok = await storage.deleteUser(parseInt(req.params.id));
-    const admin = await storage.getUser(auth.userId);
-    await logAction(auth.userId, admin?.name || "Admin", "student_deleted", "student", parseInt(req.params.id), student?.name || "?");
-    res.json({ success: ok });
+    try {
+      const { db } = await import("./db");
+      const userId = parseInt(req.params.id);
+      const student = await storage.getUser(userId);
+      if (!student) return res.status(404).json({ message: "Aluno não encontrado" });
+      // Cascade delete related records
+      await db.execute(sql`DELETE FROM user_modules WHERE user_id = ${userId}`).catch(() => {});
+      await db.execute(sql`DELETE FROM user_material_categories WHERE user_id = ${userId}`).catch(() => {});
+      await db.execute(sql`DELETE FROM credit_transactions WHERE user_id = ${userId}`).catch(() => {});
+      await db.execute(sql`DELETE FROM lesson_progress WHERE user_id = ${userId}`).catch(() => {});
+      const ok = await storage.deleteUser(userId);
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || "Admin", "student_deleted", "student", userId, student?.name || "?");
+      res.json({ success: ok });
+    } catch (err: any) {
+      console.error("delete-student error:", err);
+      res.status(500).json({ message: "Erro ao excluir aluno" });
+    }
   });
 
   app.patch("/api/admin/students/:id", async (req, res) => {
@@ -1747,6 +1760,61 @@ export async function registerRoutes(server: Server, app: Express) {
     const admin = await storage.getUser(auth.userId);
     await logAction(auth.userId, admin?.name || "Admin", "student_updated", "student", parseInt(req.params.id), student?.name || "?", updateData);
     res.json(safe);
+  });
+
+  // ==================== ADMIN: Extend trial access ====================
+  app.put("/api/admin/students/:id/extend-trial", async (req: Request, res: Response) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db } = await import("./db");
+      const userId = parseInt(req.params.id as string);
+      const { days } = req.body as { days: number };
+      if (!days || days < 1 || days > 365) {
+        return res.status(400).json({ message: "days deve ser entre 1 e 365" });
+      }
+      const student = await storage.getUser(userId);
+      if (!student) return res.status(404).json({ message: "Aluno não encontrado" });
+      const currentExpiry = student.accessExpiresAt ? new Date(student.accessExpiresAt) : new Date();
+      const base = currentExpiry > new Date() ? currentExpiry : new Date();
+      const newExpiry = new Date(base.getTime() + days * 86400000).toISOString();
+      await db.execute(sql`UPDATE users SET access_expires_at = ${newExpiry} WHERE id = ${userId}`);
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || "Admin", "student_updated", "student", userId, student.name, { action: "extend_trial", days, newExpiry });
+      const updated = await storage.getUser(userId);
+      if (!updated) return res.status(404).json({ message: "Aluno não encontrado" });
+      const { password, ...safe } = updated;
+      res.json(safe);
+    } catch (err: any) {
+      console.error("extend-trial error:", err);
+      res.status(500).json({ message: "Erro ao estender trial" });
+    }
+  });
+
+  // ==================== ADMIN: Change student role ====================
+  app.put("/api/admin/students/:id/role", async (req: Request, res: Response) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db } = await import("./db");
+      const userId = parseInt(req.params.id as string);
+      const { role } = req.body as { role: string };
+      if (!role || !["student", "trial"].includes(role)) {
+        return res.status(400).json({ message: "role deve ser 'student' ou 'trial'" });
+      }
+      const student = await storage.getUser(userId);
+      if (!student) return res.status(404).json({ message: "Aluno não encontrado" });
+      await db.execute(sql`UPDATE users SET role = ${role} WHERE id = ${userId}`);
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || "Admin", "student_updated", "student", userId, student.name, { action: "role_changed", oldRole: student.role, newRole: role });
+      const updated = await storage.getUser(userId);
+      if (!updated) return res.status(404).json({ message: "Aluno não encontrado" });
+      const { password, ...safe } = updated;
+      res.json(safe);
+    } catch (err: any) {
+      console.error("change-role error:", err);
+      res.status(500).json({ message: "Erro ao alterar role" });
+    }
   });
 
   // ==================== ADMIN: Provision student by planKey ====================

@@ -3404,6 +3404,24 @@ export default function AdminDashboard() {
             <LeadsTab
               trialStudents={trialStudents}
               onConvert={(id) => approveMutation.mutate({ id })}
+              onEdit={(s) => {
+                setEditingStudent(s);
+                setEditStudentForm({
+                  name: s.name,
+                  phone: s.phone || "",
+                  accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
+                  approved: s.approved,
+                  communityAccess: s.communityAccess ?? true,
+                  supportAccess: s.supportAccess ?? true,
+                  supportExpiresAt: s.supportExpiresAt ? s.supportExpiresAt.slice(0, 16) : "",
+                  clinicalPracticeAccess: s.clinicalPracticeAccess ?? true,
+                  clinicalPracticeHours: (s as any).clinicalPracticeHours ?? 0,
+                  materialsAccess: s.materialsAccess ?? false,
+                  mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
+                  mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
+                  planKey: (s as any).planKey || "",
+                });
+              }}
             />
           </TabsContent>
 
