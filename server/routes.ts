@@ -3498,11 +3498,11 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
 
       // Check which posts the current user has liked
       let likedPostIds: Set<number> = new Set();
-      if (rows.length > 0) {
+      if (rows.length > 0 && auth.userId) {
         const postIds = rows.map((r: any) => r.id);
         const likes = await db.execute(sql`
           SELECT post_id FROM community_likes
-          WHERE user_id = ${auth.userId} AND post_id = ANY(${postIds}::int[])
+          WHERE user_id = ${auth.userId} AND post_id IN (${sql.join(postIds.map((id: number) => sql`${id}`), sql`, `)})
         `);
         likedPostIds = new Set(((likes as any).rows || []).map((l: any) => l.post_id));
       }
@@ -3624,11 +3624,11 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
 
       // Check which comments the current user has liked
       let likedCommentIds: Set<number> = new Set();
-      if (rows.length > 0) {
+      if (rows.length > 0 && auth.userId) {
         const commentIds = rows.map((r: any) => r.id);
         const likes = await db.execute(sql`
           SELECT comment_id FROM community_likes
-          WHERE user_id = ${auth.userId} AND comment_id = ANY(${commentIds}::int[])
+          WHERE user_id = ${auth.userId} AND comment_id IN (${sql.join(commentIds.map((id: number) => sql`${id}`), sql`, `)})
         `);
         likedCommentIds = new Set(((likes as any).rows || []).map((l: any) => l.comment_id));
       }
@@ -3676,11 +3676,11 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
       const rows = (comments as any).rows || [];
 
       let likedCommentIds: Set<number> = new Set();
-      if (rows.length > 0) {
+      if (rows.length > 0 && auth.userId) {
         const commentIds = rows.map((r: any) => r.id);
         const likes = await db.execute(sql`
           SELECT comment_id FROM community_likes
-          WHERE user_id = ${auth.userId} AND comment_id = ANY(${commentIds}::int[])
+          WHERE user_id = ${auth.userId} AND comment_id IN (${sql.join(commentIds.map((id: number) => sql`${id}`), sql`, `)})
         `);
         likedCommentIds = new Set(((likes as any).rows || []).map((l: any) => l.comment_id));
       }
