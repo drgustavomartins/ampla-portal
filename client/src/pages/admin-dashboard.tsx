@@ -29,7 +29,7 @@ import {
   CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library,
   GripVertical, CalendarDays, FolderOpen, Search, FileText, FileIcon, Headphones, ChevronDown, ChevronUp,
   Sparkles, MessageCircle, Phone, Coins, Gift, Stethoscope, FileSignature, AlertTriangle, PenLine,
-  TrendingUp, BarChart3, Zap, Mail
+  TrendingUp, BarChart3, Zap
 } from "lucide-react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -1230,7 +1230,7 @@ export default function AdminDashboard() {
   const completedLessons = allProgress.filter(p => p.completed).length;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* ─── Top bar ─── */}
       <header className="border-b border-border/40 bg-card/80 backdrop-blur-md sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -1270,27 +1270,30 @@ export default function AdminDashboard() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* ─── Welcome Header ─── */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
-              {getGreeting()}, {user?.name?.split(" ")[0] || "Admin"}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5 capitalize">{todayDate}</p>
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-lg sm:text-2xl font-semibold text-foreground">
+                {getGreeting()}, {user?.name?.split(" ")[0] || "Admin"}
+              </h1>
+              <Badge
+                variant="secondary"
+                className="text-[10px] sm:text-xs bg-gold/10 text-gold border border-gold/20 px-2 sm:px-3 py-0.5 sm:py-1 font-medium shrink-0"
+              >
+                <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1" />
+                {isSuperAdmin ? "Super Admin" : "Admin"}
+              </Badge>
+            </div>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 capitalize truncate">{todayDate}</p>
           </div>
-          <Badge
-            variant="secondary"
-            className="text-xs bg-gold/10 text-gold border border-gold/20 px-3 py-1 font-medium w-fit"
-          >
-            <Shield className="w-3.5 h-3.5 mr-1.5" />
-            {isSuperAdmin ? "Super Admin" : "Admin"}
-          </Badge>
         </div>
 
-        {/* ─── Hero Stats Grid (2 rows x 3) ─── */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+        {/* ─── Hero Stats Grid ─── */}
+        <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
           {[
             {
               label: "Alunos Ativos",
+              shortLabel: "Ativos",
               value: approvedStudents.length,
               icon: GraduationCap,
               color: "text-emerald-400",
@@ -1299,6 +1302,7 @@ export default function AdminDashboard() {
             },
             {
               label: "Em Conversao",
+              shortLabel: "Conversao",
               value: pendingStudents.length,
               icon: TrendingUp,
               color: "text-amber-400",
@@ -1308,6 +1312,7 @@ export default function AdminDashboard() {
             },
             {
               label: "Receita Creditos",
+              shortLabel: "Receita",
               value: `R$ ${((totalCreditOutstanding || 0) / 100).toLocaleString("pt-BR", { minimumFractionDigits: 0 })}`,
               icon: CreditCard,
               color: "text-gold",
@@ -1316,6 +1321,7 @@ export default function AdminDashboard() {
             },
             {
               label: "Posts Comunidade",
+              shortLabel: "Posts",
               value: communityStats?.totalPosts ?? 0,
               icon: MessageCircle,
               color: "text-blue-400",
@@ -1324,6 +1330,7 @@ export default function AdminDashboard() {
             },
             {
               label: "Creditos Pendentes",
+              shortLabel: "Pendentes",
               value: communityStats?.pendingCreditRequests ?? 0,
               icon: Coins,
               color: "text-amber-400",
@@ -1333,6 +1340,7 @@ export default function AdminDashboard() {
             },
             {
               label: "Aulas Completas",
+              shortLabel: "Aulas",
               value: completedLessons,
               icon: BarChart3,
               color: "text-violet-400",
@@ -1342,12 +1350,12 @@ export default function AdminDashboard() {
           ].map((stat) => (
             <Card
               key={stat.label}
-              className={`${stat.border} bg-gradient-to-br ${stat.gradient} hover:scale-[1.02] transition-all duration-200 cursor-default`}
+              className={`${stat.border} bg-gradient-to-br ${stat.gradient} hover:scale-[1.02] transition-all duration-200 cursor-default min-w-0`}
             >
-              <CardContent className="p-3 sm:p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-9 h-9 rounded-xl bg-background/60 flex items-center justify-center">
-                    <stat.icon className={`w-4.5 h-4.5 ${stat.color}`} />
+              <CardContent className="p-2 sm:p-4">
+                <div className="flex items-center justify-between mb-1 sm:mb-2">
+                  <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-background/60 flex items-center justify-center">
+                    <stat.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${stat.color}`} />
                   </div>
                   {"pulse" in stat && stat.pulse && (
                     <span className="relative flex h-2 w-2">
@@ -1356,9 +1364,10 @@ export default function AdminDashboard() {
                     </span>
                   )}
                 </div>
-                <p className="text-lg sm:text-xl font-semibold text-foreground">{stat.value}</p>
-                <p className="text-[11px] text-muted-foreground uppercase tracking-brand mt-0.5">
-                  {stat.label}
+                <p className="text-base sm:text-xl font-semibold text-foreground truncate">{stat.value}</p>
+                <p className="text-[9px] sm:text-[11px] text-muted-foreground uppercase tracking-brand mt-0.5 truncate">
+                  <span className="sm:hidden">{stat.shortLabel}</span>
+                  <span className="hidden sm:inline">{stat.label}</span>
                 </p>
               </CardContent>
             </Card>
@@ -1366,10 +1375,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* ─── Quick Actions ─── */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap scrollbar-none">
           <Button
             size="sm"
-            className="bg-gold text-[#0A1628] hover:bg-gold/90 font-medium gap-1.5"
+            className="bg-gold text-[#0A1628] hover:bg-gold/90 font-medium gap-1.5 text-xs shrink-0 h-8"
             onClick={() => setActiveTab("lessons")}
           >
             <Plus className="w-3.5 h-3.5" /> Nova Aula
@@ -1377,11 +1386,11 @@ export default function AdminDashboard() {
           {(communityStats?.pendingCreditRequests ?? 0) > 0 && (
             <Button
               size="sm"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium gap-1.5"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-medium gap-1.5 text-xs shrink-0 h-8"
               onClick={() => setActiveTab("community")}
             >
               <Coins className="w-3.5 h-3.5" />
-              Aprovar Creditos
+              Creditos
               <Badge className="bg-white/20 text-white border-0 text-[10px] px-1.5 py-0 ml-0.5">
                 {communityStats?.pendingCreditRequests}
               </Badge>
@@ -1390,11 +1399,11 @@ export default function AdminDashboard() {
           <Button
             size="sm"
             variant="outline"
-            className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10 font-medium gap-1.5"
+            className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10 font-medium gap-1.5 text-xs shrink-0 h-8"
             onClick={() => setActiveTab("leads")}
           >
             <Zap className="w-3.5 h-3.5" />
-            Ver Leads
+            Leads
             {trialStudents.length > 0 && (
               <Badge className="bg-blue-500/20 text-blue-400 border-0 text-[10px] px-1.5 py-0 ml-0.5">
                 {trialStudents.length}
@@ -1404,11 +1413,11 @@ export default function AdminDashboard() {
           <Button
             size="sm"
             variant="outline"
-            className="border-border/40 text-muted-foreground hover:text-foreground font-medium gap-1.5"
+            className="border-border/40 text-muted-foreground hover:text-foreground font-medium gap-1.5 text-xs shrink-0 h-8"
             onClick={() => setActiveTab("students")}
           >
-            <Mail className="w-3.5 h-3.5" />
-            Gerenciar Alunos
+            <Users className="w-3.5 h-3.5" />
+            Alunos
           </Button>
         </div>
 
@@ -1476,9 +1485,43 @@ export default function AdminDashboard() {
 
         {/* ─── Main Content Tabs ─── */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          {/* Grouped Navigation */}
-          <div className="space-y-3">
-            {/* Group labels + pills */}
+          {/* ─── Mobile: single scrollable tab row ─── */}
+          <div className="sm:hidden -mx-4 px-4">
+            <TabsList className="inline-flex w-auto bg-transparent border-0 p-0 h-auto gap-1.5 overflow-x-auto pb-2 scrollbar-none">
+              {([
+                { value: "students", label: "Alunos", icon: Users },
+                { value: "leads", label: "Leads", icon: Zap, badge: trialStudents.length > 0 ? trialStudents.length : undefined },
+                { value: "profiles", label: "Perfis", icon: FileText },
+                { value: "modules", label: "Modulos", icon: Layers },
+                { value: "lessons", label: "Aulas", icon: Video },
+                { value: "materiais", label: "Materiais", icon: Library },
+                { value: "community", label: "Comunidade", icon: MessageCircle },
+                { value: "credits", label: "Creditos", icon: Coins },
+                ...(isSuperAdmin ? [
+                  { value: "admins", label: "Admins", icon: UserCog },
+                  { value: "history", label: "Historico", icon: History },
+                ] : []),
+              ] as { value: string; label: string; icon: any; badge?: number }[]).map((tab) => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  data-testid={`tab-${tab.value}`}
+                  className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-none rounded-full text-[11px] font-medium transition-all px-3 py-1.5 gap-1 whitespace-nowrap shrink-0 border border-border/30 bg-card/60 relative"
+                >
+                  <tab.icon className="w-3 h-3" />
+                  {tab.label}
+                  {tab.badge && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-gold text-[#0A1628] text-[9px] font-bold rounded-full flex items-center justify-center">
+                      {tab.badge}
+                    </span>
+                  )}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+
+          {/* ─── Desktop: grouped tab navigation ─── */}
+          <div className="hidden sm:block">
             <div className="flex flex-wrap gap-x-6 gap-y-3">
               {/* Pessoas group */}
               <div className="space-y-1.5">
@@ -1486,19 +1529,19 @@ export default function AdminDashboard() {
                 <TabsList className="bg-card/60 border border-border/30 p-1 h-10 gap-0.5">
                   <TabsTrigger
                     value="students"
-                    data-testid="tab-students"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                    data-testid="tab-students-d"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
                   >
                     <Users className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Alunos</span>
+                    Alunos
                   </TabsTrigger>
                   <TabsTrigger
                     value="leads"
-                    data-testid="tab-leads"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5 relative"
+                    data-testid="tab-leads-d"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5 relative"
                   >
                     <Zap className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Leads</span>
+                    Leads
                     {trialStudents.length > 0 && (
                       <span className="absolute -top-1 -right-1 w-4 h-4 bg-gold text-[#0A1628] text-[10px] font-bold rounded-full flex items-center justify-center">
                         {trialStudents.length}
@@ -1507,11 +1550,11 @@ export default function AdminDashboard() {
                   </TabsTrigger>
                   <TabsTrigger
                     value="profiles"
-                    data-testid="tab-profiles"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                    data-testid="tab-profiles-d"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
                   >
                     <FileText className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Perfis</span>
+                    Perfis
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -1522,27 +1565,27 @@ export default function AdminDashboard() {
                 <TabsList className="bg-card/60 border border-border/30 p-1 h-10 gap-0.5">
                   <TabsTrigger
                     value="modules"
-                    data-testid="tab-modules"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                    data-testid="tab-modules-d"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
                   >
                     <Layers className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Modulos</span>
+                    Modulos
                   </TabsTrigger>
                   <TabsTrigger
                     value="lessons"
-                    data-testid="tab-lessons"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                    data-testid="tab-lessons-d"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
                   >
                     <Video className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Aulas</span>
+                    Aulas
                   </TabsTrigger>
                   <TabsTrigger
                     value="materiais"
-                    data-testid="tab-materiais"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                    data-testid="tab-materiais-d"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
                   >
                     <Library className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Materiais</span>
+                    Materiais
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -1553,19 +1596,19 @@ export default function AdminDashboard() {
                 <TabsList className="bg-card/60 border border-border/30 p-1 h-10 gap-0.5">
                   <TabsTrigger
                     value="community"
-                    data-testid="tab-community"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                    data-testid="tab-community-d"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Comunidade</span>
+                    Comunidade
                   </TabsTrigger>
                   <TabsTrigger
                     value="credits"
-                    data-testid="tab-credits"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                    data-testid="tab-credits-d"
+                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
                   >
                     <Coins className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Creditos</span>
+                    Creditos
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -1577,19 +1620,19 @@ export default function AdminDashboard() {
                   <TabsList className="bg-card/60 border border-border/30 p-1 h-10 gap-0.5">
                     <TabsTrigger
                       value="admins"
-                      data-testid="tab-admins"
-                      className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                      data-testid="tab-admins-d"
+                      className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
                     >
                       <UserCog className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Admins</span>
+                      Admins
                     </TabsTrigger>
                     <TabsTrigger
                       value="history"
-                      data-testid="tab-history"
-                      className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-2.5 sm:px-3 gap-1.5"
+                      data-testid="tab-history-d"
+                      className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
                     >
                       <History className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Historico</span>
+                      Historico
                     </TabsTrigger>
                   </TabsList>
                 </div>
