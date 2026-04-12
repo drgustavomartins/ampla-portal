@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import {
   Check, Star, Clock, Zap, Users, Video,
   ChevronDown, ChevronUp, ArrowRight, Loader2,
-  TrendingUp, Timer, MessageCircle, FileSignature,} from "lucide-react";
+  TrendingUp, Timer, MessageCircle, FileSignature, ChevronLeft,} from "lucide-react";
 
 function formatBRL(c: number) {
   return (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -68,41 +68,41 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
     <div
       className={`relative flex flex-col rounded-2xl border transition-all duration-200 ${
         isDestaque
-          ? "border-[#D4A843] bg-gradient-to-b from-[#1a2d4d] to-[#0D1E35] shadow-[0_0_30px_rgba(212,168,67,0.15)]"
-          : "border-gray-200 bg-white hover:border-[#D4A843]/40"
+          ? "border-[#B8860B]/40 bg-[#FDFBF5] shadow-sm"
+          : "border-gray-200 bg-white hover:border-gray-300"
       } p-6`}
     >
       {plan.highlight && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#D4A843] px-4 py-1 text-xs font-bold text-[#0A1628]">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#B8860B] px-4 py-1 text-xs font-bold text-white">
           {plan.highlight}
         </div>
       )}
 
       {/* Header */}
       <div className="mb-3">
-        <h3 className="text-lg font-bold text-[#1a1a1a]">{plan.name}</h3>
+        <h3 className={`text-lg font-bold ${isDestaque ? "text-[#1a1a1a]" : "text-[#1a1a1a]"}`}>{plan.name}</h3>
         <p className="mt-1 text-sm text-gray-500">{plan.description}</p>
       </div>
 
       {/* Badges */}
       <div className="mb-5 flex flex-wrap gap-1.5">
         {plan.clinicalHours > 0 && (
-          <span className="flex items-center gap-1 rounded-full bg-blue-900/40 px-2.5 py-1 text-xs text-blue-300">
+          <span className="flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-1 text-xs text-blue-700">
             <Clock className="h-3 w-3" /> {plan.clinicalHours}h observação
           </span>
         )}
         {plan.practiceHours > 0 && (
-          <span className="flex items-center gap-1 rounded-full bg-green-900/40 px-2.5 py-1 text-xs text-green-300">
+          <span className="flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs text-green-700">
             <Zap className="h-3 w-3" /> {plan.practiceHours}h prática
           </span>
         )}
         {plan.hasLiveEvents && (
-          <span className="flex items-center gap-1 rounded-full bg-purple-900/40 px-2.5 py-1 text-xs text-purple-300">
+          <span className="flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-1 text-xs text-purple-700">
             <Video className="h-3 w-3" /> Ao vivo
           </span>
         )}
         {plan.hasMentorship && (
-          <span className="flex items-center gap-1 rounded-full bg-yellow-900/40 px-2.5 py-1 text-xs text-yellow-300">
+          <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs text-amber-700">
             <Users className="h-3 w-3" /> Mentoria individual
           </span>
         )}
@@ -112,7 +112,7 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
       <ul className="mb-2 flex-1 space-y-2">
         {visibleFeatures.map((f, i) => (
           <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-            <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#B8860B]" />
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
             <span>{f}</span>
           </li>
         ))}
@@ -133,7 +133,9 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
 
       {/* Valor percebido */}
       {plan.valorMercado && (
-        <div className="mb-3 rounded-xl border border-[#D4A843]/30 bg-[#D4A843]/10 px-3 py-2">
+        <div className={`mb-3 rounded-xl border px-3 py-2 ${
+          isDestaque ? "bg-[#B8860B]/10 border-[#B8860B]/20" : "bg-gray-50 border-gray-200"
+        }`}>
           <div className="flex items-center gap-1.5 text-xs text-gray-500">
             <TrendingUp className="h-3.5 w-3.5 text-[#B8860B]" />
             <span>Se fosse curso a curso, pagaria</span>
@@ -142,7 +144,7 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
             <span className="text-sm font-semibold text-gray-500 line-through">
               {(plan.valorMercado / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
             </span>
-            <span className="rounded-full bg-green-900/40 px-2 py-0.5 text-xs font-bold text-green-600">
+            <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold text-green-600">
               -{Math.round((1 - plan.price / plan.valorMercado) * 100)}%
             </span>
           </div>
@@ -152,7 +154,7 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
       {/* Preço */}
       {plan.priceFormatted && (
         <div className="mb-4">
-          <div className="text-2xl font-bold text-[#B8860B]">{plan.priceFormatted}</div>
+          <div className={`text-2xl font-bold ${isDestaque ? "text-[#B8860B]" : "text-[#1a1a1a]"}`}>{plan.priceFormatted}</div>
           {plan.installments12xFormatted && (
             <div className="text-xs text-gray-500">ou 12x de {plan.installments12xFormatted}</div>
           )}
@@ -185,8 +187,8 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
           disabled={isLoading}
           className={`mt-auto flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-all disabled:opacity-50 ${
             isDestaque
-              ? "bg-[#D4A843] text-[#0A1628] hover:bg-[#e8b84d]"
-              : "border border-[#D4A843] text-[#B8860B] hover:bg-[#D4A843] hover:text-[#0A1628]"
+              ? "bg-[#B8860B] text-white hover:bg-[#9a7209]"
+              : "border border-gray-300 text-[#1a1a1a] hover:bg-gray-50"
           }`}
         >
           {isLoading
@@ -203,6 +205,7 @@ export default function PlanosPage() {
   // Ler parâmetros da URL (ex: ?grupo=horas&ref=GUSTAVO-AF7K)
   const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
   const [selectedGroup, setSelectedGroup] = useState<string | null>(urlParams.get('grupo'));
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
   const [referralCode, setReferralCode] = useState<string>(urlParams.get('ref') || '');
   const [referralValid, setReferralValid] = useState<boolean | null>(null);
@@ -339,29 +342,93 @@ export default function PlanosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F6F2] px-4 py-12">
-      <div className="mx-auto max-w-7xl">
+    <div className="min-h-screen bg-[#F7F6F2]">
+      {/* Sticky Header */}
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-14">
+            {/* Back button */}
+            <button onClick={() => window.history.back()} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors">
+              <ChevronLeft className="w-5 h-5" />
+              <span className="hidden sm:inline">Voltar</span>
+            </button>
+            
+            {/* Logo */}
+            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-10 object-contain" />
+            
+            {/* Desktop: category tabs */}
+            <nav className="hidden md:flex items-center gap-1">
+              {["Todos", ...Object.keys(groupedPlans)].map(g => (
+                <button
+                  key={g}
+                  onClick={() => setSelectedGroup(g === "Todos" ? null : g)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    (g === "Todos" && !selectedGroup) || selectedGroup === g
+                      ? "bg-[#1a1a1a] text-white"
+                      : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+                  }`}
+                >
+                  {g === "Todos" ? "Todos" : GROUP_LABELS[g] || g}
+                </button>
+              ))}
+            </nav>
+            
+            {/* Mobile: hamburger */}
+            <button
+              className="md:hidden flex items-center justify-center w-10 h-10"
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Menu"
+            >
+              <svg width="20" height="14" viewBox="0 0 20 14" fill="none">
+                <path d="M0 1h20M0 7h20M0 13h20" stroke="#1a1a1a" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
 
-        {/* Header */}
-        <div className="mb-10 text-center">
-          <img src="/logo-transparent.png" alt="Ampla Facial" className="mx-auto mb-5 h-24 object-contain" />
-          <h1 className="text-4xl font-bold text-[#1a1a1a]">Escolha seu caminho</h1>
-          <p className="mt-2 text-gray-500">
-            Do iniciante ao avançado — cada plano é uma etapa da sua evolução em HOF
-          </p>
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 bg-white animate-in fade-in duration-200">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-8 object-contain" />
+            <button onClick={() => setMobileMenuOpen(false)} className="w-10 h-10 flex items-center justify-center" aria-label="Fechar">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M1 1l16 16M17 1L1 17" stroke="#1a1a1a" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+          <nav className="px-6 pt-6 space-y-1">
+            {["Todos", ...Object.keys(groupedPlans)].map(g => (
+              <button
+                key={g}
+                onClick={() => { setSelectedGroup(g === "Todos" ? null : g); setMobileMenuOpen(false); }}
+                className={`flex items-center gap-3 w-full text-left py-3.5 border-b border-gray-100 text-lg font-semibold ${
+                  (g === "Todos" && !selectedGroup) || selectedGroup === g ? "text-[#B8860B]" : "text-[#1a1a1a]"
+                }`}
+              >
+                {g === "Todos" ? "Todos" : GROUP_LABELS[g] || g}
+              </button>
+            ))}
+          </nav>
+        </div>
+      )}
 
+      <div className="px-4 py-8 mx-auto max-w-7xl">
+        {/* Title */}
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl sm:text-4xl font-bold text-[#1a1a1a]">Escolha seu caminho</h1>
+          <p className="mt-2 text-gray-500">Do iniciante ao avancado, cada plano e uma etapa da sua evolucao em HOF</p>
           {myPlan?.isTrialActive && (
             <div className="mt-5 inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-5 py-2.5 text-sm text-amber-600">
               <Clock className="h-4 w-4 shrink-0" />
-              Seu período gratuito encerra em{" "}
-              <strong>{myPlan.trialDaysLeft} dia{myPlan.trialDaysLeft !== 1 ? "s" : ""}</strong>.
-              Escolha um plano para continuar com acesso completo.
+              Seu periodo gratuito encerra em <strong>{myPlan.trialDaysLeft} dia{myPlan.trialDaysLeft !== 1 ? "s" : ""}</strong>. Escolha um plano para continuar.
             </div>
           )}
         </div>
 
-        {/* Campo de código de indicação */}
-        <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-5">
+          {/* Campo de código de indicação */}
+          <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="flex-1 w-full">
               <label className="text-xs font-medium text-gray-500 mb-1 block">Codigo de indicacao (opcional)</label>
@@ -398,116 +465,95 @@ export default function PlanosPage() {
           </div>
         </div>
 
-        {/* Credit balance banner — desconto aplicado automaticamente */}
-        {creditBalance > 0 && (
-          <div className="mb-8 rounded-2xl border border-[#D4A843]/40 bg-white p-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#D4A843]/15 flex items-center justify-center shrink-0">
-                <Star className="h-5 w-5 text-[#B8860B]" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-[#1a1a1a]">Desconto de <span className="text-[#B8860B]">{formatBRL(creditBalance)}</span> aplicado automaticamente</p>
-                <p className="text-xs text-gray-500 mt-0.5">Seu saldo de creditos sera usado como desconto no checkout. Se cobrir 100% do valor, o acesso e liberado na hora.</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Como funciona o processo */}
-        <div className="mb-10 rounded-2xl border border-gray-200 bg-white p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <MessageCircle className="h-4 w-4 text-[#B8860B]" />
-            <p className="text-sm font-semibold text-[#1a1a1a]">Como funciona</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-500">
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#B8860B]">1</span>
-              <span>Escolha o plano que faz sentido para o seu momento profissional</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#B8860B]">2</span>
-              <span>Clique em "Pagar e acessar agora" — você é redirecionado para o checkout seguro</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#B8860B]">3</span>
-              <span>Acesso liberado imediatamente após o pagamento confirmado</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Filtros */}
-        <div className="mb-8 flex justify-center gap-2 flex-wrap">
-          <button
-            onClick={() => setSelectedGroup(null)}
-            className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${
-              !selectedGroup ? "bg-[#D4A843] text-[#0A1628]" : "border border-gray-200 text-gray-500 hover:border-[#D4A843]/40"
-            }`}
-          >
-            Todos
-          </button>
-          {GROUP_ORDER.map((g) => (
-            <button
-              key={g}
-              onClick={() => setSelectedGroup(g === selectedGroup ? null : g)}
-              className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${
-                selectedGroup === g ? "bg-[#D4A843] text-[#0A1628]" : "border border-gray-200 text-gray-500 hover:border-[#D4A843]/40"
-              }`}
-            >
-              {GROUP_LABELS[g]}
-            </button>
-          ))}
-        </div>
-
-        {/* Grupos */}
-        {GROUP_ORDER.filter((g) => !selectedGroup || selectedGroup === g).map((group) => {
-          const groupPlans = groupedPlans[group] || [];
-          if (!groupPlans.length) return null;
-          return (
-            <div key={group} className="mb-14">
-              <div className="mb-6 text-center">
-                <div className="inline-block rounded-full border border-[#D4A843]/40 bg-[#D4A843]/10 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-[#B8860B]">
-                  {GROUP_LABELS[group]}
+          {/* Credit balance banner — desconto aplicado automaticamente */}
+          {creditBalance > 0 && (
+            <div className="mb-8 rounded-2xl border border-[#D4A843]/40 bg-white p-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#D4A843]/15 flex items-center justify-center shrink-0">
+                  <Star className="h-5 w-5 text-[#B8860B]" />
                 </div>
-                <p className="mt-2 text-sm text-gray-500">{GROUP_DESCRIPTIONS[group]}</p>
-              </div>
-              <div className={`grid gap-6 ${
-                groupPlans.length === 1 ? "max-w-sm mx-auto" :
-                groupPlans.length === 2 ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto" :
-                "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-              }`}>
-                {groupPlans.map((plan) => (
-                  <PlanCard
-                    key={plan.key}
-                    plan={plan}
-                    onPagar={handlePagar}
-                    isLoading={checkoutMutation.isPending && loadingKey === plan.key}
-                  />
-                ))}
+                <div>
+                  <p className="text-sm font-semibold text-[#1a1a1a]">Desconto de <span className="text-[#B8860B]">{formatBRL(creditBalance)}</span> aplicado automaticamente</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Seu saldo de creditos sera usado como desconto no checkout. Se cobrir 100% do valor, o acesso e liberado na hora.</p>
+                </div>
               </div>
             </div>
-          );
-        })}
+          )}
 
-        {/* Política de upgrade */}
-        <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-6 text-center">
-          <Star className="mx-auto mb-3 h-6 w-6 text-[#B8860B]" />
-          <h3 className="text-lg font-semibold text-[#1a1a1a]">Upgrade com crédito do que já pagou</h3>
-          <p className="mt-2 text-sm text-gray-500">
-            Dentro de 60 dias: 100% do valor pago vira crédito no próximo plano. Após 60 dias: 70%.
-            Você sempre paga apenas a diferença.
-          </p>
-        </div>
+          {/* Como funciona o processo */}
+          <div className="mb-10 rounded-2xl border border-gray-200 bg-white p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <MessageCircle className="h-4 w-4 text-[#B8860B]" />
+              <p className="text-sm font-semibold text-[#1a1a1a]">Como funciona</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-500">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#B8860B]">1</span>
+                <span>Escolha o plano que faz sentido para o seu momento profissional</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#B8860B]">2</span>
+                <span>Clique em "Pagar e acessar agora" — você é redirecionado para o checkout seguro</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#B8860B]">3</span>
+                <span>Acesso liberado imediatamente após o pagamento confirmado</span>
+              </div>
+            </div>
+          </div>
 
-        {/* Aviso de mentoria necessária para horas (aparece só se grupo horas está visível e aluno não tem mentoria) */}
-        {(!selectedGroup || selectedGroup === "horas") && user && !MENTORIA_PLANS.includes(user.planKey || "") && (groupedPlans["horas"] || []).length > 0 && (
-          <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-500/5 p-6 text-center">
-            <Clock className="mx-auto mb-3 h-6 w-6 text-amber-400" />
-            <h3 className="text-lg font-semibold text-[#1a1a1a]">Mentoria ativa necessária</h3>
+
+
+          {/* Grupos */}
+          {GROUP_ORDER.filter((g) => !selectedGroup || selectedGroup === g).map((group) => {
+            const groupPlans = groupedPlans[group] || [];
+            if (!groupPlans.length) return null;
+            return (
+              <div key={group} className="mb-14">
+                <div className="mb-6 text-center">
+                  <div className="inline-block rounded-full border border-[#D4A843]/40 bg-[#D4A843]/10 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-[#B8860B]">
+                    {GROUP_LABELS[group]}
+                  </div>
+                  <p className="mt-2 text-sm text-gray-500">{GROUP_DESCRIPTIONS[group]}</p>
+                </div>
+                <div className={`grid gap-6 ${
+                  groupPlans.length === 1 ? "max-w-sm mx-auto" :
+                  groupPlans.length === 2 ? "grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto" :
+                  "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                }`}>
+                  {groupPlans.map((plan) => (
+                    <PlanCard
+                      key={plan.key}
+                      plan={plan}
+                      onPagar={handlePagar}
+                      isLoading={checkoutMutation.isPending && loadingKey === plan.key}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Política de upgrade */}
+          <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-6 text-center">
+            <Star className="mx-auto mb-3 h-6 w-6 text-[#B8860B]" />
+            <h3 className="text-lg font-semibold text-[#1a1a1a]">Upgrade com crédito do que já pagou</h3>
             <p className="mt-2 text-sm text-gray-500">
-              Para adquirir pacotes de horas clínicas extras, você precisa ter um plano de Mentoria VIP ativo (Online, Presencial ou Completo).
+              Dentro de 60 dias: 100% do valor pago vira crédito no próximo plano. Após 60 dias: 70%.
+              Você sempre paga apenas a diferença.
             </p>
           </div>
-        )}
+
+          {/* Aviso de mentoria necessária para horas (aparece só se grupo horas está visível e aluno não tem mentoria) */}
+          {(!selectedGroup || selectedGroup === "horas") && user && !MENTORIA_PLANS.includes(user.planKey || "") && (groupedPlans["horas"] || []).length > 0 && (
+            <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-500/5 p-6 text-center">
+              <Clock className="mx-auto mb-3 h-6 w-6 text-amber-400" />
+              <h3 className="text-lg font-semibold text-[#1a1a1a]">Mentoria ativa necessária</h3>
+              <p className="mt-2 text-sm text-gray-500">
+                Para adquirir pacotes de horas clínicas extras, você precisa ter um plano de Mentoria VIP ativo (Online, Presencial ou Completo).
+              </p>
+            </div>
+          )}
 
       </div>
 
@@ -561,3 +607,4 @@ export default function PlanosPage() {
     </div>
   );
 }
+
