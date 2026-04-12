@@ -744,14 +744,15 @@ export default function StudentDashboard() {
                 }
               </p>
               {totalLessons > 0 && !isTrialExpired && (
-                <div className="mt-4 space-y-1.5">
-                  <p className="text-[11px] uppercase tracking-widest text-white/40 font-medium">Seu progresso na plataforma</p>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden">
-                      <div className="h-full rounded-full bg-gradient-to-r from-gold/80 to-gold transition-all duration-700" style={{ width: `${Math.round((completedCount / totalLessons) * 100)}%` }} />
-                    </div>
-                    <span className="text-xs font-medium text-gold shrink-0">{completedCount}/{totalLessons} aulas ({Math.round((completedCount / totalLessons) * 100)}%)</span>
+                <div className="mt-6 rounded-xl bg-white/5 border border-white/10 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-white">Seu progresso na plataforma</p>
+                    <span className="text-sm font-bold text-gold">{Math.round((completedCount / totalLessons) * 100)}%</span>
                   </div>
+                  <div className="h-3 rounded-full bg-white/10 overflow-hidden">
+                    <div className="h-full rounded-full bg-gradient-to-r from-gold/80 to-gold transition-all duration-700" style={{ width: `${Math.max(Math.round((completedCount / totalLessons) * 100), 2)}%` }} />
+                  </div>
+                  <p className="text-xs text-white/50">{completedCount} de {totalLessons} aulas concluidas</p>
                 </div>
               )}
             </div>
