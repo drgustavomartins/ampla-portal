@@ -62,7 +62,7 @@ function App() {
             <Route path="/" component={AppContent} />
             <Route path="/module/:id" component={ProtectedModulePage} />
             <Route path="/reset-password/:token" component={ResetPasswordPage} />
-            <Route path="/planos" component={ProtectedPlanosPage} />
+            <Route path="/planos" component={PlanosPublicos} />
             <Route path="/upgrade" component={() => <ProtectedPage component={UpgradePage} />} />
             <Route path="/pagamento/sucesso" component={() => <ProtectedPage component={PagamentoSucesso} />} />
             <Route path="/trial/ativo" component={() => <ProtectedPage component={PagamentoSucesso} />} />
