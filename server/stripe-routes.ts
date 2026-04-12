@@ -154,17 +154,24 @@ export function registerStripeRoutes(app: Express) {
       upgradeDescription = `Upgrade para ${plan.name} (crédito de ${formatBRL(upgradeCredit)} aplicado)`;
     }
 
-    // Desconto de 10% para quem usa codigo de indicacao valido (bloqueio de self-referral)
+    // Desconto de 10% para quem usa codigo de indicacao valido
+    // Regras: sem self-referral, apenas primeira compra (sem plan_paid_at)
     let referralDiscount = 0;
     if (referralCode) {
-      const refCheck = await db.execute(sql`SELECT user_id FROM referral_codes WHERE UPPER(code) = ${referralCode.trim().toUpperCase()}`);
-      const referrerId = (refCheck as any).rows?.[0]?.user_id;
-      if (referrerId && referrerId !== auth.userId) {
-        referralDiscount = Math.floor(amountToPay * 0.10);
-        amountToPay -= referralDiscount;
-        console.log(`[checkout] Desconto indicacao 10% = ${referralDiscount} centavos para userId ${auth.userId} (referrer: ${referrerId})`);
-      } else if (referrerId === auth.userId) {
-        console.log(`[checkout] Self-referral bloqueado para userId ${auth.userId}`);
+      const userCheck = await db.execute(sql`SELECT plan_paid_at FROM users WHERE id = ${auth.userId}`);
+      const hasPreviousPurchase = !!(userCheck as any).rows?.[0]?.plan_paid_at;
+      if (hasPreviousPurchase) {
+        console.log(`[checkout] Indicacao bloqueada - usuario ${auth.userId} ja tem compra anterior`);
+      } else {
+        const refCheck = await db.execute(sql`SELECT user_id FROM referral_codes WHERE UPPER(code) = ${referralCode.trim().toUpperCase()}`);
+        const referrerId = (refCheck as any).rows?.[0]?.user_id;
+        if (referrerId && referrerId !== auth.userId) {
+          referralDiscount = Math.floor(amountToPay * 0.10);
+          amountToPay -= referralDiscount;
+          console.log(`[checkout] Desconto indicacao 10% = ${referralDiscount} centavos para userId ${auth.userId} (referrer: ${referrerId})`);
+        } else if (referrerId === auth.userId) {
+          console.log(`[checkout] Self-referral bloqueado para userId ${auth.userId}`);
+        }
       }
     }
 
