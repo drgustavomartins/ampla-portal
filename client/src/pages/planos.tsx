@@ -50,7 +50,7 @@ const GROUP_DESCRIPTIONS: Record<string, string> = {
   digital: "Aprenda no seu ritmo com aulas gravadas e materiais científicos",
   observador: "Observe a rotina clínica real do Dr. Gustavo presencialmente",
   vip: "Mentoria individual e formação completa em HOF",
-  horas: "Pacotes de prática presencial com pacientes modelo sob supervisão do Dr. Gustavo",
+  horas: "Exclusivo para alunos com mentoria VIP ativa ou concluida",
 };
 
 const GROUP_ORDER = ["digital", "observador", "vip", "horas"];
@@ -540,7 +540,7 @@ export default function PlanosPage() {
             <h3 className="text-lg font-semibold text-[#1a1a1a]">Upgrade com crédito do que já pagou</h3>
             <p className="mt-2 text-sm text-gray-500">
               Dentro de 60 dias: 100% do valor pago vira crédito no próximo plano. Após 60 dias: 70%.
-              Você sempre paga apenas a diferença.
+              Voce paga apenas a diferenca.
             </p>
           </div>
 
