@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Check, Star, Clock, Zap, Users, Video,
   ChevronDown, ChevronUp, ArrowRight, Loader2,
@@ -240,7 +240,9 @@ export default function PlanosPage() {
     },
     onSuccess: (data) => {
       if (data.paidWithCredits) {
-        window.location.href = "/#/pagamento/sucesso?credits=true";
+        queryClient.invalidateQueries();
+        window.location.hash = "/pagamento/sucesso?credits=true";
+        return;
       } else if (data.url) {
         window.location.href = data.url;
       }

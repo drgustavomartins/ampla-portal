@@ -206,9 +206,19 @@ export function registerStripeRoutes(app: Express) {
         // Credits cover 100% — debit and activate directly (no Stripe needed)
         const uniqueRef = `checkout_${auth.userId}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
         const now = new Date().toISOString();
-        const accessExpiry = new Date(Date.now() + plan.accessDays * 86400000).toISOString();
         await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at) VALUES (${auth.userId}, 'usage', ${-creditDeduction}, ${'Pagamento integral com creditos: ' + plan.name}, ${uniqueRef}, ${now})`);
-        await db.execute(sql`UPDATE users SET plan_key = ${planKey}, role = 'student', trial_started_at = NULL, plan_paid_at = ${now}, plan_amount_paid = ${plan.price}, approved = true, access_expires_at = ${accessExpiry}, materials_access = true WHERE id = ${auth.userId}`);
+
+        const isHoursPackage = plan.group === "horas";
+        if (isHoursPackage) {
+          // Horas clinicas avulsas: adicionar horas ao saldo existente
+          const addHours = plan.practiceHours || 0;
+          await db.execute(sql`UPDATE users SET clinical_practice_hours = COALESCE(clinical_practice_hours, 0) + ${addHours}, clinical_practice_access = true WHERE id = ${auth.userId}`);
+          console.log(`[checkout credits 100%] Adicionadas ${addHours}h clinicas para userId ${auth.userId}`);
+        } else {
+          // Plano normal: atualizar plan_key, acesso, etc
+          const accessExpiry = new Date(Date.now() + plan.accessDays * 86400000).toISOString();
+          await db.execute(sql`UPDATE users SET plan_key = ${planKey}, role = 'student', trial_started_at = NULL, plan_paid_at = ${now}, plan_amount_paid = ${plan.price}, approved = true, access_expires_at = ${accessExpiry}, materials_access = true WHERE id = ${auth.userId}`);
+        }
         return res.json({ url: null, sessionId: null, paidWithCredits: true });
       } else {
         // Partial credits — do NOT debit now, will debit in webhook after payment confirmed
