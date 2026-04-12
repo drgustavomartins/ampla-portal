@@ -1297,6 +1297,9 @@ export async function registerRoutes(server: Server, app: Express) {
       const { password, lockedUntil: _l, loginAttempts: _a, ...safeUser } = user;
       const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
 
+      // Register last login for ALL users
+      await db.execute(sql`UPDATE users SET last_login_at = ${new Date().toISOString()}, login_count = COALESCE(login_count, 0) + 1 WHERE id = ${user.id}`);
+
       // Log admin login
       if (user.role === "admin" || user.role === "super_admin") {
         await logAction(user.id, user.name, "admin_login");
@@ -2427,6 +2430,40 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json(logs);
   });
 
+  // GET /api/admin/activity-log - combined activity log with type filter
+  app.get("/api/admin/activity-log", async (req: Request, res: Response) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db } = await import("./db");
+      
+      // Admin actions from audit_logs
+      const adminLogs = await db.execute(sql`
+        SELECT al.id, al.action, al.details, al.created_at, 
+          COALESCE(u.name, 'Admin') as actor_name,
+          'admin' as log_type
+        FROM audit_logs al
+        LEFT JOIN users u ON u.id = al.admin_id
+        ORDER BY al.created_at DESC LIMIT 50
+      `);
+      
+      // Student logins (from users table)
+      const studentLogins = await db.execute(sql`
+        SELECT id, name, email, last_login_at, login_count, role, plan_key
+        FROM users 
+        WHERE last_login_at IS NOT NULL AND role NOT IN ('admin', 'super_admin')
+        ORDER BY last_login_at DESC LIMIT 50
+      `);
+      
+      res.json({
+        adminActions: (adminLogs as any).rows || [],
+        studentActivity: (studentLogins as any).rows || [],
+      });
+    } catch (e: any) {
+      res.status(500).json({ message: "Erro" });
+    }
+  });
+
   // ==================== SEED (only if empty) ====================
   app.all("/api/admin/seed", async (req, res) => {
     if (!requireAdmin(req, res)) return;
@@ -2501,6 +2538,11 @@ export async function registerRoutes(server: Server, app: Express) {
       await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TEXT`);
       results.push("locked_until column ensured");
     } catch (e: any) { results.push(`locked_until: ${e.message}`); }
+    try {
+      await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TEXT`);
+      await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS login_count INTEGER DEFAULT 0`);
+      results.push("last_login_at + login_count columns ensured");
+    } catch (e: any) { results.push(`login tracking: ${e.message}`); }
     // New columns for granular access control
     try {
       await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS community_access BOOLEAN NOT NULL DEFAULT true`);

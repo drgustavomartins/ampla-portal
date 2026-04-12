@@ -259,6 +259,10 @@ export default function AdminDashboard() {
   const { data: plans = [] } = useQuery<Plan[]>({ queryKey: ["/api/plans"] });
   const { data: allProgress = [] } = useQuery<LessonProgress[]>({ queryKey: ["/api/admin/students/progress"] });
   const { data: auditLogs = [] } = useQuery<AuditLog[]>({ queryKey: ["/api/admin/audit-logs"] });
+  const { data: activityData } = useQuery<{ adminActions: any[]; studentActivity: any[] }>({
+    queryKey: ["/api/admin/activity-log"],
+    enabled: !!user,
+  });
   const { data: allPlanModules = [] } = useQuery<PlanModuleEntry[]>({ queryKey: ["/api/admin/plan-modules"] });
   const { data: admins = [] } = useQuery<SafeUser[]>({
     queryKey: ["/api/admin/admins"],
@@ -842,6 +846,7 @@ export default function AdminDashboard() {
   // Audit log filter state
   const [logFilterAdmin, setLogFilterAdmin] = useState<string>("all");
   const [logFilterAction, setLogFilterAction] = useState<string>("all");
+  const [activityTab, setActivityTab] = useState<"admin" | "alunos">("alunos");
 
   const sortedStudents = [...students].sort((a, b) => a.name.localeCompare(b.name));
   const sortedPendingStudents = [...pendingStudents].sort((a, b) => a.name.localeCompare(b.name));
@@ -2322,6 +2327,7 @@ export default function AdminDashboard() {
                                         <th className="text-center py-2 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Horas clin.</th>
                                         <th className="text-right py-2 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Creditos</th>
                                         <th className="text-right py-2 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Inicio</th>
+                                        <th className="py-2 px-2 text-center text-xs hidden xl:table-cell">Ultimo login</th>
                                       </tr>
                                     </thead>
                                     <tbody>
@@ -2353,6 +2359,13 @@ export default function AdminDashboard() {
                                             </td>
                                             <td className="py-2 px-2 text-right text-muted-foreground text-xs hidden lg:table-cell">
                                               {startDate ? new Date(startDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" }) : '-'}
+                                            </td>
+                                            <td className="py-2 px-2 text-center text-xs hidden xl:table-cell">
+                                              {(s as any).lastLoginAt ? (
+                                                <span className="text-foreground">{new Date((s as any).lastLoginAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</span>
+                                              ) : (
+                                                <span className="text-muted-foreground/40">nunca</span>
+                                              )}
                                             </td>
                                           </tr>
                                         );
@@ -3262,6 +3275,76 @@ export default function AdminDashboard() {
             </TabsContent>
           )}
         </Tabs>
+
+        {/* Historico de Atividades */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-foreground">Historico de Atividades</h3>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setActivityTab("alunos")}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${activityTab === "alunos" ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Atividade Alunos
+              </button>
+              <button
+                onClick={() => setActivityTab("admin")}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${activityTab === "admin" ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Acoes Admin
+              </button>
+            </div>
+          </div>
+          
+          {activityTab === "alunos" && (
+            <div className="space-y-2">
+              {(activityData?.studentActivity || []).map((s: any) => (
+                <div key={s.id} className="flex items-center justify-between p-3 rounded-lg bg-card/40 border border-border/20">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-semibold text-emerald-400">{s.name?.[0]?.toUpperCase()}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{s.name}</p>
+                      <p className="text-[11px] text-muted-foreground">{s.email} - {s.plan_key?.replace(/_/g, " ") || s.role}</p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-foreground">
+                      {s.last_login_at ? new Date(s.last_login_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "nunca"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">{s.login_count || 0} logins</p>
+                  </div>
+                </div>
+              ))}
+              {(!activityData?.studentActivity || activityData.studentActivity.length === 0) && (
+                <p className="text-sm text-muted-foreground text-center py-6">Nenhum login de aluno registrado ainda</p>
+              )}
+            </div>
+          )}
+          
+          {activityTab === "admin" && (
+            <div className="space-y-2">
+              {(activityData?.adminActions || []).map((a: any) => (
+                <div key={a.id} className="flex items-center justify-between p-3 rounded-lg bg-card/40 border border-border/20">
+                  <div className="min-w-0">
+                    <p className="text-sm text-foreground">{a.action?.replace(/_/g, " ")}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{a.details || "-"}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-muted-foreground">
+                      {a.created_at ? new Date(a.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-"}
+                    </p>
+                    <p className="text-[10px] text-gold/70">{a.actor_name}</p>
+                  </div>
+                </div>
+              ))}
+              {(!activityData?.adminActions || activityData.adminActions.length === 0) && (
+                <p className="text-sm text-muted-foreground text-center py-6">Nenhuma acao admin registrada</p>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Secondary admin: small audit log widget at the bottom */}
         {!isSuperAdmin && auditLogs.length > 0 && (
