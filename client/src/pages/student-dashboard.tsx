@@ -749,8 +749,8 @@ export default function StudentDashboard() {
                     <p className="text-sm font-semibold text-white">Seu progresso na plataforma</p>
                     <span className="text-sm font-bold text-gold">{Math.round((completedCount / totalLessons) * 100)}%</span>
                   </div>
-                  <div className="h-3 rounded-full bg-white/10 overflow-hidden">
-                    <div className="h-full rounded-full bg-gradient-to-r from-gold/80 to-gold transition-all duration-700" style={{ width: `${Math.max(Math.round((completedCount / totalLessons) * 100), 2)}%` }} />
+                  <div className="h-3 rounded-full bg-white/20 overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(progressPercent, 2)}%`, background: "linear-gradient(90deg, #B8860B, #D4A843, #E5C158)" }} />
                   </div>
                   <p className="text-xs text-white/50">{completedCount} de {totalLessons} aulas concluidas</p>
                 </div>
@@ -767,7 +767,9 @@ export default function StudentDashboard() {
                   <span className="text-muted-foreground">Progresso do plano</span>
                   <span className="font-medium text-gold">{daysUsed}/{planDurationDays} dias</span>
                 </div>
-                <Progress value={totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : dayProgressPercent} className="h-2 bg-border/30" />
+                <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : dayProgressPercent, 1)}%`, background: "linear-gradient(90deg, #B8860B, #D4A843)" }} />
+                </div>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Dias restantes</span>
@@ -976,10 +978,10 @@ export default function StudentDashboard() {
 
                       {/* Minimal progress bar */}
                       {isUnlocked && allLessons.length > 0 && (
-                        <div className="h-[2px] w-full rounded-full bg-white/[0.06] overflow-hidden mt-1">
+                        <div className="h-1 w-full rounded-full bg-white/10 overflow-hidden mt-1.5">
                           <div
-                            className="h-full rounded-full bg-gold/60 transition-all duration-700"
-                            style={{ width: `${Math.max(moduleProgressPercent, 2)}%` }}
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{ width: `${Math.max(moduleProgressPercent, 2)}%`, background: "#D4A843" }}
                           />
                         </div>
                       )}
