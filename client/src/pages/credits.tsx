@@ -105,7 +105,8 @@ export default function CreditsPage() {
             </p>
             <a
               href="/#/planos"
-              className="inline-flex items-center gap-2 mt-3 px-8 py-3 rounded-xl bg-[#D4A843] hover:bg-[#c49a3a] text-[#0A0D14] text-sm font-bold transition-colors shadow-md"
+              className="inline-flex items-center gap-2 mt-3 px-8 py-3 rounded-xl text-sm font-bold transition-colors shadow-md"
+              style={{ background: '#D4A843', color: '#0A0D14' }}
             >
               {balance > 0 ? "Usar creditos agora" : "Ver planos disponiveis"}
             </a>
@@ -246,7 +247,8 @@ export default function CreditsPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
               href="/#/planos"
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-[#D4A843] hover:bg-[#c49a3a] text-[#0A0D14] text-sm font-bold transition-colors shadow-md"
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-bold transition-colors shadow-md"
+              style={{ background: '#D4A843', color: '#0A0D14' }}
             >
               Ver planos disponiveis
             </a>
