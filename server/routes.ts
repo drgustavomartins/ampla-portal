@@ -1297,9 +1297,13 @@ export async function registerRoutes(server: Server, app: Express) {
       const { password, lockedUntil: _l, loginAttempts: _a, ...safeUser } = user;
       const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
 
-      // Register last login for ALL users
-      const { db } = await import("./db");
-      await db.execute(sql`UPDATE users SET last_login_at = ${new Date().toISOString()}, login_count = COALESCE(login_count, 0) + 1 WHERE id = ${user.id}`);
+      // Register last login for ALL users (non-blocking)
+      try {
+        const { db: loginDb } = await import("./db");
+        await loginDb.execute(sql`UPDATE users SET last_login_at = ${new Date().toISOString()}, login_count = COALESCE(login_count, 0) + 1 WHERE id = ${user.id}`);
+      } catch (loginTrackErr: any) {
+        console.error("[login] tracking error (non-fatal):", loginTrackErr.message);
+      }
 
       // Log admin login
       if (user.role === "admin" || user.role === "super_admin") {
