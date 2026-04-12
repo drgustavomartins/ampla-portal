@@ -106,12 +106,13 @@ export default function CreditsPage() {
           </CardContent>
         </Card>
         <div style={{ textAlign: 'center', marginTop: '-16px', position: 'relative', zIndex: 10 }}>
-          <a
-            href="/#/planos"
-            style={{ display: 'inline-block', backgroundColor: '#D4A843', color: '#0A0D14', padding: '14px 40px', borderRadius: '14px', fontSize: '15px', fontWeight: '700', textDecoration: 'none', boxShadow: '0 4px 12px rgba(212,168,67,0.3)' }}
+          <button
+            onClick={() => { window.location.hash = '/planos'; }}
+            type="button"
+            style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '14px 40px', borderRadius: '14px', fontSize: '15px', fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(212,168,67,0.3)' }}
           >
             {balance > 0 ? "Usar creditos agora" : "Ver planos disponiveis"}
-          </a>
+          </button>
         </div>
 
         {/* Referral + Stats */}
@@ -246,12 +247,13 @@ export default function CreditsPage() {
             Acumule creditos indicando colegas, participando das aulas ao vivo e use como desconto em qualquer produto.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <a
-              href="/#/planos"
-              className="btn-gold-forced"
+            <button
+              onClick={() => { window.location.hash = '/planos'; }}
+              type="button"
+              style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '14px 40px', borderRadius: '14px', fontSize: '15px', fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 4px 12px rgba(212,168,67,0.3)' }}
             >
               Ver planos disponiveis
-            </a>
+            </button>
             <a
               href="/#/creditos/regras"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-border/40 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border transition-colors"
