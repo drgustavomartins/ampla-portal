@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Check, ArrowRight, Loader2, Gift, Star, Shield, ChevronLeft } from "lucide-react";
+import { Check, ArrowRight, Loader2, Gift, Star, Shield, ChevronLeft, Tag, X } from "lucide-react";
 
 interface PlanData {
   key: string;
@@ -267,7 +267,49 @@ export default function PlanosPublicos() {
   };
 
   const urlParams = new URLSearchParams(window.location.search);
-  const couponCode = urlParams.get("ref") || "";
+  const urlRef = urlParams.get("ref") || "";
+
+  // Estado do codigo de convite
+  const [couponCode, setCouponCode] = useState(urlRef);
+  const [couponInput, setCouponInput] = useState(urlRef);
+  const [couponValid, setCouponValid] = useState<boolean | null>(urlRef ? null : null);
+  const [couponReferrer, setCouponReferrer] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+
+  // Validar codigo de convite
+  const validateCoupon = useCallback(async (code: string) => {
+    const trimmed = code.trim();
+    if (!trimmed) {
+      setCouponCode("");
+      setCouponValid(null);
+      setCouponReferrer("");
+      return;
+    }
+    setCouponLoading(true);
+    try {
+      const res = await fetch(`/api/referral/validate?code=${encodeURIComponent(trimmed)}`);
+      const json = await res.json();
+      if (json.valid) {
+        setCouponCode(trimmed);
+        setCouponValid(true);
+        setCouponReferrer(json.referrerName || "");
+      } else {
+        setCouponCode("");
+        setCouponValid(false);
+        setCouponReferrer("");
+      }
+    } catch {
+      setCouponValid(false);
+      setCouponReferrer("");
+    } finally {
+      setCouponLoading(false);
+    }
+  }, []);
+
+  // Validar automaticamente se veio pela URL
+  useEffect(() => {
+    if (urlRef) validateCoupon(urlRef);
+  }, [urlRef, validateCoupon]);
 
   const { data, isLoading } = useQuery<{ plans: PlanData[] }>({ queryKey: ["/api/stripe/plans"] });
 
@@ -505,12 +547,55 @@ export default function PlanosPublicos() {
 
           {/* Texto principal */}
           <div className="max-w-xl">
-            {couponCode && (
-              <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 border border-amber-200 px-4 py-1.5 text-xs font-semibold text-amber-700 mb-5">
-                <Gift className="h-3.5 w-3.5" />
-                Indicação <strong>{couponCode}</strong> ativa
-              </div>
-            )}
+            {/* Campo de codigo de convite */}
+            <div className="mb-5">
+              {couponValid === true ? (
+                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200 px-4 py-1.5 text-xs font-semibold text-emerald-700">
+                  <Gift className="h-3.5 w-3.5" />
+                  10% de desconto ativo{couponReferrer ? ` (indicacao de ${couponReferrer})` : ""}
+                  <button
+                    onClick={() => { setCouponCode(""); setCouponInput(""); setCouponValid(null); setCouponReferrer(""); }}
+                    className="ml-1 hover:text-emerald-900 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                    <input
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => {
+                        setCouponInput(e.target.value.toUpperCase());
+                        if (couponValid === false) setCouponValid(null);
+                      }}
+                      onKeyDown={(e) => { if (e.key === "Enter") validateCoupon(couponInput); }}
+                      placeholder="Codigo de convite"
+                      className="pl-9 pr-3 py-2 rounded-xl border text-sm w-52 outline-none transition-all"
+                      style={{
+                        borderColor: couponValid === false ? "#FCA5A5" : "#E5E7EB",
+                        background: couponValid === false ? "#FEF2F2" : "#fff",
+                      }}
+                    />
+                  </div>
+                  <button
+                    onClick={() => validateCoupon(couponInput)}
+                    disabled={!couponInput.trim() || couponLoading}
+                    className="px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-40"
+                    style={{ background: "#0A1628", color: "#fff" }}
+                  >
+                    {couponLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : "Aplicar"}
+                  </button>
+                  {couponValid === false && (
+                    <span className="text-xs text-red-500">Codigo invalido</span>
+                  )}
+                </div>
+              )}
+            </div>
             <h1 className="text-4xl sm:text-5xl lg:text-[52px] font-bold tracking-tight text-gray-900 leading-[1.07]">
               <span className="whitespace-nowrap">Aprenda Harmonização Facial</span><br />
               <span style={{ color: "#D4A843" }}>do jeito certo.</span>
@@ -695,15 +780,32 @@ export default function PlanosPublicos() {
           </div>
 
           {/* Cards VIP */}
-          <div className={`grid gap-5 mx-auto ${
-            vip.length === 1 ? "max-w-sm" :
-            vip.length === 2 ? "grid-cols-1 sm:grid-cols-2 max-w-3xl" :
-            "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
-            {vip.map((p) => (
-              <PlanCard key={p.key} plan={p} onAcessar={handleAcessar}
-                isLoading={checkoutMutation.isPending && loadingKey === p.key} />
-            ))}
-          </div>
+          {vip.length > 3 ? (
+            <>
+              <div className="grid gap-5 mx-auto grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl">
+                {vip.slice(0, 3).map((p) => (
+                  <PlanCard key={p.key} plan={p} onAcessar={handleAcessar}
+                    isLoading={checkoutMutation.isPending && loadingKey === p.key} />
+                ))}
+              </div>
+              <div className="mt-5 max-w-sm mx-auto">
+                {vip.slice(3).map((p) => (
+                  <PlanCard key={p.key} plan={p} onAcessar={handleAcessar}
+                    isLoading={checkoutMutation.isPending && loadingKey === p.key} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className={`grid gap-5 mx-auto ${
+              vip.length === 1 ? "max-w-sm" :
+              vip.length === 2 ? "grid-cols-1 sm:grid-cols-2 max-w-3xl" :
+              "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
+              {vip.map((p) => (
+                <PlanCard key={p.key} plan={p} onAcessar={handleAcessar}
+                  isLoading={checkoutMutation.isPending && loadingKey === p.key} />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── HORAS CLINICAS EXTRAS ──────────────────────────── */}

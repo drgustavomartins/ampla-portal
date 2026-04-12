@@ -907,4 +907,26 @@ export function registerPublicStripeRoutes(app: Express) {
     const link = `https://portal.amplafacial.com.br/#/comecar?ref=${code}`;
     res.json({ code, link });
   });
+
+  // ─── GET /api/referral/validate?code=XXXX ───────────────────────────────────
+  // Valida codigo de indicacao SEM autenticacao (para pagina publica)
+  app.get("/api/referral/validate", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const code = (req.query.code as string || "").trim().toUpperCase();
+      if (!code) return res.json({ valid: false });
+
+      const result = await db.execute(sql`SELECT rc.user_id, u.name FROM referral_codes rc JOIN users u ON u.id = rc.user_id WHERE UPPER(rc.code) = ${code}`);
+      const rows = (result as any).rows || [];
+      if (rows.length === 0) return res.json({ valid: false });
+
+      const referrerName = rows[0].name || "";
+      // Mostrar apenas primeiro nome para privacidade
+      const firstName = referrerName.split(" ")[0];
+      res.json({ valid: true, referrerName: firstName, discount: "10%" });
+    } catch (err) {
+      console.error("[referral/validate]", err);
+      res.json({ valid: false });
+    }
+  });
 }
