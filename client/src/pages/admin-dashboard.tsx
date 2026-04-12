@@ -29,7 +29,7 @@ import {
   CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library,
   GripVertical, CalendarDays, FolderOpen, Search, FileText, FileIcon, Headphones, ChevronDown, ChevronUp,
   Sparkles, MessageCircle, Phone, Coins, Gift, Stethoscope, FileSignature, AlertTriangle, PenLine,
-  TrendingUp, BarChart3, Zap
+  TrendingUp, BarChart3, Zap, Menu, ChevronRight
 } from "lucide-react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -566,6 +566,7 @@ export default function AdminDashboard() {
     queryKey: ["/api/admin/community-stats"],
   });
   const [activeTab, setActiveTab] = useState("lessons");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Materials CRUD
   type MaterialThemeWithNested = MaterialTheme & { subcategories: (MaterialSubcategory & { files: MaterialFile[] })[]; fileCount: number };
@@ -1485,40 +1486,82 @@ export default function AdminDashboard() {
 
         {/* ─── Main Content Tabs ─── */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          {/* ─── Mobile: single scrollable tab row with fade hint ─── */}
-          <div className="sm:hidden -mx-4 px-4 relative">
-            <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-[#0A1628] to-transparent z-10 pointer-events-none" />
-            <TabsList className="inline-flex w-auto bg-transparent border-0 p-0 h-auto gap-1.5 overflow-x-auto pb-2 scrollbar-none pr-8">
-              {([
-                { value: "students", label: "Alunos", icon: Users },
-                { value: "leads", label: "Leads", icon: Zap, badge: trialStudents.length > 0 ? trialStudents.length : undefined },
-                { value: "profiles", label: "Perfis", icon: FileText },
-                { value: "modules", label: "Modulos", icon: Layers },
-                { value: "lessons", label: "Aulas", icon: Video },
-                { value: "materiais", label: "Materiais", icon: Library },
-                { value: "community", label: "Comunidade", icon: MessageCircle },
-                { value: "credits", label: "Creditos", icon: Coins },
+          {/* ─── Mobile: hamburger menu ─── */}
+          <div className="sm:hidden relative">
+            {(() => {
+              const allTabs: { value: string; label: string; icon: any; badge?: number; group: string }[] = [
+                { value: "students", label: "Alunos", icon: Users, group: "Pessoas" },
+                { value: "leads", label: "Leads", icon: Zap, badge: trialStudents.length > 0 ? trialStudents.length : undefined, group: "Pessoas" },
+                { value: "profiles", label: "Perfis", icon: FileText, group: "Pessoas" },
+                { value: "modules", label: "Modulos", icon: Layers, group: "Conteudo" },
+                { value: "lessons", label: "Aulas", icon: Video, group: "Conteudo" },
+                { value: "materiais", label: "Materiais", icon: Library, group: "Conteudo" },
+                { value: "community", label: "Comunidade", icon: MessageCircle, group: "Engajamento" },
+                { value: "credits", label: "Creditos", icon: Coins, group: "Engajamento" },
                 ...(isSuperAdmin ? [
-                  { value: "admins", label: "Admins", icon: UserCog },
-                  { value: "history", label: "Historico", icon: History },
+                  { value: "admins", label: "Admins", icon: UserCog, group: "Sistema" },
+                  { value: "history", label: "Historico", icon: History, group: "Sistema" },
                 ] : []),
-              ] as { value: string; label: string; icon: any; badge?: number }[]).map((tab) => (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  data-testid={`tab-${tab.value}`}
-                  className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-none rounded-full text-[11px] font-medium transition-all px-3 py-1.5 gap-1 whitespace-nowrap shrink-0 border border-border/30 bg-card/60 relative"
-                >
-                  <tab.icon className="w-3 h-3" />
-                  {tab.label}
-                  {tab.badge && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-gold text-[#0A1628] text-[9px] font-bold rounded-full flex items-center justify-center">
-                      {tab.badge}
-                    </span>
+              ];
+              const current = allTabs.find(t => t.value === activeTab) || allTabs[0];
+              const ActiveIcon = current.icon;
+              const groups = ["Pessoas", "Conteudo", "Engajamento", ...(isSuperAdmin ? ["Sistema"] : [])];
+
+              return (
+                <>
+                  <button
+                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-card/60 border border-border/30 active:scale-[0.98] transition-transform"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <ActiveIcon className="w-4 h-4 text-gold" />
+                      <span className="text-sm font-medium text-foreground">{current.label}</span>
+                      {current.badge && (
+                        <span className="w-5 h-5 bg-gold text-[#0A1628] text-[10px] font-bold rounded-full flex items-center justify-center">
+                          {current.badge}
+                        </span>
+                      )}
+                    </div>
+                    <Menu className={`w-5 h-5 text-muted-foreground transition-transform ${mobileMenuOpen ? "rotate-90" : ""}`} />
+                  </button>
+
+                  {mobileMenuOpen && (
+                    <>
+                      <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setMobileMenuOpen(false)} />
+                      <div className="absolute left-0 right-0 mt-2 bg-card border border-border/30 rounded-2xl shadow-2xl z-50 py-2 max-h-[70vh] overflow-y-auto">
+                        {groups.map((group) => (
+                          <div key={group}>
+                            <p className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-widest text-muted-foreground/50 font-semibold">{group}</p>
+                            {allTabs.filter(t => t.group === group).map((tab) => {
+                              const TabIcon = tab.icon;
+                              const isActive = activeTab === tab.value;
+                              return (
+                                <button
+                                  key={tab.value}
+                                  onClick={() => { setActiveTab(tab.value); setMobileMenuOpen(false); }}
+                                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                                    isActive ? "text-gold bg-gold/5" : "text-foreground hover:bg-white/5"
+                                  }`}
+                                >
+                                  <TabIcon className={`w-4 h-4 ${isActive ? "text-gold" : "text-muted-foreground"}`} />
+                                  <span className="flex-1 text-left">{tab.label}</span>
+                                  {tab.badge && (
+                                    <span className="w-5 h-5 bg-gold text-[#0A1628] text-[10px] font-bold rounded-full flex items-center justify-center">
+                                      {tab.badge}
+                                    </span>
+                                  )}
+                                  {isActive && <ChevronRight className="w-3.5 h-3.5 text-gold" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   )}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+                </>
+              );
+            })()}
           </div>
 
           {/* ─── Desktop: grouped tab navigation ─── */}
