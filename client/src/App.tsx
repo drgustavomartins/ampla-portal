@@ -67,6 +67,7 @@ function App() {
             <Route path="/pagamento/sucesso" component={() => <ProtectedPage component={PagamentoSucesso} />} />
             <Route path="/trial/ativo" component={() => <ProtectedPage component={PagamentoSucesso} />} />
             <Route path="/comecar" component={PlanosPublicos} />
+            <Route path="/planos-publicos" component={PlanosPublicos} />
             <Route path="/quiz" component={QuizPage} />
             <Route path="/creditos" component={() => <ProtectedPage component={CreditsPage} />} />
             <Route path="/creditos/regras" component={() => <ProtectedPage component={CreditsRulesPage} />} />

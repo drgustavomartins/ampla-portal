@@ -726,7 +726,7 @@ export default function ModulePage() {
               </p>
             </div>
             <a
-              href="/planos-publicos"
+              href="/#/planos-publicos"
               className="inline-flex items-center gap-2 rounded-xl bg-gold/90 hover:bg-gold text-[#0A0D14] font-semibold px-6 py-3 text-sm transition-colors"
             >
               <ShoppingCart className="w-4 h-4" />

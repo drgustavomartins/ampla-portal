@@ -284,7 +284,7 @@ function ThemeDetail({ theme, onBack, isTrial = false }: { theme: Theme; onBack:
       {isTrial && (
         <div className="flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-lg px-4 py-2.5">
           <Lock className="w-4 h-4 text-gold shrink-0" />
-          <p className="text-xs text-gold/90">Você está no período de teste. <a href="/planos-publicos" className="underline font-semibold hover:text-gold">Adquira um plano</a> para liberar todos os materiais.</p>
+          <p className="text-xs text-gold/90">Você está no período de teste. <a href="/#/planos-publicos" className="underline font-semibold hover:text-gold">Adquira um plano</a> para liberar todos os materiais.</p>
         </div>
       )}
 
@@ -406,7 +406,7 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
       {isTrial && (
         <div className="flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-lg px-4 py-2.5">
           <Lock className="w-4 h-4 text-gold shrink-0" />
-          <p className="text-xs text-gold/90">Período de teste. <a href="/planos-publicos" className="underline font-semibold hover:text-gold">Adquira um plano</a> para liberar todos os materiais.</p>
+          <p className="text-xs text-gold/90">Período de teste. <a href="/#/planos-publicos" className="underline font-semibold hover:text-gold">Adquira um plano</a> para liberar todos os materiais.</p>
         </div>
       )}
 

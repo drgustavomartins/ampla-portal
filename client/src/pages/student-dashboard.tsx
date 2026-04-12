@@ -673,7 +673,7 @@ export default function StudentDashboard() {
                 </div>
               </div>
               <a
-                href="/planos-publicos"
+                href="/#/planos-publicos"
                 className="shrink-0 rounded-xl bg-gold/90 hover:bg-gold px-5 py-2.5 text-sm font-semibold text-[#0A0D14] transition-colors"
               >
                 Ver planos
@@ -776,7 +776,7 @@ export default function StudentDashboard() {
               {/* CTA de planos no card */}
               {isTrialExpired ? (
                 <a
-                  href="/planos-publicos"
+                  href="/#/planos-publicos"
                   className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gold/90 hover:bg-gold px-3 py-2.5 text-xs font-semibold text-[#0A0D14] transition-colors"
                 >
                   <Star className="w-3 h-3" />
@@ -899,7 +899,7 @@ export default function StudentDashboard() {
                     }`}
                     onClick={() => {
                       if (isTrialExpired) {
-                        window.location.href = "/planos-publicos";
+                        window.location.href = "/#/planos-publicos";
                       } else if (isPurchasable) {
                         setPurchaseModule(mod);
                       } else if (isUnlocked) {
@@ -1333,7 +1333,7 @@ export default function StudentDashboard() {
                 Seus créditos serão aplicados automaticamente como desconto.
               </p>
               <a
-                href="/planos-publicos"
+                href="/#/planos-publicos"
                 className="inline-flex items-center gap-2 rounded-xl bg-gold/90 hover:bg-gold text-[#0A0D14] font-semibold px-6 py-3 text-sm transition-colors"
               >
                 <ShoppingCart className="w-4 h-4" />
