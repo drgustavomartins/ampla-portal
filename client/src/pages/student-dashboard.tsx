@@ -115,7 +115,7 @@ export default function StudentDashboard() {
     enabled: !!user,
   });
   const myClinicalSessions = myClinicalData?.sessions || [];
-  const pendingSignCount = myClinicalSessions.filter((s: any) => s.adminSigned && !s.studentSigned).length;
+  const pendingSignCount = myClinicalSessions.filter((s: any) => s.adminSignedAt && !s.studentSignedAt).length;
 
   const completeMutation = useMutation({
     mutationFn: async ({ lessonId, complete }: { lessonId: number; complete: boolean }) => {
@@ -620,13 +620,22 @@ export default function StudentDashboard() {
               <span className="text-[20px] font-semibold text-white">Minhas Aulas</span>
             </button>
 
-            {myClinicalSessions?.some((s: any) => !s.studentSignedAt) && (
-              <div className="flex items-center gap-4 w-full text-left py-3.5 border-b border-white/5 pl-9">
-                <span className="w-5 h-5 rounded-full bg-amber-500 text-[9px] font-bold text-white flex items-center justify-center">
-                  {myClinicalSessions.filter((s: any) => !s.studentSignedAt).length}
+            {pendingSignCount > 0 && (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setTimeout(() => {
+                    const el = document.querySelector('[data-section="praticas"]');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }, 300);
+                }}
+                className="flex items-center gap-4 w-full text-left py-3.5 border-b border-white/5 pl-9"
+              >
+                <span className="w-5 h-5 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center animate-pulse">
+                  {pendingSignCount}
                 </span>
-                <span className="text-sm text-amber-400">Sessao pendente de assinatura</span>
-              </div>
+                <span className="text-sm text-red-400 font-medium">Sessao pendente de assinatura</span>
+              </button>
             )}
 
             <button
