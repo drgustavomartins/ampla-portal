@@ -36,7 +36,7 @@ function AppContent() {
 }
 
 function ProtectedModulePage() {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   if (!user) return <LoginPage />;
   return <ModulePage />;
 }
@@ -83,4 +83,3 @@ function App() {
 }
 
 export default App;
-// deploy trigger 1775964759

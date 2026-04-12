@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import {
   Check, Star, Clock, Zap, Users, Video,
   ChevronDown, ChevronUp, ArrowRight, Loader2,
-  TrendingUp, Timer, MessageCircle, FileSignature, ChevronLeft, Info,} from "lucide-react";
+  TrendingUp, MessageCircle, FileSignature, ChevronLeft, Info,} from "lucide-react";
 
 function formatBRL(c: number) {
   return (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });

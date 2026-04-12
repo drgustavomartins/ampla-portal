@@ -63,6 +63,8 @@ export function registerStripeRoutes(app: Express) {
   // ─── GET /api/stripe/upgrade-options ──────────────────────────────────────
   // Retorna opções de upgrade para o aluno logado
   app.get("/api/stripe/upgrade-options", async (req: Request, res: Response) => {
+    try {
+    const { db } = await import("./db");
     const auth = authenticateRequest(req);
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
 
@@ -115,11 +117,17 @@ export function registerStripeRoutes(app: Express) {
       },
       options,
     });
+    } catch (e: any) {
+      console.error("[GET /api/stripe/upgrade-options]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
   });
 
   // ─── POST /api/stripe/create-checkout ─────────────────────────────────────
   // Cria sessão de checkout Stripe para um plano escolhido
   app.post("/api/stripe/create-checkout", async (req: Request, res: Response) => {
+    try {
+    const { db } = await import("./db");
     const stripe = getStripe();
     if (!stripe) return res.status(503).json({ message: "Pagamentos não configurados ainda" });
 
@@ -274,11 +282,17 @@ export function registerStripeRoutes(app: Express) {
     });
 
     res.json({ url: session.url, sessionId: session.id });
+    } catch (e: any) {
+      console.error("[POST /api/stripe/create-checkout]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
   });
 
   // ─── POST /api/stripe/create-trial-checkout ───────────────────────────────
   // Trial de 7 dias: coleta cartão, só cobra no dia 8
   app.post("/api/stripe/create-trial-checkout", async (req: Request, res: Response) => {
+    try {
+    const { db } = await import("./db");
     const stripe = getStripe();
     if (!stripe) return res.status(503).json({ message: "Pagamentos não configurados ainda" });
 
@@ -335,6 +349,10 @@ export function registerStripeRoutes(app: Express) {
     `);
 
     res.json({ url: session.url, sessionId: session.id });
+    } catch (e: any) {
+      console.error("[POST /api/stripe/create-trial-checkout]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
   });
 
   // ─── POST /api/stripe/webhook ──────────────────────────────────────────────
@@ -342,6 +360,11 @@ export function registerStripeRoutes(app: Express) {
   app.post("/api/stripe/webhook", async (req: Request, res: Response) => {
     const stripe = getStripe();
     if (!stripe) return res.status(503).json({ message: "Stripe não configurado" });
+
+    if (!STRIPE_WEBHOOK_SECRET) {
+      console.error("[stripe webhook] STRIPE_WEBHOOK_SECRET not configured");
+      return res.status(500).json({ message: "Webhook not configured" });
+    }
 
     const sig = req.headers["stripe-signature"] as string;
     let event: Stripe.Event;
@@ -356,10 +379,22 @@ export function registerStripeRoutes(app: Express) {
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
-      const userId = Number(session.metadata?.userId);
+      let userId = Number(session.metadata?.userId);
       const planKey = session.metadata?.planKey as PlanKey;
       const isUpgrade = session.metadata?.isUpgrade === "true";
       const isTrialSetup = session.metadata?.action === "trial_start";
+
+      // Fallback: if userId missing (public checkout), look up by customer email
+      if (!userId && planKey) {
+        const customerEmail = session.customer_details?.email || session.metadata?.email;
+        if (customerEmail) {
+          const lookup = await db.execute(sql`SELECT id FROM users WHERE email = ${customerEmail} LIMIT 1`);
+          userId = Number((lookup as any).rows?.[0]?.id) || 0;
+          if (userId) {
+            console.log(`[stripe webhook] Public checkout: resolved userId ${userId} from email ${customerEmail}`);
+          }
+        }
+      }
 
       if (!userId || !planKey) return res.json({ received: true });
 
@@ -533,14 +568,20 @@ export function registerStripeRoutes(app: Express) {
           const RENEWAL_CASHBACK = 0.10;
           const cashbackRate = isRenewal ? RENEWAL_CASHBACK : (CASHBACK_RATES[planKey as PlanKey] || 0);
           if (cashbackRate > 0 && amountPaid > 0) {
+            const cashbackRef = 'cashback_' + session.id;
+            const existingCashback = await db.execute(sql`SELECT id FROM credit_transactions WHERE reference_id = ${cashbackRef} LIMIT 1`);
+            if ((existingCashback as any).rows?.length === 0) {
             const cashbackAmount = Math.floor(amountPaid * cashbackRate);
             const label = isRenewal
               ? `Cashback 10% renovação ${plan.name}`
               : `Cashback ${Math.round(cashbackRate * 100)}% ${plan.name}`;
             const expiresAt = new Date(Date.now() + 180 * 86400000).toISOString(); // 6 meses
             await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at, expires_at)
-              VALUES (${userId}, 'cashback', ${cashbackAmount}, ${label}, ${session.id}, ${new Date().toISOString()}, ${expiresAt})`);
+              VALUES (${userId}, 'cashback', ${cashbackAmount}, ${label}, ${cashbackRef}, ${new Date().toISOString()}, ${expiresAt})`);
             console.log(`[stripe webhook] ${isRenewal ? 'RENOVAÇÃO ' : ''}Cashback ${Math.round(cashbackRate * 100)}% = ${cashbackAmount} centavos para userId ${userId} (expira ${expiresAt})`);
+            } else {
+              console.log(`[stripe webhook] Cashback ja processado para ${cashbackRef}`);
+            }
           }
         } catch (e: any) {
           console.error("[stripe webhook] Cashback error:", e.message);
@@ -557,11 +598,17 @@ export function registerStripeRoutes(app: Express) {
               if (referrerId === userId) {
                 console.log(`[stripe webhook] Self-referral bloqueado para userId ${userId}`);
               } else {
+              const referralRef = 'referral_' + session.id;
+              const existingReferral = await db.execute(sql`SELECT id FROM credit_transactions WHERE reference_id = ${referralRef} LIMIT 1`);
+              if ((existingReferral as any).rows?.length === 0) {
               const referralCredit = Math.floor(amountPaid * 0.10);
               const refExpiresAt = new Date(Date.now() + 180 * 86400000).toISOString(); // 6 meses
               await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at, expires_at)
-                VALUES (${referrerId}, 'referral', ${referralCredit}, ${'Indicação: ' + planKey}, ${session.id}, ${new Date().toISOString()}, ${refExpiresAt})`);
+                VALUES (${referrerId}, 'referral', ${referralCredit}, ${'Indicação: ' + planKey}, ${referralRef}, ${new Date().toISOString()}, ${refExpiresAt})`);
               console.log(`[stripe webhook] Referral credit ${referralCredit} centavos para referrer userId ${referrerId} (expira ${refExpiresAt})`);
+              } else {
+                console.log(`[stripe webhook] Referral credit ja processado para ${referralRef}`);
+              }
               }
             }
           }
@@ -751,7 +798,7 @@ export function registerStripeRoutes(app: Express) {
 
       for (const row of rows) {
         // Check if we already sent this email (avoid spam)
-        const alreadySent = await db.execute(sql`SELECT 1 FROM audit_logs WHERE action = 'abandoned_checkout_email' AND user_id = ${row.user_id} AND created_at > ${new Date(Date.now() - 48 * 3600000).toISOString()} LIMIT 1`);
+        const alreadySent = await db.execute(sql`SELECT 1 FROM audit_logs WHERE action = 'abandoned_checkout_email' AND target_id = ${row.user_id} AND created_at > ${new Date(Date.now() - 48 * 3600000).toISOString()} LIMIT 1`);
         if ((alreadySent as any).rows?.length > 0) continue;
 
         const firstName = row.name?.split(" ")[0] || "Aluno";
@@ -787,7 +834,7 @@ export function registerStripeRoutes(app: Express) {
           });
           if (emailRes.ok) {
             sent++;
-            await db.execute(sql`INSERT INTO audit_logs (user_id, action, details, created_at) VALUES (${row.user_id}, 'abandoned_checkout_email', ${'plan: ' + row.plan_key}, ${new Date().toISOString()})`);
+            await db.execute(sql`INSERT INTO audit_logs (admin_id, admin_name, action, target_type, target_id, target_name, details, created_at) VALUES (${0}, ${'Sistema'}, ${'abandoned_checkout_email'}, ${'user'}, ${row.user_id}, ${row.name || 'Aluno'}, ${'plan: ' + row.plan_key}, ${new Date().toISOString()})`);
           }
         } catch (emailErr: any) {
           console.error("[cron/abandoned] Email error:", emailErr.message);
@@ -804,6 +851,8 @@ export function registerStripeRoutes(app: Express) {
   // ─── GET /api/stripe/my-plan ───────────────────────────────────────────────
   // Retorna info do plano atual do aluno logado
   app.get("/api/stripe/my-plan", async (req: Request, res: Response) => {
+    try {
+    const { db } = await import("./db");
     const auth = authenticateRequest(req);
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
 
@@ -838,6 +887,10 @@ export function registerStripeRoutes(app: Express) {
       accessExpiresAt: user.accessExpiresAt,
       canUpgrade: plan ? plan.canUpgradeTo.length > 0 : false,
     });
+    } catch (e: any) {
+      console.error("[GET /api/stripe/my-plan]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
   });
 }
 
@@ -846,10 +899,12 @@ export function registerStripeRoutes(app: Express) {
 // PIX: Stripe gera QR Code, confirma automaticamente via webhook, sem WhatsApp
 export function registerPublicStripeRoutes(app: Express) {
   app.post("/api/stripe/public-checkout", async (req: Request, res: Response) => {
+    try {
+    const { db } = await import("./db");
     const stripe = getStripe();
     if (!stripe) return res.status(503).json({ message: "Pagamentos não configurados ainda" });
 
-    const { planKey, referralCode } = req.body as { planKey: PlanKey; referralCode?: string };
+    const { planKey, referralCode, email } = req.body as { planKey: PlanKey; referralCode?: string; email?: string };
     const plan = PLANS[planKey];
     if (!plan) return res.status(400).json({ message: "Plano inválido" });
 
@@ -857,7 +912,6 @@ export function registerPublicStripeRoutes(app: Express) {
     let finalPrice = plan.price;
     let referralDiscount = 0;
     if (referralCode) {
-      const { db } = await import("./db");
       const refCheck = await db.execute(sql`SELECT user_id FROM referral_codes WHERE UPPER(code) = ${referralCode.trim().toUpperCase()}`);
       if ((refCheck as any).rows?.length > 0) {
         referralDiscount = Math.floor(finalPrice * 0.10);
@@ -883,7 +937,7 @@ export function registerPublicStripeRoutes(app: Express) {
       customer_creation: "always",
       phone_number_collection: { enabled: true },
       payment_intent_data: {
-        metadata: { planKey, source: "public_checkout" },
+        metadata: { planKey, source: "public_checkout", email: email || "" },
       },
       line_items: [
         {
@@ -899,17 +953,23 @@ export function registerPublicStripeRoutes(app: Express) {
           quantity: 1,
         },
       ],
-      metadata: { planKey, source: "public_checkout", referralCode: referralCode || "" },
+      metadata: { planKey, source: "public_checkout", referralCode: referralCode || "", email: email || "" },
       success_url: `${baseUrl}/#/pagamento/novo?plan=${planKey}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/#/comecar`,
       locale: "pt-BR",
     });
 
     res.json({ url: session.url, sessionId: session.id });
+    } catch (e: any) {
+      console.error("[POST /api/stripe/public-checkout]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
   });
 
   // ─── GET /api/referral/code ────────────────────────────────────────────────
   app.get("/api/referral/code", async (req: Request, res: Response) => {
+    try {
+    const { db } = await import("./db");
     const auth = authenticateRequest(req);
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
 
@@ -921,6 +981,10 @@ export function registerPublicStripeRoutes(app: Express) {
     const code = "AMPLA" + String(user.id).padStart(4, "0");
     const link = `https://portal.amplafacial.com.br/#/comecar?ref=${code}`;
     res.json({ code, link });
+    } catch (e: any) {
+      console.error("[GET /api/referral/code]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
   });
 
   // ─── GET /api/referral/validate?code=XXXX ───────────────────────────────────
@@ -945,5 +1009,3 @@ export function registerPublicStripeRoutes(app: Express) {
     }
   });
 }
-
-// build 1775967337

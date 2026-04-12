@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Check, ArrowRight, Loader2, Gift, Star, Shield, ChevronLeft, Tag, X } from "lucide-react";
+import { Check, ArrowRight, Loader2, Gift, Star, ChevronLeft, Tag, X, Shield } from "lucide-react";
 
 interface PlanData {
   key: string;

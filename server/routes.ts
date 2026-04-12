@@ -114,12 +114,12 @@ async function notifyNewRegistration(user: { name: string; email: string; phone?
 }
 
 // In-memory rate limiter for IP-based throttling
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+const rateLimitStore = new Map<string, { count: number; resetAt: number; first: number }>();
 function rateLimit(key: string, maxRequests: number, windowMs: number): boolean {
   const now = Date.now();
   const entry = rateLimitStore.get(key);
   if (!entry || now > entry.resetAt) {
-    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs });
+    rateLimitStore.set(key, { count: 1, resetAt: now + windowMs, first: now });
     return true;
   }
   if (entry.count >= maxRequests) {
@@ -695,12 +695,12 @@ export async function registerRoutes(server: Server, app: Express) {
   });
 
   // GET /api/admin/funnel — listar funil por sessão
-  app.get("/api/admin/funnel", async (req: any, res) => {
+  app.get("/api/admin/funnel", async (req: Request, res: Response) => {
     if (!requireAdmin(req, res)) return;
     try {
       const { db } = await import("./db");
       // Agrupa eventos por session_id, pega o email mais recente e lista eventos
-      const result = await db.execute(`
+      const result = await db.execute(sql`
         SELECT
           session_id,
           MAX(email) as email,
@@ -731,7 +731,7 @@ export async function registerRoutes(server: Server, app: Express) {
       if (!subject || !html) return res.status(400).json({ message: "subject e html s\u00e3o obrigat\u00f3rios" });
       if (!resend) return res.status(503).json({ message: "Servi\u00e7o de email n\u00e3o configurado (RESEND_API_KEY ausente)" });
       const { db } = await import("./db");
-      const result = await db.execute(`SELECT id, name, email FROM users WHERE approved = true AND role NOT IN ('admin','super_admin')`);
+      const result = await db.execute(sql`SELECT id, name, email FROM users WHERE approved = true AND role NOT IN ('admin','super_admin')`);
       const recipients = result.rows.filter((u: any) => !excludeEmails.includes(u.email));
       const results: any[] = [];
       for (const user of recipients) {
@@ -785,13 +785,13 @@ export async function registerRoutes(server: Server, app: Express) {
   });
 
   // GET /api/admin/quiz-stats — stats de cliques e conversão
-  app.get("/api/admin/quiz-stats", async (req: any, res) => {
+  app.get("/api/admin/quiz-stats", async (req: Request, res: Response) => {
     if (!requireAdmin(req, res)) return;
     try {
       const { db } = await import("./db");
-      const clicks = await db.execute(`SELECT source, COUNT(*) as total FROM quiz_clicks GROUP BY source ORDER BY total DESC`);
-      const totalClicks = await db.execute(`SELECT COUNT(*) as total FROM quiz_clicks`);
-      const totalLeads = await db.execute(`SELECT COUNT(*) as total FROM quiz_leads`);
+      const clicks = await db.execute(sql`SELECT source, COUNT(*) as total FROM quiz_clicks GROUP BY source ORDER BY total DESC`);
+      const totalClicks = await db.execute(sql`SELECT COUNT(*) as total FROM quiz_clicks`);
+      const totalLeads = await db.execute(sql`SELECT COUNT(*) as total FROM quiz_leads`);
       res.json({
         totalClicks: Number(totalClicks.rows[0]?.total || 0),
         totalLeads: Number(totalLeads.rows[0]?.total || 0),
@@ -812,7 +812,7 @@ export async function registerRoutes(server: Server, app: Express) {
       return res.status(429).json({ message: "Muitas tentativas. Aguarde alguns minutos." });
     }
     if (!quizRl || Date.now() - quizRl.first >= 900000) {
-      rateLimitStore.set(quizRlKey, { count: 1, first: Date.now() });
+      rateLimitStore.set(quizRlKey, { count: 1, first: Date.now(), resetAt: Date.now() + 900000 });
     } else {
       quizRl.count++;
     }
@@ -1361,7 +1361,7 @@ export async function registerRoutes(server: Server, app: Express) {
       // Fallback: raw SQL query without the material_topics column
       try {
         const { db } = await import("./db");
-        const result = await db.execute(`SELECT id, name, description, duration_days as "durationDays", price FROM plans`);
+        const result = await db.execute(sql`SELECT id, name, description, duration_days as "durationDays", price FROM plans`);
         const rows = (result as any).rows || [];
         res.json(rows.map((r: any) => ({ ...r, materialTopics: null })));
       } catch (e2: any) {
@@ -2209,37 +2209,6 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json({ success: true });
   });
 
-  // ==================== ADMIN: User Module Permissions ====================
-  app.get("/api/admin/students/:id/modules", async (req, res) => {
-    if (!requireAdmin(req, res)) return;
-    const userId = safeParseInt(req.params.id);
-    if (!userId) return res.status(400).json({ message: "ID inválido" });
-    const entries = await storage.getUserModules(userId);
-    res.json(entries);
-  });
-
-  app.put("/api/admin/students/:id/modules", async (req, res) => {
-    const auth = requireAdmin(req, res);
-    if (!auth) return;
-    const userId = safeParseInt(req.params.id);
-    if (!userId) return res.status(400).json({ message: "ID inválido" });
-    const { modules: moduleEntries } = req.body;
-    if (!Array.isArray(moduleEntries)) {
-      return res.status(400).json({ message: "modules array obrigatório" });
-    }
-    await storage.setUserModules(userId, moduleEntries.map((e: any) => ({
-      moduleId: Number(e.moduleId),
-      enabled: Boolean(e.enabled),
-      startDate: e.startDate || null,
-      endDate: e.endDate || null,
-    })));
-    const admin = await storage.getUser(auth.userId);
-    const student = await storage.getUser(userId);
-    await logAction(auth.userId, admin?.name || "Admin", "student_updated", "student", userId, student?.name || "?", { userModulesUpdated: true });
-    res.json({ success: true });
-  });
-
-
   // ==================== MATERIALS (DB-driven) ====================
   // Public endpoint: get all themes with nested subcategories and files
   // Mapa canônico de capas — fonte da verdade, nunca depende do banco
@@ -2961,7 +2930,7 @@ export async function registerRoutes(server: Server, app: Express) {
       let sent = 0;
       for (const [userId, data] of Object.entries(byUser)) {
         // Check if already notified this week
-        const alreadySent = await db.execute(sql`SELECT 1 FROM audit_logs WHERE action = 'credit_expiry_email' AND user_id = ${Number(userId)} AND created_at > ${new Date(Date.now() - 7 * 86400000).toISOString()} LIMIT 1`);
+        const alreadySent = await db.execute(sql`SELECT 1 FROM audit_logs WHERE action = 'credit_expiry_email' AND target_id = ${Number(userId)} AND created_at > ${new Date(Date.now() - 7 * 86400000).toISOString()} LIMIT 1`);
         if ((alreadySent as any).rows?.length > 0) continue;
 
         const firstName = data.name?.split(" ")[0] || "Aluno";
@@ -2994,7 +2963,7 @@ export async function registerRoutes(server: Server, app: Express) {
           });
           if (emailRes.ok) {
             sent++;
-            await db.execute(sql`INSERT INTO audit_logs (user_id, action, details, created_at) VALUES (${Number(userId)}, 'credit_expiry_email', ${'R$ ' + totalBRL + ' expiring'}, ${new Date().toISOString()})`);
+            await db.execute(sql`INSERT INTO audit_logs (admin_id, admin_name, action, target_type, target_id, details, created_at) VALUES (${0}, ${'Sistema CRON'}, ${'credit_expiry_email'}, ${'user'}, ${Number(userId)}, ${'R$ ' + totalBRL + ' expiring'}, ${new Date().toISOString()})`);
           }
         } catch {}
       }

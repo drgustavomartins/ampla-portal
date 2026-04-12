@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { useLocation, Link } from "wouter";
 import { UpgradeBanner } from "@/components/UpgradeBanner";
 import { ReferralCard } from "@/components/ReferralCard";
-import { Gift, Copy, Check as CheckIcon, FileCheck, PenLine } from "lucide-react";
+import { Check as CheckIcon, FileCheck, PenLine } from "lucide-react";
 import { TrialPlansToast } from "@/components/TrialPlansToast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
