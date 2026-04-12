@@ -829,14 +829,21 @@ export async function registerRoutes(server: Server, app: Express) {
         whatsapp TEXT NOT NULL, resultado TEXT NOT NULL, respostas JSONB, created_at TEXT NOT NULL
       )`);
 
-      // Salvar lead do quiz (upsert por email)
-      const existing_lead = await db.execute(sql`SELECT id FROM quiz_leads WHERE email = ${email} AND resultado = ${resultado} LIMIT 1`);
+      // Salvar lead do quiz (upsert por email - parcial atualiza, final substitui parcial)
+      const existing_lead = await db.execute(sql`SELECT id, resultado FROM quiz_leads WHERE email = ${email} LIMIT 1`);
       if (existing_lead.rows.length === 0) {
-        await db.execute(sql`INSERT INTO quiz_leads (nome, email, whatsapp, resultado, respostas, created_at)
-           VALUES (${nome}, ${email}, ${whatsapp}, ${resultado}, ${JSON.stringify(respostas || {})}, ${new Date().toISOString()})`);
+        // Novo lead: so salvar se nao for parcial
+        if (resultado !== "parcial") {
+          await db.execute(sql`INSERT INTO quiz_leads (nome, email, whatsapp, resultado, respostas, created_at)
+             VALUES (${nome}, ${email}, ${whatsapp}, ${resultado}, ${JSON.stringify(respostas || {})}, ${new Date().toISOString()})`);
+        }
       } else {
+        // Lead existente: atualizar com resultado final (nunca regredir para parcial)
         const lid = existing_lead.rows[0].id as number;
-        await db.execute(sql`UPDATE quiz_leads SET resultado = ${resultado}, respostas = ${JSON.stringify(respostas || {})} WHERE id = ${lid}`);
+        const currentResult = existing_lead.rows[0].resultado as string;
+        if (resultado !== "parcial" || currentResult === "parcial") {
+          await db.execute(sql`UPDATE quiz_leads SET nome = ${nome}, whatsapp = ${whatsapp}, resultado = ${resultado}, respostas = ${JSON.stringify(respostas || {})} WHERE id = ${lid}`);
+        }
       }
 
       // Se o quiz foi completado (não parcial), criar conta trial automaticamente
