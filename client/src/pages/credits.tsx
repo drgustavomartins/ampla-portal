@@ -101,13 +101,18 @@ export default function CreditsPage() {
               <p className="text-4xl sm:text-5xl font-bold text-gold mt-2">{formatBRL(balance)}</p>
             </div>
             <p className="text-xs text-muted-foreground">
-              Use seus creditos como desconto na compra de qualquer plano.
+              Aplicado automaticamente no checkout
             </p>
-            <a href="/#/planos" className="btn-gold-forced mt-3">
-              {balance > 0 ? "Usar creditos agora" : "Ver planos disponiveis"}
-            </a>
           </CardContent>
         </Card>
+        <div style={{ textAlign: 'center', marginTop: '-16px', position: 'relative', zIndex: 10 }}>
+          <a
+            href="/#/planos"
+            style={{ display: 'inline-block', backgroundColor: '#D4A843', color: '#0A0D14', padding: '14px 40px', borderRadius: '14px', fontSize: '15px', fontWeight: '700', textDecoration: 'none', boxShadow: '0 4px 12px rgba(212,168,67,0.3)' }}
+          >
+            {balance > 0 ? "Usar creditos agora" : "Ver planos disponiveis"}
+          </a>
+        </div>
 
         {/* Referral + Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
