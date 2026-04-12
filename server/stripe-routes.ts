@@ -208,7 +208,7 @@ export function registerStripeRoutes(app: Express) {
         const now = new Date().toISOString();
         const accessExpiry = new Date(Date.now() + plan.accessDays * 86400000).toISOString();
         await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at) VALUES (${auth.userId}, 'usage', ${-creditDeduction}, ${'Pagamento integral com creditos: ' + plan.name}, ${uniqueRef}, ${now})`);
-        await db.execute(sql`UPDATE users SET plan_key = ${planKey}, plan_paid_at = ${now}, plan_amount_paid = ${plan.price}, approved = true, access_expires_at = ${accessExpiry}, materials_access = true WHERE id = ${auth.userId}`);
+        await db.execute(sql`UPDATE users SET plan_key = ${planKey}, role = 'student', trial_started_at = NULL, plan_paid_at = ${now}, plan_amount_paid = ${plan.price}, approved = true, access_expires_at = ${accessExpiry}, materials_access = true WHERE id = ${auth.userId}`);
         return res.json({ url: null, sessionId: null, paidWithCredits: true });
       } else {
         // Partial credits — do NOT debit now, will debit in webhook after payment confirmed
@@ -478,10 +478,12 @@ export function registerStripeRoutes(app: Express) {
           `);
           console.log(`[stripe webhook] Extensão de ${extMonths} meses para userId ${userId} | suporte até ${newSupportExpiry} | mentoria até ${newMentorshipEnd}`);
         } else {
-          // Plano normal: define tudo do zero
+          // Plano normal: define tudo do zero (sai do trial)
           await db.execute(sql`
             UPDATE users SET
               plan_key = ${planKey},
+              role = 'student',
+              trial_started_at = NULL,
               stripe_payment_intent_id = ${paymentIntentId},
               plan_paid_at = ${now},
               plan_amount_paid = ${amountPaid},
