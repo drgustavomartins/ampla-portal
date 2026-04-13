@@ -433,13 +433,17 @@ export default function LandingPage() {
                   Ideal para quem quer dominar a teoria completa antes de ir para a clinica
                 </p>
 
-                <a
-                  href="/#/planos?plan=pacote_completo"
-                  style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
-                  className="block text-center font-semibold text-sm py-3.5 rounded-xl hover:opacity-90 transition-opacity"
-                >
-                  Quero Começar
-                </a>
+                <div className="mt-auto pt-4 border-t border-white/10">
+                  <p className="text-2xl font-bold text-white mb-1">R$ 5.970</p>
+                  <p className="text-xs text-gray-400 mb-4">ou 12x de R$ 547</p>
+                  <a
+                    href="https://portal.amplafacial.com.br/#/planos?plan=pacote_completo"
+                    style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
+                    className="block w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
+                  >
+                    Quero Começar
+                  </a>
+                </div>
               </div>
             </FadeIn>
 
@@ -473,13 +477,18 @@ export default function LandingPage() {
                   Ideal para quem quer ver de perto antes de atender
                 </p>
 
-                <a
-                  href="/#/planos?plan=imersao"
-                  style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
-                  className="block text-center font-semibold text-sm py-3.5 rounded-xl hover:opacity-90 transition-opacity"
-                >
-                  Quero a Imersão
-                </a>
+                <div className="mt-auto pt-4 border-t border-white/10">
+                  <p className="text-2xl font-bold text-white mb-1">R$ 11.997</p>
+                  <p className="text-xs text-gray-400 mb-4">ou consulte condições</p>
+                  <a
+                    href="https://portal.amplafacial.com.br/#/planos?plan=imersao"
+                    style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
+                    className="block w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
+                  >
+                    Quero a Imersão
+                  </a>
+                  <p className="text-[11px] text-gray-500 text-center mt-3">Após a compra, agende suas práticas pelo WhatsApp</p>
+                </div>
               </div>
             </FadeIn>
 
@@ -529,13 +538,18 @@ export default function LandingPage() {
                   Ideal para quem quer sair atendendo full face com confiança
                 </p>
 
-                <a
-                  href="/#/planos?plan=vip_completo"
-                  style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
-                  className="relative block text-center font-semibold text-sm py-3.5 rounded-xl hover:opacity-90 transition-opacity"
-                >
-                  Quero a Mentoria VIP
-                </a>
+                <div className="relative mt-auto pt-4 border-t border-white/10">
+                  <p className="text-2xl font-bold text-white mb-1">R$ 17.350</p>
+                  <p className="text-xs text-gray-400 mb-4">ou consulte condições</p>
+                  <a
+                    href="https://portal.amplafacial.com.br/#/planos?plan=vip_completo"
+                    style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
+                    className="block w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
+                  >
+                    Quero a Mentoria VIP
+                  </a>
+                  <p className="text-[11px] text-gray-500 text-center mt-3">Após a compra, agende suas práticas pelo WhatsApp</p>
+                </div>
               </div>
             </FadeIn>
           </div>
