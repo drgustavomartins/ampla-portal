@@ -602,7 +602,7 @@ export default function AdminDashboard() {
   });
   const clinicalSessions = clinicalSessionsData?.sessions || [];
   const [clinicalDialogOpen, setClinicalDialogOpen] = useState(false);
-  const [clinicalForm, setClinicalForm] = useState({ studentId: 0, sessionDate: "", startTime: "", endTime: "", durationHours: 0, procedures: [] as string[], notes: "", patientsCount: 0, patientsDetails: [] as string[] });
+  const [clinicalForm, setClinicalForm] = useState({ studentId: 0, sessionType: "pratica" as "pratica" | "observacao", sessionDate: "", startTime: "", endTime: "", durationHours: 0, procedures: [] as string[], notes: "", patientsCount: 0, patientsDetails: [] as string[] });
   const [clinicalLoading, setClinicalLoading] = useState(false);
   const handleAdminSign = async (sessionId: number) => {
     try {
@@ -1383,6 +1383,14 @@ export default function AdminDashboard() {
             onClick={() => setActiveTab("lessons")}
           >
             <Plus className="w-3.5 h-3.5" /> Nova Aula
+          </Button>
+          <Button
+            size="sm"
+            className="font-medium gap-1.5 text-xs shrink-0 h-8"
+            style={{ backgroundColor: '#10B981', color: '#fff' }}
+            onClick={() => { setActiveTab("practices"); setClinicalDialogOpen(true); }}
+          >
+            <Stethoscope className="w-3.5 h-3.5" /> Lancar Pratica
           </Button>
           {(communityStats?.pendingCreditRequests ?? 0) > 0 && (
             <Button
@@ -2534,6 +2542,13 @@ export default function AdminDashboard() {
                           </SelectContent>
                         </Select>
                       </div>
+                      <div>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Tipo de sessao</Label>
+                        <div className="flex gap-2 mt-1">
+                          <button type="button" onClick={() => setClinicalForm(f => ({ ...f, sessionType: 'pratica' }))} className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${clinicalForm.sessionType === 'pratica' ? 'bg-green-500/20 text-green-400 border border-green-500/40' : 'bg-card border border-border/30 text-muted-foreground'}`}>Pratica Clinica</button>
+                          <button type="button" onClick={() => setClinicalForm(f => ({ ...f, sessionType: 'observacao' }))} className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${clinicalForm.sessionType === 'observacao' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/40' : 'bg-card border border-border/30 text-muted-foreground'}`}>Observacao Clinica</button>
+                        </div>
+                      </div>
                       <div className="grid grid-cols-3 gap-3">
                         <div>
                           <Label className="text-xs uppercase tracking-wider text-muted-foreground">Data</Label>
@@ -2578,7 +2593,7 @@ export default function AdminDashboard() {
                       <div>
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block">Procedimentos</Label>
                         <div className="grid grid-cols-2 gap-2">
-                          {["Toxina Botulínica", "Preenchedores", "Bioestimuladores", "Fios de PDO", "Skinbooster", "Peeling", "Microagulhamento", "Laser", "Ultrassom", "Outro"].map(proc => (
+                          {["Toxina Botulinica", "Preenchedores", "Bioestimuladores", "Fios de PDO", "Skinbooster", "Microagulhamento", "Ultrassom", "i-PRF", "PDRN", "Exossomos", "Outro"].map(proc => (
                             <label key={proc} className="flex items-center gap-2 text-sm cursor-pointer">
                               <Checkbox
                                 checked={clinicalForm.procedures.includes(proc)}
@@ -2596,7 +2611,7 @@ export default function AdminDashboard() {
                       </div>
                       <div>
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground">Pacientes atendidos</Label>
-                        <Input type="number" min={0} value={clinicalForm.patientsCount || ""} onChange={e => setClinicalForm(f => ({ ...f, patientsCount: parseInt(e.target.value) || 0 }))} placeholder="Número de pacientes" className="bg-background/50 border-border/40" />
+                        <Textarea value={(clinicalForm.patientsDetails || []).join('\n')} onChange={e => { const names = e.target.value.split('\n'); setClinicalForm(f => ({ ...f, patientsDetails: names, patientsCount: names.filter(n => n.trim()).length })); }} placeholder="Nome de cada paciente (um por linha)" rows={3} className="bg-background/50 border-border/40 text-sm" />
                       </div>
                       <div>
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground">Detalhes dos pacientes</Label>
@@ -3657,7 +3672,7 @@ export default function AdminDashboard() {
                     <div>
                       <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-2 block">Procedimentos</Label>
                       <div className="grid grid-cols-2 gap-2">
-                        {["Toxina Botulinica", "Preenchedores", "Bioestimuladores", "Fios de PDO", "Skinbooster", "Peeling", "Microagulhamento", "Laser", "Ultrassom", "Outro"].map(proc => (
+                        {["Toxina Botulinica", "Preenchedores", "Bioestimuladores", "Fios de PDO", "Skinbooster", "Microagulhamento", "Ultrassom", "i-PRF", "PDRN", "Exossomos", "Outro"].map(proc => (
                           <label key={proc} className="flex items-center gap-2 text-sm cursor-pointer">
                             <Checkbox
                               checked={clinicalForm.procedures.includes(proc)}
@@ -3675,7 +3690,7 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <Label className="text-xs uppercase tracking-wider text-muted-foreground">Pacientes atendidos</Label>
-                      <Input type="number" min={0} value={clinicalForm.patientsCount || ""} onChange={e => setClinicalForm(f => ({ ...f, patientsCount: parseInt(e.target.value) || 0 }))} placeholder="Numero de pacientes" className="bg-background/50 border-border/40" />
+                      <Textarea value={(clinicalForm.patientsDetails || []).join('\n')} onChange={e => { const names = e.target.value.split('\n'); setClinicalForm(f => ({ ...f, patientsDetails: names, patientsCount: names.filter(n => n.trim()).length })); }} placeholder="Nome de cada paciente (um por linha)" rows={3} className="bg-background/50 border-border/40 text-sm" />
                     </div>
                     <div>
                       <Label className="text-xs uppercase tracking-wider text-muted-foreground">Observacoes</Label>
