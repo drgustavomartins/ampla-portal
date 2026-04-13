@@ -143,7 +143,7 @@ export default function LandingPage() {
           <img
             src="/logo-transparent.png"
             alt="Ampla Facial"
-            className="h-12 md:h-14 mx-auto mb-10 opacity-90"
+            className="h-20 md:h-24 mx-auto mb-10 opacity-90"
           />
 
           {/* headline */}
@@ -513,10 +513,12 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-5">
           <FadeIn>
             <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12">
-              {/* photo placeholder */}
-              <div className="shrink-0 w-36 h-36 md:w-44 md:h-44 rounded-full bg-[#0A0D14] flex items-center justify-center border-4 border-[#D4A843]/30">
-                <span className="text-4xl md:text-5xl font-bold text-[#D4A843]">GM</span>
-              </div>
+              {/* photo */}
+              <img
+                src="/dr-gustavo-perfil.jpg"
+                alt="Dr. Gustavo Martins"
+                className="shrink-0 w-36 h-36 md:w-44 md:h-44 rounded-full object-cover object-top border-4 border-[#D4A843]/30"
+              />
 
               <div>
                 <h2 className="lp-serif text-2xl md:text-3xl font-bold text-[#0A0D14] mb-2">
