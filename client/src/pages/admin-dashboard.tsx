@@ -1474,6 +1474,7 @@ export default function AdminDashboard() {
                               supportExpiresAt: s.supportExpiresAt ? s.supportExpiresAt.slice(0, 16) : "",
                               clinicalPracticeAccess: s.clinicalPracticeAccess ?? true,
                               clinicalPracticeHours: (s as any).clinicalPracticeHours ?? 0,
+                              clinicalObservationHours: (s as any).clinicalObservationHours ?? 0,
                               materialsAccess: s.materialsAccess ?? false,
                               mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
                               mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
@@ -1882,6 +1883,7 @@ export default function AdminDashboard() {
                                     supportExpiresAt: s.supportExpiresAt ? s.supportExpiresAt.slice(0, 16) : "",
                                     clinicalPracticeAccess: s.clinicalPracticeAccess ?? true,
                                     clinicalPracticeHours: (s as any).clinicalPracticeHours ?? 0,
+                              clinicalObservationHours: (s as any).clinicalObservationHours ?? 0,
                                     materialsAccess: s.materialsAccess ?? false,
                                     mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
                                     mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
@@ -1975,6 +1977,26 @@ export default function AdminDashboard() {
                           )}
                           {!s.approved && plan && (
                             <div className="text-xs text-muted-foreground">Plano: {plan.name}</div>
+                          )}
+                          {/* Info adicional: plano + horas */}
+                          {s.approved && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {(s as any).planKey && (
+                                <span className="inline-flex items-center rounded-md bg-gold/5 border border-gold/15 px-1.5 py-0.5 text-[9px] font-medium text-gold/80">
+                                  {(s as any).planKey.replace(/_/g, ' ')}
+                                </span>
+                              )}
+                              {((s as any).clinicalPracticeHours || 0) > 0 && (
+                                <span className="inline-flex items-center rounded-md bg-green-500/5 border border-green-500/15 px-1.5 py-0.5 text-[9px] font-medium text-green-500/80">
+                                  {(s as any).clinicalPracticeHours}h pratica
+                                </span>
+                              )}
+                              {((s as any).clinicalObservationHours || 0) > 0 && (
+                                <span className="inline-flex items-center rounded-md bg-indigo-500/5 border border-indigo-500/15 px-1.5 py-0.5 text-[9px] font-medium text-indigo-400/80">
+                                  {(s as any).clinicalObservationHours}h observacao
+                                </span>
+                              )}
+                            </div>
                           )}
 
                           {s.approved && lessons.length > 0 && (
@@ -2076,6 +2098,7 @@ export default function AdminDashboard() {
                                     supportExpiresAt: s.supportExpiresAt ? s.supportExpiresAt.slice(0, 16) : "",
                                     clinicalPracticeAccess: s.clinicalPracticeAccess ?? true,
                                     clinicalPracticeHours: (s as any).clinicalPracticeHours ?? 0,
+                              clinicalObservationHours: (s as any).clinicalObservationHours ?? 0,
                                     materialsAccess: s.materialsAccess ?? false,
                                     mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
                                     mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
@@ -2393,11 +2416,11 @@ export default function AdminDashboard() {
                           onCheckedChange={(checked) => setEditStudentForm(f => ({ ...f, clinicalPracticeAccess: checked }))}
                         />
                       </div>
-                      {/* Campo de horas clínicas */}
+                      {/* Campos de horas clinicas */}
                       <div className="flex items-center justify-between pl-2">
                         <div>
-                          <Label className="text-sm font-medium">Banco de horas</Label>
-                          <p className="text-xs text-muted-foreground">Horas de pratica clinica disponiveis</p>
+                          <Label className="text-sm font-medium">Horas de Pratica</Label>
+                          <p className="text-xs text-muted-foreground">Atendimento a pacientes modelo</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <Input
@@ -2406,6 +2429,23 @@ export default function AdminDashboard() {
                             step={1}
                             value={editStudentForm.clinicalPracticeHours ?? 0}
                             onChange={(e) => setEditStudentForm(f => ({ ...f, clinicalPracticeHours: Number(e.target.value) }))}
+                            className="w-20 h-8 text-sm text-center bg-background/50 border-border/40"
+                          />
+                          <span className="text-xs text-muted-foreground">horas</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between pl-2">
+                        <div>
+                          <Label className="text-sm font-medium">Horas de Observacao</Label>
+                          <p className="text-xs text-muted-foreground">Observacao clinica presencial</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min={0}
+                            step={1}
+                            value={(editStudentForm as any).clinicalObservationHours ?? 0}
+                            onChange={(e) => setEditStudentForm(f => ({ ...f, clinicalObservationHours: Number(e.target.value) } as any))}
                             className="w-20 h-8 text-sm text-center bg-background/50 border-border/40"
                           />
                           <span className="text-xs text-muted-foreground">horas</span>
@@ -2433,6 +2473,7 @@ export default function AdminDashboard() {
                       data.supportExpiresAt = editStudentForm.supportExpiresAt ? new Date(editStudentForm.supportExpiresAt).toISOString() : null;
                       data.clinicalPracticeAccess = editStudentForm.clinicalPracticeAccess;
                       data.clinicalPracticeHours = editStudentForm.clinicalPracticeHours ?? 0;
+                      data.clinicalObservationHours = (editStudentForm as any).clinicalObservationHours ?? 0;
                       data.materialsAccess = editStudentForm.materialsAccess;
                       if (editStudentForm.planKey && editStudentForm.planKey !== "none") {
                         data.planKey = editStudentForm.planKey;
