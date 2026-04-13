@@ -270,6 +270,7 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS lgpd_accepted_at TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS module_content_expires_at TEXT`).catch(() => {});
     console.log("[auto-migrate] material_topics, order, materials_access, mentorship dates, user_modules, user_material_categories, material_themes/subcategories/files, stripe columns ensured");
     // Tabelas de quiz e funil
     await db.execute(`CREATE TABLE IF NOT EXISTS quiz_leads (id SERIAL PRIMARY KEY, nome TEXT NOT NULL, email TEXT NOT NULL, whatsapp TEXT NOT NULL, resultado TEXT NOT NULL, respostas JSONB, created_at TEXT NOT NULL)`).catch(() => {});
@@ -1692,6 +1693,25 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json(allProgress);
   });
 
+  app.get("/api/admin/students/modules-summary", async (req: Request, res: Response) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db } = await import("./db");
+      const result = await db.execute(sql`SELECT user_id, module_id FROM user_modules WHERE enabled = true`);
+      const rows = (result as any).rows || [];
+      const map: Record<number, number[]> = {};
+      for (const row of rows) {
+        if (!map[row.user_id]) map[row.user_id] = [];
+        map[row.user_id].push(row.module_id);
+      }
+      res.json(map);
+    } catch (e: any) {
+      console.error("[GET /api/admin/students/modules-summary]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
   app.post("/api/admin/students/:id/approve", async (req, res) => {
     const auth = requireAdmin(req, res);
     if (!auth) return;
@@ -1754,12 +1774,12 @@ export async function registerRoutes(server: Server, app: Express) {
     const allowedFields = ['name', 'email', 'phone', 'planId', 'approved', 'accessExpiresAt',
       'communityAccess', 'supportAccess', 'supportExpiresAt', 'clinicalPracticeAccess',
       'clinicalPracticeHours', 'clinicalObservationHours', 'materialsAccess', 'mentorshipStartDate', 'mentorshipEndDate',
-      'planKey', 'planPaidAt', 'planAmountPaid'];
+      'planKey', 'planPaidAt', 'planAmountPaid', 'moduleContentExpiresAt'];
     const updateData: any = {};
     for (const key of allowedFields) {
       if (req.body[key] !== undefined) {
         // Sanitize string values
-        if (typeof req.body[key] === "string" && !['accessExpiresAt', 'supportExpiresAt', 'mentorshipStartDate', 'mentorshipEndDate', 'email'].includes(key)) {
+        if (typeof req.body[key] === "string" && !['accessExpiresAt', 'supportExpiresAt', 'mentorshipStartDate', 'mentorshipEndDate', 'moduleContentExpiresAt', 'email'].includes(key)) {
           updateData[key] = sanitize(req.body[key]);
         } else {
           updateData[key] = req.body[key];
@@ -1863,6 +1883,7 @@ export async function registerRoutes(server: Server, app: Express) {
       const clinicalHours = plan ? (plan.clinicalHours + plan.practiceHours) : 0;
 
       // 1. Update user fields (clear trial, set role to student, set plan_paid_at)
+      const moduleExpiry = new Date(Date.now() + accessDays * 86400000).toISOString();
       await db.execute(sql`UPDATE users SET
         plan_key = ${planKey},
         role = 'student',
@@ -1870,6 +1891,7 @@ export async function registerRoutes(server: Server, app: Express) {
         trial_started_at = NULL,
         plan_paid_at = COALESCE(plan_paid_at, ${now}),
         access_expires_at = ${accessExpiry},
+        module_content_expires_at = ${moduleExpiry},
         materials_access = true,
         community_access = true,
         support_access = true,

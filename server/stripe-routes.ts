@@ -224,7 +224,7 @@ export function registerStripeRoutes(app: Express) {
         } else {
           // Plano normal: atualizar plan_key, acesso, etc
           const accessExpiry = new Date(Date.now() + plan.accessDays * 86400000).toISOString();
-          await db.execute(sql`UPDATE users SET plan_key = ${planKey}, role = 'student', trial_started_at = NULL, plan_paid_at = ${now}, plan_amount_paid = ${plan.price}, approved = true, access_expires_at = ${accessExpiry}, materials_access = true WHERE id = ${auth.userId}`);
+          await db.execute(sql`UPDATE users SET plan_key = ${planKey}, role = 'student', trial_started_at = NULL, plan_paid_at = ${now}, plan_amount_paid = ${plan.price}, approved = true, access_expires_at = ${accessExpiry}, module_content_expires_at = ${accessExpiry}, materials_access = true WHERE id = ${auth.userId}`);
         }
         return res.json({ url: null, sessionId: null, paidWithCredits: true });
       } else {
@@ -506,6 +506,7 @@ export function registerStripeRoutes(app: Express) {
               plan_amount_paid = ${amountPaid},
               approved = true,
               access_expires_at = ${accessExpiry},
+              module_content_expires_at = ${accessExpiry},
               materials_access = true,
               community_access = true,
               support_access = true,

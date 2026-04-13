@@ -188,6 +188,9 @@ export default function StudentDashboard() {
   const daysLeft = rawDaysLeft !== null ? Math.max(0, rawDaysLeft) : 0;
   const isExpired = rawDaysLeft !== null && rawDaysLeft <= 0 && user?.approved;
   const isExpiringSoon = rawDaysLeft !== null && rawDaysLeft > 0 && rawDaysLeft <= 3;
+  const contentExpired = (user as any)?.moduleContentExpiresAt
+    ? new Date((user as any).moduleContentExpiresAt).getTime() < Date.now()
+    : false;
 
   // Granular access control
   const communityEnabled = (user as any)?.communityAccess !== false;
@@ -786,6 +789,25 @@ export default function StudentDashboard() {
               </Link>
             </div>
           )}
+          {contentExpired && !isTrialExpired && !isExpired && (
+            <div className="rounded-2xl border border-gold/30 bg-gradient-to-r from-gold/10 via-gold/5 to-transparent p-5 flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-start gap-3">
+                <Lock className="w-5 h-5 text-gold shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-foreground">Seu acesso ao conteudo expirou</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    Renove seu plano para continuar assistindo as aulas e acessando os materiais. Seus creditos e progresso continuam salvos.
+                  </p>
+                </div>
+              </div>
+              <a
+                href="/#/planos"
+                className="shrink-0 rounded-xl bg-gold/90 hover:bg-gold px-5 py-2.5 text-sm font-semibold text-[#0A0D14] transition-colors"
+              >
+                Renovar acesso
+              </a>
+            </div>
+          )}
 
           {/* ===== HERO WELCOME ===== */}
           <section className="relative rounded-2xl overflow-hidden">
@@ -967,11 +989,13 @@ export default function StudentDashboard() {
                   <div
                     key={mod.id}
                     className={`shelf-card shrink-0 group transition-all duration-500 ${
-                      isUnlocked || isPurchasable || isTrialExpired ? "cursor-pointer" : "cursor-default"
+                      isUnlocked || isPurchasable || isTrialExpired || contentExpired ? "cursor-pointer" : "cursor-default"
                     }`}
                     onClick={() => {
                       if (isTrialExpired) {
                         window.location.href = "/#/planos-publicos";
+                      } else if (contentExpired && isUnlocked) {
+                        window.location.href = "/#/planos";
                       } else if (isPurchasable) {
                         setPurchaseModule(mod);
                       } else if (isUnlocked) {
@@ -1006,7 +1030,14 @@ export default function StudentDashboard() {
                           <span className="text-xs font-semibold text-gold/80 bg-black/40 px-3 py-1 rounded-full">Ver planos</span>
                         </div>
                       )}
-                      {!isTrialExpired && (isPurchasable || isLocked) && (
+                      {!isTrialExpired && contentExpired && isUnlocked && (
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center rounded-[20px] z-10">
+                          <Lock className="w-6 h-6 text-gold/60 mb-2" />
+                          <p className="text-xs text-white/70 text-center px-4">Acesso expirado</p>
+                          <a href="/#/planos" className="mt-2 text-xs text-gold font-medium hover:text-gold/80 transition-colors">Renovar</a>
+                        </div>
+                      )}
+                      {!isTrialExpired && !contentExpired && (isPurchasable || isLocked) && (
                         <div className="absolute inset-0 bg-black/40 backdrop-blur-[3px] flex items-center justify-center">
                           <Lock className={`w-5 h-5 ${isPurchasable ? "text-white/40" : "text-white/20"}`} />
                         </div>

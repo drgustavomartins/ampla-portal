@@ -69,6 +69,7 @@ export const users = pgTable("users", {
   lgpdAcceptedAt: text("lgpd_accepted_at"), // ISO date user accepted LGPD terms
   avatarUrl: text("avatar_url"),
   username: text("username"),
+  moduleContentExpiresAt: text("module_content_expires_at"),
 });
 
 // Modules

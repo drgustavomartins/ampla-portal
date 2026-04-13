@@ -565,6 +565,9 @@ export default function AdminDashboard() {
   const { data: communityStats } = useQuery<{ totalPosts: number; totalComments: number; pendingCreditRequests: number }>({
     queryKey: ["/api/admin/community-stats"],
   });
+  const { data: studentModulesSummary = {} } = useQuery<Record<number, number[]>>({
+    queryKey: ["/api/admin/students/modules-summary"],
+  });
   const [activeTab, setActiveTab] = useState("lessons");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -1001,6 +1004,7 @@ export default function AdminDashboard() {
     name: "", phone: "", accessExpiresAt: "", approved: false,
     communityAccess: true, supportAccess: true, supportExpiresAt: "",
     clinicalPracticeAccess: true, clinicalPracticeHours: 0,
+    clinicalObservationHours: 0,
     materialsAccess: false,
     mentorshipStartDate: "", mentorshipEndDate: "",
     planKey: "",
@@ -1014,6 +1018,48 @@ export default function AdminDashboard() {
     "Toxina Botulínica", "Preenchedores Faciais", "Bioestimuladores de Colágeno",
     "Moduladores de Matriz Extracelular", "Método NaturalUp®", "IA na Medicina",
   ];
+
+  const openEditStudent = async (s: SafeUser) => {
+    setEditingStudent(s);
+    setEditStudentForm({
+      name: s.name,
+      phone: s.phone || "",
+      accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
+      approved: s.approved,
+      communityAccess: s.communityAccess ?? true,
+      supportAccess: s.supportAccess ?? true,
+      supportExpiresAt: s.supportExpiresAt ? s.supportExpiresAt.slice(0, 16) : "",
+      clinicalPracticeAccess: s.clinicalPracticeAccess ?? true,
+      clinicalPracticeHours: (s as any).clinicalPracticeHours ?? 0,
+      clinicalObservationHours: (s as any).clinicalObservationHours ?? 0,
+      materialsAccess: s.materialsAccess ?? false,
+      mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
+      mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
+      planKey: (s as any).planKey || "",
+    });
+    // Load user module permissions
+    try {
+      const res = await apiRequest("GET", `/api/admin/students/${s.id}/modules`);
+      const userMods: any[] = await res.json();
+      const modsMap: Record<number, { enabled: boolean; startDate: string; endDate: string }> = {};
+      userMods.forEach((um: any) => {
+        modsMap[um.moduleId] = {
+          enabled: um.enabled,
+          startDate: um.startDate ? um.startDate.slice(0, 10) : "",
+          endDate: um.endDate ? um.endDate.slice(0, 10) : "",
+        };
+      });
+      setEditUserModules(modsMap);
+    } catch { setEditUserModules({}); }
+    // Load user material category permissions
+    try {
+      const res = await apiRequest("GET", `/api/admin/students/${s.id}/material-categories`);
+      const userCats: any[] = await res.json();
+      const catsMap: Record<string, boolean> = {};
+      userCats.forEach((uc: any) => { catsMap[uc.categoryTitle] = uc.enabled; });
+      setEditUserMaterialCats(catsMap);
+    } catch { setEditUserMaterialCats({}); }
+  };
 
   const updateStudentMutation = useMutation({
     mutationFn: async ({ id, data, userModulesData, userMaterialCatsData, provisionPlanKey }: { id: number; data: any; userModulesData?: any; userMaterialCatsData?: any; provisionPlanKey?: string }) => {
@@ -1462,25 +1508,7 @@ export default function AdminDashboard() {
                         </span>
                         <button
                           className="text-xs text-gold hover:underline"
-                          onClick={() => {
-                            setEditingStudent(s);
-                            setEditStudentForm({
-                              name: s.name,
-                              phone: s.phone || "",
-                              accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
-                              approved: s.approved,
-                              communityAccess: s.communityAccess ?? true,
-                              supportAccess: s.supportAccess ?? true,
-                              supportExpiresAt: s.supportExpiresAt ? s.supportExpiresAt.slice(0, 16) : "",
-                              clinicalPracticeAccess: s.clinicalPracticeAccess ?? true,
-                              clinicalPracticeHours: (s as any).clinicalPracticeHours ?? 0,
-                              clinicalObservationHours: (s as any).clinicalObservationHours ?? 0,
-                              materialsAccess: s.materialsAccess ?? false,
-                              mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
-                              mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
-                              planKey: (s as any).planKey || "",
-                            });
-                          }}
+                          onClick={() => openEditStudent(s)}
                         >
                           Renovar
                         </button>
@@ -1871,47 +1899,7 @@ export default function AdminDashboard() {
                               )}
                               <Button
                                 size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
-                                onClick={async () => {
-                                  setEditingStudent(s);
-                                  setEditStudentForm({
-                                    name: s.name,
-                                    phone: s.phone || "",
-                                    accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
-                                    approved: s.approved,
-                                    communityAccess: s.communityAccess ?? true,
-                                    supportAccess: s.supportAccess ?? true,
-                                    supportExpiresAt: s.supportExpiresAt ? s.supportExpiresAt.slice(0, 16) : "",
-                                    clinicalPracticeAccess: s.clinicalPracticeAccess ?? true,
-                                    clinicalPracticeHours: (s as any).clinicalPracticeHours ?? 0,
-                              clinicalObservationHours: (s as any).clinicalObservationHours ?? 0,
-                                    materialsAccess: s.materialsAccess ?? false,
-                                    mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
-                                    mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
-                                    planKey: (s as any).planKey || "",
-                                  });
-                                  // Load user module permissions
-                                  try {
-                                    const res = await apiRequest("GET", `/api/admin/students/${s.id}/modules`);
-                                    const userMods: any[] = await res.json();
-                                    const modsMap: Record<number, { enabled: boolean; startDate: string; endDate: string }> = {};
-                                    userMods.forEach((um: any) => {
-                                      modsMap[um.moduleId] = {
-                                        enabled: um.enabled,
-                                        startDate: um.startDate ? um.startDate.slice(0, 10) : "",
-                                        endDate: um.endDate ? um.endDate.slice(0, 10) : "",
-                                      };
-                                    });
-                                    setEditUserModules(modsMap);
-                                  } catch { setEditUserModules({}); }
-                                  // Load user material category permissions
-                                  try {
-                                    const res = await apiRequest("GET", `/api/admin/students/${s.id}/material-categories`);
-                                    const userCats: any[] = await res.json();
-                                    const catsMap: Record<string, boolean> = {};
-                                    userCats.forEach((uc: any) => { catsMap[uc.categoryTitle] = uc.enabled; });
-                                    setEditUserMaterialCats(catsMap);
-                                  } catch { setEditUserMaterialCats({}); }
-                                }}
+                                onClick={() => openEditStudent(s)}
                                 title="Editar aluno"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
@@ -1978,26 +1966,45 @@ export default function AdminDashboard() {
                           {!s.approved && plan && (
                             <div className="text-xs text-muted-foreground">Plano: {plan.name}</div>
                           )}
-                          {/* Info adicional: plano + horas */}
-                          {s.approved && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {(s as any).planKey && (
-                                <span className="inline-flex items-center rounded-md bg-gold/5 border border-gold/15 px-1.5 py-0.5 text-[9px] font-medium text-gold/80">
-                                  {(s as any).planKey.replace(/_/g, ' ')}
-                                </span>
-                              )}
-                              {((s as any).clinicalPracticeHours || 0) > 0 && (
-                                <span className="inline-flex items-center rounded-md bg-green-500/5 border border-green-500/15 px-1.5 py-0.5 text-[9px] font-medium text-green-500/80">
-                                  {(s as any).clinicalPracticeHours}h pratica
-                                </span>
-                              )}
-                              {((s as any).clinicalObservationHours || 0) > 0 && (
-                                <span className="inline-flex items-center rounded-md bg-indigo-500/5 border border-indigo-500/15 px-1.5 py-0.5 text-[9px] font-medium text-indigo-400/80">
-                                  {(s as any).clinicalObservationHours}h observacao
-                                </span>
-                              )}
-                            </div>
-                          )}
+                          {/* Info adicional: plano + horas + modules */}
+                          {s.approved && (() => {
+                            const studentModIds = studentModulesSummary[s.id] || [];
+                            const studentMods = modules.filter((m: any) => studentModIds.includes(m.id));
+                            const planLabel = (s as any).planKey?.replace(/_/g, ' ') || '';
+                            const practiceH = (s as any).clinicalPracticeHours || 0;
+                            const obsH = (s as any).clinicalObservationHours || 0;
+
+                            return (
+                              <div className="space-y-1.5">
+                                <div className="flex flex-wrap gap-1">
+                                  {planLabel && (
+                                    <span className="inline-flex items-center rounded-md bg-gold/10 border border-gold/20 px-1.5 py-0.5 text-[9px] font-semibold text-gold uppercase tracking-wider">
+                                      {planLabel}
+                                    </span>
+                                  )}
+                                  {practiceH > 0 && (
+                                    <span className="inline-flex items-center rounded-md bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 text-[9px] font-medium text-green-400">
+                                      {practiceH}h pratica
+                                    </span>
+                                  )}
+                                  {obsH > 0 && (
+                                    <span className="inline-flex items-center rounded-md bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 text-[9px] font-medium text-indigo-400">
+                                      {obsH}h observacao
+                                    </span>
+                                  )}
+                                </div>
+                                {studentMods.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {studentMods.map((m: any) => (
+                                      <span key={m.id} className="inline-flex items-center rounded bg-white/5 border border-white/10 px-1.5 py-0.5 text-[8px] text-muted-foreground">
+                                        {m.title.length > 15 ? m.title.slice(0, 13) + '\u2026' : m.title}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
 
                           {s.approved && lessons.length > 0 && (
                             <div className="flex items-center gap-3">
@@ -2086,25 +2093,7 @@ export default function AdminDashboard() {
                               <Button
                                 size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
                                 title="Editar aluno trial"
-                                onClick={() => {
-                                  setEditingStudent(s);
-                                  setEditStudentForm({
-                                    name: s.name,
-                                    phone: s.phone || "",
-                                    accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
-                                    approved: s.approved,
-                                    communityAccess: s.communityAccess ?? true,
-                                    supportAccess: s.supportAccess ?? true,
-                                    supportExpiresAt: s.supportExpiresAt ? s.supportExpiresAt.slice(0, 16) : "",
-                                    clinicalPracticeAccess: s.clinicalPracticeAccess ?? true,
-                                    clinicalPracticeHours: (s as any).clinicalPracticeHours ?? 0,
-                              clinicalObservationHours: (s as any).clinicalObservationHours ?? 0,
-                                    materialsAccess: s.materialsAccess ?? false,
-                                    mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
-                                    mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
-                                    planKey: (s as any).planKey || "",
-                                  });
-                                }}
+                                onClick={() => openEditStudent(s)}
                               >
                                 <Pencil className="w-3.5 h-3.5" />
                               </Button>
@@ -2444,7 +2433,7 @@ export default function AdminDashboard() {
                             type="number"
                             min={0}
                             step={1}
-                            value={(editStudentForm as any).clinicalObservationHours ?? 0}
+                            value={editStudentForm.clinicalObservationHours ?? 0}
                             onChange={(e) => setEditStudentForm(f => ({ ...f, clinicalObservationHours: Number(e.target.value) } as any))}
                             className="w-20 h-8 text-sm text-center bg-background/50 border-border/40"
                           />
@@ -2473,7 +2462,7 @@ export default function AdminDashboard() {
                       data.supportExpiresAt = editStudentForm.supportExpiresAt ? new Date(editStudentForm.supportExpiresAt).toISOString() : null;
                       data.clinicalPracticeAccess = editStudentForm.clinicalPracticeAccess;
                       data.clinicalPracticeHours = editStudentForm.clinicalPracticeHours ?? 0;
-                      data.clinicalObservationHours = (editStudentForm as any).clinicalObservationHours ?? 0;
+                      data.clinicalObservationHours = editStudentForm.clinicalObservationHours ?? 0;
                       data.materialsAccess = editStudentForm.materialsAccess;
                       if (editStudentForm.planKey && editStudentForm.planKey !== "none") {
                         data.planKey = editStudentForm.planKey;
@@ -3577,24 +3566,7 @@ export default function AdminDashboard() {
             <LeadsTab
               trialStudents={trialStudents}
               onConvert={(id) => approveMutation.mutate({ id })}
-              onEdit={(s) => {
-                setEditingStudent(s);
-                setEditStudentForm({
-                  name: s.name,
-                  phone: s.phone || "",
-                  accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
-                  approved: s.approved,
-                  communityAccess: s.communityAccess ?? true,
-                  supportAccess: s.supportAccess ?? true,
-                  supportExpiresAt: s.supportExpiresAt ? s.supportExpiresAt.slice(0, 16) : "",
-                  clinicalPracticeAccess: s.clinicalPracticeAccess ?? true,
-                  clinicalPracticeHours: (s as any).clinicalPracticeHours ?? 0,
-                  materialsAccess: s.materialsAccess ?? false,
-                  mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
-                  mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
-                  planKey: (s as any).planKey || "",
-                });
-              }}
+              onEdit={(s) => openEditStudent(s)}
             />
           </TabsContent>
 
@@ -3927,24 +3899,7 @@ export default function AdminDashboard() {
                             <Button
                               size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
                               title="Editar aluno trial"
-                              onClick={() => {
-                                setEditingStudent(student);
-                                setEditStudentForm({
-                                  name: student.name,
-                                  phone: student.phone || "",
-                                  accessExpiresAt: student.accessExpiresAt ? student.accessExpiresAt.slice(0, 16) : "",
-                                  approved: student.approved,
-                                  communityAccess: student.communityAccess ?? true,
-                                  supportAccess: student.supportAccess ?? true,
-                                  supportExpiresAt: student.supportExpiresAt ? student.supportExpiresAt.slice(0, 16) : "",
-                                  clinicalPracticeAccess: student.clinicalPracticeAccess ?? true,
-                                  clinicalPracticeHours: (student as any).clinicalPracticeHours ?? 0,
-                                  materialsAccess: student.materialsAccess ?? false,
-                                  mentorshipStartDate: (student as any).mentorshipStartDate ? (student as any).mentorshipStartDate.slice(0, 10) : "",
-                                  mentorshipEndDate: (student as any).mentorshipEndDate ? (student as any).mentorshipEndDate.slice(0, 10) : "",
-                                  planKey: (student as any).planKey || "",
-                                });
-                              }}
+                              onClick={() => openEditStudent(student)}
                             >
                               <Pencil className="w-3.5 h-3.5" />
                             </Button>

@@ -249,7 +249,7 @@ function FileRow({ file, trialLocked = false }: { file: FileEntry; trialLocked?:
   );
 }
 
-function ThemeDetail({ theme, onBack, isTrial = false }: { theme: Theme; onBack: () => void; isTrial?: boolean }) {
+function ThemeDetail({ theme, onBack, isTrial = false, contentExpired = false }: { theme: Theme; onBack: () => void; isTrial?: boolean; contentExpired?: boolean }) {
   const [openSubs, setOpenSubs] = useState<Record<number, boolean>>(
     () => Object.fromEntries(theme.subcategories.map((_, i) => [i, true]))
   );
@@ -287,6 +287,12 @@ function ThemeDetail({ theme, onBack, isTrial = false }: { theme: Theme; onBack:
           <p className="text-xs text-gold/90">Você está no período de teste. <a href="/#/planos-publicos" className="underline font-semibold hover:text-gold">Adquira um plano</a> para liberar todos os materiais.</p>
         </div>
       )}
+      {contentExpired && !isTrial && (
+        <div className="flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-lg px-4 py-2.5">
+          <Lock className="w-4 h-4 text-gold shrink-0" />
+          <p className="text-xs text-gold/90">Seu acesso ao conteudo expirou. <a href="/#/planos" className="underline font-semibold hover:text-gold">Renove seu plano</a> para liberar os materiais.</p>
+        </div>
+      )}
 
       {theme.subcategories.map((sub, i) => (
         <div key={sub.id} className="rounded-xl border border-border/30 bg-card/40 overflow-hidden">
@@ -312,7 +318,7 @@ function ThemeDetail({ theme, onBack, isTrial = false }: { theme: Theme; onBack:
                 <FileRow
                   key={file.id}
                   file={file}
-                  trialLocked={isTrial && file.driveId !== TRIAL_FREE_MATERIAL_DRIVE_ID}
+                  trialLocked={(isTrial && file.driveId !== TRIAL_FREE_MATERIAL_DRIVE_ID) || contentExpired}
                 />
               ))}
             </div>
@@ -328,6 +334,9 @@ function ThemeDetail({ theme, onBack, isTrial = false }: { theme: Theme; onBack:
 export default function MateriaisComplementares({ onBack }: { onBack?: () => void }) {
   const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
   const { user, isTrial } = useAuth();
+  const contentExpired = (user as any)?.moduleContentExpiresAt
+    ? new Date((user as any).moduleContentExpiresAt).getTime() < Date.now()
+    : false;
   const matShelfRef = useRef<HTMLDivElement>(null);
 
   const scrollMatShelf = (direction: "left" | "right") => {
@@ -375,7 +384,7 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
   if (selectedTheme) {
     return (
       <div className="max-w-4xl mx-auto">
-        <ThemeDetail theme={selectedTheme} onBack={() => setSelectedTheme(null)} isTrial={isTrial} />
+        <ThemeDetail theme={selectedTheme} onBack={() => setSelectedTheme(null)} isTrial={isTrial} contentExpired={contentExpired} />
       </div>
     );
   }
@@ -409,6 +418,12 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
           <p className="text-xs text-gold/90">Período de teste. <a href="/#/planos-publicos" className="underline font-semibold hover:text-gold">Adquira um plano</a> para liberar todos os materiais.</p>
         </div>
       )}
+      {contentExpired && !isTrial && (
+        <div className="flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-lg px-4 py-2.5">
+          <Lock className="w-4 h-4 text-gold shrink-0" />
+          <p className="text-xs text-gold/90">Seu acesso ao conteudo expirou. <a href="/#/planos" className="underline font-semibold hover:text-gold">Renove seu plano</a> para liberar os materiais.</p>
+        </div>
+      )}
 
       <div className="relative group/matshelf">
         {/* Left arrow */}
@@ -429,13 +444,17 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
         <div ref={matShelfRef} className="shelf-scroll flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6">
         {visibleThemes.map((theme) => {
           const isLockedForTrial = isTrial && theme.title !== "Toxina Botul\u00ednica";
+          const isLockedForExpiry = contentExpired && !isTrial;
           return (
           <div
             key={theme.id}
             className={`shelf-card shrink-0 group transition-all duration-500 ${
-              theme.fileCount > 0 && !isLockedForTrial ? "cursor-pointer" : "cursor-default"
+              theme.fileCount > 0 && !isLockedForTrial && !isLockedForExpiry ? "cursor-pointer" : isLockedForExpiry ? "cursor-pointer" : "cursor-default"
             }`}
-            onClick={() => !isLockedForTrial && theme.fileCount > 0 && setSelectedTheme(theme)}
+            onClick={() => {
+              if (isLockedForExpiry) { window.location.href = "/#/planos"; return; }
+              if (!isLockedForTrial && theme.fileCount > 0) setSelectedTheme(theme);
+            }}
           >
             {/* Book cover image */}
             <div className="relative rounded-[20px] overflow-hidden transition-all duration-500 group-hover:-translate-y-1.5 group-hover:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.5)]" style={{ aspectRatio: "4/5" }}>
@@ -448,12 +467,15 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
               {/* Soft vignette */}
               <div className="absolute inset-0 bg-gradient-to-t from-white/[0.06] via-transparent to-transparent" />
 
-              {/* Lock overlay for empty or trial-locked */}
-              {(theme.fileCount === 0 || isLockedForTrial) && (
+              {/* Lock overlay for empty, trial-locked, or expired */}
+              {(theme.fileCount === 0 || isLockedForTrial || isLockedForExpiry) && (
                 <div className="absolute inset-0 bg-black/50 backdrop-blur-[3px] flex flex-col items-center justify-center gap-2">
-                  <Lock className={`w-6 h-6 ${isLockedForTrial ? 'text-gold/60' : 'text-white/20'}`} />
-                  {isLockedForTrial && (
-                    <a href="/#/planos" className="text-[10px] text-gold/80 font-medium hover:text-gold transition-colors">Ver planos</a>
+                  <Lock className={`w-6 h-6 ${isLockedForTrial || isLockedForExpiry ? 'text-gold/60' : 'text-white/20'}`} />
+                  {isLockedForExpiry && (
+                    <span className="text-[10px] text-gold/80 font-medium">Acesso expirado</span>
+                  )}
+                  {(isLockedForTrial || isLockedForExpiry) && (
+                    <a href="/#/planos" className="text-[10px] text-gold/80 font-medium hover:text-gold transition-colors">Renovar</a>
                   )}
                 </div>
               )}
