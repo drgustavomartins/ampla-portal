@@ -1580,17 +1580,17 @@ export default function AdminDashboard() {
             })()}
           </div>
 
-          {/* ─── Desktop: grouped tab navigation ─── */}
+          {/* ─── Desktop: centered tab card ─── */}
           <div className="hidden sm:block">
-            <div className="flex flex-wrap gap-x-6 gap-y-3">
-              {/* Pessoas group */}
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest px-1">Pessoas</p>
-                <TabsList className="bg-card/60 border border-border/30 p-1 h-10 gap-0.5">
+            <div className="rounded-2xl border border-border/30 bg-card/40 backdrop-blur-sm p-4">
+              <TabsList className="bg-transparent h-auto p-0 w-full flex items-center justify-center gap-8 flex-wrap">
+                {/* Group: Pessoas */}
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] uppercase tracking-widest text-muted-foreground/50 font-semibold mr-2">Pessoas</span>
                   <TabsTrigger
                     value="students"
                     data-testid="tab-students-d"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
+                    className="data-[state=active]:bg-gold/15 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-[0_0_12px_rgba(212,168,67,0.1)] data-[state=active]:shadow-none border border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all"
                   >
                     <Users className="w-3.5 h-3.5" />
                     Alunos
@@ -1598,7 +1598,7 @@ export default function AdminDashboard() {
                   <TabsTrigger
                     value="leads"
                     data-testid="tab-leads-d"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5 relative"
+                    className="data-[state=active]:bg-gold/15 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-[0_0_12px_rgba(212,168,67,0.1)] data-[state=active]:shadow-none border border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all relative"
                   >
                     <Zap className="w-3.5 h-3.5" />
                     Leads
@@ -1611,22 +1611,22 @@ export default function AdminDashboard() {
                   <TabsTrigger
                     value="profiles"
                     data-testid="tab-profiles-d"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
+                    className="data-[state=active]:bg-gold/15 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-[0_0_12px_rgba(212,168,67,0.1)] data-[state=active]:shadow-none border border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all"
                   >
                     <FileText className="w-3.5 h-3.5" />
                     Perfis
                   </TabsTrigger>
-                </TabsList>
-              </div>
+                </div>
 
-              {/* Conteudo group */}
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest px-1">Conteudo</p>
-                <TabsList className="bg-card/60 border border-border/30 p-1 h-10 gap-0.5">
+                <div className="w-px h-6 bg-border/20" />
+
+                {/* Group: Conteudo */}
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] uppercase tracking-widest text-muted-foreground/50 font-semibold mr-2">Conteudo</span>
                   <TabsTrigger
                     value="modules"
                     data-testid="tab-modules-d"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
+                    className="data-[state=active]:bg-gold/15 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-[0_0_12px_rgba(212,168,67,0.1)] data-[state=active]:shadow-none border border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all"
                   >
                     <Layers className="w-3.5 h-3.5" />
                     Modulos
@@ -1634,7 +1634,7 @@ export default function AdminDashboard() {
                   <TabsTrigger
                     value="lessons"
                     data-testid="tab-lessons-d"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
+                    className="data-[state=active]:bg-gold/15 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-[0_0_12px_rgba(212,168,67,0.1)] data-[state=active]:shadow-none border border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all"
                   >
                     <Video className="w-3.5 h-3.5" />
                     Aulas
@@ -1642,7 +1642,7 @@ export default function AdminDashboard() {
                   <TabsTrigger
                     value="materiais"
                     data-testid="tab-materiais-d"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
+                    className="data-[state=active]:bg-gold/15 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-[0_0_12px_rgba(212,168,67,0.1)] data-[state=active]:shadow-none border border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all"
                   >
                     <Library className="w-3.5 h-3.5" />
                     Materiais
@@ -1650,22 +1650,22 @@ export default function AdminDashboard() {
                   <TabsTrigger
                     value="practices"
                     data-testid="tab-practices-d"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
+                    className="data-[state=active]:bg-gold/15 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-[0_0_12px_rgba(212,168,67,0.1)] data-[state=active]:shadow-none border border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all"
                   >
                     <Stethoscope className="w-3.5 h-3.5" />
                     Praticas
                   </TabsTrigger>
-                </TabsList>
-              </div>
+                </div>
 
-              {/* Engajamento group */}
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest px-1">Engajamento</p>
-                <TabsList className="bg-card/60 border border-border/30 p-1 h-10 gap-0.5">
+                <div className="w-px h-6 bg-border/20" />
+
+                {/* Group: Engajamento */}
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] uppercase tracking-widest text-muted-foreground/50 font-semibold mr-2">Engajamento</span>
                   <TabsTrigger
                     value="community"
                     data-testid="tab-community-d"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
+                    className="data-[state=active]:bg-gold/15 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-[0_0_12px_rgba(212,168,67,0.1)] data-[state=active]:shadow-none border border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
                     Comunidade
@@ -1673,38 +1673,39 @@ export default function AdminDashboard() {
                   <TabsTrigger
                     value="credits"
                     data-testid="tab-credits-d"
-                    className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
+                    className="data-[state=active]:bg-gold/15 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-[0_0_12px_rgba(212,168,67,0.1)] data-[state=active]:shadow-none border border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all"
                   >
                     <Coins className="w-3.5 h-3.5" />
                     Creditos
                   </TabsTrigger>
-                </TabsList>
-              </div>
-
-              {/* Sistema group (super admin only) */}
-              {isSuperAdmin && (
-                <div className="space-y-1.5">
-                  <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest px-1">Sistema</p>
-                  <TabsList className="bg-card/60 border border-border/30 p-1 h-10 gap-0.5">
-                    <TabsTrigger
-                      value="admins"
-                      data-testid="tab-admins-d"
-                      className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
-                    >
-                      <UserCog className="w-3.5 h-3.5" />
-                      Admins
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="history"
-                      data-testid="tab-history-d"
-                      className="data-[state=active]:bg-gold/10 data-[state=active]:text-gold data-[state=active]:shadow-none rounded-lg text-xs font-medium transition-all px-3 gap-1.5"
-                    >
-                      <History className="w-3.5 h-3.5" />
-                      Historico
-                    </TabsTrigger>
-                  </TabsList>
                 </div>
-              )}
+
+                {/* Group: Sistema (super admin only) */}
+                {isSuperAdmin && (
+                  <>
+                    <div className="w-px h-6 bg-border/20" />
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9px] uppercase tracking-widest text-muted-foreground/50 font-semibold mr-2">Sistema</span>
+                      <TabsTrigger
+                        value="admins"
+                        data-testid="tab-admins-d"
+                        className="data-[state=active]:bg-gold/15 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-[0_0_12px_rgba(212,168,67,0.1)] data-[state=active]:shadow-none border border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all"
+                      >
+                        <UserCog className="w-3.5 h-3.5" />
+                        Admins
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="history"
+                        data-testid="tab-history-d"
+                        className="data-[state=active]:bg-gold/15 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-[0_0_12px_rgba(212,168,67,0.1)] data-[state=active]:shadow-none border border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all"
+                      >
+                        <History className="w-3.5 h-3.5" />
+                        Historico
+                      </TabsTrigger>
+                    </div>
+                  </>
+                )}
+              </TabsList>
             </div>
           </div>
 
