@@ -210,10 +210,17 @@ export function registerStripeRoutes(app: Express) {
 
         const isHoursPackage = plan.group === "horas" || plan.group === "observacao_extra";
         if (isHoursPackage) {
-          // Horas clinicas/observacao avulsas: adicionar horas ao saldo existente
-          const addHours = (plan.practiceHours || 0) + (plan.clinicalHours || 0);
-          await db.execute(sql`UPDATE users SET clinical_practice_hours = COALESCE(clinical_practice_hours, 0) + ${addHours}, clinical_practice_access = true WHERE id = ${auth.userId}`);
-          console.log(`[checkout credits 100%] Adicionadas ${addHours}h clinicas para userId ${auth.userId}`);
+          if (plan.group === "observacao_extra") {
+            // Observacao clinica: somar em clinical_observation_hours
+            const addHours = plan.clinicalHours || 0;
+            await db.execute(sql`UPDATE users SET clinical_observation_hours = COALESCE(clinical_observation_hours, 0) + ${addHours}, clinical_practice_access = true WHERE id = ${auth.userId}`);
+            console.log(`[checkout credits 100%] Adicionadas ${addHours}h observacao para userId ${auth.userId}`);
+          } else {
+            // Pratica clinica: somar em clinical_practice_hours
+            const addHours = plan.practiceHours || 0;
+            await db.execute(sql`UPDATE users SET clinical_practice_hours = COALESCE(clinical_practice_hours, 0) + ${addHours}, clinical_practice_access = true WHERE id = ${auth.userId}`);
+            console.log(`[checkout credits 100%] Adicionadas ${addHours}h pratica para userId ${auth.userId}`);
+          }
         } else {
           // Plano normal: atualizar plan_key, acesso, etc
           const accessExpiry = new Date(Date.now() + plan.accessDays * 86400000).toISOString();

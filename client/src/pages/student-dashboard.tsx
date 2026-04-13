@@ -1134,13 +1134,15 @@ export default function StudentDashboard() {
                   </span>
                 </a>
               )}
-              {/* Praticas Clinicas — mostra horas ou botão de compra */}
+              {/* Praticas Clinicas + Observacao — mostra horas separadas */}
               {(() => {
-                const hours = (user as any)?.clinicalPracticeHours || 0;
-                if (hours > 0) {
+                const practiceHours = (user as any)?.clinicalPracticeHours || 0;
+                const observationHours = (user as any)?.clinicalObservationHours || 0;
+                const totalHours = practiceHours + observationHours;
+                if (totalHours > 0) {
                   return (
                     <a
-                      href={`https://wa.me/5521995523509?text=${encodeURIComponent("Olá, Dr. Gustavo! Gostaria de agendar minha sessão presencial. Tenho " + hours + "h disponíveis.")}`}
+                      href={`https://wa.me/5521995523509?text=${encodeURIComponent("Ola, Dr. Gustavo! Gostaria de agendar minha sessao presencial.")}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="group rounded-2xl border border-border/40 bg-card/60 p-5 space-y-3 transition-all duration-300 hover:-translate-y-1 hover:border-green-500/40 hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
@@ -1150,16 +1152,28 @@ export default function StudentDashboard() {
                           <Clock className="w-5 h-5 text-green-500" />
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-bold text-green-400">{hours}h</p>
-                          <p className="text-[10px] text-muted-foreground">disponíveis</p>
+                          <p className="text-2xl font-bold text-green-400">{totalHours}h</p>
+                          <p className="text-[10px] text-muted-foreground">total disponiveis</p>
                         </div>
                       </div>
-                      <h3 className="font-semibold text-sm text-foreground">Agendar Sessão Presencial</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">Você tem <strong className="text-green-400">{hours} horas</strong> de prática clínica. Agende pelo WhatsApp.</p>
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center rounded-full bg-green-500/15 border border-green-500/30 px-2 py-0.5 text-[10px] font-semibold text-green-500 uppercase tracking-wider">
-                          {hours}h restantes
-                        </span>
+                      <h3 className="font-semibold text-sm text-foreground">Horas Clinicas</h3>
+                      <div className="space-y-1.5">
+                        {practiceHours > 0 && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Pratica clinica</span>
+                            <span className="inline-flex items-center rounded-full bg-green-500/15 border border-green-500/30 px-2 py-0.5 text-[10px] font-semibold text-green-500">
+                              {practiceHours}h
+                            </span>
+                          </div>
+                        )}
+                        {observationHours > 0 && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Observacao clinica</span>
+                            <span className="inline-flex items-center rounded-full bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 text-[10px] font-semibold text-indigo-400">
+                              {observationHours}h
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <span className="inline-flex items-center min-h-[44px] py-2 text-xs font-medium text-green-500 group-hover:underline">
                         Agendar pelo WhatsApp <ChevronRight className="w-3 h-3 ml-1" />

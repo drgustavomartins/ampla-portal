@@ -2631,6 +2631,10 @@ export async function registerRoutes(server: Server, app: Express) {
       results.push("clinical_practice_hours column ensured");
     } catch (e: any) { results.push(`clinical_practice_hours: ${e.message}`); }
     try {
+      await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS clinical_observation_hours INTEGER NOT NULL DEFAULT 0`);
+      results.push("clinical_observation_hours column ensured");
+    } catch (e: any) { results.push(`clinical_observation_hours: ${e.message}`); }
+    try {
       await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS materials_access BOOLEAN NOT NULL DEFAULT false`);
       await db.execute(`ALTER TABLE users ALTER COLUMN materials_access SET DEFAULT false`);
       // Grant materials access to existing users — only if no user already has access (one-time migration)

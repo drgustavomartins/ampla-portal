@@ -54,6 +54,7 @@ export const users = pgTable("users", {
   supportExpiresAt: text("support_expires_at"), // null = uses accessExpiresAt
   clinicalPracticeAccess: boolean("clinical_practice_access").notNull().default(true),
   clinicalPracticeHours: integer("clinical_practice_hours").notNull().default(0),
+  clinicalObservationHours: integer("clinical_observation_hours").notNull().default(0),
   materialsAccess: boolean("materials_access").notNull().default(false),
   // Mentorship date range
   mentorshipStartDate: text("mentorship_start_date"), // ISO date string
