@@ -1224,7 +1224,8 @@ export default function AdminDashboard() {
 
   // Audit log helpers
   const actionLabels: Record<string, string> = {
-    admin_login: "Login",
+    admin_login: "Login admin",
+    student_login: "Login aluno",
     student_approved: "Aluno aprovado",
     student_revoked: "Acesso revogado",
     student_deleted: "Aluno excluído",
@@ -1258,6 +1259,50 @@ export default function AdminDashboard() {
     creditos: { label: "Creditos", actions: ["credit_bonus"] },
     alunos: { label: "Gestao de alunos", actions: ["student_approved", "student_revoked", "student_deleted", "student_updated", "access_toggled", "password_reset"] },
     conteudo: { label: "Conteudo", actions: ["module_created", "module_updated", "module_deleted", "lesson_created", "lesson_updated", "lesson_deleted", "plan_created", "plan_updated", "plan_deleted"] },
+    logins: { label: "Logins", actions: ["admin_login", "student_login"] },
+  };
+
+  // Detail key labels for formatted display
+  const detailKeyLabels: Record<string, string> = {
+    name: "Nome", email: "Email", phone: "Telefone", plan_key: "Plano", planKey: "Plano",
+    approved: "Aprovado", role: "Cargo", accessExpiresAt: "Expira em", access_expires_at: "Expira em",
+    materialsAccess: "Materiais", materials_access: "Materiais",
+    communityAccess: "Comunidade", community_access: "Comunidade",
+    supportAccess: "Suporte", support_access: "Suporte",
+    clinicalPracticeAccess: "Pratica clinica", clinical_practice_access: "Pratica clinica",
+    clinicalPracticeHours: "Horas pratica", clinical_practice_hours: "Horas pratica",
+    clinicalObservationHours: "Horas observacao", clinical_observation_hours: "Horas observacao",
+    mentorshipStartDate: "Inicio mentoria", mentorship_start_date: "Inicio mentoria",
+    mentorshipEndDate: "Fim mentoria", mentorship_end_date: "Fim mentoria",
+    moduleContentExpiresAt: "Conteudo expira", module_content_expires_at: "Conteudo expira",
+    amount: "Valor", currency: "Moeda", status: "Status",
+    old_plan: "Plano anterior", new_plan: "Novo plano",
+    credits: "Creditos", reason: "Motivo", ip: "IP",
+    user_agent: "Navegador", userAgent: "Navegador",
+  };
+
+  const formatDetailValue = (key: string, v: unknown): string => {
+    const s = String(v);
+    // Booleans
+    if (v === true || s === "true") return "Sim";
+    if (v === false || s === "false") return "Nao";
+    // Null
+    if (v === null || v === undefined || s === "null") return "-";
+    // Currency (amount fields from Stripe come in cents)
+    if ((key === "amount" || key === "valor") && typeof v === "number") {
+      return `R$ ${(v / 100).toFixed(2).replace(".", ",")}`;
+    }
+    // Dates — ISO strings
+    if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v)) {
+      try {
+        return new Date(v).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+      } catch { /* fall through */ }
+    }
+    // Plan keys — humanize
+    if ((key === "plan_key" || key === "planKey" || key === "old_plan" || key === "new_plan") && typeof v === "string") {
+      return v.replace(/_/g, " ");
+    }
+    return s.length > 40 ? s.slice(0, 37) + "..." : s;
   };
 
   const [logFilterGroup, setLogFilterGroup] = useState<string>("all");
@@ -1273,6 +1318,21 @@ export default function AdminDashboard() {
     if (logFilterStudent !== "all" && String(log.targetId) !== logFilterStudent) return false;
     return true;
   });
+
+  // Consolidate repeated login entries (same action + same user within sequence)
+  const consolidatedLogs = (() => {
+    const result: Array<typeof filteredLogs[0] & { repeatCount?: number }> = [];
+    for (const log of filteredLogs) {
+      const isLogin = log.action === "admin_login" || log.action === "student_login";
+      const prev = result[result.length - 1];
+      if (isLogin && prev && prev.action === log.action && prev.adminId === log.adminId) {
+        prev.repeatCount = (prev.repeatCount || 1) + 1;
+      } else {
+        result.push({ ...log, repeatCount: 1 });
+      }
+    }
+    return result;
+  })();
 
   // Alunos únicos que aparecem no histórico (como target)
   const uniqueTargets = Array.from(new Map(auditLogs.filter(l => l.targetName && l.targetId).map(l => [l.targetId, l.targetName])).entries());
@@ -4080,7 +4140,7 @@ export default function AdminDashboard() {
           {isSuperAdmin && (
             <TabsContent value="history" className="space-y-6 mt-0">
               <div className="flex items-center justify-between flex-wrap gap-3">
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Histórico de ações ({filteredLogs.length})</h3>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Histórico de ações ({consolidatedLogs.length})</h3>
                 <div className="flex items-center gap-2">
                   <Select value={logFilterGroup} onValueChange={(v) => { setLogFilterGroup(v); setLogFilterAction("all"); }}>
                     <SelectTrigger className="bg-background/50 border-border/40 w-36 h-8 text-xs"><SelectValue placeholder="Categoria" /></SelectTrigger>
@@ -4090,6 +4150,7 @@ export default function AdminDashboard() {
                       <SelectItem value="creditos">Creditos</SelectItem>
                       <SelectItem value="alunos">Gestao de alunos</SelectItem>
                       <SelectItem value="conteudo">Conteudo</SelectItem>
+                      <SelectItem value="logins">Logins</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={logFilterAction} onValueChange={setLogFilterAction}>
@@ -4116,11 +4177,11 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {filteredLogs.length === 0 ? (
+              {consolidatedLogs.length === 0 ? (
                 <Card className="border-border/30 bg-card/40"><CardContent className="p-12 text-center"><div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4"><History className="w-7 h-7 text-muted-foreground/40" /></div><p className="text-sm text-muted-foreground">Nenhuma ação registrada</p></CardContent></Card>
               ) : (
                 <div className="space-y-2">
-                  {filteredLogs.map((log) => (
+                  {consolidatedLogs.map((log) => (
                     <Card key={log.id} className="border-border/25 bg-card/40">
                       <CardContent className="p-3 sm:p-4">
                         <div className="flex items-start gap-3">
@@ -4132,10 +4193,16 @@ export default function AdminDashboard() {
                               <div className="min-w-0">
                                 <p className="text-sm font-medium text-foreground">
                                   {actionLabels[log.action] || log.action}
+                                  {(log.repeatCount || 0) > 1 && (
+                                    <Badge variant="secondary" className="ml-2 text-[10px] bg-gold/15 text-gold border-0 px-1.5 py-0">{log.repeatCount}x</Badge>
+                                  )}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-0.5">
-                                  por <span className="text-foreground font-medium">{log.adminName}</span>
-                                  {log.targetName && <> em <span className="text-foreground">{log.targetName}</span></>}
+                                  {log.action === "student_login"
+                                    ? <><span className="text-foreground font-medium">{log.targetName || log.adminName}</span></>
+                                    : <>por <span className="text-foreground font-medium">{log.adminName}</span>
+                                      {log.targetName && <> em <span className="text-foreground">{log.targetName}</span></>}</>
+                                  }
                                 </p>
                               </div>
                               <span className="text-xs text-muted-foreground shrink-0">
@@ -4145,13 +4212,13 @@ export default function AdminDashboard() {
                             {log.details && (() => {
                               try {
                                 const details = JSON.parse(log.details);
-                                const entries = Object.entries(details).slice(0, 4);
+                                const entries = Object.entries(details).slice(0, 6);
                                 if (entries.length === 0) return null;
                                 return (
                                   <div className="mt-1.5 flex flex-wrap gap-1">
                                     {entries.map(([k, v]) => (
                                       <Badge key={k} variant="outline" className="text-[10px] border-border/30 text-muted-foreground px-1.5">
-                                        {k}: {String(v).slice(0, 30)}
+                                        {detailKeyLabels[k] || k}: {formatDetailValue(k, v)}
                                       </Badge>
                                     ))}
                                   </div>
@@ -4221,7 +4288,7 @@ export default function AdminDashboard() {
               {(activityData?.adminActions || []).map((a: any) => (
                 <div key={a.id} className="flex items-center justify-between p-3 rounded-lg bg-card/40 border border-border/20">
                   <div className="min-w-0">
-                    <p className="text-sm text-foreground">{a.action?.replace(/_/g, " ")}</p>
+                    <p className="text-sm text-foreground">{actionLabels[a.action] || a.action?.replace(/_/g, " ")}</p>
                     <p className="text-[11px] text-muted-foreground truncate">{a.details || "-"}</p>
                   </div>
                   <div className="text-right shrink-0">

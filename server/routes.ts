@@ -1331,6 +1331,14 @@ export async function registerRoutes(server: Server, app: Express) {
         await logAction(user.id, user.name, "admin_login");
       }
 
+      // Log student/trial login
+      if (user.role === "student" || user.role === "trial") {
+        await logAction(user.id, user.name, "student_login", "user", user.id, user.name, {
+          ip,
+          user_agent: (req.headers["user-agent"] || "").slice(0, 120),
+        });
+      }
+
       // Set httpOnly cookie
       res.cookie("ampla_token", token, {
         httpOnly: true,
