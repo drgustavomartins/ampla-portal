@@ -1008,6 +1008,7 @@ export default function AdminDashboard() {
     materialsAccess: false,
     mentorshipStartDate: "", mentorshipEndDate: "",
     planKey: "",
+    moduleContentExpiresAt: "",
   });
   // Per-user module permissions state: { [moduleId]: { enabled, startDate, endDate } }
   const [editUserModules, setEditUserModules] = useState<Record<number, { enabled: boolean; startDate: string; endDate: string }>>({});
@@ -1036,19 +1037,27 @@ export default function AdminDashboard() {
       mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
       mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
       planKey: (s as any).planKey || "",
+      moduleContentExpiresAt: (s as any).moduleContentExpiresAt ? (s as any).moduleContentExpiresAt.slice(0, 16) : "",
     });
     // Load user module permissions
     try {
       const res = await apiRequest("GET", `/api/admin/students/${s.id}/modules`);
       const userMods: any[] = await res.json();
       const modsMap: Record<number, { enabled: boolean; startDate: string; endDate: string }> = {};
-      userMods.forEach((um: any) => {
-        modsMap[um.moduleId] = {
-          enabled: um.enabled,
-          startDate: um.startDate ? um.startDate.slice(0, 10) : "",
-          endDate: um.endDate ? um.endDate.slice(0, 10) : "",
-        };
-      });
+      if (Array.isArray(userMods) && userMods.length > 0) {
+        userMods.forEach((um: any) => {
+          modsMap[um.moduleId] = {
+            enabled: um.enabled,
+            startDate: um.startDate ? um.startDate.slice(0, 10) : "",
+            endDate: um.endDate ? um.endDate.slice(0, 10) : "",
+          };
+        });
+      } else if ((s as any).planKey) {
+        // No individual records but has a plan — pre-select all modules
+        modules.forEach((m: any) => {
+          modsMap[m.id] = { enabled: true, startDate: "", endDate: "" };
+        });
+      }
       setEditUserModules(modsMap);
     } catch { setEditUserModules({}); }
     // Load user material category permissions
@@ -1056,7 +1065,12 @@ export default function AdminDashboard() {
       const res = await apiRequest("GET", `/api/admin/students/${s.id}/material-categories`);
       const userCats: any[] = await res.json();
       const catsMap: Record<string, boolean> = {};
-      userCats.forEach((uc: any) => { catsMap[uc.categoryTitle] = uc.enabled; });
+      if (Array.isArray(userCats) && userCats.length > 0) {
+        userCats.forEach((uc: any) => { catsMap[uc.categoryTitle] = uc.enabled; });
+      } else if (s.materialsAccess) {
+        // No individual records but has materials access — pre-select all
+        MATERIAL_CATEGORY_TITLES.forEach(c => { catsMap[c] = true; });
+      }
       setEditUserMaterialCats(catsMap);
     } catch { setEditUserMaterialCats({}); }
   };
@@ -2285,7 +2299,23 @@ export default function AdminDashboard() {
                     <h4 className="text-xs font-semibold text-gold uppercase tracking-brand flex items-center gap-2">
                       <Layers className="w-3.5 h-3.5" /> Modulos
                     </h4>
-                    <p className="text-xs text-muted-foreground">Configure quais modulos o aluno pode acessar. Deixe todos desativados para usar o acesso do plano.</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">Configure quais modulos o aluno pode acessar.</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allOn = modules.every((m: any) => editUserModules[m.id]?.enabled);
+                          const newMap: Record<number, { enabled: boolean; startDate: string; endDate: string }> = {};
+                          modules.forEach((m: any) => {
+                            newMap[m.id] = { enabled: !allOn, startDate: editUserModules[m.id]?.startDate || "", endDate: editUserModules[m.id]?.endDate || "" };
+                          });
+                          setEditUserModules(newMap);
+                        }}
+                        className="text-xs text-gold hover:text-gold/80 transition-colors shrink-0"
+                      >
+                        {modules.every((m: any) => editUserModules[m.id]?.enabled) ? "Desmarcar todos" : "Selecionar todos"}
+                      </button>
+                    </div>
                     <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                       {modules.sort((a, b) => a.order - b.order).map((mod) => {
                         const entry = editUserModules[mod.id];
@@ -2344,7 +2374,21 @@ export default function AdminDashboard() {
                     </div>
                     {editStudentForm.materialsAccess && (
                       <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground">Selecione as categorias de materiais. Deixe todas desativadas para usar o acesso do plano.</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-muted-foreground">Selecione as categorias de materiais.</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const allOn = MATERIAL_CATEGORY_TITLES.every(t => editUserMaterialCats[t]);
+                              const newCats: Record<string, boolean> = {};
+                              MATERIAL_CATEGORY_TITLES.forEach(c => { newCats[c] = !allOn; });
+                              setEditUserMaterialCats(newCats);
+                            }}
+                            className="text-xs text-gold hover:text-gold/80 transition-colors shrink-0"
+                          >
+                            {MATERIAL_CATEGORY_TITLES.every(t => editUserMaterialCats[t]) ? "Desmarcar todos" : "Selecionar todos"}
+                          </button>
+                        </div>
                         {MATERIAL_CATEGORY_TITLES.map((title) => (
                           <div key={title} className="flex items-center justify-between rounded-lg border border-border/20 bg-background/30 px-3 py-2">
                             <span className="text-sm">{title}</span>
@@ -2356,6 +2400,20 @@ export default function AdminDashboard() {
                         ))}
                       </div>
                     )}
+                  </div>
+
+                  <div className="w-full h-px bg-border/30" />
+
+                  {/* ── Section: Content Expiry ── */}
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Acesso ao conteudo expira em</Label>
+                    <Input
+                      type="datetime-local"
+                      value={editStudentForm.moduleContentExpiresAt}
+                      onChange={e => setEditStudentForm(f => ({ ...f, moduleContentExpiresAt: e.target.value }))}
+                      className="bg-background/50 border-border/40"
+                    />
+                    <p className="text-[10px] text-muted-foreground">Quando expirar, modulos e materiais ficam bloqueados. Acesso ao portal continua.</p>
                   </div>
 
                   <div className="w-full h-px bg-border/30" />
@@ -2464,6 +2522,7 @@ export default function AdminDashboard() {
                       data.clinicalPracticeHours = editStudentForm.clinicalPracticeHours ?? 0;
                       data.clinicalObservationHours = editStudentForm.clinicalObservationHours ?? 0;
                       data.materialsAccess = editStudentForm.materialsAccess;
+                      data.moduleContentExpiresAt = editStudentForm.moduleContentExpiresAt ? new Date(editStudentForm.moduleContentExpiresAt).toISOString() : null;
                       if (editStudentForm.planKey && editStudentForm.planKey !== "none") {
                         data.planKey = editStudentForm.planKey;
                       } else if (editStudentForm.planKey === "none") {
