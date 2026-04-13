@@ -1941,49 +1941,56 @@ export default function AdminDashboard() {
                 <div className="space-y-2">
                   {filteredStudents.map((s) => {
                     const plan = plans.find(p => p.id === s.planId);
-                    const daysLeft = s.accessExpiresAt
-                      ? Math.max(0, Math.ceil((new Date(s.accessExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-                      : 0;
                     const progress = getStudentProgress(s.id);
+                    const studentModIds = studentModulesSummary[s.id] || [];
+                    const studentMods = modules.filter((m: any) => studentModIds.includes(m.id));
+                    const practiceH = (s as any).clinicalPracticeHours || 0;
+                    const obsH = (s as any).clinicalObservationHours || 0;
+                    const contentExpiry = (s as any).moduleContentExpiresAt;
+                    const contentDaysLeft = contentExpiry ? Math.ceil((new Date(contentExpiry).getTime() - Date.now()) / 86400000) : null;
+                    const planKeyLabels: Record<string, string> = {
+                      modulo_avulso: "Modulo Avulso", pacote_completo: "Pacote Completo",
+                      observador_essencial: "Observador Essencial", observador_avancado: "Observador Avancado",
+                      observador_intensivo: "Observador Intensivo", imersao: "Imersao",
+                      vip_online: "VIP Online", vip_presencial: "VIP Presencial", vip_completo: "VIP Completo",
+                      extensao_acompanhamento: "Extensao Acompanhamento",
+                      horas_clinicas_1: "Horas Clinicas (1)", horas_clinicas_2: "Horas Clinicas (2)", horas_clinicas_3: "Horas Clinicas (3)",
+                    };
+                    const planLabel = (s as any).planKey ? (planKeyLabels[(s as any).planKey] || (s as any).planKey.replace(/_/g, ' ')) : (plan ? plan.name : 'Experiencia');
+
                     return (
                       <Card key={s.id} className="border-border/30 bg-card/50 hover:bg-card/70 transition-colors">
-                        <CardContent className="p-4 space-y-3">
+                        <CardContent className="p-4 space-y-2.5">
+                          {/* Row 1: Name + status + action buttons */}
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <p className="font-medium truncate text-foreground">{s.name}</p>
                                 {s.approved ? (
-                                  <Badge variant="secondary" className="text-[11px] bg-emerald-500/10 text-emerald-400 border-0 shrink-0">
-                                    Ativo
-                                  </Badge>
+                                  <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-0 shrink-0">Ativo</Badge>
                                 ) : (
-                                  <Badge variant="secondary" className="text-[11px] bg-amber-500/10 text-amber-400 border-0 shrink-0">
-                                    Pendente
-                                  </Badge>
+                                  <Badge variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-400 border-0 shrink-0">Pendente</Badge>
                                 )}
                               </div>
-                              <p className="text-sm text-muted-foreground truncate mt-0.5">{s.email}</p>
-                              {s.phone && <p className="text-xs text-muted-foreground truncate mt-0.5">{s.phone}</p>}
+                              <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                {s.email}{s.phone ? ` | ${s.phone}` : ''}
+                              </p>
                             </div>
-                            <div className="flex items-center gap-1 shrink-0">
+                            <div className="flex items-center gap-0.5 shrink-0">
                               {s.approved && (
-                                <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0" onClick={() => setSelectedStudent(s)} title="Ver progresso">
+                                <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-7 w-7 p-0" onClick={() => setSelectedStudent(s)} title="Ver progresso">
                                   <Eye className="w-3.5 h-3.5" />
                                 </Button>
                               )}
-                              <Button
-                                size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0"
-                                onClick={() => openEditStudent(s)}
-                                title="Editar aluno"
-                              >
+                              <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-7 w-7 p-0" onClick={() => openEditStudent(s)} title="Editar aluno">
                                 <Pencil className="w-3.5 h-3.5" />
                               </Button>
-                              <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0" onClick={() => resetPasswordMutation.mutate(s.id)} title="Resetar senha" disabled={resetPasswordMutation.isPending}>
+                              <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-7 w-7 p-0" onClick={() => resetPasswordMutation.mutate(s.id)} title="Resetar senha" disabled={resetPasswordMutation.isPending}>
                                 <KeyRound className="w-3.5 h-3.5" />
                               </Button>
                               {s.phone && (
                                 <a href={`https://wa.me/55${s.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
-                                  <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-green-400 h-8 w-8 p-0" title="WhatsApp">
+                                  <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-green-400 h-7 w-7 p-0" title="WhatsApp">
                                     <MessageCircle className="w-3.5 h-3.5" />
                                   </Button>
                                 </a>
@@ -1991,7 +1998,7 @@ export default function AdminDashboard() {
                               {isSuperAdmin && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0" data-testid={`button-delete-student-${s.id}`}>
+                                  <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-7 w-7 p-0" data-testid={`button-delete-student-${s.id}`}>
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </Button>
                                 </AlertDialogTrigger>
@@ -2010,84 +2017,61 @@ export default function AdminDashboard() {
                             </div>
                           </div>
 
+                          {/* Row 2: Info grid (only for approved students) */}
                           {s.approved && (
-                            <div className="grid grid-cols-3 gap-2 text-xs">
-                              {plan && (
-                                <div className="bg-background/30 rounded-md px-2.5 py-1.5">
-                                  <span className="text-muted-foreground block text-[10px] uppercase tracking-wider">Plano</span>
-                                  <span className="text-foreground font-medium">{plan.name}</span>
-                                </div>
+                            <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                              <div><span className="text-muted-foreground">Plano:</span> <span className="font-medium text-foreground">{planLabel}</span></div>
+                              <div><span className="text-muted-foreground">Aulas:</span> <span className={`font-medium ${progress.percent === 100 ? 'text-emerald-400' : 'text-foreground'}`}>{progress.completed}/{progress.total} ({progress.percent}%)</span></div>
+                              <div><span className="text-muted-foreground">Visualizacao:</span> <span className={`font-medium ${contentDaysLeft !== null && contentDaysLeft <= 0 ? 'text-red-400' : contentDaysLeft !== null && contentDaysLeft < 30 ? 'text-amber-400' : 'text-foreground'}`}>{contentDaysLeft === null ? 'Vitalicio' : contentDaysLeft <= 0 ? 'Expirado' : contentDaysLeft + ' dias'}</span></div>
+                              {(s as any).mentorshipEndDate && (
+                                <div><span className="text-muted-foreground">Mentoria:</span> <span className="font-medium text-foreground">ate {new Date((s as any).mentorshipEndDate).toLocaleDateString('pt-BR')}</span></div>
                               )}
-                              {daysLeft > 0 && daysLeft < 730 ? (
-                                <div className="bg-background/30 rounded-md px-2.5 py-1.5">
-                                  <span className="text-muted-foreground block text-[10px] uppercase tracking-wider">Restante</span>
-                                  <span className="text-foreground font-medium">{daysLeft} dias</span>
-                                </div>
-                              ) : (
-                                <div className="bg-background/30 rounded-md px-2.5 py-1.5">
-                                  <span className="text-muted-foreground block text-[10px] uppercase tracking-wider">Progresso</span>
-                                  <span className={`font-medium ${progress.percent === 100 ? 'text-emerald-400' : progress.percent > 0 ? 'text-gold' : 'text-muted-foreground'}`}>{progress.percent}%</span>
-                                </div>
-                              )}
-                              <div className="bg-background/30 rounded-md px-2.5 py-1.5">
-                                <span className="text-muted-foreground block text-[10px] uppercase tracking-wider">Aulas</span>
-                                <span className={`font-medium ${progress.percent === 100 ? "text-emerald-400" : "text-foreground"}`}>
-                                  {progress.completed}/{progress.total}
-                                </span>
-                              </div>
                             </div>
                           )}
-                          {!s.approved && plan && (
-                            <div className="text-xs text-muted-foreground">Plano: {plan.name}</div>
+                          {!s.approved && (
+                            <div className="text-xs text-muted-foreground">Plano: {planLabel}</div>
                           )}
-                          {/* Info adicional: plano + horas + modules */}
-                          {s.approved && (() => {
-                            const studentModIds = studentModulesSummary[s.id] || [];
-                            const studentMods = modules.filter((m: any) => studentModIds.includes(m.id));
-                            const planLabel = (s as any).planKey?.replace(/_/g, ' ') || '';
-                            const practiceH = (s as any).clinicalPracticeHours || 0;
-                            const obsH = (s as any).clinicalObservationHours || 0;
 
-                            return (
-                              <div className="space-y-1.5">
-                                <div className="flex flex-wrap gap-1">
-                                  {planLabel && (
-                                    <span className="inline-flex items-center rounded-md bg-gold/10 border border-gold/20 px-1.5 py-0.5 text-[9px] font-semibold text-gold uppercase tracking-wider">
-                                      {planLabel}
-                                    </span>
-                                  )}
+                          {/* Row 3: Modules + Materials + Hours badges */}
+                          {s.approved && (
+                            <div className="space-y-1">
+                              {studentMods.length > 0 && (
+                                <div className="text-[11px]">
+                                  <span className="text-muted-foreground">Modulos: </span>
+                                  <span className="text-foreground">{studentMods.map((m: any) => m.title.length > 15 ? m.title.slice(0, 13) + '\u2026' : m.title).join(' | ')}</span>
+                                </div>
+                              )}
+                              <div className="text-[11px]">
+                                <span className="text-muted-foreground">Materiais: </span>
+                                <span className="text-foreground">{(s as any).materialsAccess ? 'Todos' : 'Nenhum'}</span>
+                              </div>
+                              {(practiceH > 0 || obsH > 0) && (
+                                <div className="flex flex-wrap gap-1.5 mt-0.5">
                                   {practiceH > 0 && (
-                                    <span className="inline-flex items-center rounded-md bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 text-[9px] font-medium text-green-400">
+                                    <span className="inline-flex items-center rounded-md bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 text-[10px] font-medium text-green-400">
                                       {practiceH}h pratica
                                     </span>
                                   )}
                                   {obsH > 0 && (
-                                    <span className="inline-flex items-center rounded-md bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 text-[9px] font-medium text-indigo-400">
+                                    <span className="inline-flex items-center rounded-md bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 text-[10px] font-medium text-indigo-400">
                                       {obsH}h observacao
                                     </span>
                                   )}
                                 </div>
-                                {studentMods.length > 0 && (
-                                  <div className="flex flex-wrap gap-1">
-                                    {studentMods.map((m: any) => (
-                                      <span key={m.id} className="inline-flex items-center rounded bg-white/5 border border-white/10 px-1.5 py-0.5 text-[8px] text-muted-foreground">
-                                        {m.title.length > 15 ? m.title.slice(0, 13) + '\u2026' : m.title}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })()}
-
-                          {s.approved && lessons.length > 0 && (
-                            <div className="flex items-center gap-3">
-                              <Progress value={progress.percent} className="h-1.5 flex-1" />
-                              <span className="text-xs text-muted-foreground w-8 text-right">{progress.percent}%</span>
+                              )}
                             </div>
                           )}
 
-                          <div className="flex items-center gap-2 pt-1">
+                          {/* Row 4: Progress bar */}
+                          {s.approved && lessons.length > 0 && (
+                            <div className="flex items-center gap-3">
+                              <Progress value={progress.percent} className="h-1.5 flex-1" />
+                              <span className="text-[11px] text-muted-foreground w-8 text-right">{progress.percent}%</span>
+                            </div>
+                          )}
+
+                          {/* Row 5: Action buttons */}
+                          <div className="flex items-center gap-2">
                             {s.approved ? (
                               <>
                                 <Button size="sm" variant="outline" className="border-gold/30 text-gold hover:bg-gold/10 text-xs flex-1 sm:flex-none" onClick={() => { setRenewingStudent(s); setRenewDays(30); }} title="Renovar acesso">
@@ -2313,11 +2297,11 @@ export default function AdminDashboard() {
                       <Calendar className="w-3.5 h-3.5" /> Plano e Vigencia
                     </h4>
                     <div className="space-y-1.5">
-                      <Label className="text-xs uppercase tracking-wider text-gold">Perfil de Acesso</Label>
+                      <Label className="text-xs uppercase tracking-wider text-gold">Plano</Label>
                       <Select value={editStudentForm.planKey || ""} onValueChange={(v) => setEditStudentForm(f => ({ ...f, planKey: v }))}>
-                        <SelectTrigger className="bg-background/50 border-gold/30 border"><SelectValue placeholder="Selecione o perfil" /></SelectTrigger>
+                        <SelectTrigger className="bg-background/50 border-gold/30 border"><SelectValue placeholder="Selecione o plano" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">Sem perfil</SelectItem>
+                          <SelectItem value="none">Sem plano</SelectItem>
                           <SelectItem value="modulo_avulso">Modulo Avulso</SelectItem>
                           <SelectItem value="pacote_completo">Pacote Completo</SelectItem>
                           <SelectItem value="observador_essencial">Observador Essencial</SelectItem>
@@ -2333,7 +2317,7 @@ export default function AdminDashboard() {
                           <SelectItem value="horas_clinicas_3">Horas Clinicas (3 encontros)</SelectItem>
                         </SelectContent>
                       </Select>
-                      <p className="text-[10px] text-muted-foreground">Ao salvar com um perfil diferente, modulos e materiais serao provisionados automaticamente</p>
+                      <p className="text-[10px] text-muted-foreground">Ao salvar com um plano diferente, modulos e materiais serao provisionados automaticamente</p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
@@ -2344,11 +2328,6 @@ export default function AdminDashboard() {
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground">Data de Fim da Mentoria</Label>
                         <Input type="date" value={editStudentForm.mentorshipEndDate} onChange={e => setEditStudentForm(f => ({ ...f, mentorshipEndDate: e.target.value }))} className="bg-background/50 border-border/40" />
                       </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs uppercase tracking-wider text-muted-foreground">Data de Expiracao do Acesso</Label>
-                      <Input type="datetime-local" value={editStudentForm.accessExpiresAt} onChange={e => setEditStudentForm(f => ({ ...f, accessExpiresAt: e.target.value }))} className="bg-background/50 border-border/40" />
-                      <p className="text-xs text-muted-foreground">Controla quando o login do aluno expira</p>
                     </div>
                   </div>
 
@@ -2466,14 +2445,14 @@ export default function AdminDashboard() {
 
                   {/* ── Section: Content Expiry ── */}
                   <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Acesso ao conteudo expira em</Label>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Visualizacao das aulas ate</Label>
                     <Input
                       type="datetime-local"
                       value={editStudentForm.moduleContentExpiresAt}
                       onChange={e => setEditStudentForm(f => ({ ...f, moduleContentExpiresAt: e.target.value }))}
                       className="bg-background/50 border-border/40"
                     />
-                    <p className="text-[10px] text-muted-foreground">Quando expirar, modulos e materiais ficam bloqueados. Acesso ao portal continua.</p>
+                    <p className="text-[10px] text-muted-foreground">Quando expirar, modulos e materiais ficam bloqueados. Acesso ao portal continua vitalicio.</p>
                   </div>
 
                   <div className="w-full h-px bg-border/30" />
