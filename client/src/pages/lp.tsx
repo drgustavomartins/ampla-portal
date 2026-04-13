@@ -146,9 +146,9 @@ export default function LandingPage() {
           />
 
           {/* headline */}
-          <h1 className="lp-serif text-3xl sm:text-4xl md:text-[2.75rem] leading-tight font-bold max-w-3xl mx-auto mb-5">
+          <h1 className="lp-serif text-3xl sm:text-4xl md:text-[2.75rem] leading-relaxed font-bold max-w-3xl mx-auto mb-6">
             Pare de Competir por Preço de Seringa.{" "}
-            <span className="text-[#D4A843]">Domine a Face Inteira.</span>
+            <span className="text-[#D4A843]">Domine o Full Face.</span>
           </h1>
 
           <p className="text-gray-400 text-base md:text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
