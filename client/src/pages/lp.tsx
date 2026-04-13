@@ -373,16 +373,17 @@ export default function LandingPage() {
             <FadeIn>
               <div className="bg-[#0F1A2E] border border-white/10 rounded-2xl p-7 flex flex-col">
                 <span className="inline-block text-[11px] font-semibold uppercase tracking-widest text-[#D4A843] bg-[#D4A843]/10 px-3 py-1 rounded-full self-start mb-5">
-                  Digital
+                  Online
                 </span>
                 <h3 className="lp-serif text-xl font-bold mb-1">Curso Completo</h3>
-                <p className="text-sm text-gray-400 mb-6">Aprenda no seu ritmo</p>
+                <p className="text-sm text-gray-400 mb-6">Estude online, no seu ritmo</p>
 
                 <ul className="space-y-3 mb-8 flex-1">
                   {[
-                    "Todos os 4 modulos completos",
-                    "Mais de 60 aulas gravadas",
-                    "Materiais cientificos complementares",
+                    "Todos os 4 modulos completos (60+ aulas)",
+                    "Toxina, Preenchedores, Bioestimuladores e Biorregeneradores",
+                    "Encontros quinzenais ao vivo",
+                    "Materiais cientificos de todos os modulos",
                     "Acesso ao portal por 12 meses",
                     "Certificado de participação",
                   ].map((f, i) => (
@@ -394,7 +395,7 @@ export default function LandingPage() {
                 </ul>
 
                 <p className="text-xs text-gray-500 mb-5">
-                  Ideal para quem quer conhecimento técnico solido antes de ir para a prática
+                  Ideal para quem quer dominar a teoria completa antes de ir para a clinica
                 </p>
 
                 <a
@@ -413,21 +414,21 @@ export default function LandingPage() {
                 <div className="flex items-center gap-2 mb-5">
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-[#0A0D14] bg-[#D4A843] px-3 py-1 rounded-full">
                     <Star className="w-3 h-3" />
-                    Mais Escolhido
+                    Observação Clinica
                   </span>
                 </div>
                 <h3 className="lp-serif text-xl font-bold mb-1">Imersão</h3>
-                <p className="text-sm text-gray-400 mb-6">Aprenda, observe e pratique</p>
+                <p className="text-sm text-gray-400 mb-6">Veja como eu faço na clinica</p>
 
                 <ul className="space-y-3 mb-8 flex-1">
                   {[
                     "Tudo do Curso Completo",
-                    "24h de observação clinica presencial",
-                    "8h de prática supervisionada com pacientes modelo",
-                    "Canal direto com Dr. Gustavo por 3 meses",
-                    "Mentoria individual 1:1 pos-sessão",
-                    "Dimensão comercial e gestão",
-                    "Certificado com carga horária",
+                    "24h de observação clinica presencial (6 turnos)",
+                    "Acompanhe procedimentos reais ao vivo",
+                    "Mentoria online com canal direto por 3 meses",
+                    "Tire duvidas diretamente com o Dr. Gustavo",
+                    "Dimensão comercial e gestão de clinica",
+                    "Certificado com carga horária presencial",
                   ].map((f, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                       <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
@@ -437,7 +438,7 @@ export default function LandingPage() {
                 </ul>
 
                 <p className="text-xs text-gray-500 mb-5">
-                  Ideal para quem quer sair praticando com segurança
+                  Ideal para quem quer ver de perto antes de atender
                 </p>
 
                 <a
@@ -463,24 +464,24 @@ export default function LandingPage() {
                 />
 
                 <span className="relative inline-block text-[11px] font-semibold uppercase tracking-widest text-[#D4A843] bg-[#D4A843]/10 px-3 py-1 rounded-full self-start mb-5">
-                  Formação Completa
+                  Hands-on
                 </span>
                 <h3 className="lp-serif text-xl font-bold mb-1 relative">Mentoria VIP Completa</h3>
                 <p className="text-sm text-gray-400 mb-6 relative">
-                  A jornada mais completa que existe
+                  Bote a mão na massa e atenda pacientes
                 </p>
 
                 <ul className="space-y-3 mb-8 flex-1 relative">
                   {[
                     "Tudo da Imersão",
+                    "16h de prática hands-on com pacientes modelo",
+                    "Supervisão direta do Dr. Gustavo nos atendimentos",
                     "Acompanhamento individual por 6 meses",
-                    "Encontros quinzenais ao vivo com o Dr. Gustavo",
-                    "16h de prática presencial com pacientes modelo",
+                    "Encontros quinzenais ao vivo",
                     "Canal exclusivo direto por 6 meses",
-                    "Método NaturalUp® completo (5o modulo exclusivo)",
+                    "Método NaturalUp® completo (modulo exclusivo)",
                     "Análise de casos clinicos em grupo",
                     "Networking com a turma",
-                    "Certificado de conclusão com carga horária",
                   ].map((f, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                       <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
@@ -490,7 +491,7 @@ export default function LandingPage() {
                 </ul>
 
                 <p className="text-xs text-gray-500 mb-5 relative">
-                  Ideal para quem quer transformar a carreira de vez
+                  Ideal para quem quer sair atendendo full face com confiança
                 </p>
 
                 <a
