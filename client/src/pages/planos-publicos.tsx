@@ -898,7 +898,38 @@ export default function PlanosPublicos() {
           </div>
         </div>
 
-        {/* ── RODAPÉ ─────────────────────────────────────────── */}
+        {/* ── OBSERVACAO CLINICA EXTRA ──────────────────────── */}
+        <div className="my-16 h-px bg-gray-200" />
+        <div>
+          <SectionLabel
+            eyebrow="Add-on"
+            title="Turnos de Observacao Clinica"
+            sub="Acompanhe procedimentos ao vivo no consultorio do Dr. Gustavo. Ideal para quem quer ver a pratica antes de aplicar."
+            color="#6366F1"
+          />
+          <div className="grid gap-5 grid-cols-1 sm:grid-cols-3 max-w-4xl mx-auto">
+            {[
+              { title: "1 Turno", hours: "4h", price: "R$ 800", features: ["1 turno de 4 horas", "Observacao ao vivo", "Discussao de casos", "Certificado"] },
+              { title: "2 Turnos", hours: "8h", price: "R$ 1.500", highlight: "Mais escolhido", features: ["2 turnos de 4h (8h total)", "Economia de R$ 100", "Observacao ao vivo", "Discussao de casos", "Certificado"] },
+              { title: "4 Turnos", hours: "16h", price: "R$ 2.800", features: ["4 turnos de 4h (16h total)", "Economia de R$ 400", "Diferentes tecnicas", "Discussao de casos", "Certificado"] },
+            ].map((pkg) => (
+              <div key={pkg.title} className="relative flex flex-col rounded-[28px] overflow-hidden" style={{ background: "linear-gradient(145deg,#EEF2FF 0%,#E0E7FF 60%,#C7D2FE 100%)", boxShadow: "0 4px 28px rgba(0,0,0,0.09), 0 0 0 1px rgba(0,0,0,0.06)" }}>
+                {pkg.highlight && (<div className="absolute top-3 right-3 z-10"><span className="rounded-full px-3 py-1 text-[11px] font-semibold" style={{ background: "#4F46E5", color: "#fff" }}>{pkg.highlight}</span></div>)}
+                <div className="relative p-6 flex flex-col flex-1">
+                  <p className="text-lg font-bold text-gray-900">{pkg.title}</p>
+                  <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full w-fit" style={{ background: "#4F46E5", color: "#fff" }}>{pkg.hours} observacao</span>
+                  <p className="mt-4 text-3xl font-extrabold text-gray-900">{pkg.price}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">a vista</p>
+                  <ul className="mt-4 space-y-2 flex-1">
+                    {pkg.features.map((f, i) => (<li key={i} className="flex items-start gap-2 text-sm text-gray-700"><Check className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />{f}</li>))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── RODAPE ─────────────────────────────────────────── */}
         <div className="mt-20 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="rounded-3xl bg-white p-7 ring-1 ring-gray-100">
             <Star className="h-4 w-4 text-[#D4A843] mb-3" />

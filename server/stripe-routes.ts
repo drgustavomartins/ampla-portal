@@ -208,10 +208,10 @@ export function registerStripeRoutes(app: Express) {
         const now = new Date().toISOString();
         await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at) VALUES (${auth.userId}, 'usage', ${-creditDeduction}, ${'Pagamento integral com creditos: ' + plan.name}, ${uniqueRef}, ${now})`);
 
-        const isHoursPackage = plan.group === "horas";
+        const isHoursPackage = plan.group === "horas" || plan.group === "observacao_extra";
         if (isHoursPackage) {
-          // Horas clinicas avulsas: adicionar horas ao saldo existente
-          const addHours = plan.practiceHours || 0;
+          // Horas clinicas/observacao avulsas: adicionar horas ao saldo existente
+          const addHours = (plan.practiceHours || 0) + (plan.clinicalHours || 0);
           await db.execute(sql`UPDATE users SET clinical_practice_hours = COALESCE(clinical_practice_hours, 0) + ${addHours}, clinical_practice_access = true WHERE id = ${auth.userId}`);
           console.log(`[checkout credits 100%] Adicionadas ${addHours}h clinicas para userId ${auth.userId}`);
         } else {
