@@ -22,7 +22,7 @@ interface PlanData {
   key: string;
   name: string;
   description: string;
-  group: "digital" | "observador" | "vip" | "horas";
+  group: "digital" | "observador" | "vip" | "horas" | "observacao_extra";
   highlight?: string;
   price: number;
   priceFormatted: string;
@@ -44,6 +44,7 @@ const GROUP_LABELS: Record<string, string> = {
   observador: "Observação Clínica",
   vip: "Mentoria VIP",
   horas: "Horas Clínicas Extras",
+  observacao_extra: "Turnos de Observação",
 };
 
 const GROUP_DESCRIPTIONS: Record<string, string> = {
@@ -51,12 +52,13 @@ const GROUP_DESCRIPTIONS: Record<string, string> = {
   observador: "Observe a rotina clínica real do Dr. Gustavo presencialmente",
   vip: "Mentoria individual e formação completa em HOF",
   horas: "Exclusivo para alunos com mentoria VIP ativa ou concluida",
+  observacao_extra: "Turnos adicionais de observação clínica para alunos com mentoria ativa",
 };
 
-const GROUP_ORDER = ["digital", "observador", "vip", "horas"];
+const GROUP_ORDER = ["digital", "observador", "vip", "horas", "observacao_extra"];
 
-// Planos de mentoria que permitem comprar horas extras
-const MENTORIA_PLANS = ["vip_online", "vip_presencial", "vip_completo"];
+// Planos de mentoria que permitem comprar horas extras e turnos de observação
+const MENTORIA_PLANS = ["vip_online", "vip_presencial", "vip_completo", "observador_essencial", "observador_avancado", "observador_intensivo"];
 
 function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key: string) => void; isLoading: boolean }) {
   const [expanded, setExpanded] = useState(false);
@@ -268,9 +270,9 @@ export default function PlanosPage() {
   };
 
   const handlePagar = async (planKey: string) => {
-    // Bloquear horas clínicas se não tem mentoria ativa
-    if (planKey.startsWith("horas_clinicas") && !MENTORIA_PLANS.includes(user?.planKey || "")) {
-      alert("Para adquirir horas clínicas extras, você precisa ter um plano de Mentoria VIP ativo.");
+    // Bloquear horas clínicas e observação extra se não tem mentoria ativa
+    if ((planKey.startsWith("horas_clinicas") || planKey.startsWith("observacao_extra")) && !MENTORIA_PLANS.includes(user?.planKey || "")) {
+      alert("Para adquirir este pacote, você precisa ter um plano de Mentoria VIP ou Observação Clínica ativo.");
       return;
     }
     if (!user) {
@@ -512,13 +514,13 @@ export default function PlanosPage() {
             </p>
           </div>
 
-          {/* Aviso de mentoria necessária para horas (aparece só se grupo horas está visível e aluno não tem mentoria) */}
-          {(!selectedGroup || selectedGroup === "horas") && user && !MENTORIA_PLANS.includes(user.planKey || "") && (groupedPlans["horas"] || []).length > 0 && (
+          {/* Aviso de mentoria necessária para horas/observação extra (aparece se grupo visível e aluno não tem mentoria) */}
+          {(!selectedGroup || selectedGroup === "horas" || selectedGroup === "observacao_extra") && user && !MENTORIA_PLANS.includes(user.planKey || "") && ((groupedPlans["horas"] || []).length > 0 || (groupedPlans["observacao_extra"] || []).length > 0) && (
             <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-500/5 p-6 text-center">
               <Clock className="mx-auto mb-3 h-6 w-6 text-amber-400" />
               <h3 className="text-lg font-semibold text-[#1a1a1a]">Mentoria ativa necessária</h3>
               <p className="mt-2 text-sm text-gray-500">
-                Para adquirir pacotes de horas clínicas extras, você precisa ter um plano de Mentoria VIP ativo (Online, Presencial ou Completo).
+                Para adquirir pacotes de horas clínicas ou turnos de observação extras, você precisa ter um plano de Mentoria VIP ou Observação Clínica ativo.
               </p>
             </div>
           )}

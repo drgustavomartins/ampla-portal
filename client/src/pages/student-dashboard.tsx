@@ -406,7 +406,12 @@ export default function StudentDashboard() {
 
   // ========== MAIN DASHBOARD ==========
 
-  const firstName = user?.name?.split(" ")[0] || "";
+  const firstName = (() => {
+    const parts = user?.name?.split(" ") || [];
+    if (parts.length === 0) return "";
+    if (/^(dr\.?|dra\.?)$/i.test(parts[0]) && parts.length > 1) return `${parts[0]} ${parts[1]}`;
+    return parts[0];
+  })();
   const initials = user?.name
     ? user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
     : "?";
