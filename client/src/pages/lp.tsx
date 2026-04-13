@@ -137,18 +137,18 @@ export default function LandingPage() {
           }}
         />
 
-        <div className="relative max-w-5xl mx-auto px-5 pt-10 pb-16 md:pt-14 md:pb-24 text-center">
+        <div className="relative max-w-5xl mx-auto px-5 pt-8 pb-12 md:pt-10 md:pb-20 text-center">
           {/* logo */}
           <img
             src="/logo-transparent.png"
             alt="Ampla Facial"
-            className="h-20 md:h-24 mx-auto mb-10 opacity-90"
+            className="h-24 md:h-32 mx-auto mb-6 opacity-90"
           />
 
           {/* headline */}
           <h1 className="lp-serif text-3xl sm:text-4xl md:text-[2.75rem] leading-tight font-bold max-w-3xl mx-auto mb-5">
-            Domine Harmonização Orofacial Full Face{" "}
-            <span className="lp-gold-gradient">com Quem Faz Isso Todo Dia na Clínica</span>
+            Pare de Competir por Preço de Seringa.{" "}
+            <span className="text-[#D4A843]">Domine a Face Inteira.</span>
           </h1>
 
           <p className="text-gray-400 text-base md:text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
@@ -179,7 +179,7 @@ export default function LandingPage() {
       {/* ════════════════════════════════════════════════════════════════════
           2 · PAIN POINTS
          ════════════════════════════════════════════════════════════════════ */}
-      <section className="bg-[#F5F0E8] py-16 md:py-24">
+      <section className="bg-[#F5F0E8] py-12 md:py-16">
         <div className="max-w-5xl mx-auto px-5">
           <FadeIn>
             <h2 className="lp-serif text-2xl md:text-3xl font-bold text-[#0A0D14] text-center mb-12">
@@ -192,7 +192,7 @@ export default function LandingPage() {
               [
                 {
                   icon: ShieldAlert,
-                  text: "Terminou a pos mas ainda não se sente seguro para atender full face",
+                  text: "Terminou a pós mas ainda não se sente seguro para atender full face",
                 },
                 {
                   icon: Puzzle,
@@ -223,28 +223,27 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── CTA WhatsApp (after pain points) ────────────────────── */}
-      <section className="bg-[#0A0D14] py-10">
-        <div className="max-w-md mx-auto px-5 text-center">
-          <FadeIn>
-            <p className="text-gray-400 text-sm mb-4">Se identificou? Fale comigo agora</p>
-            <a
-              href={WA_LINK}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 bg-[#25D366] text-white font-semibold text-sm px-8 py-3.5 rounded-xl hover:opacity-90 transition-opacity w-full"
-            >
-              <WhatsAppIcon className="w-5 h-5" />
-              Conversar no WhatsApp
-            </a>
-          </FadeIn>
+      {/* WhatsApp CTA strip */}
+      <section className="bg-[#0A0D14] py-8 border-y border-white/5">
+        <div className="max-w-3xl mx-auto px-5 text-center">
+          <p className="text-sm text-gray-400 mb-3">Se identificou? Fale comigo agora</p>
+          <a
+            href="https://wa.me/5521995523509?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20quero%20saber%20mais%20sobre%20a%20forma%C3%A7%C3%A3o"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-medium text-sm"
+            style={{ backgroundColor: '#25D366' }}
+          >
+            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.952 11.952 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.319 0-4.47-.742-6.227-2.003l-.435-.326-2.847.954.954-2.847-.326-.435A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+            Conversar no WhatsApp
+          </a>
         </div>
       </section>
 
       {/* ════════════════════════════════════════════════════════════════════
           3 · THE METHOD
          ════════════════════════════════════════════════════════════════════ */}
-      <section className="py-16 md:py-24">
+      <section className="py-12 md:py-16">
         <div className="max-w-5xl mx-auto px-5 text-center">
           <FadeIn>
             <h2 className="lp-serif text-2xl md:text-3xl font-bold mb-3">O Método Ampla Facial</h2>
@@ -290,7 +289,7 @@ export default function LandingPage() {
       {/* ════════════════════════════════════════════════════════════════════
           4 · MODULES
          ════════════════════════════════════════════════════════════════════ */}
-      <section className="bg-[#F5F0E8] py-16 md:py-24">
+      <section className="bg-[#F5F0E8] py-12 md:py-16">
         <div className="max-w-5xl mx-auto px-5">
           <FadeIn>
             <h2 className="lp-serif text-2xl md:text-3xl font-bold text-[#0A0D14] text-center mb-12">
@@ -417,8 +416,9 @@ export default function LandingPage() {
                   {[
                     "Todos os 4 modulos completos (60+ aulas)",
                     "Toxina, Preenchedores, Bioestimuladores e Biorregeneradores",
-                    "Encontros quinzenais ao vivo",
+                    "Encontros quinzenais ao vivo por 6 meses",
                     "Materiais cientificos de todos os modulos",
+                    "Cashback de 5% em creditos na plataforma",
                     "Acesso ao portal por 12 meses",
                     "Certificado de participação",
                   ].map((f, i) => (
@@ -434,8 +434,8 @@ export default function LandingPage() {
                 </p>
 
                 <div className="mt-auto pt-4 border-t border-white/10">
-                  <p className="text-2xl font-bold text-white mb-1">R$ 5.970</p>
-                  <p className="text-xs text-gray-400 mb-4">ou 12x de R$ 547</p>
+                  <p className="text-2xl font-bold text-white mb-1">12x de R$ 539</p>
+                  <p className="text-xs text-gray-500 mb-4">ou R$ 5.970 a vista</p>
                   <a
                     href="https://portal.amplafacial.com.br/#/planos?plan=pacote_completo"
                     style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
@@ -461,10 +461,10 @@ export default function LandingPage() {
                     "Tudo do Curso Completo",
                     "24h de observação clinica presencial (6 turnos)",
                     "Acompanhe procedimentos reais ao vivo",
+                    "Encontros quinzenais ao vivo por 6 meses",
                     "Mentoria online com canal direto por 3 meses",
-                    "Tire duvidas diretamente com o Dr. Gustavo",
-                    "Dimensão comercial e gestão de clinica",
-                    "Certificado com carga horária presencial",
+                    "Cashback de 10% em creditos na plataforma",
+                    "Certificado com carga horaria presencial",
                   ].map((f, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                       <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
@@ -478,8 +478,8 @@ export default function LandingPage() {
                 </p>
 
                 <div className="mt-auto pt-4 border-t border-white/10">
-                  <p className="text-2xl font-bold text-white mb-1">R$ 11.997</p>
-                  <p className="text-xs text-gray-400 mb-4">ou consulte condições</p>
+                  <p className="text-2xl font-bold text-white mb-1">12x de R$ 1.083</p>
+                  <p className="text-xs text-gray-500 mb-4">ou R$ 11.997 a vista</p>
                   <a
                     href="https://portal.amplafacial.com.br/#/planos?plan=imersao"
                     style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
@@ -518,14 +518,14 @@ export default function LandingPage() {
                 <ul className="space-y-3 mb-8 flex-1 relative">
                   {[
                     "Tudo da Imersão",
-                    "16h de prática hands-on com pacientes modelo",
+                    "16h de pratica hands-on com pacientes modelo",
                     "Supervisão direta do Dr. Gustavo nos atendimentos",
                     "Acompanhamento individual por 6 meses",
-                    "Encontros quinzenais ao vivo",
+                    "Encontros quinzenais ao vivo por 6 meses",
                     "Canal exclusivo direto por 6 meses",
-                    "Método NaturalUp® completo (modulo exclusivo)",
-                    "Análise de casos clinicos em grupo",
-                    "Networking com a turma",
+                    "Metodo NaturalUp® completo (modulo exclusivo)",
+                    "Cashback de 10% em creditos na plataforma",
+                    "Analise de casos clinicos em grupo",
                   ].map((f, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                       <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
@@ -539,8 +539,8 @@ export default function LandingPage() {
                 </p>
 
                 <div className="relative mt-auto pt-4 border-t border-white/10">
-                  <p className="text-2xl font-bold text-white mb-1">R$ 17.350</p>
-                  <p className="text-xs text-gray-400 mb-4">ou consulte condições</p>
+                  <p className="text-2xl font-bold text-white mb-1">12x de R$ 1.566</p>
+                  <p className="text-xs text-gray-500 mb-4">ou R$ 17.350 a vista</p>
                   <a
                     href="https://portal.amplafacial.com.br/#/planos?plan=vip_completo"
                     style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
@@ -556,10 +556,41 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Upgrade + Cashback */}
+      <section className="bg-[#0F1A2E] py-12 md:py-16 border-t border-white/5">
+        <div className="max-w-4xl mx-auto px-5">
+          <FadeIn>
+            <h2 className="lp-serif text-xl md:text-2xl font-bold text-center mb-10">
+              Comece por onde faz sentido.<br />
+              <span className="text-[#D4A843]">Evolua quando estiver pronto.</span>
+            </h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-[#0A0D14] rounded-xl p-6 border border-white/10">
+                <h3 className="text-[#D4A843] font-semibold text-sm uppercase tracking-wider mb-3">Upgrade com credito integral</h3>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  Fez o Curso Completo e quer partir para a Imersão ou Mentoria VIP?
+                  Nos primeiros 60 dias, 100% do que voce pagou vira credito no upgrade.
+                  Apos 60 dias, voce ainda aproveita 70% como credito.
+                  Voce nunca perde o que investiu.
+                </p>
+              </div>
+              <div className="bg-[#0A0D14] rounded-xl p-6 border border-white/10">
+                <h3 className="text-[#D4A843] font-semibold text-sm uppercase tracking-wider mb-3">Cashback em creditos</h3>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  Cada plano gera cashback automatico na plataforma: 5% no Curso Completo
+                  e 10% na Imersão e Mentoria VIP. Use seus creditos para adquirir
+                  horas extras de pratica, modulos avulsos ou upgrades de plano.
+                </p>
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* ════════════════════════════════════════════════════════════════════
           6 · ABOUT
          ════════════════════════════════════════════════════════════════════ */}
-      <section className="bg-[#F5F0E8] py-16 md:py-24">
+      <section className="bg-[#F5F0E8] py-12 md:py-16">
         <div className="max-w-5xl mx-auto px-5">
           <FadeIn>
             <div className="flex flex-col items-center gap-8 md:gap-10 text-center">
@@ -604,7 +635,7 @@ export default function LandingPage() {
       {/* ════════════════════════════════════════════════════════════════════
           7 · FAQ
          ════════════════════════════════════════════════════════════════════ */}
-      <section className="py-16 md:py-24">
+      <section className="py-12 md:py-16">
         <div className="max-w-2xl mx-auto px-5">
           <FadeIn>
             <h2 className="lp-serif text-2xl md:text-3xl font-bold text-center mb-10">
