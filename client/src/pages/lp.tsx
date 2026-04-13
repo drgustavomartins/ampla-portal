@@ -7,7 +7,6 @@ import {
   BookOpen,
   Users,
   MessageCircle,
-  Play,
   Check,
   Star,
   ChevronRight,
@@ -157,18 +156,18 @@ export default function LandingPage() {
             Dr. Gustavo Martins
           </p>
 
-          {/* VSL placeholder */}
+          {/* VSL Video */}
           <div
             id="vsl-container"
-            className="relative max-w-3xl mx-auto aspect-video rounded-2xl overflow-hidden border border-white/10 bg-[#0F1A2E] flex items-center justify-center cursor-pointer group"
+            className="relative max-w-3xl mx-auto aspect-video rounded-2xl overflow-hidden border border-white/10 bg-[#0F1A2E]"
           >
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/30" />
-            <div className="relative flex flex-col items-center gap-3">
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-[#D4A843]/20 border-2 border-[#D4A843] flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Play className="w-7 h-7 md:w-9 md:h-9 text-[#D4A843] ml-1" />
-              </div>
-              <span className="text-sm text-gray-400">Assista antes de qualquer coisa</span>
-            </div>
+            <iframe
+              src="https://www.youtube.com/embed/XtMfQaahauQ?rel=0&modestbranding=1"
+              title="Apresentação Ampla Facial"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full"
+            />
           </div>
 
           <p className="mt-5 text-xs md:text-sm text-gray-500">
