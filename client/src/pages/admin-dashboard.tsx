@@ -1954,10 +1954,15 @@ export default function AdminDashboard() {
                                   <span className="text-foreground font-medium">{plan.name}</span>
                                 </div>
                               )}
-                              {daysLeft > 0 && (
+                              {daysLeft > 0 && daysLeft < 730 ? (
                                 <div className="bg-background/30 rounded-md px-2.5 py-1.5">
                                   <span className="text-muted-foreground block text-[10px] uppercase tracking-wider">Restante</span>
                                   <span className="text-foreground font-medium">{daysLeft} dias</span>
+                                </div>
+                              ) : (
+                                <div className="bg-background/30 rounded-md px-2.5 py-1.5">
+                                  <span className="text-muted-foreground block text-[10px] uppercase tracking-wider">Progresso</span>
+                                  <span className={`font-medium ${progress.percent === 100 ? 'text-emerald-400' : progress.percent > 0 ? 'text-gold' : 'text-muted-foreground'}`}>{progress.percent}%</span>
                                 </div>
                               )}
                               <div className="bg-background/30 rounded-md px-2.5 py-1.5">
