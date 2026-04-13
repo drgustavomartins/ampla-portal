@@ -1967,7 +1967,9 @@ export default function AdminDashboard() {
                               <div className="flex items-center gap-2 flex-wrap">
                                 <p className="font-medium truncate text-foreground">{s.name}</p>
                                 {s.approved ? (
-                                  <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-0 shrink-0">Ativo</Badge>
+                                  (s as any).mentorshipEndDate && new Date((s as any).mentorshipEndDate) > new Date()
+                                    ? <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-0 shrink-0">Mentoria Ativa</Badge>
+                                    : <Badge variant="secondary" className="text-[10px] bg-blue-500/10 text-blue-400 border-0 shrink-0">Concluido</Badge>
                                 ) : (
                                   <Badge variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-400 border-0 shrink-0">Pendente</Badge>
                                 )}
