@@ -149,7 +149,7 @@ export default function LandingPage() {
           {/* headline */}
           <h1 className="lp-serif text-3xl sm:text-4xl md:text-[2.75rem] leading-tight font-bold max-w-3xl mx-auto mb-5">
             Domine Harmonização Orofacial Full Face{" "}
-            <span className="lp-gold-gradient">com Quem Faz Isso Todo Dia na Clinica</span>
+            <span className="lp-gold-gradient">com Quem Faz Isso Todo Dia na Clínica</span>
           </h1>
 
           <p className="text-gray-400 text-base md:text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
@@ -224,6 +224,24 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── CTA WhatsApp (after pain points) ────────────────────── */}
+      <section className="bg-[#0A0D14] py-10">
+        <div className="max-w-md mx-auto px-5 text-center">
+          <FadeIn>
+            <p className="text-gray-400 text-sm mb-4">Se identificou? Fale comigo agora</p>
+            <a
+              href={WA_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 bg-[#25D366] text-white font-semibold text-sm px-8 py-3.5 rounded-xl hover:opacity-90 transition-opacity w-full"
+            >
+              <WhatsAppIcon className="w-5 h-5" />
+              Conversar no WhatsApp
+            </a>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* ════════════════════════════════════════════════════════════════════
           3 · THE METHOD
          ════════════════════════════════════════════════════════════════════ */}
@@ -242,12 +260,12 @@ export default function LandingPage() {
                 {
                   icon: BookOpen,
                   title: "Conhecimento Técnico Profundo",
-                  desc: "Mais de 60 aulas com protocolos clinicos detalhados, do basico ao avançado",
+                  desc: "Mais de 60 aulas com protocolos clínicos detalhados, do básico ao avançado",
                 },
                 {
                   icon: Users,
                   title: "Prática Real Supervisionada",
-                  desc: "Atenda pacientes modelo na clinica do Dr. Gustavo com supervisão direta",
+                  desc: "Atenda pacientes modelo na clínica do Dr. Gustavo com supervisão direta",
                 },
                 {
                   icon: MessageCircle,
@@ -257,12 +275,12 @@ export default function LandingPage() {
               ] as const
             ).map(({ icon: Icon, title, desc }, i) => (
               <FadeIn key={i}>
-                <div className="bg-[#0F1A2E] border border-white/5 rounded-2xl p-7 text-center">
+                <div className="bg-[#0F1A2E] border border-white/5 rounded-2xl p-7 text-center h-full flex flex-col items-center">
                   <div className="w-12 h-12 rounded-full bg-[#D4A843]/10 flex items-center justify-center mx-auto mb-5">
                     <Icon className="w-6 h-6 text-[#D4A843]" />
                   </div>
                   <h3 className="font-semibold text-base mb-2">{title}</h3>
-                  <p className="text-sm text-gray-400 leading-relaxed">{desc}</p>
+                  <p className="text-sm text-gray-400 leading-relaxed flex-1">{desc}</p>
                 </div>
               </FadeIn>
             ))}
@@ -354,6 +372,24 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── CTA WhatsApp (after modules) ──────────────────────── */}
+      <section className="py-10">
+        <div className="max-w-md mx-auto px-5 text-center">
+          <FadeIn>
+            <p className="text-gray-400 text-sm mb-4">Tem dúvidas sobre qual plano escolher?</p>
+            <a
+              href={WA_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 bg-[#25D366] text-white font-semibold text-sm px-8 py-3.5 rounded-xl hover:opacity-90 transition-opacity w-full"
+            >
+              <WhatsAppIcon className="w-5 h-5" />
+              Tire suas dúvidas no WhatsApp
+            </a>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* ════════════════════════════════════════════════════════════════════
           5 · PLANS
          ════════════════════════════════════════════════════════════════════ */}
@@ -368,10 +404,10 @@ export default function LandingPage() {
             </p>
           </FadeIn>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
             {/* ── Card 1: Curso Completo ───────────────────────────────── */}
-            <FadeIn>
-              <div className="bg-[#0F1A2E] border border-white/10 rounded-2xl p-7 flex flex-col">
+            <FadeIn className="h-full">
+              <div className="bg-[#0F1A2E] border border-white/10 rounded-2xl p-7 flex flex-col h-full">
                 <span className="inline-block text-[11px] font-semibold uppercase tracking-widest text-[#D4A843] bg-[#D4A843]/10 px-3 py-1 rounded-full self-start mb-5">
                   Online
                 </span>
@@ -408,15 +444,12 @@ export default function LandingPage() {
               </div>
             </FadeIn>
 
-            {/* ── Card 2: Imersão (highlighted) ────────────────────────── */}
-            <FadeIn>
-              <div className="lp-plan-highlight bg-[#0F1A2E] rounded-2xl p-7 flex flex-col relative lg:-mt-3 lg:pb-9">
-                <div className="flex items-center gap-2 mb-5">
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-[#0A0D14] bg-[#D4A843] px-3 py-1 rounded-full">
-                    <Star className="w-3 h-3" />
-                    Observação Clinica
-                  </span>
-                </div>
+            {/* ── Card 2: Imersão ────────────────────────── */}
+            <FadeIn className="h-full">
+              <div className="bg-[#0F1A2E] border border-white/10 rounded-2xl p-7 flex flex-col relative h-full">
+                <span className="inline-block text-[11px] font-semibold uppercase tracking-widest text-[#D4A843] bg-[#D4A843]/10 px-3 py-1 rounded-full self-start mb-5">
+                  Observação Clínica
+                </span>
                 <h3 className="lp-serif text-xl font-bold mb-1">Imersão</h3>
                 <p className="text-sm text-gray-400 mb-6">Veja como eu faço na clinica</p>
 
@@ -451,21 +484,24 @@ export default function LandingPage() {
               </div>
             </FadeIn>
 
-            {/* ── Card 3: Mentoria VIP Completa ────────────────────────── */}
-            <FadeIn>
-              <div className="bg-[#0F1A2E] border border-[#D4A843]/20 rounded-2xl p-7 flex flex-col relative overflow-hidden">
+            {/* ── Card 3: Mentoria VIP Completa (MAIS INDICADO) ─────── */}
+            <FadeIn className="h-full">
+              <div className="lp-plan-highlight bg-[#0F1A2E] rounded-2xl p-7 flex flex-col relative overflow-hidden h-full lg:-mt-3 lg:pb-9">
                 {/* subtle premium glow */}
                 <div
                   className="absolute -top-20 -right-20 w-40 h-40 pointer-events-none"
                   style={{
                     background:
-                      "radial-gradient(circle, rgba(212,168,67,0.08) 0%, transparent 70%)",
+                      "radial-gradient(circle, rgba(212,168,67,0.12) 0%, transparent 70%)",
                   }}
                 />
 
-                <span className="relative inline-block text-[11px] font-semibold uppercase tracking-widest text-[#D4A843] bg-[#D4A843]/10 px-3 py-1 rounded-full self-start mb-5">
-                  Hands-on
-                </span>
+                <div className="relative flex items-center gap-2 mb-5">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-[#0A0D14] bg-[#D4A843] px-3 py-1 rounded-full">
+                    <Star className="w-3 h-3" />
+                    Mais Indicado
+                  </span>
+                </div>
                 <h3 className="lp-serif text-xl font-bold mb-1 relative">Mentoria VIP Completa</h3>
                 <p className="text-sm text-gray-400 mb-6 relative">
                   Bote a mão na massa e atenda pacientes
@@ -513,15 +549,15 @@ export default function LandingPage() {
       <section className="bg-[#F5F0E8] py-16 md:py-24">
         <div className="max-w-5xl mx-auto px-5">
           <FadeIn>
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12">
+            <div className="flex flex-col items-center gap-8 md:gap-10 text-center">
               {/* photo */}
               <img
                 src="/dr-gustavo-perfil.jpg"
                 alt="Dr. Gustavo Martins"
-                className="shrink-0 w-36 h-36 md:w-44 md:h-44 rounded-full object-cover object-top border-4 border-[#D4A843]/30"
+                className="shrink-0 w-48 h-48 md:w-56 md:h-56 rounded-full object-cover object-top border-4 border-[#D4A843]/30 mx-auto"
               />
 
-              <div>
+              <div className="flex flex-col items-center">
                 <h2 className="lp-serif text-2xl md:text-3xl font-bold text-[#0A0D14] mb-2">
                   Dr. Gustavo Martins
                 </h2>
@@ -529,7 +565,7 @@ export default function LandingPage() {
                   Cirurgião-dentista, Biomédico, Mestre e Especialista em Harmonização Orofacial
                 </p>
 
-                <ul className="space-y-2.5">
+                <ul className="space-y-2.5 text-left inline-block">
                   {[
                     "Speaker Merz Aesthetics",
                     "Membro da Academia Brasileira de HOF",
@@ -586,6 +622,24 @@ export default function LandingPage() {
                 a="Pix, cartão de crédito ou boleto. Parcelamos em até 12x no cartão."
               />
             </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ── CTA WhatsApp (after FAQ) ──────────────────────────── */}
+      <section className="bg-[#0F1A2E] py-10">
+        <div className="max-w-md mx-auto px-5 text-center">
+          <FadeIn>
+            <p className="text-gray-400 text-sm mb-4">Ainda tem dúvidas? Fale diretamente comigo</p>
+            <a
+              href={WA_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 bg-[#25D366] text-white font-semibold text-sm px-8 py-3.5 rounded-xl hover:opacity-90 transition-opacity w-full"
+            >
+              <WhatsAppIcon className="w-5 h-5" />
+              Falar com o Dr. Gustavo
+            </a>
           </FadeIn>
         </div>
       </section>
