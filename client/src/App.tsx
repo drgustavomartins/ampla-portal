@@ -20,6 +20,7 @@ import PrivacidadePage from "./pages/privacidade";
 import CreditsPage from "./pages/credits";
 import CreditsRulesPage from "./pages/credits-rules";
 import ComunidadePage from "./pages/comunidade";
+import LandingPage from "./pages/lp";
 
 function AppContent() {
   const { user, isAdmin } = useAuth();
@@ -69,6 +70,7 @@ function App() {
             <Route path="/trial/ativo" component={() => <ProtectedPage component={PagamentoSucesso} />} />
             <Route path="/comecar" component={PlanosPublicos} />
             <Route path="/planos-publicos" component={PlanosPublicos} />
+            <Route path="/lp" component={LandingPage} />
             <Route path="/quiz" component={QuizPage} />
             <Route path="/creditos" component={() => <ProtectedPage component={CreditsPage} />} />
             <Route path="/creditos/regras" component={() => <ProtectedPage component={CreditsRulesPage} />} />

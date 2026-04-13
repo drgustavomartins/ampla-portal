@@ -1650,7 +1650,7 @@ export async function registerRoutes(server: Server, app: Express) {
       const user = (userResult as any).rows?.[0];
       if (!user) return res.json({ accessType: "none", allowedLessonIds: [] });
 
-      const isTester = user.role === "trial" || (!user.plan_key && !user.module_content_expires_at);
+      const isTester = user.plan_key === "tester" || user.role === "trial" || (!user.plan_key && !user.module_content_expires_at);
       const contentExpired = user.module_content_expires_at && new Date(user.module_content_expires_at) < new Date();
 
       if (!isTester && !contentExpired && user.plan_key) {

@@ -1,0 +1,679 @@
+import { useEffect, useRef, useCallback } from "react";
+import {
+  ShieldAlert,
+  Puzzle,
+  AlertTriangle,
+  DollarSign,
+  BookOpen,
+  Users,
+  MessageCircle,
+  Play,
+  Check,
+  Star,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Syringe,
+  Sparkles,
+  Layers,
+  FlaskConical,
+  Gem,
+} from "lucide-react";
+import { useState } from "react";
+
+/* ────────────────────────────────────────────────────────────────────────────
+   SCROLL ANIMATION HOOK
+   ────────────────────────────────────────────────────────────────────────── */
+function useScrollFade() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.classList.add("lp-visible");
+          observer.unobserve(el);
+        }
+      },
+      { threshold: 0.12 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return ref;
+}
+
+function FadeIn({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const ref = useScrollFade();
+  return (
+    <div ref={ref} className={`lp-fade ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   FAQ ITEM
+   ────────────────────────────────────────────────────────────────────────── */
+function FAQItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-white/10 rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/[0.02] transition-colors"
+      >
+        <span className="font-medium text-[15px] pr-4">{q}</span>
+        {open ? (
+          <ChevronUp className="w-5 h-5 text-[#D4A843] shrink-0" />
+        ) : (
+          <ChevronDown className="w-5 h-5 text-[#D4A843] shrink-0" />
+        )}
+      </button>
+      {open && (
+        <div className="px-5 pb-4 text-sm text-gray-400 leading-relaxed">{a}</div>
+      )}
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   WHATSAPP ICON
+   ────────────────────────────────────────────────────────────────────────── */
+function WhatsAppIcon({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+    </svg>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   MAIN LP COMPONENT
+   ────────────────────────────────────────────────────────────────────────── */
+const WA_LINK =
+  "https://wa.me/5521995523509?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20quero%20saber%20mais%20sobre%20a%20forma%C3%A7%C3%A3o";
+
+export default function LandingPage() {
+  const plansRef = useRef<HTMLDivElement>(null);
+
+  const scrollToPlans = useCallback(() => {
+    plansRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  /* set page title */
+  useEffect(() => {
+    document.title = "Formação em Harmonização Orofacial | Ampla Facial";
+    return () => {
+      document.title = "Ampla Facial | Mentoria HOF com Dr. Gustavo Martins";
+    };
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-[#0A0D14] text-white antialiased">
+      {/* ── inline animation styles ─────────────────────────────────────── */}
+      <style>{`
+        .lp-fade{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
+        .lp-visible{opacity:1!important;transform:translateY(0)!important}
+        .lp-serif{font-family:'Playfair Display',Georgia,serif}
+        .lp-gold-gradient{background:linear-gradient(135deg,#D4A843 0%,#F5E6B8 50%,#D4A843 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .lp-plan-highlight{box-shadow:0 0 0 2px #D4A843,0 8px 40px rgba(212,168,67,.18)}
+        .lp-module-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.3)}
+        .lp-module-card{transition:transform .25s ease,box-shadow .25s ease}
+      `}</style>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          1 · HERO
+         ════════════════════════════════════════════════════════════════════ */}
+      <section className="relative overflow-hidden">
+        {/* subtle radial glow */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 60% 50% at 50% 30%, rgba(212,168,67,0.06) 0%, transparent 70%)",
+          }}
+        />
+
+        <div className="relative max-w-5xl mx-auto px-5 pt-10 pb-16 md:pt-14 md:pb-24 text-center">
+          {/* logo */}
+          <img
+            src="/logo-transparent.png"
+            alt="Ampla Facial"
+            className="h-12 md:h-14 mx-auto mb-10 opacity-90"
+          />
+
+          {/* headline */}
+          <h1 className="lp-serif text-3xl sm:text-4xl md:text-[2.75rem] leading-tight font-bold max-w-3xl mx-auto mb-5">
+            Domine Harmonização Orofacial Full Face{" "}
+            <span className="lp-gold-gradient">com Quem Faz Isso Todo Dia na Clinica</span>
+          </h1>
+
+          <p className="text-gray-400 text-base md:text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
+            Formação completa em Toxina, Preenchedores, Bioestimuladores e Biorregeneradores com o
+            Dr. Gustavo Martins
+          </p>
+
+          {/* VSL placeholder */}
+          <div
+            id="vsl-container"
+            className="relative max-w-3xl mx-auto aspect-video rounded-2xl overflow-hidden border border-white/10 bg-[#0F1A2E] flex items-center justify-center cursor-pointer group"
+          >
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/30" />
+            <div className="relative flex flex-col items-center gap-3">
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-[#D4A843]/20 border-2 border-[#D4A843] flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Play className="w-7 h-7 md:w-9 md:h-9 text-[#D4A843] ml-1" />
+              </div>
+              <span className="text-sm text-gray-400">Assista antes de qualquer coisa</span>
+            </div>
+          </div>
+
+          <p className="mt-5 text-xs md:text-sm text-gray-500">
+            Mais de 60 aulas gravadas com protocolos clinicos reais
+          </p>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          2 · PAIN POINTS
+         ════════════════════════════════════════════════════════════════════ */}
+      <section className="bg-[#F5F0E8] py-16 md:py-24">
+        <div className="max-w-5xl mx-auto px-5">
+          <FadeIn>
+            <h2 className="lp-serif text-2xl md:text-3xl font-bold text-[#0A0D14] text-center mb-12">
+              Você se identifica com isso?
+            </h2>
+          </FadeIn>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {(
+              [
+                {
+                  icon: ShieldAlert,
+                  text: "Terminou a pos mas ainda não se sente seguro para atender full face",
+                },
+                {
+                  icon: Puzzle,
+                  text: "Fez cursos isolados de toxina ou preenchedor mas não sabe combinar as técnicas",
+                },
+                {
+                  icon: AlertTriangle,
+                  text: "Tem medo de intercorrências e não tem ninguém para tirar dúvidas",
+                },
+                {
+                  icon: DollarSign,
+                  text: "Cobra barato porque não tem confiança nos seus resultados",
+                },
+              ] as const
+            ).map(({ icon: Icon, text }, i) => (
+              <FadeIn key={i}>
+                <div className="flex items-start gap-4 bg-white rounded-xl p-5 border border-[#0A0D14]/[.06] shadow-sm">
+                  <div className="shrink-0 w-10 h-10 rounded-lg bg-[#D4A843]/10 flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-[#D4A843]" />
+                  </div>
+                  <p className="text-[#0A0D14] text-sm md:text-[15px] leading-relaxed font-medium">
+                    {text}
+                  </p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          3 · THE METHOD
+         ════════════════════════════════════════════════════════════════════ */}
+      <section className="py-16 md:py-24">
+        <div className="max-w-5xl mx-auto px-5 text-center">
+          <FadeIn>
+            <h2 className="lp-serif text-2xl md:text-3xl font-bold mb-3">O Método Ampla Facial</h2>
+            <p className="text-gray-400 max-w-xl mx-auto mb-14">
+              Harmonização não é sobre dominar uma técnica. É sobre dominar a face.
+            </p>
+          </FadeIn>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {(
+              [
+                {
+                  icon: BookOpen,
+                  title: "Conhecimento Técnico Profundo",
+                  desc: "Mais de 60 aulas com protocolos clinicos detalhados, do basico ao avançado",
+                },
+                {
+                  icon: Users,
+                  title: "Prática Real Supervisionada",
+                  desc: "Atenda pacientes modelo na clinica do Dr. Gustavo com supervisão direta",
+                },
+                {
+                  icon: MessageCircle,
+                  title: "Acompanhamento Individual",
+                  desc: "Canal direto, encontros ao vivo e análise de casos com quem já está onde você quer chegar",
+                },
+              ] as const
+            ).map(({ icon: Icon, title, desc }, i) => (
+              <FadeIn key={i}>
+                <div className="bg-[#0F1A2E] border border-white/5 rounded-2xl p-7 text-center">
+                  <div className="w-12 h-12 rounded-full bg-[#D4A843]/10 flex items-center justify-center mx-auto mb-5">
+                    <Icon className="w-6 h-6 text-[#D4A843]" />
+                  </div>
+                  <h3 className="font-semibold text-base mb-2">{title}</h3>
+                  <p className="text-sm text-gray-400 leading-relaxed">{desc}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          4 · MODULES
+         ════════════════════════════════════════════════════════════════════ */}
+      <section className="bg-[#F5F0E8] py-16 md:py-24">
+        <div className="max-w-5xl mx-auto px-5">
+          <FadeIn>
+            <h2 className="lp-serif text-2xl md:text-3xl font-bold text-[#0A0D14] text-center mb-12">
+              O que você vai aprender
+            </h2>
+          </FadeIn>
+
+          {/* horizontal scroll on mobile, grid on desktop */}
+          <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory md:grid md:grid-cols-5 md:overflow-visible md:pb-0 -mx-5 px-5 md:mx-0 md:px-0">
+            {(
+              [
+                {
+                  icon: Syringe,
+                  color: "#3B82F6",
+                  title: "Toxina Botulinica",
+                  desc: "Protocolos completos para terço superior, médio e inferior",
+                  lessons: 12,
+                  exclusive: false,
+                },
+                {
+                  icon: Sparkles,
+                  color: "#EC4899",
+                  title: "Preenchedores Full Face",
+                  desc: "Técnicas avançadas para harmonização completa",
+                  lessons: 17,
+                  exclusive: false,
+                },
+                {
+                  icon: FlaskConical,
+                  color: "#10B981",
+                  title: "Bioestimuladores de Colageno",
+                  desc: "Indução de colageno para rejuvenescimento natural",
+                  lessons: 10,
+                  exclusive: false,
+                },
+                {
+                  icon: Layers,
+                  color: "#8B5CF6",
+                  title: "Biorregeneradores e Moduladores",
+                  desc: "Modulação da matriz extracelular",
+                  lessons: 8,
+                  exclusive: false,
+                },
+                {
+                  icon: Gem,
+                  color: "#D4A843",
+                  title: "Método NaturalUp®",
+                  desc: "Protocolo exclusivo das mentorias VIP",
+                  lessons: 14,
+                  exclusive: true,
+                },
+              ] as const
+            ).map(({ icon: Icon, color, title, desc, lessons, exclusive }, i) => (
+              <FadeIn key={i} className="min-w-[220px] snap-start md:min-w-0">
+                <div className="lp-module-card bg-white rounded-xl p-5 border border-[#0A0D14]/[.06] h-full flex flex-col">
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center mb-4"
+                    style={{ backgroundColor: `${color}15` }}
+                  >
+                    <Icon className="w-5 h-5" style={{ color }} />
+                  </div>
+                  <h3 className="font-semibold text-[#0A0D14] text-sm mb-1 leading-snug">
+                    {title}
+                  </h3>
+                  <p className="text-xs text-gray-500 leading-relaxed mb-3 flex-1">{desc}</p>
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="font-medium text-[#0A0D14]">{lessons} aulas</span>
+                    {exclusive && (
+                      <span className="bg-[#D4A843]/10 text-[#D4A843] px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide">
+                        Exclusivo VIP
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          5 · PLANS
+         ════════════════════════════════════════════════════════════════════ */}
+      <section ref={plansRef} id="planos" className="py-16 md:py-24">
+        <div className="max-w-6xl mx-auto px-5">
+          <FadeIn>
+            <h2 className="lp-serif text-2xl md:text-3xl font-bold text-center mb-3">
+              Escolha o seu caminho
+            </h2>
+            <p className="text-gray-400 text-center max-w-lg mx-auto mb-14">
+              Três formas de aprender, do seu ritmo até imersão total
+            </p>
+          </FadeIn>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            {/* ── Card 1: Curso Completo ───────────────────────────────── */}
+            <FadeIn>
+              <div className="bg-[#0F1A2E] border border-white/10 rounded-2xl p-7 flex flex-col">
+                <span className="inline-block text-[11px] font-semibold uppercase tracking-widest text-[#D4A843] bg-[#D4A843]/10 px-3 py-1 rounded-full self-start mb-5">
+                  Digital
+                </span>
+                <h3 className="lp-serif text-xl font-bold mb-1">Curso Completo</h3>
+                <p className="text-sm text-gray-400 mb-6">Aprenda no seu ritmo</p>
+
+                <ul className="space-y-3 mb-8 flex-1">
+                  {[
+                    "Todos os 4 modulos completos",
+                    "Mais de 60 aulas gravadas",
+                    "Materiais cientificos complementares",
+                    "Acesso ao portal por 12 meses",
+                    "Certificado de participação",
+                  ].map((f, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
+                      <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <p className="text-xs text-gray-500 mb-5">
+                  Ideal para quem quer conhecimento técnico solido antes de ir para a prática
+                </p>
+
+                <a
+                  href="/#/planos?plan=pacote_completo"
+                  style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
+                  className="block text-center font-semibold text-sm py-3.5 rounded-xl hover:opacity-90 transition-opacity"
+                >
+                  Quero Começar
+                </a>
+              </div>
+            </FadeIn>
+
+            {/* ── Card 2: Imersão (highlighted) ────────────────────────── */}
+            <FadeIn>
+              <div className="lp-plan-highlight bg-[#0F1A2E] rounded-2xl p-7 flex flex-col relative lg:-mt-3 lg:pb-9">
+                <div className="flex items-center gap-2 mb-5">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-[#0A0D14] bg-[#D4A843] px-3 py-1 rounded-full">
+                    <Star className="w-3 h-3" />
+                    Mais Escolhido
+                  </span>
+                </div>
+                <h3 className="lp-serif text-xl font-bold mb-1">Imersão</h3>
+                <p className="text-sm text-gray-400 mb-6">Aprenda, observe e pratique</p>
+
+                <ul className="space-y-3 mb-8 flex-1">
+                  {[
+                    "Tudo do Curso Completo",
+                    "24h de observação clinica presencial",
+                    "8h de prática supervisionada com pacientes modelo",
+                    "Canal direto com Dr. Gustavo por 3 meses",
+                    "Mentoria individual 1:1 pos-sessão",
+                    "Dimensão comercial e gestão",
+                    "Certificado com carga horária",
+                  ].map((f, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
+                      <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <p className="text-xs text-gray-500 mb-5">
+                  Ideal para quem quer sair praticando com segurança
+                </p>
+
+                <a
+                  href="/#/planos?plan=imersao"
+                  style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
+                  className="block text-center font-semibold text-sm py-3.5 rounded-xl hover:opacity-90 transition-opacity"
+                >
+                  Quero a Imersão
+                </a>
+              </div>
+            </FadeIn>
+
+            {/* ── Card 3: Mentoria VIP Completa ────────────────────────── */}
+            <FadeIn>
+              <div className="bg-[#0F1A2E] border border-[#D4A843]/20 rounded-2xl p-7 flex flex-col relative overflow-hidden">
+                {/* subtle premium glow */}
+                <div
+                  className="absolute -top-20 -right-20 w-40 h-40 pointer-events-none"
+                  style={{
+                    background:
+                      "radial-gradient(circle, rgba(212,168,67,0.08) 0%, transparent 70%)",
+                  }}
+                />
+
+                <span className="relative inline-block text-[11px] font-semibold uppercase tracking-widest text-[#D4A843] bg-[#D4A843]/10 px-3 py-1 rounded-full self-start mb-5">
+                  Formação Completa
+                </span>
+                <h3 className="lp-serif text-xl font-bold mb-1 relative">Mentoria VIP Completa</h3>
+                <p className="text-sm text-gray-400 mb-6 relative">
+                  A jornada mais completa que existe
+                </p>
+
+                <ul className="space-y-3 mb-8 flex-1 relative">
+                  {[
+                    "Tudo da Imersão",
+                    "Acompanhamento individual por 6 meses",
+                    "Encontros quinzenais ao vivo com o Dr. Gustavo",
+                    "16h de prática presencial com pacientes modelo",
+                    "Canal exclusivo direto por 6 meses",
+                    "Método NaturalUp® completo (5o modulo exclusivo)",
+                    "Análise de casos clinicos em grupo",
+                    "Networking com a turma",
+                    "Certificado de conclusão com carga horária",
+                  ].map((f, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
+                      <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <p className="text-xs text-gray-500 mb-5 relative">
+                  Ideal para quem quer transformar a carreira de vez
+                </p>
+
+                <a
+                  href="/#/planos?plan=vip_completo"
+                  style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
+                  className="relative block text-center font-semibold text-sm py-3.5 rounded-xl hover:opacity-90 transition-opacity"
+                >
+                  Quero a Mentoria VIP
+                </a>
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          6 · ABOUT
+         ════════════════════════════════════════════════════════════════════ */}
+      <section className="bg-[#F5F0E8] py-16 md:py-24">
+        <div className="max-w-5xl mx-auto px-5">
+          <FadeIn>
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12">
+              {/* photo placeholder */}
+              <div className="shrink-0 w-36 h-36 md:w-44 md:h-44 rounded-full bg-[#0A0D14] flex items-center justify-center border-4 border-[#D4A843]/30">
+                <span className="text-4xl md:text-5xl font-bold text-[#D4A843]">GM</span>
+              </div>
+
+              <div>
+                <h2 className="lp-serif text-2xl md:text-3xl font-bold text-[#0A0D14] mb-2">
+                  Dr. Gustavo Martins
+                </h2>
+                <p className="text-gray-600 mb-5 text-sm md:text-base">
+                  Cirurgião-dentista, Biomédico, Mestre e Especialista em Harmonização Orofacial
+                </p>
+
+                <ul className="space-y-2.5">
+                  {[
+                    "Speaker Merz Aesthetics",
+                    "Membro da Academia Brasileira de HOF",
+                    "3 clinicas no Rio de Janeiro (Barra, Copacabana, Santa Cruz)",
+                    "Criador do Protocolo NaturalUp®",
+                    "Já formou dezenas de profissionais que hoje atendem full face com confiança",
+                  ].map((c, i) => (
+                    <li
+                      key={i}
+                      className="flex items-start gap-2.5 text-sm text-[#0A0D14]/80"
+                    >
+                      <ChevronRight className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
+                      <span>{c}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          7 · FAQ
+         ════════════════════════════════════════════════════════════════════ */}
+      <section className="py-16 md:py-24">
+        <div className="max-w-2xl mx-auto px-5">
+          <FadeIn>
+            <h2 className="lp-serif text-2xl md:text-3xl font-bold text-center mb-10">
+              Perguntas Frequentes
+            </h2>
+          </FadeIn>
+
+          <FadeIn>
+            <div className="space-y-3">
+              <FAQItem
+                q="Preciso ter experiência em harmonização?"
+                a="Não. O curso foi pensado para iniciantes e profissionais experientes. As aulas vão do basico ao avançado."
+              />
+              <FAQItem
+                q="Como funciona a prática presencial?"
+                a="Você agenda turnos de 4 horas na clinica do Dr. Gustavo no Rio de Janeiro. Os pacientes modelo são garantidos."
+              />
+              <FAQItem
+                q="Posso começar pelo curso e depois fazer a imersão?"
+                a="Sim. Oferecemos upgrade com crédito integral. O que você pagou no curso é abatido do valor da imersão ou da mentoria."
+              />
+              <FAQItem
+                q="As aulas são ao vivo ou gravadas?"
+                a="As aulas dos modulos são gravadas, então você assiste no seu ritmo. Os encontros quinzenais da mentoria VIP são ao vivo."
+              />
+              <FAQItem
+                q="Qual a forma de pagamento?"
+                a="Pix, cartão de crédito ou boleto. Parcelamos em até 12x no cartão."
+              />
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          8 · FINAL CTA
+         ════════════════════════════════════════════════════════════════════ */}
+      <section className="relative py-16 md:py-24">
+        {/* gold gradient top border */}
+        <div
+          className="absolute top-0 inset-x-0 h-px"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent, #D4A843 30%, #F5E6B8 50%, #D4A843 70%, transparent)",
+          }}
+        />
+
+        <div className="max-w-2xl mx-auto px-5 text-center">
+          <FadeIn>
+            <h2 className="lp-serif text-2xl md:text-3xl font-bold mb-3">
+              Pronto para dar o próximo passo na sua carreira?
+            </h2>
+            <p className="text-gray-400 mb-10">Escolha o seu caminho e comece hoje</p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button
+                onClick={scrollToPlans}
+                style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
+                className="font-semibold text-sm px-8 py-3.5 rounded-xl hover:opacity-90 transition-opacity w-full sm:w-auto"
+              >
+                Ver os planos
+              </button>
+
+              <a
+                href={WA_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 bg-[#25D366] text-white font-semibold text-sm px-8 py-3.5 rounded-xl hover:opacity-90 transition-opacity w-full sm:w-auto"
+              >
+                <WhatsAppIcon className="w-5 h-5" />
+                WhatsApp
+              </a>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          9 · FOOTER
+         ════════════════════════════════════════════════════════════════════ */}
+      <footer className="border-t border-white/5 py-8">
+        <div className="max-w-5xl mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500">
+          <div className="flex items-center gap-3">
+            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-6 opacity-50" />
+            <span>&copy; 2026 Ampla Facial. Todos os direitos reservados.</span>
+          </div>
+
+          <div className="flex items-center gap-5">
+            <a
+              href="https://instagram.com/dr.gustavomartins"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-gray-300 transition-colors"
+            >
+              @dr.gustavomartins
+            </a>
+            <a
+              href={WA_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-gray-300 transition-colors flex items-center gap-1"
+            >
+              <WhatsAppIcon className="w-3.5 h-3.5" />
+              WhatsApp
+            </a>
+          </div>
+        </div>
+      </footer>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          FLOATING WHATSAPP BUTTON
+         ════════════════════════════════════════════════════════════════════ */}
+      <a
+        href={WA_LINK}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-5 right-5 z-50 w-14 h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+        aria-label="WhatsApp"
+      >
+        <WhatsAppIcon className="w-7 h-7 text-white" />
+      </a>
+    </div>
+  );
+}
