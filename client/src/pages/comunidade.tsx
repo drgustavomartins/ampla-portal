@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
@@ -214,6 +214,30 @@ function ProfileEditor({ onClose }: { onClose: () => void }) {
   const [avatarUrl, setAvatarUrl] = useState((user as any)?.avatarUrl || "");
   const [username, setUsername] = useState((user as any)?.username || "");
   const [name, setName] = useState(user?.name || "");
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarFileRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = async (file: File) => {
+    setAvatarUploading(true);
+    try {
+      const token = localStorage.getItem("ampla_token");
+      const fd = new FormData();
+      fd.append("avatar", file);
+      const resp = await fetch("/api/upload/avatar", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      if (!resp.ok) throw new Error("Erro ao enviar imagem");
+      const data = await resp.json();
+      setAvatarUrl(data.avatarUrl);
+      toast({ title: "Foto enviada!" });
+    } catch {
+      toast({ title: "Erro ao enviar foto", variant: "destructive" });
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -249,18 +273,36 @@ function ProfileEditor({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="flex items-center gap-5">
-        <div className="relative">
+        <div className="relative cursor-pointer group" onClick={() => avatarFileRef.current?.click()}>
           <UserAvatar name={name || user?.name || ""} avatarUrl={avatarUrl || null} size="lg" />
+          <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            {avatarUploading ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Camera className="w-5 h-5 text-white" />}
+          </div>
         </div>
+        <input
+          ref={avatarFileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleAvatarUpload(file);
+            e.target.value = "";
+          }}
+        />
         <div className="flex-1 space-y-3">
           <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">URL da foto</Label>
-            <Input
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="Cole a URL da sua foto"
-              className="bg-[#0A1628]/60 border-white/5 text-sm h-9 focus:border-gold/30"
-            />
+            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Foto de perfil</Label>
+            <button
+              type="button"
+              onClick={() => avatarFileRef.current?.click()}
+              disabled={avatarUploading}
+              className="w-full flex items-center justify-center gap-2 rounded-lg border border-dashed border-gold/30 bg-gold/5 px-3 py-2 text-xs font-medium transition-colors hover:bg-gold/10 disabled:opacity-50"
+              style={{ color: '#D4A843' }}
+            >
+              {avatarUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+              {avatarUploading ? "Enviando..." : "Enviar foto"}
+            </button>
           </div>
           <div className="space-y-1.5">
             <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Nome de usuario</Label>

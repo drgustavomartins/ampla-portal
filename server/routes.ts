@@ -7,7 +7,20 @@ import { sql } from "drizzle-orm";
 import { storage } from "./storage";
 import { registerSchema, trialRegisterSchema, loginSchema, insertModuleSchema, insertLessonSchema } from "@shared/schema";
 import { Resend } from "resend";
+import multer from "multer";
 import { registerStripeRoutes, registerPublicStripeRoutes } from "./stripe-routes";
+
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas imagens JPG, PNG ou WebP'));
+    }
+  }
+});
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -4231,6 +4244,27 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
     } catch (e: any) {
       console.error("[PUT /api/profile]", e.message);
       res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── POST /api/upload/avatar ──────────────────────────────────────────────────
+  app.post("/api/upload/avatar", avatarUpload.single("avatar"), async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      if (!req.file) return res.status(400).json({ message: "Nenhuma imagem enviada" });
+
+      const base64 = req.file.buffer.toString('base64');
+      const dataUri = `data:${req.file.mimetype};base64,${base64}`;
+
+      await db.execute(sql`UPDATE users SET avatar_url = ${dataUri} WHERE id = ${auth.userId}`);
+
+      res.json({ avatarUrl: dataUri });
+    } catch (e: any) {
+      console.error("[upload/avatar]", e.message);
+      res.status(500).json({ message: "Erro ao enviar imagem" });
     }
   });
 

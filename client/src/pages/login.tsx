@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, trialRegisterSchema } from "@shared/schema";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Sparkles, Eye, EyeOff, CheckCircle2, Star, Users, Clock, Play, ArrowRight } from "lucide-react";
+import { Loader2, Sparkles, Eye, EyeOff, CheckCircle2, Star, Users, Clock, Play, ArrowRight, Camera } from "lucide-react";
 import { trackEvent } from "@/lib/funnel";
 import type { z } from "zod";
 
@@ -55,6 +55,9 @@ export default function LoginPage() {
   const [forgotEmail, setForgotEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [lgpdAccepted, setLgpdAccepted] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const avatarFileRef = useRef<HTMLInputElement>(null);
+  const avatarFileStore = useRef<File | null>(null);
   const { login } = useAuth();
   const { toast } = useToast();
 
@@ -91,7 +94,19 @@ export default function LoginPage() {
       const res = await apiRequest("POST", "/api/auth/register-trial", data);
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // Upload avatar if one was selected (fire-and-forget, don't block login)
+      if (avatarFileStore.current && data.token) {
+        try {
+          const fd = new FormData();
+          fd.append("avatar", avatarFileStore.current);
+          await fetch("/api/upload/avatar", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${data.token}` },
+            body: fd,
+          });
+        } catch { /* silently ignore — avatar is optional */ }
+      }
       // Backend já retorna o token — login imediato, sem segunda requisição
       login(data.user, data.token);
     },
@@ -330,6 +345,49 @@ export default function LoginPage() {
                     className="bg-white/5 border-white/10 focus:border-gold/50 text-white placeholder:text-white/20"
                     {...trialForm.register("phone")}
                   />
+                </div>
+
+                {/* Avatar opcional */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-white/50">
+                    Foto de perfil <span className="text-white/25">(opcional)</span>
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    {avatarPreview ? (
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-gold/30 shrink-0">
+                        <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                        <Camera className="w-4 h-4 text-white/30" />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => avatarFileRef.current?.click()}
+                      className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-dashed border-gold/30 bg-gold/5 px-3 py-2 text-xs font-medium transition-colors hover:bg-gold/10"
+                      style={{ color: '#D4A843' }}
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      {avatarPreview ? "Trocar foto" : "Escolher foto"}
+                    </button>
+                    <input
+                      ref={avatarFileRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          avatarFileStore.current = file;
+                          const reader = new FileReader();
+                          reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
+                          reader.readAsDataURL(file);
+                        }
+                        e.target.value = "";
+                      }}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">

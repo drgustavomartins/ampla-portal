@@ -21,7 +21,7 @@ import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
   ChevronLeft, ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle, Star,
   Users, MessageCircle, Lock, ShoppingCart, ExternalLink, Paperclip, DollarSign,
-  Search, Bell
+  Search, Bell, Camera
 } from "lucide-react";
 import MateriaisComplementares from "./materiais-complementares";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
@@ -74,6 +74,8 @@ export default function StudentDashboard() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "", avatarUrl: "", username: "" });
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarFileRef = useRef<HTMLInputElement>(null);
   const materiaisRef = useRef<HTMLDivElement>(null);
   const shelfRef = useRef<HTMLDivElement>(null);
 
@@ -151,6 +153,28 @@ export default function StudentDashboard() {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     },
   });
+
+  const handleAvatarUpload = async (file: File) => {
+    setAvatarUploading(true);
+    try {
+      const token = localStorage.getItem("ampla_token");
+      const fd = new FormData();
+      fd.append("avatar", file);
+      const resp = await fetch("/api/upload/avatar", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      if (!resp.ok) throw new Error("Erro ao enviar imagem");
+      const data = await resp.json();
+      setProfileForm((f) => ({ ...f, avatarUrl: data.avatarUrl }));
+      toast({ title: "Foto enviada!" });
+    } catch {
+      toast({ title: "Erro ao enviar foto", variant: "destructive" });
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   const completedIds = new Set(progress.filter(p => p.completed).map(p => p.lessonId));
   const totalLessons = lessons.length;
@@ -1443,20 +1467,41 @@ export default function StudentDashboard() {
             <div className="w-full h-px bg-border/30" />
             <p className="text-[11px] font-semibold text-gold uppercase tracking-wider">Perfil da Comunidade</p>
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full shrink-0 overflow-hidden border-2 border-gold/30 flex items-center justify-center bg-gradient-to-br from-gold/80 to-gold">
+              <div
+                className="relative w-14 h-14 rounded-full shrink-0 overflow-hidden border-2 border-gold/30 flex items-center justify-center bg-gradient-to-br from-gold/80 to-gold cursor-pointer group"
+                onClick={() => avatarFileRef.current?.click()}
+              >
                 {profileForm.avatarUrl ? (
                   <img src={profileForm.avatarUrl} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 ) : (
                   <span className="text-lg font-semibold text-[#0A1628]">{(profileForm.name || user?.name)?.[0]?.toUpperCase() || "?"}</span>
                 )}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {avatarUploading ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Camera className="w-5 h-5 text-white" />}
+                </div>
               </div>
+              <input
+                ref={avatarFileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleAvatarUpload(file);
+                  e.target.value = "";
+                }}
+              />
               <div className="flex-1 space-y-2">
-                <Input
-                  value={profileForm.avatarUrl}
-                  onChange={(e) => setProfileForm((f) => ({ ...f, avatarUrl: e.target.value }))}
-                  placeholder="Cole a URL da sua foto"
-                  className="bg-background/50 border-border/40 text-sm h-8"
-                />
+                <button
+                  type="button"
+                  onClick={() => avatarFileRef.current?.click()}
+                  disabled={avatarUploading}
+                  className="w-full flex items-center justify-center gap-2 rounded-lg border border-dashed border-gold/30 bg-gold/5 px-3 py-2 text-xs font-medium transition-colors hover:bg-gold/10 disabled:opacity-50"
+                  style={{ color: '#D4A843' }}
+                >
+                  {avatarUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                  {avatarUploading ? "Enviando..." : "Enviar foto"}
+                </button>
                 <Input
                   value={profileForm.username}
                   onChange={(e) => setProfileForm((f) => ({ ...f, username: e.target.value.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 30) }))}
