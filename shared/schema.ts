@@ -15,6 +15,7 @@ export const plans = pgTable("plans", {
 
 // Stripe plan keys — each maps to a product in Stripe
 export const PLAN_KEYS = [
+  "tester",
   "modulo_avulso",
   "pacote_completo",
   "observador_essencial",

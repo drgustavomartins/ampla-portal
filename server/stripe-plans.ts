@@ -31,6 +31,30 @@ export interface PlanConfig {
 }
 
 export const PLANS: Record<PlanKey, PlanConfig> = {
+  tester: {
+    key: "tester",
+    name: "Experiência Gratuita",
+    description: "Explore o portal com acesso às 2 primeiras aulas de cada módulo",
+    price: 0,
+    installments12x: null,
+    group: "digital",
+    features: [
+      "2 primeiras aulas de cada módulo",
+      "Acesso ao portal por tempo indeterminado",
+      "Conheça a metodologia Ampla Facial",
+    ],
+    accessDays: 0,
+    includesModules: false,
+    clinicalHours: 0,
+    practiceHours: 0,
+    hasDirectChannel: false,
+    channelMonths: 0,
+    hasMentorship: false,
+    mentorshipMonths: 0,
+    hasLiveEvents: false,
+    hasNaturalUp: false,
+    canUpgradeTo: ["modulo_avulso", "pacote_completo", "observador_essencial", "observador_avancado", "observador_intensivo", "imersao", "vip_online", "vip_presencial", "vip_completo"],
+  },
   modulo_avulso: {
     key: "modulo_avulso",
     name: "Módulo Avulso",
@@ -520,6 +544,7 @@ export function calculateUpgradePrice(
 
 // ─── Cashback rates por plano ────────────────────────────────────────────────
 export const CASHBACK_RATES: Record<PlanKey, number> = {
+  tester: 0,
   modulo_avulso: 0.03,
   pacote_completo: 0.05,
   observador_essencial: 0.05,

@@ -111,6 +111,15 @@ export default function StudentDashboard() {
   const [signingSessionId, setSigningSessionId] = useState<number | null>(null);
   const [lessonSearch, setLessonSearch] = useState("");
 
+  const { data: lessonAccess } = useQuery<{ accessType: string; allowedLessonIds: number[] }>({
+    queryKey: ["/api/lessons/access"],
+    queryFn: async () => { const res = await apiRequest("GET", "/api/lessons/access"); return res.json(); },
+    enabled: !!user,
+  });
+  const accessType = lessonAccess?.accessType || "full";
+  const allowedLessonIds = new Set(lessonAccess?.allowedLessonIds || []);
+  const isTesterAccess = accessType === "tester";
+
   const { data: myClinicalData, refetch: refetchClinical } = useQuery<{ sessions: any[] }>({
     queryKey: ["/api/student/clinical-sessions"],
     queryFn: async () => { const res = await apiRequest("GET", "/api/student/clinical-sessions"); return res.json(); },
@@ -216,6 +225,11 @@ export default function StudentDashboard() {
     return myModules.moduleIds.includes(mod.id);
   };
 
+  // Check if a lesson is locked for tester users
+  const isLessonLockedForTester = (lessonId: number) => {
+    return isTesterAccess && allowedLessonIds.size > 0 && !allowedLessonIds.has(lessonId);
+  };
+
   const getWhatsAppUrl = (mod: Module) => {
     const msg = encodeURIComponent(`Olá! Tenho interesse em adquirir o módulo ${mod.title} da mentoria Ampla Facial. Meu email de acesso é ${user?.email || ""}.`);
     return `https://wa.me/5521976263881?text=${msg}`;
@@ -246,7 +260,8 @@ export default function StudentDashboard() {
 
   // ========== LESSON VIEW ==========
   if (selectedLesson) {
-    const embedUrl = getEmbedUrl(selectedLesson.videoUrl || "");
+    const lessonLockedForTester = isLessonLockedForTester(selectedLesson.id);
+    const embedUrl = lessonLockedForTester ? null : getEmbedUrl(selectedLesson.videoUrl || "");
     const isCompleted = completedIds.has(selectedLesson.id);
     const currentModule = modules.find(m => m.id === selectedLesson.moduleId);
     const moduleLessons = getLessonsForModule(selectedLesson.moduleId);
@@ -276,7 +291,18 @@ export default function StudentDashboard() {
           <div className="grid lg:grid-cols-[1fr_320px] gap-6">
             {/* Video Area */}
             <div className="space-y-4">
-              {embedUrl ? (
+              {lessonLockedForTester ? (
+                <div className="aspect-video bg-card rounded-lg flex items-center justify-center ring-1 ring-border/30 relative">
+                  <div className="text-center space-y-3 px-6">
+                    <Lock className="w-10 h-10 text-gold/60 mx-auto" />
+                    <p className="text-sm font-semibold text-foreground">Aula bloqueada</p>
+                    <p className="text-xs text-muted-foreground max-w-sm">Adquira um plano para assistir esta aula e ter acesso completo a todos os modulos.</p>
+                    <a href="/#/planos" style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>
+                      Ver planos e precos
+                    </a>
+                  </div>
+                </div>
+              ) : embedUrl ? (
                 <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border/30">
                   <iframe
                     src={embedUrl}
@@ -350,6 +376,7 @@ export default function StudentDashboard() {
               {moduleLessons.map((lesson, i) => {
                 const done = completedIds.has(lesson.id);
                 const isActive = lesson.id === selectedLesson.id;
+                const testerLocked = isLessonLockedForTester(lesson.id);
                 const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
                 const supportLink = lesson.description ? extractFirstLink(lesson.description) : null;
                 return (
@@ -359,12 +386,14 @@ export default function StudentDashboard() {
                     className={`w-full text-left p-3 rounded-lg transition-colors flex items-start gap-3 ${
                       isActive
                         ? "bg-primary/10 border border-gold/20"
-                        : "hover:bg-card/80"
+                        : testerLocked ? "opacity-60" : "hover:bg-card/80"
                     }`}
                     data-testid={`button-lesson-${lesson.id}`}
                   >
                     <div className="mt-0.5 shrink-0">
-                      {done ? (
+                      {testerLocked ? (
+                        <Lock className="w-4 h-4 text-muted-foreground/50" />
+                      ) : done ? (
                         <CheckCircle2 className="w-4 h-4 text-gold" />
                       ) : (
                         <span className="w-4 h-4 flex items-center justify-center text-xs text-muted-foreground font-medium">
@@ -373,7 +402,7 @@ export default function StudentDashboard() {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className={`text-sm font-medium truncate ${isActive ? "text-gold" : ""}`}>
+                      <p className={`text-sm font-medium truncate ${testerLocked ? "text-muted-foreground" : isActive ? "text-gold" : ""}`}>
                         {lesson.title}
                       </p>
                       {descLine && (
@@ -805,6 +834,19 @@ export default function StudentDashboard() {
                 className="shrink-0 rounded-xl bg-gold/90 hover:bg-gold px-5 py-2.5 text-sm font-semibold text-[#0A0D14] transition-colors"
               >
                 Renovar acesso
+              </a>
+            </div>
+          )}
+
+          {/* ===== TESTER BANNER ===== */}
+          {isTesterAccess && (
+            <div className="rounded-xl bg-gradient-to-r from-gold/10 to-gold/5 border border-gold/20 p-4 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-gold">Voce esta no modo teste</p>
+                <p className="text-xs text-muted-foreground">Assista as 2 primeiras aulas de cada modulo gratuitamente. Adquira um plano para acesso completo.</p>
+              </div>
+              <a href="/#/planos" style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '8px 20px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                Ver planos
               </a>
             </div>
           )}

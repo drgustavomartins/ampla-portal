@@ -1639,6 +1639,53 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   });
 
+  // ==================== LESSON ACCESS (tester gating) ====================
+  app.get("/api/lessons/access", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      const userResult = await db.execute(sql`SELECT role, plan_key, module_content_expires_at FROM users WHERE id = ${auth.userId}`);
+      const user = (userResult as any).rows?.[0];
+      if (!user) return res.json({ accessType: "none", allowedLessonIds: [] });
+
+      const isTester = user.role === "trial" || (!user.plan_key && !user.module_content_expires_at);
+      const contentExpired = user.module_content_expires_at && new Date(user.module_content_expires_at) < new Date();
+
+      if (!isTester && !contentExpired && user.plan_key) {
+        return res.json({ accessType: "full", allowedLessonIds: [] });
+      }
+
+      if (contentExpired) {
+        return res.json({ accessType: "expired", allowedLessonIds: [] });
+      }
+
+      // Tester: first 2 lessons per module
+      const lessonsResult = await db.execute(sql`
+        SELECT id, module_id, "order" FROM lessons ORDER BY module_id, "order"
+      `);
+      const rows = (lessonsResult as any).rows || [];
+
+      const moduleMap: Record<number, number[]> = {};
+      for (const l of rows) {
+        if (!moduleMap[l.module_id]) moduleMap[l.module_id] = [];
+        moduleMap[l.module_id].push(l.id);
+      }
+
+      const allowedIds: number[] = [];
+      for (const moduleId of Object.keys(moduleMap)) {
+        const sorted = moduleMap[Number(moduleId)];
+        allowedIds.push(...sorted.slice(0, 2));
+      }
+
+      return res.json({ accessType: "tester", allowedLessonIds: allowedIds });
+    } catch (e: any) {
+      console.error("[GET /api/lessons/access]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
   // ==================== PROGRESS ====================
   app.get("/api/progress/:userId", async (req, res) => {
     const auth = authenticateRequest(req);

@@ -198,6 +198,14 @@ export default function ModulePage() {
     },
     enabled: !!user?.id,
   });
+  const { data: lessonAccess } = useQuery<{ accessType: string; allowedLessonIds: number[] }>({
+    queryKey: ["/api/lessons/access"],
+    queryFn: async () => { const res = await apiRequest("GET", "/api/lessons/access"); return res.json(); },
+    enabled: !!user,
+  });
+  const accessType = lessonAccess?.accessType || "full";
+  const allowedLessonIds = new Set(lessonAccess?.allowedLessonIds || []);
+  const isTesterAccess = accessType === "tester";
 
   const completeMutation = useMutation({
     mutationFn: async ({ lessonId, complete }: { lessonId: number; complete: boolean }) => {
@@ -262,8 +270,13 @@ export default function ModulePage() {
   const isUnlocked = hasContent && hasAccess;
   const isLocked = hasContent && !hasAccess;
 
-  // Trial: check if a lesson is accessible (only first TRIAL_FREE_LESSONS)
+  // Trial/Tester: check if a lesson is locked
   const isLessonTrialLocked = (lesson: Lesson) => {
+    // API-based access: check allowedLessonIds
+    if (isTesterAccess && allowedLessonIds.size > 0) {
+      return !allowedLessonIds.has(lesson.id);
+    }
+    // Fallback: trial users get first N lessons
     if (!isTrial) return false;
     const idx = moduleLessons.findIndex(l => l.id === lesson.id);
     return idx >= TRIAL_FREE_LESSONS;
@@ -284,16 +297,14 @@ export default function ModulePage() {
 
   const handleSelectLesson = useCallback((lesson: Lesson | null) => {
     if (lesson && isLessonTrialLocked(lesson)) {
-      toast({
-        title: "Aula bloqueada no trial",
-        description: "Assine a plataforma para desbloquear todas as aulas.",
-        variant: "destructive",
-      });
+      // Allow selecting so they can see the lock overlay
+      setSelectedLesson(lesson);
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     setSelectedLesson(lesson);
     if (!lesson) window.scrollTo(0, 0);
-  }, [moduleLessons, isTrial]);
+  }, [moduleLessons, isTrial, isTesterAccess, allowedLessonIds]);
 
   // Auto-scroll to video when a lesson is selected
   useEffect(() => {
@@ -319,7 +330,8 @@ export default function ModulePage() {
 
   // ========== LESSON VIEW ==========
   if (selectedLesson && !isLocked) {
-    const embedUrl = getEmbedUrl(selectedLesson.videoUrl || "");
+    const lessonLockedForTester = isLessonTrialLocked(selectedLesson);
+    const embedUrl = lessonLockedForTester ? null : getEmbedUrl(selectedLesson.videoUrl || "");
     const isCompleted = completedIds.has(selectedLesson.id);
     const currentIdx = moduleLessons.findIndex(l => l.id === selectedLesson.id);
     const nextLesson = moduleLessons[currentIdx + 1];
@@ -346,7 +358,18 @@ export default function ModulePage() {
           {/* Left: Video + details centered */}
           <div ref={leftPanelRef} className="flex-[3] overflow-y-auto p-6 flex flex-col justify-center">
             <div className="max-w-4xl mx-auto w-full space-y-4">
-              {embedUrl ? (
+              {lessonLockedForTester ? (
+                <div className="aspect-video bg-card rounded-lg flex items-center justify-center ring-1 ring-border/30">
+                  <div className="text-center space-y-3 px-6">
+                    <Lock className="w-10 h-10 text-gold/60 mx-auto" />
+                    <p className="text-sm font-semibold text-foreground">Aula bloqueada</p>
+                    <p className="text-xs text-muted-foreground max-w-sm">Adquira um plano para assistir esta aula e ter acesso completo a todos os modulos.</p>
+                    <a href="/#/planos" style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>
+                      Ver planos e precos
+                    </a>
+                  </div>
+                </div>
+              ) : embedUrl ? (
                 <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border/30">
                   <iframe
                     src={embedUrl}
@@ -485,7 +508,18 @@ export default function ModulePage() {
         {/* Mobile: stacked layout */}
         <div className="lg:hidden">
           <div className="p-4 space-y-4" ref={videoRef}>
-            {embedUrl ? (
+            {lessonLockedForTester ? (
+              <div className="aspect-video bg-card rounded-lg flex items-center justify-center ring-1 ring-border/30">
+                <div className="text-center space-y-3 px-6">
+                  <Lock className="w-10 h-10 text-gold/60 mx-auto" />
+                  <p className="text-sm font-semibold text-foreground">Aula bloqueada</p>
+                  <p className="text-xs text-muted-foreground max-w-sm">Adquira um plano para assistir esta aula e ter acesso completo a todos os modulos.</p>
+                  <a href="/#/planos" style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>
+                    Ver planos e precos
+                  </a>
+                </div>
+              </div>
+            ) : embedUrl ? (
               <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border/30">
                 <iframe
                   src={embedUrl}
@@ -625,24 +659,24 @@ export default function ModulePage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Trial Banner */}
-      {isTrial && (
+      {/* Trial / Tester Banner */}
+      {(isTrial || isTesterAccess) && (
         <div className="w-full bg-gold/10 border-b border-gold/20 px-4 py-2.5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-gold font-semibold">
-              {trialDaysLeft !== null && trialDaysLeft > 0
+              {isTrial && trialDaysLeft !== null && trialDaysLeft > 0
                 ? `Teste gratuito — ${trialDaysLeft} dia${trialDaysLeft === 1 ? "" : "s"} restante${trialDaysLeft === 1 ? "" : "s"}`
-                : "Seu período de teste encerrou"}
+                : isTrial ? "Seu período de teste encerrou"
+                : "Modo teste"}
             </span>
-            <span className="text-white/50 hidden sm:inline">Primeiras 2 aulas de cada módulo liberadas</span>
+            <span className="text-white/50 hidden sm:inline">Primeiras 2 aulas de cada modulo liberadas</span>
           </div>
           <a
-            href={whatsappTrialUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 text-xs font-semibold bg-gold text-background px-3 py-1.5 rounded-full hover:bg-gold/90 transition-colors"
+            href="/#/planos"
+            className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"
+            style={{ backgroundColor: '#D4A843', color: '#0A0D14' }}
           >
-            Assinar agora
+            Ver planos
           </a>
         </div>
       )}
@@ -756,19 +790,19 @@ export default function ModulePage() {
               return (
                 <div
                   key={lesson.id}
-                  onClick={() => !isLocked && !trialLocked && setSelectedLesson(lesson)}
-                  className={`w-full text-left group ${isLocked || trialLocked ? "cursor-default" : "cursor-pointer"} ${trialLocked ? "opacity-50" : ""}`}
+                  onClick={() => !isLocked && handleSelectLesson(lesson)}
+                  className={`w-full text-left group ${isLocked ? "cursor-default" : trialLocked ? "cursor-pointer opacity-60" : "cursor-pointer"}`}
                 >
                   <div
                     className={`flex items-center gap-4 px-4 py-4 rounded-xl transition-all duration-200 border ${
-                      done && !isLocked
+                      done && !isLocked && !trialLocked
                         ? "border-transparent bg-card/40"
                         : "border-transparent"
                     } ${!isLocked ? "hover:bg-card/60 hover:border-border/30" : ""}`}
-                    style={done && !isLocked ? { borderLeft: `3px solid ${theme.accent}` } : undefined}
+                    style={done && !isLocked && !trialLocked ? { borderLeft: `3px solid ${theme.accent}` } : undefined}
                   >
                     {/* Lesson number */}
-                    <span className={`w-8 text-center text-sm font-medium shrink-0 ${done ? "" : "text-muted-foreground"}`} style={done ? { color: theme.accent } : undefined}>
+                    <span className={`w-8 text-center text-sm font-medium shrink-0 ${trialLocked ? "text-muted-foreground/40" : done ? "" : "text-muted-foreground"}`} style={done && !trialLocked ? { color: theme.accent } : undefined}>
                       {String(i + 1).padStart(2, "0")}
                     </span>
 
@@ -785,15 +819,15 @@ export default function ModulePage() {
 
                     {/* Title, description and support link */}
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate ${done ? "text-foreground/70" : "text-foreground"}`}>
+                      <p className={`text-sm font-medium truncate ${trialLocked ? "text-muted-foreground" : done ? "text-foreground/70" : "text-foreground"}`}>
                         {lesson.title}
                       </p>
-                      {!isLocked && descLine && (
+                      {!isLocked && !trialLocked && descLine && (
                         <p className="text-[11px] text-muted-foreground mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap">
                           {descLine}
                         </p>
                       )}
-                      {!isLocked && supportLink && (
+                      {!isLocked && !trialLocked && supportLink && (
                         <a
                           href={supportLink.url}
                           target="_blank"
@@ -814,13 +848,25 @@ export default function ModulePage() {
                     )}
 
                     {/* Chevron */}
-                    {!isLocked && (
+                    {!isLocked && !trialLocked && (
                       <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                     )}
                   </div>
                 </div>
               );
             })}
+
+            {/* CTA card for tester users */}
+            {(isTesterAccess || isTrial) && moduleLessons.some(l => isLessonTrialLocked(l)) && (
+              <div className="rounded-xl bg-gold/5 border border-gold/20 p-4 text-center mt-4">
+                <Lock className="w-5 h-5 text-gold mx-auto mb-2" />
+                <p className="text-sm font-medium">Quer assistir todas as aulas?</p>
+                <p className="text-xs text-muted-foreground mb-3">Adquira um plano e tenha acesso completo a todos os modulos e materiais.</p>
+                <a href="/#/planos" style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>
+                  Ver planos e precos
+                </a>
+              </div>
+            )}
           </div>
         )}
       </div>
