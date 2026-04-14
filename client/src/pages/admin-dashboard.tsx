@@ -31,6 +31,7 @@ import {
   Sparkles, MessageCircle, Phone, Coins, Gift, Stethoscope, FileSignature, AlertTriangle, PenLine,
   TrendingUp, BarChart3, Zap, Menu, ChevronRight, Instagram
 } from "lucide-react";
+import { handlePhoneInput, formatPhoneDisplay, stripPhone } from "@/lib/phone";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
   useSensor, useSensors, DragOverlay, type DragEndEvent, type DragStartEvent
@@ -1085,7 +1086,7 @@ export default function AdminDashboard() {
     setEditingStudent(s);
     setEditStudentForm({
       name: s.name,
-      phone: s.phone || "",
+      phone: stripPhone(s.phone || ""),
       instagram: (s as any).instagram || "",
       accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
       approved: s.approved,
@@ -1936,7 +1937,7 @@ export default function AdminDashboard() {
                         <div className="min-w-0">
                           <p className="font-medium text-foreground truncate">{s.name}</p>
                           <p className="text-sm text-muted-foreground truncate mt-0.5">{s.email}</p>
-                          {s.phone && <p className="text-xs text-muted-foreground truncate mt-0.5">{s.phone}</p>}
+                          {s.phone && <p className="text-xs text-muted-foreground truncate mt-0.5">{formatPhoneDisplay(s.phone)}</p>}
                           {(s as any).instagram && <p className="text-xs text-muted-foreground truncate mt-0.5">@{(s as any).instagram}</p>}
                         </div>
                         <div className="flex items-center gap-2">
@@ -2035,7 +2036,7 @@ export default function AdminDashboard() {
                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                {s.email}{s.phone ? ` | ${s.phone}` : ''}
+                                {s.email}{s.phone ? ` | ${formatPhoneDisplay(s.phone)}` : ''}
                               </p>
                             </div>
                             <div className="flex items-center gap-0.5 shrink-0">
@@ -2051,7 +2052,7 @@ export default function AdminDashboard() {
                                 <KeyRound className="w-3.5 h-3.5" />
                               </Button>
                               {s.phone && (
-                                <a href={`https://wa.me/55${s.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">
+                                <a href={`https://wa.me/${stripPhone(s.phone)}`} target="_blank" rel="noopener noreferrer">
                                   <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-green-400 h-7 w-7 p-0" title="WhatsApp">
                                     <MessageCircle className="w-3.5 h-3.5" />
                                   </Button>
@@ -2195,7 +2196,7 @@ export default function AdminDashboard() {
                               {s.phone && (
                                 <p className="text-xs text-muted-foreground truncate mt-0.5">
                                   <Phone className="w-3 h-3 inline mr-1" />
-                                  {s.phone}
+                                  {formatPhoneDisplay(s.phone)}
                                 </p>
                               )}
                             </div>
@@ -2235,7 +2236,7 @@ export default function AdminDashboard() {
                               </AlertDialog>
                               {s.phone && (
                                 <a
-                                  href={`https://wa.me/55${s.phone.replace(/\D/g, "")}`}
+                                  href={`https://wa.me/${stripPhone(s.phone)}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                 >
@@ -2333,8 +2334,10 @@ export default function AdminDashboard() {
                         <Input value={editStudentForm.name} onChange={e => setEditStudentForm(f => ({ ...f, name: e.target.value }))} className="bg-background/50 border-border/40" />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Telefone</Label>
-                        <Input type="tel" placeholder="+55 (11) 99999-9999" value={editStudentForm.phone} onChange={e => setEditStudentForm(f => ({ ...f, phone: e.target.value }))} className="bg-background/50 border-border/40" />
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                          <Phone className="w-3 h-3" /> Telefone
+                        </Label>
+                        <Input type="tel" placeholder="+55 (21) 99999-9999" value={formatPhoneDisplay(editStudentForm.phone)} onChange={e => { const { raw } = handlePhoneInput(e.target.value); setEditStudentForm(f => ({ ...f, phone: raw })); }} className="bg-background/50 border-border/40" />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground">Instagram</Label>
@@ -2669,7 +2672,7 @@ export default function AdminDashboard() {
                       if (!editingStudent) return;
                       const data: any = {};
                       if (editStudentForm.name && editStudentForm.name !== editingStudent.name) data.name = editStudentForm.name;
-                      if (editStudentForm.phone !== (editingStudent.phone || "")) data.phone = editStudentForm.phone;
+                      if (editStudentForm.phone !== stripPhone(editingStudent.phone || "")) data.phone = editStudentForm.phone;
                       const normalizedIg = (editStudentForm.instagram || "").replace(/^@/, "").trim();
                       if (normalizedIg !== ((editingStudent as any).instagram || "")) data.instagram = normalizedIg;
                       if (editStudentForm.accessExpiresAt) data.accessExpiresAt = new Date(editStudentForm.accessExpiresAt).toISOString();
@@ -4073,8 +4076,8 @@ export default function AdminDashboard() {
                   const expires = student.accessExpiresAt ? new Date(student.accessExpiresAt) : null;
                   const daysLeft = expires ? Math.max(0, Math.ceil((expires.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
                   const expired = daysLeft !== null && daysLeft === 0;
-                  const phone = student.phone ? student.phone.replace(/\D/g, "") : null;
-                  const waLink = phone ? `https://wa.me/55${phone.startsWith("55") ? phone.slice(2) : phone}` : null;
+                  const phone = student.phone ? stripPhone(student.phone) : null;
+                  const waLink = phone ? `https://wa.me/${phone}` : null;
                   return (
                     <Card key={student.id} className={`border bg-card/50 ${expired ? "border-red-500/30" : "border-yellow-500/20"}  hover:bg-card/70 transition-colors`}>
                       <CardContent className="p-4">
@@ -4098,7 +4101,7 @@ export default function AdminDashboard() {
                             {student.phone && (
                               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <Phone className="w-3 h-3 shrink-0" />
-                                <span>{student.phone}</span>
+                                <span>{formatPhoneDisplay(student.phone)}</span>
                               </div>
                             )}
                             {(student as any).instagram && (
@@ -4189,7 +4192,7 @@ export default function AdminDashboard() {
                       <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label><Input value={adminForm.name} onChange={e => setAdminForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Amanda Silva" className="bg-background/50 border-border/40" /></div>
                       <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Email</Label><Input type="email" value={adminForm.email} onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))} placeholder="admin@exemplo.com" className="bg-background/50 border-border/40" /></div>
                       <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Senha</Label><Input type="password" value={adminForm.password} onChange={e => setAdminForm(f => ({ ...f, password: e.target.value }))} placeholder="Mínimo 6 caracteres" className="bg-background/50 border-border/40" /></div>
-                      <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Telefone (opcional)</Label><Input value={adminForm.phone} onChange={e => setAdminForm(f => ({ ...f, phone: e.target.value }))} placeholder="+55 (11) 99999-9999" className="bg-background/50 border-border/40" /></div>
+                      <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><Phone className="w-3 h-3" /> Telefone (opcional)</Label><Input type="tel" value={formatPhoneDisplay(adminForm.phone)} onChange={e => { const { raw } = handlePhoneInput(e.target.value); setAdminForm(f => ({ ...f, phone: raw })); }} placeholder="+55 (21) 99999-9999" className="bg-background/50 border-border/40" /></div>
                       <div className="rounded-md bg-gold/5 border border-gold/20 p-3 text-xs text-muted-foreground space-y-1">
                         <p className="font-medium text-gold">Permissões do admin secundário:</p>
                         <p>- Gerenciar alunos (converter, editar, renovar)</p>
@@ -4219,7 +4222,7 @@ export default function AdminDashboard() {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground truncate mt-0.5">{admin.email}</p>
-                          {admin.phone && <p className="text-xs text-muted-foreground mt-0.5">{admin.phone}</p>}
+                          {admin.phone && <p className="text-xs text-muted-foreground mt-0.5">{formatPhoneDisplay(admin.phone)}</p>}
                         </div>
                         {admin.role === "admin" && (
                           <AlertDialog>

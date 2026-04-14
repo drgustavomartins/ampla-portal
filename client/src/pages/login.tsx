@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Sparkles, Eye, EyeOff, CheckCircle2, Star, Users, Clock, Play, ArrowRight, Camera, Instagram } from "lucide-react";
+import { Loader2, Sparkles, Eye, EyeOff, CheckCircle2, Star, Users, Clock, Play, ArrowRight, Camera, Instagram, Phone } from "lucide-react";
+import { handlePhoneInput, formatPhone, stripPhone } from "@/lib/phone";
 import { trackEvent } from "@/lib/funnel";
 import type { z } from "zod";
 
@@ -56,6 +57,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [lgpdAccepted, setLgpdAccepted] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [phoneDisplay, setPhoneDisplay] = useState(formatPhone("55"));
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const avatarFileStore = useRef<File | null>(null);
   const { login } = useAuth();
@@ -68,7 +70,7 @@ export default function LoginPage() {
 
   const trialForm = useForm<z.infer<typeof trialRegisterSchema>>({
     resolver: zodResolver(trialRegisterSchema),
-    defaultValues: { name: "", email: "", phone: "", password: "", instagram: "", lgpdAccepted: false },
+    defaultValues: { name: "", email: "", phone: "55", password: "", instagram: "", lgpdAccepted: false },
   });
 
   // Limpa o erro inline ao usuário começar a digitar
@@ -334,18 +336,30 @@ export default function LoginPage() {
                   )}
                 </div>
 
-                {/* #38 — Telefone opcional */}
+                {/* Telefone — obrigatório, com máscara */}
                 <div className="space-y-1.5">
                   <Label htmlFor="trial-phone" className="text-xs text-white/50">
-                    Telefone <span className="text-white/25">(opcional)</span>
+                    <span className="flex items-center gap-1.5">
+                      <Phone className="w-3 h-3" />
+                      Telefone
+                    </span>
                   </Label>
                   <Input
                     id="trial-phone"
                     type="tel"
-                    placeholder="(21) 99999-9999"
+                    placeholder="+55 (21) 99999-9999"
                     className="bg-white/5 border-white/10 focus:border-gold/50 text-white placeholder:text-white/20"
-                    {...trialForm.register("phone")}
+                    value={phoneDisplay}
+                    onChange={(e) => {
+                      const { raw, formatted } = handlePhoneInput(e.target.value);
+                      setPhoneDisplay(formatted);
+                      trialForm.setValue("phone", raw, { shouldValidate: true });
+                      clearError();
+                    }}
                   />
+                  {trialForm.formState.errors.phone && (
+                    <p className="text-xs text-red-400">{trialForm.formState.errors.phone.message}</p>
+                  )}
                 </div>
 
                 {/* Avatar opcional */}
