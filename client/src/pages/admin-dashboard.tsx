@@ -1008,7 +1008,6 @@ export default function AdminDashboard() {
     materialsAccess: false,
     mentorshipStartDate: "", mentorshipEndDate: "",
     planKey: "",
-    moduleContentExpiresAt: "",
   });
   // Per-user module permissions state: { [moduleId]: { enabled, startDate, endDate } }
   const [editUserModules, setEditUserModules] = useState<Record<number, { enabled: boolean; startDate: string; endDate: string }>>({});
@@ -1100,7 +1099,6 @@ export default function AdminDashboard() {
       mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
       mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
       planKey: (s as any).planKey || "",
-      moduleContentExpiresAt: (s as any).moduleContentExpiresAt ? (s as any).moduleContentExpiresAt.slice(0, 16) : "",
     });
     // Load user module permissions
     try {
@@ -2010,8 +2008,6 @@ export default function AdminDashboard() {
                     const studentMods = modules.filter((m: any) => studentModIds.includes(m.id));
                     const practiceH = (s as any).clinicalPracticeHours || 0;
                     const obsH = (s as any).clinicalObservationHours || 0;
-                    const contentExpiry = (s as any).moduleContentExpiresAt;
-                    const contentDaysLeft = contentExpiry ? Math.ceil((new Date(contentExpiry).getTime() - Date.now()) / 86400000) : null;
                     const planKeyLabels: Record<string, string> = {
                       modulo_avulso: "Modulo Avulso", pacote_completo: "Pacote Completo",
                       observador_essencial: "Observador Essencial", observador_avancado: "Observador Avancado",
@@ -2088,7 +2084,6 @@ export default function AdminDashboard() {
                             <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs">
                               <div><span className="text-muted-foreground">Plano:</span> <span className="font-medium text-foreground">{planLabel}</span></div>
                               <div><span className="text-muted-foreground">Aulas:</span> <span className={`font-medium ${progress.percent === 100 ? 'text-emerald-400' : 'text-foreground'}`}>{progress.completed}/{progress.total} ({progress.percent}%)</span></div>
-                              <div><span className="text-muted-foreground">Visualizacao:</span> <span className={`font-medium ${contentDaysLeft !== null && contentDaysLeft <= 0 ? 'text-red-400' : contentDaysLeft !== null && contentDaysLeft < 30 ? 'text-amber-400' : 'text-foreground'}`}>{contentDaysLeft === null ? 'Vitalicio' : contentDaysLeft <= 0 ? 'Expirado' : contentDaysLeft + ' dias'}</span></div>
                               {(s as any).mentorshipEndDate && (
                                 <div><span className="text-muted-foreground">Mentoria:</span> <span className="font-medium text-foreground">ate {new Date((s as any).mentorshipEndDate).toLocaleDateString('pt-BR')}</span></div>
                               )}
@@ -2584,20 +2579,6 @@ export default function AdminDashboard() {
 
                   <div className="w-full h-px bg-border/30" />
 
-                  {/* ── Section: Content Expiry ── */}
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">Visualizacao das aulas ate</Label>
-                    <Input
-                      type="datetime-local"
-                      value={editStudentForm.moduleContentExpiresAt}
-                      onChange={e => setEditStudentForm(f => ({ ...f, moduleContentExpiresAt: e.target.value }))}
-                      className="bg-background/50 border-border/40"
-                    />
-                    <p className="text-[10px] text-muted-foreground">Quando expirar, modulos e materiais ficam bloqueados. Acesso ao portal continua vitalicio.</p>
-                  </div>
-
-                  <div className="w-full h-px bg-border/30" />
-
                   {/* ── Section: Features ── */}
                   <div className="space-y-4">
                     <h4 className="text-xs font-semibold text-gold uppercase tracking-brand flex items-center gap-2">
@@ -2704,7 +2685,6 @@ export default function AdminDashboard() {
                       data.clinicalPracticeHours = editStudentForm.clinicalPracticeHours ?? 0;
                       data.clinicalObservationHours = editStudentForm.clinicalObservationHours ?? 0;
                       data.materialsAccess = editStudentForm.materialsAccess;
-                      data.moduleContentExpiresAt = editStudentForm.moduleContentExpiresAt ? new Date(editStudentForm.moduleContentExpiresAt).toISOString() : null;
                       if (editStudentForm.planKey && editStudentForm.planKey !== "none") {
                         data.planKey = editStudentForm.planKey;
                       } else if (editStudentForm.planKey === "none") {

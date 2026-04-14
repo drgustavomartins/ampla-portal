@@ -1649,19 +1649,14 @@ export async function registerRoutes(server: Server, app: Express) {
       const auth = authenticateRequest(req);
       if (!auth) return res.status(401).json({ message: "Não autorizado" });
 
-      const userResult = await db.execute(sql`SELECT role, plan_key, module_content_expires_at FROM users WHERE id = ${auth.userId}`);
+      const userResult = await db.execute(sql`SELECT role, plan_key FROM users WHERE id = ${auth.userId}`);
       const user = (userResult as any).rows?.[0];
       if (!user) return res.json({ accessType: "none", allowedLessonIds: [] });
 
-      const isTester = user.plan_key === "tester" || user.role === "trial" || (!user.plan_key && !user.module_content_expires_at);
-      const contentExpired = user.module_content_expires_at && new Date(user.module_content_expires_at) < new Date();
+      const isTester = user.plan_key === "tester" || user.role === "trial" || !user.plan_key;
 
-      if (!isTester && !contentExpired && user.plan_key) {
+      if (!isTester && user.plan_key) {
         return res.json({ accessType: "full", allowedLessonIds: [] });
-      }
-
-      if (contentExpired) {
-        return res.json({ accessType: "expired", allowedLessonIds: [] });
       }
 
       // Tester: first 2 lessons per module
