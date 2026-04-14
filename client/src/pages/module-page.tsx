@@ -454,6 +454,12 @@ export default function ModulePage() {
                   const trialLocked = isLessonTrialLocked(lesson);
                   const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
                   const supportLink = getLessonSupportUrl(lesson);
+                  const isDivider = lesson.title.startsWith("\u2501");
+                  if (isDivider) return (
+                    <div key={lesson.id} className="px-3 pt-5 pb-2">
+                      <p className="text-xs font-bold uppercase tracking-widest text-[#D4A843]">{lesson.title.replace(/\u2501/g, "").trim()}</p>
+                    </div>
+                  );
                   return (
                     <button
                       key={lesson.id}
@@ -602,6 +608,12 @@ export default function ModulePage() {
                 const trialLocked = isLessonTrialLocked(lesson);
                 const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
                 const supportLink = getLessonSupportUrl(lesson);
+                const isDivider = lesson.title.startsWith("\u2501");
+                if (isDivider) return (
+                  <div key={lesson.id} className="px-3 pt-5 pb-2">
+                    <p className="text-xs font-bold uppercase tracking-widest text-[#D4A843]">{lesson.title.replace(/\u2501/g, "").trim()}</p>
+                  </div>
+                );
                 return (
                   <button
                     key={lesson.id}
@@ -787,6 +799,12 @@ export default function ModulePage() {
               const trialLocked = isLessonTrialLocked(lesson);
               const supportLink = getLessonSupportUrl(lesson);
               const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
+              const isDivider = lesson.title.startsWith("\u2501");
+              if (isDivider) return (
+                <div key={lesson.id} className="px-4 pt-8 pb-3">
+                  <p className="text-sm font-bold uppercase tracking-widest text-[#D4A843] border-b border-[#D4A843]/20 pb-2">{lesson.title.replace(/\u2501/g, "").trim()}</p>
+                </div>
+              );
               return (
                 <div
                   key={lesson.id}
