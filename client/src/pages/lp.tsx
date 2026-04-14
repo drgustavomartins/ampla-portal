@@ -137,12 +137,12 @@ export default function LandingPage() {
           }}
         />
 
-        <div className="relative max-w-5xl mx-auto px-5 pt-8 pb-12 md:pt-10 md:pb-20 text-center">
+        <div className="relative max-w-5xl mx-auto px-5 pt-6 pb-8 md:pt-10 md:pb-20 text-center">
           {/* logo */}
           <img
             src="/logo-transparent.png"
             alt="Ampla Facial"
-            className="h-24 md:h-32 mx-auto mb-6 opacity-90"
+            className="h-28 md:h-32 mx-auto mb-4 opacity-90"
           />
 
           {/* headline */}
@@ -151,7 +151,7 @@ export default function LandingPage() {
             <span className="text-[#D4A843]">Domine o Full Face.</span>
           </h1>
 
-          <p className="text-gray-400 text-base md:text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-gray-400 text-base md:text-lg max-w-2xl mx-auto mb-6 leading-relaxed">
             Formação completa em Toxina, Preenchedores, Bioestimuladores e Biorregeneradores com o
             Dr. Gustavo Martins
           </p>
