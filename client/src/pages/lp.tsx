@@ -147,8 +147,8 @@ export default function LandingPage() {
 
           {/* headline */}
           <h1 className="lp-serif text-[1.65rem] sm:text-4xl md:text-[2.75rem] leading-snug sm:leading-relaxed font-bold max-w-3xl mx-auto mb-6">
-            Pare de Competir por Seringa.{" "}
-            <span className="text-[#D4A843]" style={{ whiteSpace: 'nowrap' }}>Domine o Full Face.</span>
+            Pare de Competir por Preço de Seringa.<br />
+            <span className="text-[#D4A843]">Domine o Full Face.</span>
           </h1>
 
           <p className="text-gray-400 text-base md:text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
