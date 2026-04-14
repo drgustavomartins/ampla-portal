@@ -94,9 +94,9 @@ function WhatsAppIcon({ className = "w-6 h-6" }: { className?: string }) {
    MAIN LP COMPONENT
    ────────────────────────────────────────────────────────────────────────── */
 const WA_FREE_LESSON =
-  "https://wa.me/5521995523509?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20quero%20participar%20do%20pr%C3%B3ximo%20encontro%20quinzenal%20gratuito";
+  "https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20quero%20participar%20do%20pr%C3%B3ximo%20encontro%20quinzenal%20gratuito";
 const WA_LINK =
-  "https://wa.me/5521995523509?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20quero%20saber%20mais%20sobre%20a%20forma%C3%A7%C3%A3o";
+  "https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20quero%20saber%20mais%20sobre%20a%20forma%C3%A7%C3%A3o";
 
 export default function LandingPage() {
   const plansRef = useRef<HTMLDivElement>(null);
@@ -485,7 +485,7 @@ export default function LandingPage() {
 
                 <div className="mt-auto pt-4 border-t border-white/10">
                   <a
-                    href="https://wa.me/5521995523509?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20no%20Curso%20Completo%20(online).%20Podemos%20conversar%3F"
+                    href="https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20no%20Curso%20Completo%20(online).%20Podemos%20conversar%3F"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
@@ -529,7 +529,7 @@ export default function LandingPage() {
 
                 <div className="mt-auto pt-4 border-t border-white/10">
                   <a
-                    href="https://wa.me/5521995523509?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20na%20Imers%C3%A3o%20(observa%C3%A7%C3%A3o%20cl%C3%ADnica).%20Podemos%20conversar%3F"
+                    href="https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20na%20Imers%C3%A3o%20(observa%C3%A7%C3%A3o%20cl%C3%ADnica).%20Podemos%20conversar%3F"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
@@ -589,7 +589,7 @@ export default function LandingPage() {
 
                 <div className="relative mt-auto pt-4 border-t border-white/10">
                   <a
-                    href="https://wa.me/5521995523509?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20na%20Mentoria%20VIP%20Completa%20(hands-on%20com%20pacientes).%20Podemos%20conversar%3F"
+                    href="https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20na%20Mentoria%20VIP%20Completa%20(hands-on%20com%20pacientes).%20Podemos%20conversar%3F"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
