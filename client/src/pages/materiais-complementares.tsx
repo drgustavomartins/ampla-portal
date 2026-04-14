@@ -284,7 +284,7 @@ function ThemeDetail({ theme, onBack, isTrial = false, contentExpired = false }:
       {isTrial && (
         <div className="flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-lg px-4 py-2.5">
           <Lock className="w-4 h-4 text-gold shrink-0" />
-          <p className="text-xs text-gold/90">Voce esta no modo teste. <a href="/#/planos" className="underline font-semibold hover:text-gold">Adquira um plano</a> para ter acesso completo a todos os materiais.</p>
+          <p className="text-xs text-gold/90">Você está no modo teste. <a href="/#/planos" className="underline font-semibold hover:text-gold">Adquira um plano</a> para ter acesso completo a todos os materiais.</p>
         </div>
       )}
       {contentExpired && !isTrial && (
@@ -475,7 +475,7 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
                     <span className="text-[10px] text-gold/80 font-medium">Acesso expirado</span>
                   )}
                   {isLockedForTrial && !isLockedForExpiry && (
-                    <span className="text-[10px] text-white/60 font-medium text-center px-2">Adquira um plano para ter acesso completo</span>
+                    <span className="text-[11px] text-white/70 font-medium text-center px-4 leading-snug">Adquira um plano para ter acesso completo a todos os materiais</span>
                   )}
                   {(isLockedForTrial || isLockedForExpiry) && (
                     <a href="/#/planos" className="text-[10px] text-gold/80 font-medium hover:text-gold transition-colors">Ver planos</a>

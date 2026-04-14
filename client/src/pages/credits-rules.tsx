@@ -6,16 +6,16 @@ import {
 } from "lucide-react";
 
 const cashbackTable = [
-  { plan: "Modulo Avulso", rate: "3%" },
+  { plan: "Módulo Avulso", rate: "3%" },
   { plan: "Curso Completo", rate: "5%" },
   { plan: "Observador Essencial", rate: "5%" },
-  { plan: "Observador Avancado", rate: "7%" },
+  { plan: "Observador Avançado", rate: "7%" },
   { plan: "Observador Intensivo", rate: "8%" },
-  { plan: "Imersao", rate: "10%" },
+  { plan: "Imersão", rate: "10%" },
   { plan: "VIP Online", rate: "8%" },
   { plan: "VIP Presencial", rate: "10%" },
   { plan: "VIP Completo", rate: "10%" },
-  { plan: "Horas Clinicas", rate: "5%" },
+  { plan: "Horas Clínicas", rate: "5%" },
 ];
 
 export default function CreditsRulesPage() {
@@ -40,9 +40,9 @@ export default function CreditsRulesPage() {
           <div className="w-16 h-16 rounded-2xl bg-gold/15 flex items-center justify-center mx-auto">
             <Coins className="w-8 h-8 text-gold" />
           </div>
-          <h1 className="font-serif text-3xl font-semibold text-foreground">Programa de Creditos</h1>
+          <h1 className="font-serif text-3xl font-semibold text-foreground">Programa de Créditos</h1>
           <p className="text-muted-foreground text-sm max-w-lg mx-auto leading-relaxed">
-            Ganhe creditos ao comprar planos e indicar amigos. Use seus creditos como desconto em qualquer compra futura.
+            Ganhe créditos ao comprar planos e indicar amigos. Use seus créditos como desconto em qualquer compra futura.
           </p>
         </div>
 
@@ -54,27 +54,27 @@ export default function CreditsRulesPage() {
                 <Gift className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <h2 className="font-semibold text-foreground">Indicacao</h2>
-                <p className="text-xs text-muted-foreground">Ganhe creditos indicando amigos</p>
+                <h2 className="font-semibold text-foreground">Indicação</h2>
+                <p className="text-xs text-muted-foreground">Ganhe créditos indicando amigos</p>
               </div>
             </div>
             <div className="bg-background/50 rounded-lg p-4 space-y-3">
               <div className="flex items-start gap-3">
                 <Badge className="bg-gold/15 text-gold border-gold/30 shrink-0">1</Badge>
-                <p className="text-sm text-foreground">Compartilhe seu codigo de indicacao unico com colegas e amigos.</p>
+                <p className="text-sm text-foreground">Compartilhe seu código de indicação único com colegas e amigos.</p>
               </div>
               <div className="flex items-start gap-3">
                 <Badge className="bg-gold/15 text-gold border-gold/30 shrink-0">2</Badge>
-                <p className="text-sm text-foreground">Quando a pessoa se inscrever usando seu codigo, voce ganha <strong className="text-gold">10% do valor pago</strong> em creditos.</p>
+                <p className="text-sm text-foreground">Quando a pessoa se inscrever usando seu código, você ganha <strong className="text-gold">10% do valor pago</strong> em créditos.</p>
               </div>
               <div className="flex items-start gap-3">
                 <Badge className="bg-gold/15 text-gold border-gold/30 shrink-0">3</Badge>
-                <p className="text-sm text-foreground">Os creditos aparecem na sua carteira automaticamente apos a confirmacao do pagamento.</p>
+                <p className="text-sm text-foreground">Os créditos aparecem na sua carteira automaticamente após a confirmação do pagamento.</p>
               </div>
             </div>
             <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3">
               <p className="text-xs text-blue-400">
-                <strong>Exemplo:</strong> Se seu amigo comprar o plano VIP Completo (R$17.350), voce recebe R$1.735 em creditos!
+                <strong>Exemplo:</strong> Se seu amigo comprar o plano VIP Completo (R$17.350), você recebe R$1.735 em créditos!
               </p>
             </div>
           </CardContent>
@@ -88,12 +88,12 @@ export default function CreditsRulesPage() {
                 <TrendingUp className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <h2 className="font-semibold text-foreground">Cashback automatico</h2>
+                <h2 className="font-semibold text-foreground">Cashback automático</h2>
                 <p className="text-xs text-muted-foreground">Receba de volta em cada compra</p>
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              Toda compra de plano gera cashback automatico. Os creditos sao adicionados imediatamente apos a confirmacao do pagamento.
+              Toda compra de plano gera cashback automático. Os créditos são adicionados imediatamente após a confirmação do pagamento.
             </p>
             <div className="overflow-x-auto rounded-lg border border-border/30">
               <table className="w-full text-sm">
@@ -126,19 +126,19 @@ export default function CreditsRulesPage() {
                 <ShoppingCart className="w-5 h-5 text-orange-400" />
               </div>
               <div>
-                <h2 className="font-semibold text-foreground">Como usar seus creditos</h2>
+                <h2 className="font-semibold text-foreground">Como usar seus créditos</h2>
                 <p className="text-xs text-muted-foreground">Aplique como desconto no checkout</p>
               </div>
             </div>
             <div className="bg-background/50 rounded-lg p-4 space-y-3">
               <p className="text-sm text-foreground">
-                Na pagina de planos, escolha quanto credito quer usar. O desconto e aplicado automaticamente no valor final.
+                Na página de planos, escolha quanto crédito quer usar. O desconto é aplicado automaticamente no valor final.
               </p>
               <p className="text-sm text-foreground">
-                Se seus creditos cobrirem 100% do valor, a compra e ativada instantaneamente sem precisar passar pelo Stripe.
+                Se seus créditos cobrirem 100% do valor, a compra é ativada instantaneamente sem precisar passar pelo Stripe.
               </p>
               <p className="text-sm text-foreground">
-                Voce pode combinar creditos de <strong className="text-gold">cashback + indicacao</strong> no mesmo pagamento.
+                Você pode combinar créditos de <strong className="text-gold">cashback + indicação</strong> no mesmo pagamento.
               </p>
             </div>
           </CardContent>
@@ -155,20 +155,20 @@ export default function CreditsRulesPage() {
             </div>
             <div className="space-y-4">
               <div className="bg-background/50 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-foreground">Os creditos expiram?</h3>
-                <p className="text-sm text-muted-foreground mt-1">Sim. Cada credito tem validade de <strong className="text-gold">6 meses</strong> a partir da data em que foi gerado. Creditos expirados nao podem ser utilizados. Acompanhe as datas no seu extrato.</p>
+                <h3 className="text-sm font-medium text-foreground">Os créditos expiram?</h3>
+                <p className="text-sm text-muted-foreground mt-1">Sim. Cada crédito tem validade de <strong className="text-gold">6 meses</strong> a partir da data em que foi gerado. Créditos expirados não podem ser utilizados. Acompanhe as datas no seu extrato.</p>
               </div>
               <div className="bg-background/50 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-foreground">Posso combinar cashback e indicacao?</h3>
-                <p className="text-sm text-muted-foreground mt-1">Sim! Todos os seus creditos sao somados em um unico saldo. Voce pode usar qualquer quantidade disponivel.</p>
+                <h3 className="text-sm font-medium text-foreground">Posso combinar cashback e indicação?</h3>
+                <p className="text-sm text-muted-foreground mt-1">Sim! Todos os seus créditos são somados em um único saldo. Você pode usar qualquer quantidade disponível.</p>
               </div>
               <div className="bg-background/50 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-foreground">Quando recebo meus creditos?</h3>
-                <p className="text-sm text-muted-foreground mt-1">Os creditos de cashback e indicacao sao adicionados automaticamente assim que o pagamento e confirmado pelo Stripe.</p>
+                <h3 className="text-sm font-medium text-foreground">Quando recebo meus créditos?</h3>
+                <p className="text-sm text-muted-foreground mt-1">Os créditos de cashback e indicação são adicionados automaticamente assim que o pagamento é confirmado pelo Stripe.</p>
               </div>
               <div className="bg-background/50 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-foreground">Posso transferir creditos para outra pessoa?</h3>
-                <p className="text-sm text-muted-foreground mt-1">Nao, os creditos sao pessoais e intransferiveis. Mas voce pode indicar amigos e ganhar mais creditos!</p>
+                <h3 className="text-sm font-medium text-foreground">Posso transferir créditos para outra pessoa?</h3>
+                <p className="text-sm text-muted-foreground mt-1">Não, os créditos são pessoais e intransferíveis. Mas você pode indicar amigos e ganhar mais créditos!</p>
               </div>
             </div>
           </CardContent>

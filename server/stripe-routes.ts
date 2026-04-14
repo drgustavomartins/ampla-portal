@@ -69,7 +69,9 @@ export function registerStripeRoutes(app: Express) {
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
 
     const [user] = await db.select().from(users).where(eq(users.id, auth.userId));
-    if (!user || !user.planKey) return res.json({ options: [] });
+    if (!user) return res.json({ options: [] });
+    // Trial/tester users or users without a plan should see all available plans
+    if (!user.planKey || user.planKey === "tester") return res.json({ options: [] });
 
     const currentPlanKey = user.planKey as PlanKey;
     const currentPlan = PLANS[currentPlanKey];

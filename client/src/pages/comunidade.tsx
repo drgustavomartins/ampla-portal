@@ -35,22 +35,36 @@ function UserAvatar({ name, avatarUrl, size = "md", className = "" }: {
   className?: string;
 }) {
   const sizeMap = { sm: "w-7 h-7 text-[10px]", md: "w-10 h-10 text-xs", lg: "w-20 h-20 text-2xl" };
-  const initial = name?.[0]?.toUpperCase() || "?";
+  const parts = (name || "").trim().split(/\s+/);
+  const initials = parts.length >= 2
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : (parts[0]?.[0]?.toUpperCase() || "?");
+
+  // Generate a consistent color from the name
+  const hash = (name || "").split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const hues = [25, 45, 200, 260, 330, 160, 15, 280];
+  const hue = hues[hash % hues.length];
+  const bgStyle = { background: `linear-gradient(135deg, hsl(${hue}, 60%, 55%), hsl(${hue}, 70%, 40%))` };
 
   if (avatarUrl) {
     return (
-      <img
-        src={avatarUrl}
-        alt={name}
-        className={`${sizeMap[size].split(" ").slice(0, 2).join(" ")} rounded-full object-cover border-2 border-gold/30 ${className}`}
-        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden"); }}
-      />
+      <div className={`${sizeMap[size].split(" ").slice(0, 2).join(" ")} relative shrink-0 ${className}`}>
+        <img
+          src={avatarUrl}
+          alt={name}
+          className="w-full h-full rounded-full object-cover border-2 border-gold/30"
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden"); }}
+        />
+        <div className={`hidden ${sizeMap[size].split(" ").slice(0, 2).join(" ")} absolute inset-0 rounded-full border-2 border-gold/30 flex items-center justify-center`} style={bgStyle}>
+          <span className="font-semibold text-white">{initials}</span>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className={`${sizeMap[size]} rounded-full bg-gradient-to-br from-gold/80 to-gold border-2 border-gold/30 flex items-center justify-center shrink-0 ${className}`}>
-      <span className="font-semibold text-[#0A1628]">{initial}</span>
+    <div className={`${sizeMap[size]} rounded-full border-2 border-gold/30 flex items-center justify-center shrink-0 ${className}`} style={bgStyle}>
+      <span className="font-semibold text-white">{initials}</span>
     </div>
   );
 }
@@ -87,12 +101,12 @@ interface Comment {
 
 const POST_TYPES = [
   { value: "general", label: "Geral" },
-  { value: "case_study", label: "Caso Clinico" },
+  { value: "case_study", label: "Caso Clínico" },
   { value: "before_after", label: "Antes/Depois" },
 ];
 
 const POST_TYPE_BADGES: Record<string, { label: string; className: string }> = {
-  case_study: { label: "Caso Clinico", className: "bg-gold/15 text-gold border-gold/30" },
+  case_study: { label: "Caso Clínico", className: "bg-gold/15 text-gold border-gold/30" },
   before_after: { label: "Antes/Depois", className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
 };
 
@@ -375,7 +389,7 @@ export default function ComunidadePage() {
       setShowCreate(false);
       setOffset(0);
       queryClient.invalidateQueries({ queryKey: ["/api/community/posts"] });
-      toast({ title: "Publicado!", description: "Creditos serao analisados em breve." });
+      toast({ title: "Publicado!", description: "Créditos serão analisados em breve." });
     },
     onError: (err: any) => {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
