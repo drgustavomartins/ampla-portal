@@ -173,7 +173,7 @@ export default function LandingPage() {
           </div>
 
           <p className="mt-5 text-xs md:text-sm text-gray-500">
-            Mais de 60 aulas gravadas com protocolos clinicos reais
+            Mais de 60 aulas gravadas com protocolos clínicos reais
           </p>
 
           {/* Free lesson CTA */}
@@ -183,7 +183,7 @@ export default function LandingPage() {
             </p>
             <p className="text-sm text-gray-400 mb-5">
               Assista uma aula ao vivo de mentoria avaliada em mais de R$ 1.000, sem pagar nada.
-              Conheça o metodo, tire suas duvidas e decida com calma.
+              Conheça o método, tire suas dúvidas e decida com calma.
             </p>
             <a
               href={WA_FREE_LESSON}
@@ -193,7 +193,7 @@ export default function LandingPage() {
               style={{ backgroundColor: '#25D366' }}
             >
               <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.952 11.952 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.319 0-4.47-.742-6.227-2.003l-.435-.326-2.847.954.954-2.847-.326-.435A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-              Quero participar da proxima aula gratuita
+              Quero participar da próxima aula gratuita
             </a>
           </div>
         </div>
@@ -258,7 +258,7 @@ export default function LandingPage() {
             style={{ backgroundColor: '#25D366' }}
           >
             <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.952 11.952 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.319 0-4.47-.742-6.227-2.003l-.435-.326-2.847.954.954-2.847-.326-.435A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-            Garantir minha vaga na proxima aula
+            Garantir minha vaga na próxima aula
           </a>
         </div>
       </section>
@@ -421,8 +421,8 @@ export default function LandingPage() {
             </h2>
             <p className="text-[#0A0D14]/70 text-base leading-relaxed mb-8 max-w-xl mx-auto">
               A cada 15 dias o Dr. Gustavo faz um encontro ao vivo com seus mentorandos.
-              Voce pode participar do proximo de forma totalmente gratuita,
-              conhecer o metodo, tirar duvidas e sentir se faz sentido pra voce.
+              Você pode participar do próximo de forma totalmente gratuita,
+              conhecer o método, tirar dúvidas e sentir se faz sentido pra você.
             </p>
             <a
               href={WA_FREE_LESSON}
@@ -432,7 +432,7 @@ export default function LandingPage() {
               style={{ backgroundColor: '#25D366' }}
             >
               <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.952 11.952 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.319 0-4.47-.742-6.227-2.003l-.435-.326-2.847.954.954-2.847-.326-.435A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-              Quero participar da proxima aula gratuita
+              Quero participar da próxima aula gratuita
             </a>
           </FadeIn>
         </div>
@@ -464,11 +464,11 @@ export default function LandingPage() {
 
                 <ul className="space-y-3 mb-8 flex-1">
                   {[
-                    "Todos os 4 modulos completos (60+ aulas)",
+                    "Todos os 4 módulos completos (60+ aulas)",
                     "Toxina, Preenchedores, Bioestimuladores e Biorregeneradores",
                     "Encontros quinzenais ao vivo por 6 meses",
-                    "Materiais cientificos de todos os modulos",
-                    "Cashback de 5% em creditos na plataforma",
+                    "Materiais científicos de todos os módulos",
+                    "Cashback de 5% em créditos na plataforma",
                     "Acesso ao portal por 12 meses",
                     "Certificado de participação",
                   ].map((f, i) => (
@@ -480,7 +480,7 @@ export default function LandingPage() {
                 </ul>
 
                 <p className="text-xs text-gray-500 mb-5">
-                  Ideal para quem quer dominar a teoria completa antes de ir para a clinica
+                  Ideal para quem quer dominar a teoria completa antes de ir para a clínica
                 </p>
 
                 <div className="mt-auto pt-4 border-t border-white/10">
@@ -509,12 +509,12 @@ export default function LandingPage() {
                 <ul className="space-y-3 mb-8 flex-1">
                   {[
                     "Tudo do Curso Completo",
-                    "24h de observação clinica presencial (6 turnos)",
+                    "24h de observação clínica presencial (6 turnos)",
                     "Acompanhe procedimentos reais ao vivo",
                     "Encontros quinzenais ao vivo por 6 meses",
                     "Mentoria online com canal direto por 3 meses",
-                    "Cashback de 10% em creditos na plataforma",
-                    "Certificado com carga horaria presencial",
+                    "Cashback de 10% em créditos na plataforma",
+                    "Certificado com carga horária presencial",
                   ].map((f, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                       <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
@@ -568,14 +568,14 @@ export default function LandingPage() {
                 <ul className="space-y-3 mb-8 flex-1 relative">
                   {[
                     "Tudo da Imersão",
-                    "16h de pratica hands-on com pacientes modelo",
+                    "16h de prática hands-on com pacientes modelo",
                     "Supervisão direta do Dr. Gustavo nos atendimentos",
                     "Acompanhamento individual por 6 meses",
                     "Encontros quinzenais ao vivo por 6 meses",
                     "Canal exclusivo direto por 6 meses",
-                    "Metodo NaturalUp® completo (modulo exclusivo)",
-                    "Cashback de 10% em creditos na plataforma",
-                    "Analise de casos clinicos em grupo",
+                    "Método NaturalUp® completo (módulo exclusivo)",
+                    "Cashback de 10% em créditos na plataforma",
+                    "Análise de casos clínicos em grupo",
                   ].map((f, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                       <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
@@ -616,20 +616,20 @@ export default function LandingPage() {
             </h2>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="bg-[#0A0D14] rounded-xl p-6 border border-white/10">
-                <h3 className="text-[#D4A843] font-semibold text-sm uppercase tracking-wider mb-3">Upgrade com credito integral</h3>
+                <h3 className="text-[#D4A843] font-semibold text-sm uppercase tracking-wider mb-3">Upgrade com crédito integral</h3>
                 <p className="text-gray-300 text-sm leading-relaxed">
                   Fez o Curso Completo e quer partir para a Imersão ou Mentoria VIP?
-                  Nos primeiros 60 dias, 100% do que voce pagou vira credito no upgrade.
-                  Apos 60 dias, voce ainda aproveita 70% como credito.
-                  Voce nunca perde o que investiu.
+                  Nos primeiros 60 dias, 100% do que você pagou vira crédito no upgrade.
+                  Após 60 dias, você ainda aproveita 70% como crédito.
+                  Você nunca perde o que investiu.
                 </p>
               </div>
               <div className="bg-[#0A0D14] rounded-xl p-6 border border-white/10">
-                <h3 className="text-[#D4A843] font-semibold text-sm uppercase tracking-wider mb-3">Cashback em creditos</h3>
+                <h3 className="text-[#D4A843] font-semibold text-sm uppercase tracking-wider mb-3">Cashback em créditos</h3>
                 <p className="text-gray-300 text-sm leading-relaxed">
-                  Cada plano gera cashback automatico na plataforma: 5% no Curso Completo
-                  e 10% na Imersão e Mentoria VIP. Use seus creditos para adquirir
-                  horas extras de pratica, modulos avulsos ou upgrades de plano.
+                  Cada plano gera cashback automático na plataforma: 5% no Curso Completo
+                  e 10% na Imersão e Mentoria VIP. Use seus créditos para adquirir
+                  horas extras de prática, módulos avulsos ou upgrades de plano.
                 </p>
               </div>
             </div>
@@ -697,11 +697,11 @@ export default function LandingPage() {
             <div className="space-y-3">
               <FAQItem
                 q="Preciso ter experiência em harmonização?"
-                a="Não. O curso foi pensado para iniciantes e profissionais experientes. As aulas vão do basico ao avançado."
+                a="Não. O curso foi pensado para iniciantes e profissionais experientes. As aulas vão do básico ao avançado."
               />
               <FAQItem
                 q="Como funciona a prática presencial?"
-                a="Você agenda turnos de 4 horas na clinica do Dr. Gustavo no Rio de Janeiro. Os pacientes modelo são garantidos."
+                a="Você agenda turnos de 4 horas na clínica do Dr. Gustavo no Rio de Janeiro. Os pacientes modelo são garantidos."
               />
               <FAQItem
                 q="Posso começar pelo curso e depois fazer a imersão?"
@@ -709,7 +709,7 @@ export default function LandingPage() {
               />
               <FAQItem
                 q="As aulas são ao vivo ou gravadas?"
-                a="As aulas dos modulos são gravadas, então você assiste no seu ritmo. Os encontros quinzenais da mentoria VIP são ao vivo."
+                a="As aulas dos módulos são gravadas, então você assiste no seu ritmo. Os encontros quinzenais da mentoria VIP são ao vivo."
               />
               <FAQItem
                 q="Qual a forma de pagamento?"
@@ -754,9 +754,9 @@ export default function LandingPage() {
         <div className="max-w-2xl mx-auto px-5 text-center">
           <FadeIn>
             <h2 className="lp-serif text-2xl md:text-3xl font-bold mb-3">
-              Ainda tem duvidas? Comece pela aula gratuita.
+              Ainda tem dúvidas? Comece pela aula gratuita.
             </h2>
-            <p className="text-gray-400 mb-10">Participe de um encontro quinzenal ao vivo, conheça o metodo e decida com calma. Sem compromisso.</p>
+            <p className="text-gray-400 mb-10">Participe de um encontro quinzenal ao vivo, conheça o método e decida com calma. Sem compromisso.</p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a
@@ -767,7 +767,7 @@ export default function LandingPage() {
                 style={{ backgroundColor: '#25D366' }}
               >
                 <WhatsAppIcon className="w-5 h-5" />
-                Participar da proxima aula gratuita
+                Participar da próxima aula gratuita
               </a>
 
               <button
