@@ -487,7 +487,7 @@ export default function LandingPage() {
                   <p className="text-2xl font-bold text-white mb-1">12x de R$ 539</p>
                   <p className="text-xs text-gray-500 mb-4">ou R$ 5.970 a vista</p>
                   <a
-                    href="https://portal.amplafacial.com.br/#/planos?plan=pacote_completo"
+                    href="https://portal.amplafacial.com.br/#/comecar?plan=pacote_completo"
                     style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
                     className="block w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
                   >
@@ -531,7 +531,7 @@ export default function LandingPage() {
                   <p className="text-2xl font-bold text-white mb-1">12x de R$ 1.083</p>
                   <p className="text-xs text-gray-500 mb-4">ou R$ 11.997 a vista</p>
                   <a
-                    href="https://portal.amplafacial.com.br/#/planos?plan=imersao"
+                    href="https://portal.amplafacial.com.br/#/comecar?plan=imersao"
                     style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
                     className="block w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
                   >
@@ -592,7 +592,7 @@ export default function LandingPage() {
                   <p className="text-2xl font-bold text-white mb-1">12x de R$ 1.566</p>
                   <p className="text-xs text-gray-500 mb-4">ou R$ 17.350 a vista</p>
                   <a
-                    href="https://portal.amplafacial.com.br/#/planos?plan=vip_completo"
+                    href="https://portal.amplafacial.com.br/#/comecar?plan=vip_completo"
                     style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
                     className="block w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
                   >
