@@ -363,9 +363,9 @@ export default function ModulePage() {
                   <div className="text-center space-y-3 px-6">
                     <Lock className="w-10 h-10 text-gold/60 mx-auto" />
                     <p className="text-sm font-semibold text-foreground">Aula bloqueada</p>
-                    <p className="text-xs text-muted-foreground max-w-sm">Adquira um plano para assistir esta aula e ter acesso completo a todos os modulos.</p>
+                    <p className="text-xs text-muted-foreground max-w-sm">Adquira um plano para assistir esta aula e ter acesso completo a todos os módulos.</p>
                     <a href="/#/planos" style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>
-                      Ver planos e precos
+                      Ver planos e preços
                     </a>
                   </div>
                 </div>
@@ -519,9 +519,9 @@ export default function ModulePage() {
                 <div className="text-center space-y-3 px-6">
                   <Lock className="w-10 h-10 text-gold/60 mx-auto" />
                   <p className="text-sm font-semibold text-foreground">Aula bloqueada</p>
-                  <p className="text-xs text-muted-foreground max-w-sm">Adquira um plano para assistir esta aula e ter acesso completo a todos os modulos.</p>
+                  <p className="text-xs text-muted-foreground max-w-sm">Adquira um plano para assistir esta aula e ter acesso completo a todos os módulos.</p>
                   <a href="/#/planos" style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>
-                    Ver planos e precos
+                    Ver planos e preços
                   </a>
                 </div>
               </div>
@@ -768,7 +768,7 @@ export default function ModulePage() {
             <div className="space-y-2">
               <h3 className="font-semibold text-foreground text-lg">Este módulo não está incluso no seu plano atual</h3>
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                Adquira um plano que inclui este conteudo. Seus creditos serao aplicados como desconto.
+                Adquira um plano que inclui este conteúdo. Seus créditos serão aplicados como desconto.
               </p>
             </div>
             <a
@@ -879,9 +879,9 @@ export default function ModulePage() {
               <div className="rounded-xl bg-gold/5 border border-gold/20 p-4 text-center mt-4">
                 <Lock className="w-5 h-5 text-gold mx-auto mb-2" />
                 <p className="text-sm font-medium">Quer assistir todas as aulas?</p>
-                <p className="text-xs text-muted-foreground mb-3">Adquira um plano e tenha acesso completo a todos os modulos e materiais.</p>
+                <p className="text-xs text-muted-foreground mb-3">Adquira um plano e tenha acesso completo a todos os módulos e materiais.</p>
                 <a href="/#/planos" style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>
-                  Ver planos e precos
+                  Ver planos e preços
                 </a>
               </div>
             )}

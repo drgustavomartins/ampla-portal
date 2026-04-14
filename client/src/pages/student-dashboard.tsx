@@ -296,9 +296,9 @@ export default function StudentDashboard() {
                   <div className="text-center space-y-3 px-6">
                     <Lock className="w-10 h-10 text-gold/60 mx-auto" />
                     <p className="text-sm font-semibold text-foreground">Aula bloqueada</p>
-                    <p className="text-xs text-muted-foreground max-w-sm">Adquira um plano para assistir esta aula e ter acesso completo a todos os modulos.</p>
+                    <p className="text-xs text-muted-foreground max-w-sm">Adquira um plano para assistir esta aula e ter acesso completo a todos os módulos.</p>
                     <a href="/#/planos" style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>
-                      Ver planos e precos
+                      Ver planos e preços
                     </a>
                   </div>
                 </div>
@@ -562,7 +562,7 @@ export default function StudentDashboard() {
                 title="Sessoes pendentes de assinatura"
               >
                 <Bell className="w-3.5 h-3.5 text-red-400" />
-                <span className="text-xs font-semibold text-red-400">Assinar pratica</span>
+                <span className="text-xs font-semibold text-red-400">Assinar prática</span>
                 <span className="w-5 h-5 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center animate-pulse">
                   {pendingSignCount}
                 </span>
@@ -614,7 +614,7 @@ export default function StudentDashboard() {
                 setProfileOpen(true);
               }}
               data-testid="button-settings"
-              title="Configuracoes"
+              title="Configurações"
             >
               <Settings className="w-4 h-4" />
             </Button>
@@ -695,7 +695,7 @@ export default function StudentDashboard() {
                 <span className="w-5 h-5 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center animate-pulse">
                   {pendingSignCount}
                 </span>
-                <span className="text-sm text-red-400 font-medium">Sessao pendente de assinatura</span>
+                <span className="text-sm text-red-400 font-medium">Sessão pendente de assinatura</span>
               </button>
             )}
 
@@ -741,7 +741,7 @@ export default function StudentDashboard() {
               className="flex items-center gap-4 w-full text-left py-3.5 border-b border-white/5"
             >
               <Settings className="w-5 h-5 text-white/40" />
-              <span className="text-[20px] font-semibold text-white">Configuracoes</span>
+              <span className="text-[20px] font-semibold text-white">Configurações</span>
             </button>
 
             <button
@@ -764,9 +764,9 @@ export default function StudentDashboard() {
               <div className="flex items-start gap-3">
                 <Lock className="w-5 h-5 text-gold shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-foreground">Seu periodo de teste encerrou</p>
+                  <p className="font-semibold text-foreground">Seu período de teste encerrou</p>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    Seus creditos continuam salvos. Adquira um plano para desbloquear as aulas e usar seu saldo.
+                    Seus créditos continuam salvos. Adquira um plano para desbloquear as aulas e usar seu saldo.
                   </p>
                 </div>
               </div>
@@ -823,9 +823,9 @@ export default function StudentDashboard() {
               <div className="flex items-start gap-3">
                 <Lock className="w-5 h-5 text-gold shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-foreground">Seu acesso ao conteudo expirou</p>
+                  <p className="font-semibold text-foreground">Seu acesso ao conteúdo expirou</p>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    Renove seu plano para continuar assistindo as aulas e acessando os materiais. Seus creditos e progresso continuam salvos.
+                    Renove seu plano para continuar assistindo as aulas e acessando os materiais. Seus créditos e progresso continuam salvos.
                   </p>
                 </div>
               </div>
@@ -842,8 +842,8 @@ export default function StudentDashboard() {
           {isTesterAccess && (
             <div className="rounded-xl bg-gradient-to-r from-gold/10 to-gold/5 border border-gold/20 p-4 flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-gold">Voce esta no modo teste</p>
-                <p className="text-xs text-muted-foreground">Assista as 2 primeiras aulas de cada modulo gratuitamente. Adquira um plano para acesso completo.</p>
+                <p className="text-sm font-semibold text-gold">Você está no modo teste</p>
+                <p className="text-xs text-muted-foreground">Assista as 2 primeiras aulas de cada módulo gratuitamente. Adquira um plano para acesso completo.</p>
               </div>
               <a href="/#/planos" style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '8px 20px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
                 Ver planos
@@ -869,7 +869,7 @@ export default function StudentDashboard() {
               </h1>
               <p className="text-muted-foreground text-sm sm:text-base max-w-lg leading-relaxed">
                 {isTrialExpired
-                  ? "Seu periodo de teste encerrou, mas seus creditos continuam aqui. Adquira um plano para desbloquear todo o conteudo."
+                  ? "Seu período de teste encerrou, mas seus créditos continuam aqui. Adquira um plano para desbloquear todo o conteúdo."
                   : <>Explore os cursos do Método NaturalUp&reg; e evolua sua prática clínica em harmonização facial com excelência e naturalidade.</>
                 }
               </p>
@@ -882,7 +882,7 @@ export default function StudentDashboard() {
                   <div className="h-3 rounded-full bg-white/20 overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(progressPercent, 2)}%`, background: "linear-gradient(90deg, #B8860B, #D4A843, #E5C158)" }} />
                   </div>
-                  <p className="text-xs text-white/50">{completedCount} de {totalLessons} aulas concluidas</p>
+                  <p className="text-xs text-white/50">{completedCount} de {totalLessons} aulas concluídas</p>
                 </div>
               )}
             </div>
@@ -1106,7 +1106,10 @@ export default function StudentDashboard() {
                       </div>
 
                       {/* Title */}
-                      <h3 className="font-semibold text-[15px] text-foreground/90 leading-snug line-clamp-2 tracking-[-0.01em] min-h-[2.6em]">
+                      <h3
+                        className="font-semibold text-[15px] text-foreground/90 leading-snug line-clamp-2 tracking-[-0.01em] min-h-[2.6em]"
+                        title={mod.title}
+                      >
                         {mod.title}
                       </h3>
 
@@ -1392,7 +1395,7 @@ export default function StudentDashboard() {
                         </div>
                         <div className="flex items-center gap-1.5">
                           {session.studentSignedAt ? (
-                            <><CheckIcon className="w-3.5 h-3.5 text-emerald-400" /><span className="text-[11px] text-emerald-400">Voce assinou em {new Date(session.studentSignedAt).toLocaleDateString("pt-BR")}</span></>
+                            <><CheckIcon className="w-3.5 h-3.5 text-emerald-400" /><span className="text-[11px] text-emerald-400">Você assinou em {new Date(session.studentSignedAt).toLocaleDateString("pt-BR")}</span></>
                           ) : (
                             <><Clock className="w-3.5 h-3.5 text-amber-400" /><span className="text-[11px] text-amber-400">Aguardando sua assinatura</span></>
                           )}
@@ -1407,7 +1410,7 @@ export default function StudentDashboard() {
                             try {
                               const res = await apiRequest("POST", `/api/student/clinical-sessions/${session.id}/sign`);
                               if (res.ok) {
-                                toast({ title: "Sessao assinada", description: "Sua assinatura foi registrada com sucesso." });
+                                toast({ title: "Sessão assinada", description: "Sua assinatura foi registrada com sucesso." });
                                 refetchClinical();
                               } else {
                                 const data = await res.json().catch(() => ({}));
@@ -1425,7 +1428,7 @@ export default function StudentDashboard() {
                           {signingSessionId === session.id ? (
                             "Assinando..."
                           ) : (
-                            <><PenLine className="w-4 h-4" /> Confirmo que realizei esta pratica clinica</>
+                            <><PenLine className="w-4 h-4" /> Confirmo que realizei esta prática clínica</>
                           )}
                         </button>
                       )}

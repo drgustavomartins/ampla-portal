@@ -103,7 +103,7 @@ function UpgradeCard({ option, userEmail }: { option: UpgradeOption; userEmail?:
 }
 
 export default function UpgradePage() {
-  const { user } = useAuth();
+  const { user, isTrial } = useAuth();
 
   const { data, isLoading } = useQuery<UpgradeData>({
     queryKey: ["/api/stripe/upgrade-options"],
@@ -119,6 +119,25 @@ export default function UpgradePage() {
   }
 
   if (!data || data.options.length === 0) {
+    // Trial/tester users should see plans, not "plano mais completo"
+    const isTesterOrTrial = isTrial || !user?.planKey || user?.planKey === "tester";
+
+    if (isTesterOrTrial) {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center bg-[#0A1628] px-4 text-center">
+          <TrendingUp className="mb-4 h-12 w-12 text-[#D4A843]" />
+          <h2 className="text-2xl font-bold text-white">Escolha o plano ideal para você</h2>
+          <p className="mt-2 text-gray-400">Conheça nossos planos e comece sua formação em Harmonização Orofacial.</p>
+          <Link href="/planos-publicos" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#D4A843] px-6 py-3 font-semibold text-[#0A1628] hover:bg-[#e8b84d] transition-all">
+            Ver planos disponíveis
+          </Link>
+          <Link href="/" className="mt-3 text-[#D4A843]/70 hover:text-[#D4A843] hover:underline text-sm">
+            Voltar para a plataforma
+          </Link>
+        </div>
+      );
+    }
+
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#0A1628] px-4 text-center">
         <TrendingUp className="mb-4 h-12 w-12 text-[#D4A843]" />

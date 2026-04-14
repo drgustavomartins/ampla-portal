@@ -22,7 +22,7 @@ interface PlanData {
   valorMercado: number | null;
 }
 
-type Tab = "online" | "observacao" | "mentoria";
+type Tab = "online" | "observação" | "mentoria";
 
 function formatBRL(c: number) {
   return (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -262,7 +262,7 @@ export default function PlanosPublicos() {
 
   const sectionRefs = {
     online:     useRef<HTMLDivElement>(null),
-    observacao: useRef<HTMLDivElement>(null),
+    observação: useRef<HTMLDivElement>(null),
     mentoria:   useRef<HTMLDivElement>(null),
   };
 
@@ -278,7 +278,7 @@ export default function PlanosPublicos() {
     const vipPlans = ["vip_online", "vip_presencial", "vip_completo"];
     const obsPlans = ["observador_essencial", "observador_avancado", "observador_intensivo", "imersao"];
     if (vipPlans.includes(urlPlan)) setActiveTab("mentoria");
-    else if (obsPlans.includes(urlPlan)) setActiveTab("observacao");
+    else if (obsPlans.includes(urlPlan)) setActiveTab("observação");
     else setActiveTab("online");
   }, [urlPlan]);
 
@@ -364,7 +364,7 @@ export default function PlanosPublicos() {
   useEffect(() => {
     if (!data) return;
     const obs: IntersectionObserver[] = [];
-    (["online", "observacao", "mentoria"] as Tab[]).forEach((key) => {
+    (["online", "observação", "mentoria"] as Tab[]).forEach((key) => {
       const el = sectionRefs[key].current;
       if (!el) return;
       const o = new IntersectionObserver(
@@ -395,7 +395,7 @@ export default function PlanosPublicos() {
   // ── Definição dos tabs ─────────────────────────────────────────────────
   const TABS: { key: Tab; label: string; desc: string }[] = [
     { key: "online",     label: "Online",                desc: "Aulas gravadas no seu ritmo" },
-    { key: "observacao", label: "Com Observação Clínica", desc: "Presencial com o Dr. Gustavo" },
+    { key: "observação", label: "Com Observação Clínica", desc: "Presencial com o Dr. Gustavo" },
     { key: "mentoria",   label: "Mentoria VIP",           desc: "Acompanhamento individual" },
   ];
 
@@ -560,57 +560,21 @@ export default function PlanosPublicos() {
 
           {/* Texto principal */}
           <div className="max-w-xl">
-            {/* Campo de codigo de convite */}
-            <div className="mb-5">
-              {couponValid === true ? (
-                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200 px-4 py-1.5 text-xs font-semibold text-emerald-700">
-                  <Gift className="h-3.5 w-3.5" />
-                  10% de desconto ativo{couponReferrer ? ` (indicacao de ${couponReferrer})` : ""}
-                  <button
-                    onClick={() => { setCouponCode(""); setCouponInput(""); setCouponValid(null); setCouponReferrer(""); }}
-                    className="ml-1 hover:text-emerald-900 transition-colors"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-                    <input
-                      type="text"
-                      value={couponInput}
-                      onChange={(e) => {
-                        setCouponInput(e.target.value.toUpperCase());
-                        if (couponValid === false) setCouponValid(null);
-                      }}
-                      onKeyDown={(e) => { if (e.key === "Enter") validateCoupon(couponInput); }}
-                      placeholder="Codigo de convite"
-                      className="pl-9 pr-3 py-2 rounded-xl border text-sm w-52 outline-none transition-all"
-                      style={{
-                        borderColor: couponValid === false ? "#FCA5A5" : "#E5E7EB",
-                        background: couponValid === false ? "#FEF2F2" : "#fff",
-                      }}
-                    />
-                  </div>
-                  <button
-                    onClick={() => validateCoupon(couponInput)}
-                    disabled={!couponInput.trim() || couponLoading}
-                    className="px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-40"
-                    style={{ background: "#0A1628", color: "#fff" }}
-                  >
-                    {couponLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : "Aplicar"}
-                  </button>
-                  {couponValid === false && (
-                    <span className="text-xs text-red-500">Codigo invalido</span>
-                  )}
-                </div>
-              )}
-            </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-[52px] font-bold tracking-tight text-gray-900 leading-[1.07]">
-              <span className="whitespace-nowrap">Aprenda Harmonização Facial</span><br />
+            {/* Coupon badge (shown when valid) */}
+            {couponValid === true && (
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200 px-4 py-1.5 text-xs font-semibold text-emerald-700">
+                <Gift className="h-3.5 w-3.5" />
+                10% de desconto ativo{couponReferrer ? ` (indicação de ${couponReferrer})` : ""}
+                <button
+                  onClick={() => { setCouponCode(""); setCouponInput(""); setCouponValid(null); setCouponReferrer(""); }}
+                  className="ml-1 hover:text-emerald-900 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+            <h1 className="text-[1.75rem] sm:text-5xl lg:text-[52px] font-bold tracking-tight text-gray-900 leading-[1.07]">
+              <span className="sm:whitespace-nowrap">Aprenda Harmonização Facial</span><br />
               <span style={{ color: "#D4A843" }}>do jeito certo.</span>
             </h1>
             <p className="mt-4 text-base sm:text-lg text-gray-500 leading-relaxed max-w-lg">
@@ -691,7 +655,7 @@ export default function PlanosPublicos() {
         <div className="my-16 h-px bg-gray-200" />
 
         {/* ── SEÇÃO OBSERVAÇÃO CLÍNICA ───────────────────────── */}
-        <div ref={sectionRefs.observacao}>
+        <div ref={sectionRefs.observação}>
           <SectionLabel
             eyebrow="Presencial"
             title="Com Observação Clínica"
@@ -827,8 +791,8 @@ export default function PlanosPublicos() {
         <div>
           <SectionLabel
             eyebrow="Add-on"
-            title="Horas Clinicas Extras"
-            sub="Pacotes de encontros clinicos presenciais para aprofundar a pratica. Exclusivo para alunos com mentoria VIP ativa."
+            title="Horas Clínicas Extras"
+            sub="Pacotes de encontros clínicos presenciais para aprofundar a prática. Exclusivo para alunos com mentoria VIP ativa."
             color="#0D7A5F"
           />
 
@@ -836,29 +800,29 @@ export default function PlanosPublicos() {
             <svg className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p className="text-sm text-amber-700">Exclusivo para alunos com mentoria VIP ativa. Para adquirir, acesse a area de planos apos o login.</p>
+            <p className="text-sm text-amber-700">Exclusivo para alunos com mentoria VIP ativa. Para adquirir, acesse a área de planos após o login.</p>
           </div>
 
           <div className="grid gap-5 grid-cols-1 sm:grid-cols-3 max-w-4xl mx-auto">
             {[
               {
-                title: "1 Encontro Clinico",
+                title: "1 Encontro Clínico",
                 hours: "4h",
                 price: "R$ 1.000",
-                features: ["1 sessao de 4 horas", "Observacao de atendimentos reais", "Suporte tecnico durante o encontro", "Certificado de participacao"],
+                features: ["1 sessão de 4 horas", "Observação de atendimentos reais", "Suporte técnico durante o encontro", "Certificado de participação"],
               },
               {
-                title: "2 Encontros Clinicos",
+                title: "2 Encontros Clínicos",
                 hours: "8h",
                 price: "R$ 1.800",
                 highlight: "Mais escolhido",
-                features: ["2 sessoes de 4 horas cada", "Observacao de atendimentos reais", "Suporte tecnico durante os encontros", "Certificado de participacao", "10% de economia vs avulso"],
+                features: ["2 sessões de 4 horas cada", "Observação de atendimentos reais", "Suporte técnico durante os encontros", "Certificado de participação", "10% de economia vs avulso"],
               },
               {
-                title: "3 Encontros Clinicos",
+                title: "3 Encontros Clínicos",
                 hours: "12h",
                 price: "R$ 2.400",
-                features: ["3 sessoes de 4 horas cada", "Observacao de atendimentos reais", "Suporte tecnico durante os encontros", "Certificado de participacao", "20% de economia vs avulso"],
+                features: ["3 sessões de 4 horas cada", "Observação de atendimentos reais", "Suporte técnico durante os encontros", "Certificado de participação", "20% de economia vs avulso"],
               },
             ].map((pkg) => (
               <div
@@ -882,13 +846,13 @@ export default function PlanosPublicos() {
                 </svg>
                 <div className="h-[3px] w-full flex-shrink-0" style={{ background: "#0D7A5F" }} />
                 <div className="relative px-7 pt-6 pb-0">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5" style={{ color: "#0D7A5F" }}>Horas Clinicas</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5" style={{ color: "#0D7A5F" }}>Horas Clínicas</p>
                   <h3 className="text-xl font-bold leading-snug text-gray-900">{pkg.title}</h3>
-                  <p className="mt-1 text-sm text-gray-500">{pkg.hours} de observacao clinica presencial</p>
+                  <p className="mt-1 text-sm text-gray-500">{pkg.hours} de observação clínica presencial</p>
                 </div>
                 <div className="relative px-7 pt-5 pb-0">
                   <span className="text-[32px] font-bold tabular-nums leading-none" style={{ color: "#0D7A5F" }}>{pkg.price}</span>
-                  <p className="text-xs mt-1 text-gray-400">a vista</p>
+                  <p className="text-xs mt-1 text-gray-400">à vista</p>
                 </div>
                 <div className="mx-7 mt-5 h-px bg-black/[0.07]" />
                 <ul className="relative flex-1 px-7 pt-4 pb-7 space-y-2.5">
@@ -903,7 +867,7 @@ export default function PlanosPublicos() {
                 </ul>
                 <div className="relative px-7 pb-7">
                   <div className="w-full flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold text-white" style={{ background: "#0D7A5F", opacity: 0.7 }}>
-                    Disponivel apos login
+                    Disponível após login
                   </div>
                 </div>
               </div>
@@ -911,28 +875,28 @@ export default function PlanosPublicos() {
           </div>
         </div>
 
-        {/* ── OBSERVACAO CLINICA EXTRA ──────────────────────── */}
+        {/* ── OBSERVAÇÃO CLÍNICA EXTRA ──────────────────────── */}
         <div className="my-16 h-px bg-gray-200" />
         <div>
           <SectionLabel
             eyebrow="Add-on"
-            title="Turnos de Observacao Clinica"
-            sub="Acompanhe procedimentos ao vivo no consultorio do Dr. Gustavo. Ideal para quem quer ver a pratica antes de aplicar."
+            title="Turnos de Observação Clínica"
+            sub="Acompanhe procedimentos ao vivo no consultório do Dr. Gustavo. Ideal para quem quer ver a prática antes de aplicar."
             color="#6366F1"
           />
           <div className="grid gap-5 grid-cols-1 sm:grid-cols-3 max-w-4xl mx-auto">
             {[
-              { title: "1 Turno", hours: "4h", price: "R$ 800", features: ["1 turno de 4 horas", "Observacao ao vivo", "Discussao de casos", "Certificado"] },
-              { title: "2 Turnos", hours: "8h", price: "R$ 1.500", highlight: "Mais escolhido", features: ["2 turnos de 4h (8h total)", "Economia de R$ 100", "Observacao ao vivo", "Discussao de casos", "Certificado"] },
-              { title: "4 Turnos", hours: "16h", price: "R$ 2.800", features: ["4 turnos de 4h (16h total)", "Economia de R$ 400", "Diferentes tecnicas", "Discussao de casos", "Certificado"] },
+              { title: "1 Turno", hours: "4h", price: "R$ 800", features: ["1 turno de 4 horas", "Observação ao vivo", "Discussão de casos", "Certificado"] },
+              { title: "2 Turnos", hours: "8h", price: "R$ 1.500", highlight: "Mais escolhido", features: ["2 turnos de 4h (8h total)", "Economia de R$ 100", "Observação ao vivo", "Discussão de casos", "Certificado"] },
+              { title: "4 Turnos", hours: "16h", price: "R$ 2.800", features: ["4 turnos de 4h (16h total)", "Economia de R$ 400", "Diferentes técnicas", "Discussão de casos", "Certificado"] },
             ].map((pkg) => (
               <div key={pkg.title} className="relative flex flex-col rounded-[28px] overflow-hidden" style={{ background: "linear-gradient(145deg,#EEF2FF 0%,#E0E7FF 60%,#C7D2FE 100%)", boxShadow: "0 4px 28px rgba(0,0,0,0.09), 0 0 0 1px rgba(0,0,0,0.06)" }}>
                 {pkg.highlight && (<div className="absolute top-3 right-3 z-10"><span className="rounded-full px-3 py-1 text-[11px] font-semibold" style={{ background: "#4F46E5", color: "#fff" }}>{pkg.highlight}</span></div>)}
                 <div className="relative p-6 flex flex-col flex-1">
                   <p className="text-lg font-bold text-gray-900">{pkg.title}</p>
-                  <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full w-fit" style={{ background: "#4F46E5", color: "#fff" }}>{pkg.hours} observacao</span>
+                  <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full w-fit" style={{ background: "#4F46E5", color: "#fff" }}>{pkg.hours} observação</span>
                   <p className="mt-4 text-3xl font-extrabold text-gray-900">{pkg.price}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">a vista</p>
+                  <p className="text-xs text-gray-500 mt-0.5">à vista</p>
                   <ul className="mt-4 space-y-2 flex-1">
                     {pkg.features.map((f, i) => (<li key={i} className="flex items-start gap-2 text-sm text-gray-700"><Check className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />{f}</li>))}
                   </ul>
@@ -941,6 +905,47 @@ export default function PlanosPublicos() {
             ))}
           </div>
         </div>
+
+        {/* ── CÓDIGO DE CONVITE ──────────────────────────────── */}
+        {couponValid !== true && (
+          <div className="mt-16 mb-4 max-w-md mx-auto">
+            <p className="text-center text-sm font-medium text-gray-500 mb-3">Tem um código de convite?</p>
+            <div className="flex items-center justify-center gap-2">
+              <div className="relative">
+                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                <input
+                  type="text"
+                  value={couponInput}
+                  onChange={(e) => {
+                    setCouponInput(e.target.value.toUpperCase());
+                    if (couponValid === false) setCouponValid(null);
+                  }}
+                  onKeyDown={(e) => { if (e.key === "Enter") validateCoupon(couponInput); }}
+                  placeholder="Código de convite"
+                  className="pl-9 pr-3 py-2 rounded-xl border text-sm w-52 outline-none transition-all"
+                  style={{
+                    borderColor: couponValid === false ? "#FCA5A5" : "#E5E7EB",
+                    background: couponValid === false ? "#FEF2F2" : "#fff",
+                  }}
+                />
+              </div>
+              <button
+                onClick={() => validateCoupon(couponInput)}
+                disabled={!couponInput.trim() || couponLoading}
+                className="px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-40"
+                style={{ background: "#0A1628", color: "#fff" }}
+              >
+                {couponLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : "Aplicar"}
+              </button>
+            </div>
+            {couponValid === false && (
+              <p className="text-center text-xs text-red-500 mt-2">Código inválido</p>
+            )}
+            <p className="text-center text-xs text-gray-400 mt-2">Ganhe 10% de desconto na primeira compra</p>
+          </div>
+        )}
 
         {/* ── RODAPE ─────────────────────────────────────────── */}
         <div className="mt-20 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -963,12 +968,12 @@ export default function PlanosPublicos() {
         {/* Depoimentos */}
         <section className="py-16 px-4 sm:px-6 max-w-5xl mx-auto">
           <h2 className="text-center font-serif text-3xl font-semibold text-[#1a1a1a] mb-2">O que dizem nossos alunos</h2>
-          <p className="text-center text-sm text-gray-500 mb-10">Profissionais que transformaram sua pratica clinica</p>
+          <p className="text-center text-sm text-gray-500 mb-10">Profissionais que transformaram sua prática clínica</p>
           <div className="grid sm:grid-cols-3 gap-6">
             {[
-              { name: "Dra. Carolina O.", role: "Dentista - RJ", text: "A mentoria do Dr. Gustavo mudou completamente minha forma de atender. Os protocolos do Metodo NaturalUp sao incriveis, resultados muito mais naturais." },
-              { name: "Dr. Felipe P.", role: "Dentista - RJ", text: "O conteudo e extremamente pratico. Ja no primeiro mes consegui aplicar as tecnicas com meus pacientes. O suporte e diferenciado." },
-              { name: "Dra. Glaucia A.", role: "Biomedicina Estetica - RJ", text: "Ter acesso as aulas e aos encontros ao vivo faz toda a diferenca. A comunidade de alunos tambem agrega muito na troca de experiencias." },
+              { name: "Dra. Carolina O.", role: "Dentista - RJ", text: "A mentoria do Dr. Gustavo mudou completamente minha forma de atender. Os protocolos do Método NaturalUp são incríveis, resultados muito mais naturais." },
+              { name: "Dr. Felipe P.", role: "Dentista - RJ", text: "O conteúdo é extremamente prático. Já no primeiro mês consegui aplicar as técnicas com meus pacientes. O suporte é diferenciado." },
+              { name: "Dra. Glaucia A.", role: "Biomedicina Estética - RJ", text: "Ter acesso às aulas e aos encontros ao vivo faz toda a diferença. A comunidade de alunos também agrega muito na troca de experiências." },
             ].map((t, i) => (
               <div key={i} className="rounded-2xl border border-gray-200 bg-white p-6 space-y-4 shadow-sm">
                 <div className="flex gap-1">
@@ -989,7 +994,7 @@ export default function PlanosPublicos() {
         {/* Link de login mobile */}
         <div className="mt-8 text-center sm:hidden">
           <a href="/#/" className="text-sm text-gray-400 hover:text-gray-700 transition-colors">
-            Ja tenho conta - entrar
+            Já tenho conta - entrar
           </a>
         </div>
 

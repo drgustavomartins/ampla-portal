@@ -176,6 +176,15 @@ export default function LandingPage() {
             Mais de 60 aulas gravadas com protocolos clínicos reais
           </p>
 
+          {/* CTA below VSL */}
+          <button
+            onClick={scrollToPlans}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#D4A843] px-8 py-3.5 text-base font-semibold text-[#0A1628] hover:bg-[#e8b84d] transition-all shadow-lg shadow-[#D4A843]/20"
+          >
+            Ver Planos e Investimento
+            <ChevronDown className="w-4 h-4" />
+          </button>
+
           {/* Free lesson CTA */}
           <div className="mt-8 bg-[#0F1A2E] border border-[#D4A843]/30 rounded-2xl p-6 md:p-8 max-w-2xl mx-auto">
             <p className="lp-serif text-lg md:text-xl font-bold text-white mb-2">
@@ -249,7 +258,7 @@ export default function LandingPage() {
       {/* WhatsApp CTA strip */}
       <section className="bg-[#0A0D14] py-8 border-y border-white/5">
         <div className="max-w-3xl mx-auto px-5 text-center">
-          <p className="text-sm text-gray-400 mb-3">Quer ver como funciona na pratica? Participe de um encontro ao vivo, gratuito.</p>
+          <p className="text-sm text-gray-400 mb-3">Quer ver como funciona na prática? Participe de um encontro ao vivo, gratuito.</p>
           <a
             href={WA_FREE_LESSON}
             target="_blank"
@@ -327,7 +336,7 @@ export default function LandingPage() {
                 {
                   icon: Syringe,
                   color: "#3B82F6",
-                  title: "Toxina Botulinica",
+                  title: "Toxina Botulínica",
                   desc: "Protocolos completos para terço superior, médio e inferior",
                   lessons: 12,
                   exclusive: false,
@@ -343,8 +352,8 @@ export default function LandingPage() {
                 {
                   icon: FlaskConical,
                   color: "#10B981",
-                  title: "Bioestimuladores de Colageno",
-                  desc: "Indução de colageno para rejuvenescimento natural",
+                  title: "Bioestimuladores de Colágeno",
+                  desc: "Indução de colágeno para rejuvenescimento natural",
                   lessons: 10,
                   exclusive: false,
                 },
@@ -460,7 +469,12 @@ export default function LandingPage() {
                   Online
                 </span>
                 <h3 className="lp-serif text-xl font-bold mb-1">Curso Completo</h3>
-                <p className="text-sm text-gray-400 mb-6">Estude online, no seu ritmo</p>
+                <p className="text-sm text-gray-400 mb-4">Estude online, no seu ritmo</p>
+
+                <div className="mb-6">
+                  <p className="text-2xl font-bold text-white">12x <span className="text-[#D4A843]">R$ 547</span></p>
+                  <p className="text-xs text-gray-500 mt-0.5">ou R$ 5.970 à vista</p>
+                </div>
 
                 <ul className="space-y-3 mb-8 flex-1">
                   {[
@@ -504,7 +518,12 @@ export default function LandingPage() {
                   Observação Clínica
                 </span>
                 <h3 className="lp-serif text-xl font-bold mb-1">Imersão</h3>
-                <p className="text-sm text-gray-400 mb-6">Veja como eu faço na clinica</p>
+                <p className="text-sm text-gray-400 mb-4">Veja como eu faço na clínica</p>
+
+                <div className="mb-6">
+                  <p className="text-2xl font-bold text-white">A partir de <span className="text-[#D4A843]">R$ 11.997</span></p>
+                  <p className="text-xs text-gray-500 mt-0.5">Consulte condições de parcelamento</p>
+                </div>
 
                 <ul className="space-y-3 mb-8 flex-1">
                   {[
@@ -560,9 +579,14 @@ export default function LandingPage() {
                   </span>
                 </div>
                 <h3 className="lp-serif text-xl font-bold mb-1 relative">Mentoria VIP Completa</h3>
-                <p className="text-sm text-gray-400 mb-6 relative">
+                <p className="text-sm text-gray-400 mb-4 relative">
                   Bote a mão na massa e atenda pacientes
                 </p>
+
+                <div className="mb-6 relative">
+                  <p className="text-2xl font-bold text-white">A partir de <span className="text-[#D4A843]">R$ 17.350</span></p>
+                  <p className="text-xs text-gray-500 mt-0.5">Consulte condições de parcelamento</p>
+                </div>
 
                 <ul className="space-y-3 mb-8 flex-1 relative">
                   {[
@@ -661,7 +685,7 @@ export default function LandingPage() {
                   {[
                     "Speaker Merz Aesthetics",
                     "Membro da Academia Brasileira de HOF",
-                    "3 clinicas no Rio de Janeiro (Barra, Copacabana, Santa Cruz)",
+                    "3 clínicas no Rio de Janeiro (Barra, Copacabana, Santa Cruz)",
                     "Criador do Protocolo NaturalUp®",
                     "Já formou dezenas de profissionais que hoje atendem full face com confiança",
                   ].map((c, i) => (
