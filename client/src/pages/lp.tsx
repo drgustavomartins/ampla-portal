@@ -93,6 +93,8 @@ function WhatsAppIcon({ className = "w-6 h-6" }: { className?: string }) {
 /* ────────────────────────────────────────────────────────────────────────────
    MAIN LP COMPONENT
    ────────────────────────────────────────────────────────────────────────── */
+const WA_FREE_LESSON =
+  "https://wa.me/5521995523509?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20quero%20participar%20do%20pr%C3%B3ximo%20encontro%20quinzenal%20gratuito";
 const WA_LINK =
   "https://wa.me/5521995523509?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20quero%20saber%20mais%20sobre%20a%20forma%C3%A7%C3%A3o";
 
@@ -173,6 +175,27 @@ export default function LandingPage() {
           <p className="mt-5 text-xs md:text-sm text-gray-500">
             Mais de 60 aulas gravadas com protocolos clinicos reais
           </p>
+
+          {/* Free lesson CTA */}
+          <div className="mt-8 bg-[#0F1A2E] border border-[#D4A843]/30 rounded-2xl p-6 md:p-8 max-w-2xl mx-auto">
+            <p className="lp-serif text-lg md:text-xl font-bold text-white mb-2">
+              Participe de um encontro quinzenal de forma gratuita.
+            </p>
+            <p className="text-sm text-gray-400 mb-5">
+              Assista uma aula ao vivo de mentoria avaliada em mais de R$ 1.000, sem pagar nada.
+              Conheça o metodo, tire suas duvidas e decida com calma.
+            </p>
+            <a
+              href={WA_FREE_LESSON}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-white font-semibold text-sm"
+              style={{ backgroundColor: '#25D366' }}
+            >
+              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.952 11.952 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.319 0-4.47-.742-6.227-2.003l-.435-.326-2.847.954.954-2.847-.326-.435A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+              Quero participar da proxima aula gratuita
+            </a>
+          </div>
         </div>
       </section>
 
@@ -226,16 +249,16 @@ export default function LandingPage() {
       {/* WhatsApp CTA strip */}
       <section className="bg-[#0A0D14] py-8 border-y border-white/5">
         <div className="max-w-3xl mx-auto px-5 text-center">
-          <p className="text-sm text-gray-400 mb-3">Se identificou? Fale comigo agora</p>
+          <p className="text-sm text-gray-400 mb-3">Quer ver como funciona na pratica? Participe de um encontro ao vivo, gratuito.</p>
           <a
-            href="https://wa.me/5521995523509?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20quero%20saber%20mais%20sobre%20a%20forma%C3%A7%C3%A3o"
+            href={WA_FREE_LESSON}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-medium text-sm"
             style={{ backgroundColor: '#25D366' }}
           >
             <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.952 11.952 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.319 0-4.47-.742-6.227-2.003l-.435-.326-2.847.954.954-2.847-.326-.435A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-            Conversar no WhatsApp
+            Garantir minha vaga na proxima aula
           </a>
         </div>
       </section>
@@ -383,6 +406,33 @@ export default function LandingPage() {
             >
               <WhatsAppIcon className="w-5 h-5" />
               Tire suas dúvidas no WhatsApp
+            </a>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* Free lesson highlight */}
+      <section className="bg-[#F5F0E8] py-12 md:py-16">
+        <div className="max-w-3xl mx-auto px-5 text-center">
+          <FadeIn>
+            <p className="text-[#D4A843] font-semibold text-sm uppercase tracking-wider mb-3">Antes de decidir</p>
+            <h2 className="lp-serif text-2xl md:text-3xl font-bold text-[#0A0D14] mb-4">
+              Assista uma aula de mentoria ao vivo. Por nossa conta.
+            </h2>
+            <p className="text-[#0A0D14]/70 text-base leading-relaxed mb-8 max-w-xl mx-auto">
+              A cada 15 dias o Dr. Gustavo faz um encontro ao vivo com seus mentorandos.
+              Voce pode participar do proximo de forma totalmente gratuita,
+              conhecer o metodo, tirar duvidas e sentir se faz sentido pra voce.
+            </p>
+            <a
+              href={WA_FREE_LESSON}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-base"
+              style={{ backgroundColor: '#25D366' }}
+            >
+              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.952 11.952 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.319 0-4.47-.742-6.227-2.003l-.435-.326-2.847.954.954-2.847-.326-.435A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+              Quero participar da proxima aula gratuita
             </a>
           </FadeIn>
         </div>
@@ -704,28 +754,28 @@ export default function LandingPage() {
         <div className="max-w-2xl mx-auto px-5 text-center">
           <FadeIn>
             <h2 className="lp-serif text-2xl md:text-3xl font-bold mb-3">
-              Pronto para dar o próximo passo na sua carreira?
+              Ainda tem duvidas? Comece pela aula gratuita.
             </h2>
-            <p className="text-gray-400 mb-10">Escolha o seu caminho e comece hoje</p>
+            <p className="text-gray-400 mb-10">Participe de um encontro quinzenal ao vivo, conheça o metodo e decida com calma. Sem compromisso.</p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <a
+                href={WA_FREE_LESSON}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 text-white font-semibold text-sm px-8 py-3.5 rounded-xl hover:opacity-90 transition-opacity w-full sm:w-auto"
+                style={{ backgroundColor: '#25D366' }}
+              >
+                <WhatsAppIcon className="w-5 h-5" />
+                Participar da proxima aula gratuita
+              </a>
+
               <button
                 onClick={scrollToPlans}
-                style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
-                className="font-semibold text-sm px-8 py-3.5 rounded-xl hover:opacity-90 transition-opacity w-full sm:w-auto"
+                className="font-semibold text-sm px-8 py-3.5 rounded-xl border border-[#D4A843]/40 text-[#D4A843] hover:bg-[#D4A843]/10 transition-colors w-full sm:w-auto"
               >
                 Ver os planos
               </button>
-
-              <a
-                href={WA_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 bg-[#25D366] text-white font-semibold text-sm px-8 py-3.5 rounded-xl hover:opacity-90 transition-opacity w-full sm:w-auto"
-              >
-                <WhatsAppIcon className="w-5 h-5" />
-                WhatsApp
-              </a>
             </div>
           </FadeIn>
         </div>
