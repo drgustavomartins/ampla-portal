@@ -266,8 +266,21 @@ export default function PlanosPublicos() {
     mentoria:   useRef<HTMLDivElement>(null),
   };
 
-  const urlParams = new URLSearchParams(window.location.search);
+  // Hash router: query params live after the hash, e.g. /#/comecar?plan=vip_completo
+  const hashQuery = window.location.hash.includes("?") ? window.location.hash.split("?")[1] : "";
+  const urlParams = new URLSearchParams(hashQuery || window.location.search);
   const urlRef = urlParams.get("ref") || "";
+  const urlPlan = urlParams.get("plan") || "";
+
+  // Auto-select tab based on ?plan= parameter
+  useEffect(() => {
+    if (!urlPlan) return;
+    const vipPlans = ["vip_online", "vip_presencial", "vip_completo"];
+    const obsPlans = ["observador_essencial", "observador_avancado", "observador_intensivo", "imersao"];
+    if (vipPlans.includes(urlPlan)) setActiveTab("mentoria");
+    else if (obsPlans.includes(urlPlan)) setActiveTab("observacao");
+    else setActiveTab("online");
+  }, [urlPlan]);
 
   // Estado do codigo de convite
   const [couponCode, setCouponCode] = useState(urlRef);
