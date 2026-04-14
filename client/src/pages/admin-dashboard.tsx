@@ -1015,6 +1015,68 @@ export default function AdminDashboard() {
   // Per-user material category permissions state: { [title]: enabled }
   const [editUserMaterialCats, setEditUserMaterialCats] = useState<Record<string, boolean>>({});
 
+  // Bulk module access duration state
+  const [activeBulkDuration, setActiveBulkDuration] = useState<string | null>(null);
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
+  const [customBulkEndDate, setCustomBulkEndDate] = useState("");
+  const [bulkFlashActive, setBulkFlashActive] = useState(false);
+
+  // Helper to apply a duration to all modules at once
+  const applyBulkDuration = (endDate: string) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const newMap: Record<number, { enabled: boolean; startDate: string; endDate: string }> = {};
+    modules.forEach((m: any) => {
+      newMap[m.id] = { enabled: true, startDate: today, endDate };
+    });
+    setEditUserModules(newMap);
+    setBulkFlashActive(true);
+    setTimeout(() => setBulkFlashActive(false), 1200);
+  };
+
+  const handleBulkDurationClick = (key: string) => {
+    const today = new Date();
+    let endDate: Date;
+    switch (key) {
+      case "3m": endDate = new Date(today.getFullYear(), today.getMonth() + 3, today.getDate()); break;
+      case "6m": endDate = new Date(today.getFullYear(), today.getMonth() + 6, today.getDate()); break;
+      case "1y": endDate = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate()); break;
+      case "2y": endDate = new Date(today.getFullYear() + 2, today.getMonth(), today.getDate()); break;
+      default: return;
+    }
+    setActiveBulkDuration(key);
+    setShowCustomDatePicker(false);
+    applyBulkDuration(endDate.toISOString().slice(0, 10));
+    toast({ title: `Todos os modulos definidos para ${key === "3m" ? "3 meses" : key === "6m" ? "6 meses" : key === "1y" ? "1 ano" : "2 anos"}` });
+  };
+
+  const handleCustomDateApply = () => {
+    if (!customBulkEndDate) return;
+    setActiveBulkDuration("custom");
+    applyBulkDuration(customBulkEndDate);
+    setShowCustomDatePicker(false);
+    toast({ title: `Todos os modulos definidos ate ${customBulkEndDate}` });
+  };
+
+  const applyMentoriaDatesToAllModules = () => {
+    if (!editStudentForm.mentorshipStartDate && !editStudentForm.mentorshipEndDate) {
+      toast({ title: "Defina as datas da mentoria primeiro", variant: "destructive" });
+      return;
+    }
+    const newMap: Record<number, { enabled: boolean; startDate: string; endDate: string }> = {};
+    modules.forEach((m: any) => {
+      newMap[m.id] = {
+        enabled: true,
+        startDate: editStudentForm.mentorshipStartDate || "",
+        endDate: editStudentForm.mentorshipEndDate || "",
+      };
+    });
+    setEditUserModules(newMap);
+    setActiveBulkDuration(null);
+    setBulkFlashActive(true);
+    setTimeout(() => setBulkFlashActive(false), 1200);
+    toast({ title: "Datas da mentoria aplicadas a todos os modulos" });
+  };
+
   const MATERIAL_CATEGORY_TITLES = [
     "Toxina Botulínica", "Preenchedores Faciais", "Bioestimuladores de Colágeno",
     "Moduladores de Matriz Extracelular", "Método NaturalUp®", "IA na Medicina",
@@ -2337,6 +2399,14 @@ export default function AdminDashboard() {
                         <Input type="date" value={editStudentForm.mentorshipEndDate} onChange={e => setEditStudentForm(f => ({ ...f, mentorshipEndDate: e.target.value }))} className="bg-background/50 border-border/40" />
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={applyMentoriaDatesToAllModules}
+                      className="flex items-center gap-1.5 text-[11px] text-gold hover:text-gold/80 transition-colors mt-1"
+                    >
+                      <Copy className="w-3 h-3" />
+                      Aplicar para todos os modulos
+                    </button>
                   </div>
 
                   <div className="w-full h-px bg-border/30" />
@@ -2363,12 +2433,75 @@ export default function AdminDashboard() {
                         {modules.every((m: any) => editUserModules[m.id]?.enabled) ? "Desmarcar todos" : "Selecionar todos"}
                       </button>
                     </div>
+
+                    {/* ── Bulk Duration Selector ── */}
+                    <div className="rounded-lg border border-gold/20 bg-gold/5 p-3 space-y-2.5">
+                      <p className="text-[11px] font-semibold text-gold uppercase tracking-wider">Definir acesso a todos os modulos:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {([
+                          { key: "3m", label: "3 meses" },
+                          { key: "6m", label: "6 meses" },
+                          { key: "1y", label: "1 ano" },
+                          { key: "2y", label: "2 anos" },
+                        ] as const).map(({ key, label }) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => handleBulkDurationClick(key)}
+                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                              activeBulkDuration === key
+                                ? "bg-gold text-[#0A1628] shadow-sm"
+                                : "bg-background/60 text-foreground border border-border/30 hover:border-gold/40 hover:text-gold"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowCustomDatePicker(!showCustomDatePicker);
+                            setActiveBulkDuration(showCustomDatePicker ? activeBulkDuration : null);
+                          }}
+                          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                            activeBulkDuration === "custom"
+                              ? "bg-gold text-[#0A1628] shadow-sm"
+                              : "bg-background/60 text-foreground border border-border/30 hover:border-gold/40 hover:text-gold"
+                          }`}
+                        >
+                          Personalizado
+                        </button>
+                      </div>
+                      {showCustomDatePicker && (
+                        <div className="flex items-end gap-2 pt-1">
+                          <div className="space-y-1 flex-1">
+                            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Data final personalizada</Label>
+                            <Input
+                              type="date"
+                              value={customBulkEndDate}
+                              onChange={e => setCustomBulkEndDate(e.target.value)}
+                              className="bg-background/50 border-border/40 h-8 text-xs"
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={handleCustomDateApply}
+                            disabled={!customBulkEndDate}
+                            className="bg-gold hover:bg-gold/90 text-[#0A1628] h-8 text-xs font-medium"
+                          >
+                            Aplicar
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                       {modules.sort((a, b) => a.order - b.order).map((mod) => {
                         const entry = editUserModules[mod.id];
                         const isEnabled = entry?.enabled ?? false;
                         return (
-                          <div key={mod.id} className="rounded-lg border border-border/20 bg-background/30 p-3 space-y-2">
+                          <div key={mod.id} className={`rounded-lg border p-3 space-y-2 transition-all duration-500 ${bulkFlashActive ? "border-gold/50 bg-gold/10 bulk-flash" : "border-border/20 bg-background/30"}`}>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2 min-w-0">
                                 <Checkbox

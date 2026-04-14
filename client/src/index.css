@@ -164,6 +164,16 @@
     display: none;
   }
 
+  /* Bulk module flash animation */
+  @keyframes bulkFlash {
+    0% { box-shadow: 0 0 0 0 rgba(212, 168, 67, 0.4); }
+    40% { box-shadow: 0 0 8px 2px rgba(212, 168, 67, 0.3); }
+    100% { box-shadow: 0 0 0 0 rgba(212, 168, 67, 0); }
+  }
+  .bulk-flash {
+    animation: bulkFlash 1.2s ease-out;
+  }
+
   /* Shelf scroll — Apple-style horizontal product shelf */
   .shelf-scroll {
     scroll-snap-type: x mandatory;
