@@ -484,14 +484,14 @@ export default function LandingPage() {
                 </p>
 
                 <div className="mt-auto pt-4 border-t border-white/10">
-                  <p className="text-2xl font-bold text-white mb-1">12x de R$ 539</p>
-                  <p className="text-xs text-gray-500 mb-4">ou R$ 5.970 a vista</p>
                   <a
-                    href="https://portal.amplafacial.com.br/#/planos-publicos"
+                    href="https://wa.me/5521995523509?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20no%20Curso%20Completo%20(online).%20Podemos%20conversar%3F"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
-                    className="block w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
+                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
                   >
-                    Quero Começar
+                    Quero o Curso Completo
                   </a>
                 </div>
               </div>
@@ -528,16 +528,15 @@ export default function LandingPage() {
                 </p>
 
                 <div className="mt-auto pt-4 border-t border-white/10">
-                  <p className="text-2xl font-bold text-white mb-1">12x de R$ 1.083</p>
-                  <p className="text-xs text-gray-500 mb-4">ou R$ 11.997 a vista</p>
                   <a
-                    href="https://portal.amplafacial.com.br/#/planos-publicos"
+                    href="https://wa.me/5521995523509?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20na%20Imers%C3%A3o%20(observa%C3%A7%C3%A3o%20cl%C3%ADnica).%20Podemos%20conversar%3F"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
-                    className="block w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
+                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
                   >
                     Quero a Imersão
                   </a>
-                  <p className="text-[11px] text-gray-500 text-center mt-3">Após a compra, agende suas práticas pelo WhatsApp</p>
                 </div>
               </div>
             </FadeIn>
@@ -589,16 +588,15 @@ export default function LandingPage() {
                 </p>
 
                 <div className="relative mt-auto pt-4 border-t border-white/10">
-                  <p className="text-2xl font-bold text-white mb-1">12x de R$ 1.566</p>
-                  <p className="text-xs text-gray-500 mb-4">ou R$ 17.350 a vista</p>
                   <a
-                    href="https://portal.amplafacial.com.br/#/planos-publicos"
+                    href="https://wa.me/5521995523509?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20na%20Mentoria%20VIP%20Completa%20(hands-on%20com%20pacientes).%20Podemos%20conversar%3F"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
-                    className="block w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
+                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
                   >
                     Quero a Mentoria VIP
                   </a>
-                  <p className="text-[11px] text-gray-500 text-center mt-3">Após a compra, agende suas práticas pelo WhatsApp</p>
                 </div>
               </div>
             </FadeIn>
