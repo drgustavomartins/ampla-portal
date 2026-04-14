@@ -270,6 +270,7 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS lgpd_accepted_at TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS instagram TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS module_content_expires_at TEXT`).catch(() => {});
     console.log("[auto-migrate] material_topics, order, materials_access, mentorship dates, user_modules, user_material_categories, material_themes/subcategories/files, stripe columns ensured");
     // Tabelas de quiz e funil
@@ -1156,6 +1157,7 @@ export async function registerRoutes(server: Server, app: Express) {
         email: data.email.trim().toLowerCase(),
         phone: sanitize(data.phone),
         password: hashedPassword,
+        instagram: data.instagram ? sanitize(data.instagram.replace(/^@/, "").trim()) : "",
         planId: null,
         createdAt: new Date().toISOString(),
       });
@@ -1191,6 +1193,7 @@ export async function registerRoutes(server: Server, app: Express) {
         email: data.email.trim().toLowerCase(),
         phone: data.phone ? sanitize(data.phone) : "",
         password: hashedPassword,
+        instagram: data.instagram ? sanitize(data.instagram.replace(/^@/, "").trim()) : "",
         planId: null,
         createdAt: now,
       });
@@ -1826,7 +1829,7 @@ export async function registerRoutes(server: Server, app: Express) {
   app.patch("/api/admin/students/:id", async (req, res) => {
     const auth = requireAdmin(req, res);
     if (!auth) return;
-    const allowedFields = ['name', 'email', 'phone', 'planId', 'approved', 'accessExpiresAt',
+    const allowedFields = ['name', 'email', 'phone', 'instagram', 'planId', 'approved', 'accessExpiresAt',
       'communityAccess', 'supportAccess', 'supportExpiresAt', 'clinicalPracticeAccess',
       'clinicalPracticeHours', 'clinicalObservationHours', 'materialsAccess', 'mentorshipStartDate', 'mentorshipEndDate',
       'planKey', 'planPaidAt', 'planAmountPaid', 'moduleContentExpiresAt'];
@@ -2251,7 +2254,7 @@ export async function registerRoutes(server: Server, app: Express) {
     try {
       const auth = authenticateRequest(req);
       if (!auth) return res.status(401).json({ message: "Não autorizado" });
-      const { currentPassword, name, email, phone, newPassword } = req.body;
+      const { currentPassword, name, email, phone, newPassword, instagram } = req.body;
       if (!currentPassword) {
         return res.status(400).json({ message: "Senha atual é obrigatória" });
       }
@@ -2264,6 +2267,10 @@ export async function registerRoutes(server: Server, app: Express) {
       const updateData: any = {};
       if (name && name !== user.name) updateData.name = sanitize(name);
       if (phone !== undefined && phone !== user.phone) updateData.phone = sanitize(phone);
+      if (instagram !== undefined) {
+        const normalizedIg = sanitize((instagram || "").replace(/^@/, "").trim());
+        if (normalizedIg !== (user as any).instagram) updateData.instagram = normalizedIg;
+      }
       if (email && email !== user.email) {
         const existing = await storage.getUserByEmail(email);
         if (existing && existing.id !== user.id) {
@@ -4275,7 +4282,7 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
       const auth = authenticateRequest(req);
       if (!auth) return res.status(401).json({ message: "Não autorizado" });
 
-      const result = await db.execute(sql`SELECT name, email, phone, username, avatar_url FROM users WHERE id = ${auth.userId}`);
+      const result = await db.execute(sql`SELECT name, email, phone, username, avatar_url, instagram FROM users WHERE id = ${auth.userId}`);
       const user = (result as any).rows?.[0];
       if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
 
@@ -4285,6 +4292,7 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
         phone: user.phone,
         username: user.username,
         avatarUrl: user.avatar_url,
+        instagram: user.instagram,
       });
     } catch (e: any) {
       console.error("[GET /api/profile]", e.message);
@@ -4299,7 +4307,7 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
       const auth = authenticateRequest(req);
       if (!auth) return res.status(401).json({ message: "Não autorizado" });
 
-      const { name, phone, username, avatarUrl } = req.body as { name?: string; phone?: string; username?: string; avatarUrl?: string };
+      const { name, phone, username, avatarUrl, instagram } = req.body as { name?: string; phone?: string; username?: string; avatarUrl?: string; instagram?: string };
 
       // Validate username if provided
       if (username !== undefined && username !== null && username !== "") {
@@ -4312,12 +4320,16 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
         }
       }
 
+      // Normalize instagram handle (strip @, whitespace)
+      const normalizedInstagram = instagram !== undefined ? (instagram || "").replace(/^@/, "").trim() : undefined;
+
       await db.execute(sql`
         UPDATE users SET
           name = COALESCE(${name || null}, name),
           phone = COALESCE(${phone || null}, phone),
           username = ${username !== undefined ? (username || null) : null},
-          avatar_url = ${avatarUrl !== undefined ? (avatarUrl || null) : null}
+          avatar_url = ${avatarUrl !== undefined ? (avatarUrl || null) : null},
+          instagram = ${normalizedInstagram !== undefined ? (normalizedInstagram || null) : null}
         WHERE id = ${auth.userId}
       `);
 
