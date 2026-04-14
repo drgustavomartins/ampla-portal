@@ -1781,7 +1781,14 @@ export async function registerRoutes(server: Server, app: Express) {
     const durationDays = plan ? plan.durationDays : 90;
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + durationDays);
-    const updateData: any = { approved: true, accessExpiresAt: expiresAt.toISOString() };
+    const updateData: any = {
+      approved: true,
+      role: "student",
+      trialStartedAt: null,
+      accessExpiresAt: expiresAt.toISOString(),
+      moduleContentExpiresAt: expiresAt.toISOString(),
+      materialsAccess: true,
+    };
     if (bodyPlanId) updateData.planId = bodyPlanId;
     const updated = await storage.updateUser(user.id, updateData);
     if (!updated) return res.status(500).json({ message: "Erro ao aprovar" });
