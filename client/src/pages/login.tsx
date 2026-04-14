@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Sparkles, Eye, EyeOff, CheckCircle2, Star, Users, Clock, Play, ArrowRight, Camera } from "lucide-react";
+import { Loader2, Sparkles, Eye, EyeOff, CheckCircle2, Star, Users, Clock, Play, ArrowRight, Camera, Instagram } from "lucide-react";
 import { trackEvent } from "@/lib/funnel";
 import type { z } from "zod";
 
@@ -68,7 +68,7 @@ export default function LoginPage() {
 
   const trialForm = useForm<z.infer<typeof trialRegisterSchema>>({
     resolver: zodResolver(trialRegisterSchema),
-    defaultValues: { name: "", email: "", phone: "", password: "", lgpdAccepted: false },
+    defaultValues: { name: "", email: "", phone: "", password: "", instagram: "", lgpdAccepted: false },
   });
 
   // Limpa o erro inline ao usuário começar a digitar
@@ -297,7 +297,8 @@ export default function LoginPage() {
                     return;
                   }
                   setFormError("");
-                  trialMutation.mutate({ ...data, lgpdAccepted: true });
+                  const instagram = (data.instagram || "").replace(/^@/, "").trim();
+                  trialMutation.mutate({ ...data, instagram, lgpdAccepted: true });
                 })}
                 className="space-y-4"
               >
@@ -388,6 +389,23 @@ export default function LoginPage() {
                       }}
                     />
                   </div>
+                </div>
+
+                {/* Instagram — opcional, incentivado */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="trial-instagram" className="text-xs text-white/50">
+                    <span className="flex items-center gap-1.5">
+                      <Instagram className="w-3 h-3" />
+                      Seu Instagram <span className="text-white/25">(opcional)</span>
+                    </span>
+                  </Label>
+                  <Input
+                    id="trial-instagram"
+                    placeholder="@seuusuario"
+                    className="bg-white/5 border-white/10 focus:border-gold/50 text-white placeholder:text-white/20"
+                    {...trialForm.register("instagram")}
+                  />
+                  <p className="text-[10px] text-white/25">Nos ajuda a te encontrar e compartilhar seu progresso</p>
                 </div>
 
                 <div className="space-y-1.5">

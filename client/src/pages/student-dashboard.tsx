@@ -21,7 +21,7 @@ import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
   ChevronLeft, ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle, Star,
   Users, MessageCircle, Lock, ShoppingCart, ExternalLink, Paperclip, DollarSign,
-  Search, Bell, Camera
+  Search, Bell, Camera, Instagram
 } from "lucide-react";
 import MateriaisComplementares from "./materiais-complementares";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
@@ -73,7 +73,7 @@ export default function StudentDashboard() {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "", avatarUrl: "", username: "" });
+  const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "", avatarUrl: "", username: "", instagram: "" });
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const materiaisRef = useRef<HTMLDivElement>(null);
@@ -149,6 +149,8 @@ export default function StudentDashboard() {
       if (profileForm.newPassword) body.newPassword = profileForm.newPassword;
       if (profileForm.avatarUrl !== ((user as any)?.avatarUrl || "")) body.avatarUrl = profileForm.avatarUrl;
       if (profileForm.username !== ((user as any)?.username || "")) body.username = profileForm.username;
+      const normalizedInstagram = (profileForm.instagram || "").replace(/^@/, "").trim();
+      if (normalizedInstagram !== ((user as any)?.instagram || "")) body.instagram = normalizedInstagram;
       const res = await apiRequest("PATCH", "/api/auth/profile", body);
       return res.json();
     },
@@ -156,7 +158,7 @@ export default function StudentDashboard() {
       if (data.user) login(data.user);
       toast({ title: "Perfil atualizado", description: data.message });
       setProfileOpen(false);
-      setProfileForm({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "", avatarUrl: "", username: "" });
+      setProfileForm({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "", avatarUrl: "", username: "", instagram: "" });
     },
     onError: (error: any) => {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -610,6 +612,7 @@ export default function StudentDashboard() {
                   confirmNewPassword: "",
                   avatarUrl: (user as any)?.avatarUrl || "",
                   username: (user as any)?.username || "",
+                  instagram: (user as any)?.instagram || "",
                 });
                 setProfileOpen(true);
               }}
@@ -735,6 +738,7 @@ export default function StudentDashboard() {
                   confirmNewPassword: "",
                   avatarUrl: (user as any)?.avatarUrl || "",
                   username: (user as any)?.username || "",
+                  instagram: (user as any)?.instagram || "",
                 });
                 setProfileOpen(true);
               }}
@@ -1604,6 +1608,18 @@ export default function StudentDashboard() {
                   className="bg-background/50 border-border/40 text-sm h-8"
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Instagram className="w-3 h-3" />
+                Instagram
+              </Label>
+              <Input
+                value={profileForm.instagram}
+                onChange={(e) => setProfileForm((f) => ({ ...f, instagram: e.target.value.replace(/[^a-zA-Z0-9_.]/g, "").slice(0, 30) }))}
+                placeholder="@seuinstagram"
+                className="bg-background/50 border-border/40 text-sm h-8"
+              />
             </div>
             <div className="w-full h-px bg-border/30" />
             <div className="space-y-2">

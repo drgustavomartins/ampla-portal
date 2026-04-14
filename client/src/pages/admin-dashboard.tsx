@@ -29,7 +29,7 @@ import {
   CreditCard, RefreshCw, KeyRound, Copy, Loader2, History, UserCog, Library,
   GripVertical, CalendarDays, FolderOpen, Search, FileText, FileIcon, Headphones, ChevronDown, ChevronUp,
   Sparkles, MessageCircle, Phone, Coins, Gift, Stethoscope, FileSignature, AlertTriangle, PenLine,
-  TrendingUp, BarChart3, Zap, Menu, ChevronRight
+  TrendingUp, BarChart3, Zap, Menu, ChevronRight, Instagram
 } from "lucide-react";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
@@ -1001,7 +1001,7 @@ export default function AdminDashboard() {
   // ── Student Edit ──
   const [editingStudent, setEditingStudent] = useState<SafeUser | null>(null);
   const [editStudentForm, setEditStudentForm] = useState({
-    name: "", phone: "", accessExpiresAt: "", approved: false,
+    name: "", phone: "", instagram: "", accessExpiresAt: "", approved: false,
     communityAccess: true, supportAccess: true, supportExpiresAt: "",
     clinicalPracticeAccess: true, clinicalPracticeHours: 0,
     clinicalObservationHours: 0,
@@ -1025,6 +1025,7 @@ export default function AdminDashboard() {
     setEditStudentForm({
       name: s.name,
       phone: s.phone || "",
+      instagram: (s as any).instagram || "",
       accessExpiresAt: s.accessExpiresAt ? s.accessExpiresAt.slice(0, 16) : "",
       approved: s.approved,
       communityAccess: s.communityAccess ?? true,
@@ -1876,6 +1877,7 @@ export default function AdminDashboard() {
                           <p className="font-medium text-foreground truncate">{s.name}</p>
                           <p className="text-sm text-muted-foreground truncate mt-0.5">{s.email}</p>
                           {s.phone && <p className="text-xs text-muted-foreground truncate mt-0.5">{s.phone}</p>}
+                          {(s as any).instagram && <p className="text-xs text-muted-foreground truncate mt-0.5">@{(s as any).instagram}</p>}
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
@@ -2277,6 +2279,10 @@ export default function AdminDashboard() {
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground">Telefone</Label>
                         <Input type="tel" placeholder="+55 (11) 99999-9999" value={editStudentForm.phone} onChange={e => setEditStudentForm(f => ({ ...f, phone: e.target.value }))} className="bg-background/50 border-border/40" />
                       </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Instagram</Label>
+                        <Input placeholder="@usuario" value={editStudentForm.instagram} onChange={e => setEditStudentForm(f => ({ ...f, instagram: e.target.value }))} className="bg-background/50 border-border/40" />
+                      </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <Label className="text-xs uppercase tracking-wider text-muted-foreground">Status</Label>
@@ -2550,6 +2556,8 @@ export default function AdminDashboard() {
                       const data: any = {};
                       if (editStudentForm.name && editStudentForm.name !== editingStudent.name) data.name = editStudentForm.name;
                       if (editStudentForm.phone !== (editingStudent.phone || "")) data.phone = editStudentForm.phone;
+                      const normalizedIg = (editStudentForm.instagram || "").replace(/^@/, "").trim();
+                      if (normalizedIg !== ((editingStudent as any).instagram || "")) data.instagram = normalizedIg;
                       if (editStudentForm.accessExpiresAt) data.accessExpiresAt = new Date(editStudentForm.accessExpiresAt).toISOString();
                       data.approved = editStudentForm.approved;
                       // Mentorship dates
@@ -3978,6 +3986,12 @@ export default function AdminDashboard() {
                               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <Phone className="w-3 h-3 shrink-0" />
                                 <span>{student.phone}</span>
+                              </div>
+                            )}
+                            {(student as any).instagram && (
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <Instagram className="w-3 h-3 shrink-0" />
+                                <span>@{(student as any).instagram}</span>
                               </div>
                             )}
                             {expires && (

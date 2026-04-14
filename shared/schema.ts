@@ -70,6 +70,7 @@ export const users = pgTable("users", {
   lgpdAcceptedAt: text("lgpd_accepted_at"), // ISO date user accepted LGPD terms
   avatarUrl: text("avatar_url"),
   username: text("username"),
+  instagram: text("instagram"),
   moduleContentExpiresAt: text("module_content_expires_at"),
 });
 
@@ -197,6 +198,7 @@ export const registerSchema = z.object({
   email: z.string().email("Email inválido"),
   phone: z.string().min(8, "Telefone é obrigatório"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  instagram: z.string().optional().default(""),
 });
 
 // Trial registration — phone is optional
@@ -205,6 +207,7 @@ export const trialRegisterSchema = z.object({
   email: z.string().email("Email inválido"),
   phone: z.string().optional().default(""),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  instagram: z.string().optional().default(""),
   lgpdAccepted: z.boolean().refine((v) => v === true, "Você precisa aceitar os termos para continuar"),
 });
 
