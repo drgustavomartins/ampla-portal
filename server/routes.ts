@@ -234,6 +234,12 @@ function sanitize(val: any): string {
   return val.trim().slice(0, 500);
 }
 
+// Strip phone to raw digits only (e.g. "+55 (21) 97626-3881" → "5521976263881")
+function sanitizePhone(val: any): string {
+  if (typeof val !== "string") return "";
+  return val.replace(/\D/g, "").slice(0, 14);
+}
+
 export async function registerRoutes(server: Server, app: Express) {
   // ==================== AUTO-MIGRATE critical columns on startup ====================
   // This ensures new columns exist before any Drizzle query tries to SELECT them.
@@ -1155,7 +1161,7 @@ export async function registerRoutes(server: Server, app: Express) {
       const user = await storage.createUser({
         name: sanitize(data.name),
         email: data.email.trim().toLowerCase(),
-        phone: sanitize(data.phone),
+        phone: sanitizePhone(data.phone),
         password: hashedPassword,
         instagram: data.instagram ? sanitize(data.instagram.replace(/^@/, "").trim()) : "",
         planId: null,
@@ -1191,7 +1197,7 @@ export async function registerRoutes(server: Server, app: Express) {
       const user = await storage.createUser({
         name: sanitize(data.name),
         email: data.email.trim().toLowerCase(),
-        phone: data.phone ? sanitize(data.phone) : "",
+        phone: sanitizePhone(data.phone),
         password: hashedPassword,
         instagram: data.instagram ? sanitize(data.instagram.replace(/^@/, "").trim()) : "",
         planId: null,
@@ -1838,8 +1844,9 @@ export async function registerRoutes(server: Server, app: Express) {
     const updateData: any = {};
     for (const key of allowedFields) {
       if (req.body[key] !== undefined) {
-        // Sanitize string values
-        if (typeof req.body[key] === "string" && !['accessExpiresAt', 'supportExpiresAt', 'mentorshipStartDate', 'mentorshipEndDate', 'moduleContentExpiresAt', 'email'].includes(key)) {
+        if (key === "phone") {
+          updateData[key] = sanitizePhone(req.body[key]);
+        } else if (typeof req.body[key] === "string" && !['accessExpiresAt', 'supportExpiresAt', 'mentorshipStartDate', 'mentorshipEndDate', 'moduleContentExpiresAt', 'email'].includes(key)) {
           updateData[key] = sanitize(req.body[key]);
         } else {
           updateData[key] = req.body[key];
@@ -2268,7 +2275,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
       const updateData: any = {};
       if (name && name !== user.name) updateData.name = sanitize(name);
-      if (phone !== undefined && phone !== user.phone) updateData.phone = sanitize(phone);
+      if (phone !== undefined && sanitizePhone(phone) !== (user.phone || "")) updateData.phone = sanitizePhone(phone);
       if (instagram !== undefined) {
         const normalizedIg = sanitize((instagram || "").replace(/^@/, "").trim());
         if (normalizedIg !== (user as any).instagram) updateData.instagram = normalizedIg;
@@ -2328,7 +2335,7 @@ export async function registerRoutes(server: Server, app: Express) {
       const newAdmin = await storage.createUser({
         name: sanitize(name),
         email: email.trim().toLowerCase(),
-        phone: phone ? sanitize(phone) : null,
+        phone: phone ? sanitizePhone(phone) : null,
         password: hashedPassword,
         planId: null,
         role: "admin",

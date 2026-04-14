@@ -21,8 +21,9 @@ import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
   ChevronLeft, ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle, Star,
   Users, MessageCircle, Lock, ShoppingCart, ExternalLink, Paperclip, DollarSign,
-  Search, Bell, Camera, Instagram
+  Search, Bell, Camera, Instagram, Phone
 } from "lucide-react";
+import { handlePhoneInput, formatPhoneDisplay, stripPhone } from "@/lib/phone";
 import MateriaisComplementares from "./materiais-complementares";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 import { CreditsDashboardCard } from "@/components/CreditsDashboardCard";
@@ -144,7 +145,7 @@ export default function StudentDashboard() {
     mutationFn: async () => {
       const body: any = { currentPassword: profileForm.currentPassword };
       if (profileForm.name && profileForm.name !== user?.name) body.name = profileForm.name;
-      if (profileForm.phone !== (user as any)?.phone) body.phone = profileForm.phone;
+      if (profileForm.phone !== stripPhone((user as any)?.phone || "")) body.phone = profileForm.phone;
       if (profileForm.email && profileForm.email !== user?.email) body.email = profileForm.email;
       if (profileForm.newPassword) body.newPassword = profileForm.newPassword;
       if (profileForm.avatarUrl !== ((user as any)?.avatarUrl || "")) body.avatarUrl = profileForm.avatarUrl;
@@ -602,7 +603,7 @@ export default function StudentDashboard() {
                 setProfileForm({
                   name: user?.name || "",
                   email: user?.email || "",
-                  phone: (user as any)?.phone || "",
+                  phone: stripPhone((user as any)?.phone || ""),
                   currentPassword: "",
                   newPassword: "",
                   confirmNewPassword: "",
@@ -728,7 +729,7 @@ export default function StudentDashboard() {
                 setProfileForm({
                   name: user?.name || "",
                   email: user?.email || "",
-                  phone: (user as any)?.phone || "",
+                  phone: stripPhone((user as any)?.phone || ""),
                   currentPassword: "",
                   newPassword: "",
                   confirmNewPassword: "",
@@ -1521,12 +1522,18 @@ export default function StudentDashboard() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Telefone</Label>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Phone className="w-3 h-3" />
+                Telefone
+              </Label>
               <Input
                 type="tel"
-                placeholder="+55 (11) 99999-9999"
-                value={profileForm.phone}
-                onChange={(e) => setProfileForm((f) => ({ ...f, phone: e.target.value }))}
+                placeholder="+55 (21) 99999-9999"
+                value={formatPhoneDisplay(profileForm.phone)}
+                onChange={(e) => {
+                  const { raw } = handlePhoneInput(e.target.value);
+                  setProfileForm((f) => ({ ...f, phone: raw }));
+                }}
                 className="bg-background/50 border-border/40"
               />
             </div>
