@@ -234,10 +234,30 @@ function sanitize(val: any): string {
   return val.trim().slice(0, 500);
 }
 
-// Strip phone to raw digits only (e.g. "+55 (21) 97626-3881" → "5521976263881")
+// Strip phone to raw digits and ensure Brazilian +55 prefix.
+// e.g. "+55 (21) 97626-3881" → "5521976263881"
+//      "+21 (97) 66417-28"   → "5521976641728" (fixes missing country code)
+//      "21976641728"          → "5521976641728"
 function sanitizePhone(val: any): string {
   if (typeof val !== "string") return "";
-  return val.replace(/\D/g, "").slice(0, 14);
+  let digits = val.replace(/\D/g, "");
+  if (!digits) return "";
+  // Already starts with 55 and has enough digits — keep as-is
+  if (digits.startsWith("55") && digits.length >= 12) {
+    return digits.slice(0, 13);
+  }
+  // Starts with 0 (old trunk dialing): strip 0, prepend 55
+  if (digits.startsWith("0") && digits.length >= 11) {
+    digits = digits.slice(1);
+  }
+  // 10-11 digits starting with valid DDD (11-99): prepend 55
+  if (digits.length >= 10 && digits.length <= 11) {
+    const ddd = parseInt(digits.slice(0, 2), 10);
+    if (ddd >= 11 && ddd <= 99) {
+      digits = "55" + digits;
+    }
+  }
+  return digits.slice(0, 13);
 }
 
 export async function registerRoutes(server: Server, app: Express) {
@@ -347,6 +367,40 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   } catch (e: any) {
     console.error("[auto-migrate] rename_experiencia_to_trial failed:", e.message);
+  }
+
+  // Migration: fix phone numbers missing the +55 Brazilian country code
+  try {
+    const { db } = await import("./db");
+    const migName = 'fix_phone_55_prefix';
+    const alreadyApplied = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migName} LIMIT 1`);
+    if (!((alreadyApplied as any).rows?.length > 0)) {
+      // Fix users.phone: 10-11 digit numbers without 55 prefix (Brazilian DDDs 11-99)
+      // These are area codes that were mistakenly stored without the country code.
+      // E.g. "21976641728" (11 digits) → "5521976641728" (13 digits)
+      await db.execute(sql`UPDATE users SET phone = '55' || phone
+        WHERE phone IS NOT NULL
+        AND phone ~ '^[0-9]+$'
+        AND length(phone) >= 10 AND length(phone) <= 11
+        AND NOT phone LIKE '55%'
+        AND CAST(substring(phone from 1 for 2) AS INTEGER) BETWEEN 11 AND 99`);
+      // Also fix numbers that start with 0 (old trunk prefix): 021... → 5521...
+      await db.execute(sql`UPDATE users SET phone = '55' || substring(phone from 2)
+        WHERE phone IS NOT NULL
+        AND phone ~ '^0[0-9]+$'
+        AND length(phone) >= 11 AND length(phone) <= 12`);
+      // Fix quiz_leads.whatsapp with same logic
+      await db.execute(sql`UPDATE quiz_leads SET whatsapp = '55' || whatsapp
+        WHERE whatsapp IS NOT NULL
+        AND whatsapp ~ '^[0-9]+$'
+        AND length(whatsapp) >= 10 AND length(whatsapp) <= 11
+        AND NOT whatsapp LIKE '55%'
+        AND CAST(substring(whatsapp from 1 for 2) AS INTEGER) BETWEEN 11 AND 99`).catch(() => {});
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migName}, ${new Date().toISOString()})`);
+      console.log("[auto-migrate] fix_phone_55_prefix applied");
+    }
+  } catch (e: any) {
+    console.error("[auto-migrate] fix_phone_55_prefix failed:", e.message);
   }
 
   // ==================== ONE-TIME: Grant all materials access to existing users ====================
@@ -910,7 +964,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
           const now = new Date().toISOString();
           const inserted = await db.execute(sql`INSERT INTO users (name, email, phone, password, role, approved, access_expires_at, materials_access, trial_started_at, created_at)
-             VALUES (${nome}, ${email}, ${whatsapp}, ${hash}, 'trial', true, ${trialExpiry}, false, ${now}, ${now})
+             VALUES (${nome}, ${email}, ${sanitizePhone(whatsapp)}, ${hash}, 'trial', true, ${trialExpiry}, false, ${now}, ${now})
              RETURNING id`);
           userId = (inserted.rows[0]?.id as number) ?? null;
           isNew = true;
@@ -4413,7 +4467,7 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
       await db.execute(sql`
         UPDATE users SET
           name = COALESCE(${name || null}, name),
-          phone = COALESCE(${phone || null}, phone),
+          phone = COALESCE(${phone ? sanitizePhone(phone) : null}, phone),
           username = ${username !== undefined ? (username || null) : null},
           avatar_url = ${avatarUrl !== undefined ? (avatarUrl || null) : null},
           instagram = ${normalizedInstagram !== undefined ? (normalizedInstagram || null) : null}
