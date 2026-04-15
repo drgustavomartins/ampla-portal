@@ -329,6 +329,26 @@ export async function registerRoutes(server: Server, app: Express) {
     console.error("[auto-migrate] clinical_sessions_signatures failed:", e.message);
   }
 
+  // Migration: rename "Experiência" plan to "Trial" with 7-day duration
+  try {
+    const { db } = await import("./db");
+    const migName = 'rename_experiencia_to_trial';
+    const alreadyApplied = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migName} LIMIT 1`);
+    if (!((alreadyApplied as any).rows?.length > 0)) {
+      // Update any existing "Experiência" plan (various accent/case variants) to "Trial"
+      await db.execute(sql`UPDATE plans SET name = 'Trial', duration_days = 7, price = 'R$ 0', description = 'Acesso trial de 7 dias ao portal' WHERE LOWER(name) LIKE '%experiencia%' OR LOWER(name) LIKE '%experiência%'`);
+      // If no "Trial" plan exists yet, create one
+      const trialExists = await db.execute(sql`SELECT 1 FROM plans WHERE LOWER(name) = 'trial' LIMIT 1`);
+      if (!((trialExists as any).rows?.length > 0)) {
+        await db.execute(sql`INSERT INTO plans (name, description, duration_days, price, "order") VALUES ('Trial', 'Acesso trial de 7 dias ao portal', 7, 'R$ 0', 0)`);
+      }
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migName}, ${new Date().toISOString()})`);
+      console.log("[auto-migrate] rename_experiencia_to_trial applied");
+    }
+  } catch (e: any) {
+    console.error("[auto-migrate] rename_experiencia_to_trial failed:", e.message);
+  }
+
   // ==================== ONE-TIME: Grant all materials access to existing users ====================
   // This migration sets materials_access = true and inserts user_material_categories rows
   // for ALL 6 categories with enabled = true, for every existing user that doesn't already

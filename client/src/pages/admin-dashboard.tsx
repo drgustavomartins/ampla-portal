@@ -2023,7 +2023,7 @@ export default function AdminDashboard() {
                       extensao_acompanhamento: "Extensao Acompanhamento",
                       horas_clinicas_1: "Horas Clinicas (1)", horas_clinicas_2: "Horas Clinicas (2)", horas_clinicas_3: "Horas Clinicas (3)",
                     };
-                    const planLabel = (s as any).planKey ? (planKeyLabels[(s as any).planKey] || (s as any).planKey.replace(/_/g, ' ')) : (plan ? plan.name : 'Experiencia');
+                    const planLabel = (s as any).planKey ? (planKeyLabels[(s as any).planKey] || (s as any).planKey.replace(/_/g, ' ')) : (plan ? plan.name : 'Trial');
 
                     return (
                       <Card key={s.id} className="border-border/30 bg-card/50 hover:bg-card/70 transition-colors">
