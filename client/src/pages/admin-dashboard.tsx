@@ -597,6 +597,12 @@ export default function AdminDashboard() {
   const [bonusAmount, setBonusAmount] = useState<string>("");
   const [bonusDesc, setBonusDesc] = useState<string>("");
   const [bonusLoading, setBonusLoading] = useState(false);
+  const [attendanceOpen, setAttendanceOpen] = useState(false);
+  const [attendanceTitle, setAttendanceTitle] = useState("");
+  const [attendanceDate, setAttendanceDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [attendanceSelected, setAttendanceSelected] = useState<Set<number>>(new Set());
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [attendanceSearch, setAttendanceSearch] = useState("");
   const [expandedProfile, setExpandedProfile] = useState<string | null>(null);
   // Clinical sessions state & data
   type ClinicalSession = { id: number; studentId: number; studentName: string; studentEmail: string; sessionDate: string; startTime: string; endTime: string; durationHours: number; procedures: string[]; notes: string | null; status: string; adminName: string; createdAt: string; patientsCount?: number; patientsDetails?: string[]; adminSignedAt?: string | null; studentSignedAt?: string | null };
@@ -3589,6 +3595,136 @@ export default function AdminDashboard() {
               </Card>
             </div>
 
+            {/* Creditação de Presença */}
+            <Card className="border-border/30 bg-card/40">
+              <CardContent className="p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Creditação de Presença</h3>
+                  <Dialog open={attendanceOpen} onOpenChange={(open) => {
+                    setAttendanceOpen(open);
+                    if (!open) { setAttendanceTitle(""); setAttendanceDate(new Date().toISOString().slice(0, 10)); setAttendanceSelected(new Set()); setAttendanceSearch(""); }
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="h-8 text-xs border-gold/30 text-gold hover:bg-gold/10">
+                        <Video className="w-3.5 h-3.5 mr-1.5" /> Creditar presença
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-card border-border/40 max-w-lg max-h-[85vh] flex flex-col">
+                      <DialogHeader>
+                        <DialogTitle>Creditação de Presença</DialogTitle>
+                        <DialogDescription>Credite R$100 para alunos que participaram ativamente da aula ao vivo (câmera ligada + falou).</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 pt-2 flex-1 overflow-hidden flex flex-col">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-medium text-muted-foreground">Data da aula</label>
+                            <Input
+                              type="date"
+                              value={attendanceDate}
+                              onChange={(e) => setAttendanceDate(e.target.value)}
+                              className="mt-1 bg-background/50 border-border/40"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-muted-foreground">Título da aula</label>
+                            <Input
+                              placeholder="Ex: Neocolagênese e IA"
+                              value={attendanceTitle}
+                              onChange={(e) => setAttendanceTitle(e.target.value)}
+                              className="mt-1 bg-background/50 border-border/40"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-muted-foreground">Alunos presentes ({attendanceSelected.size} selecionados)</label>
+                          <div className="mt-1 relative">
+                            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                            <Input
+                              placeholder="Buscar aluno..."
+                              value={attendanceSearch}
+                              onChange={(e) => setAttendanceSearch(e.target.value)}
+                              className="pl-8 bg-background/50 border-border/40"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto border border-border/30 rounded-lg divide-y divide-border/20 min-h-0 max-h-[300px]">
+                          {students
+                            .filter(s => s.role !== 'admin' && s.role !== 'super_admin' && s.role !== 'pending' && s.role !== 'trial')
+                            .filter(s => !attendanceSearch || s.name.toLowerCase().includes(attendanceSearch.toLowerCase()) || s.email.toLowerCase().includes(attendanceSearch.toLowerCase()))
+                            .map(s => (
+                              <label key={s.id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/30 cursor-pointer">
+                                <Checkbox
+                                  checked={attendanceSelected.has(s.id)}
+                                  onCheckedChange={(checked) => {
+                                    const next = new Set(attendanceSelected);
+                                    if (checked) next.add(s.id); else next.delete(s.id);
+                                    setAttendanceSelected(next);
+                                  }}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-foreground truncate">{s.name}</p>
+                                  <p className="text-xs text-muted-foreground truncate">{s.email}</p>
+                                </div>
+                              </label>
+                            ))}
+                        </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              className="w-full bg-gold hover:bg-gold/90 text-background font-semibold"
+                              disabled={!attendanceTitle || !attendanceDate || attendanceSelected.size === 0 || attendanceLoading}
+                            >
+                              {attendanceLoading ? "Creditando..." : `Creditar R$100 para ${attendanceSelected.size} aluno${attendanceSelected.size !== 1 ? 's' : ''}`}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-card border-border/40">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirmar creditação</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Creditar R$100 para {attendanceSelected.size} aluno{attendanceSelected.size !== 1 ? 's' : ''} pela presença na aula "{attendanceTitle}" ({attendanceDate})?
+                                <br /><br />
+                                Total: {(attendanceSelected.size * 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-gold hover:bg-gold/90 text-background"
+                                onClick={async () => {
+                                  setAttendanceLoading(true);
+                                  try {
+                                    const res = await apiRequest("POST", "/api/admin/credits/attendance", {
+                                      title: attendanceTitle,
+                                      date: attendanceDate,
+                                      studentIds: Array.from(attendanceSelected),
+                                    });
+                                    const data = await res.json();
+                                    if (data.success) {
+                                      toast({
+                                        title: `${data.credited} aluno${data.credited !== 1 ? 's' : ''} creditado${data.credited !== 1 ? 's' : ''}`,
+                                        description: data.skipped > 0 ? `${data.skipped} ignorado${data.skipped !== 1 ? 's' : ''} (duplicados)` : undefined,
+                                      });
+                                      setAttendanceOpen(false);
+                                      setAttendanceTitle(""); setAttendanceDate(new Date().toISOString().slice(0, 10)); setAttendanceSelected(new Set()); setAttendanceSearch("");
+                                      queryClient.invalidateQueries({ queryKey: ["/api/admin/credits"] });
+                                    }
+                                  } catch (e) { console.error(e); }
+                                  setAttendanceLoading(false);
+                                }}
+                              >
+                                Confirmar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                <p className="text-xs text-muted-foreground">Credite R$100 automaticamente para alunos que participaram ativamente da aula ao vivo (câmera + fala). Os créditos expiram em 6 meses.</p>
+              </CardContent>
+            </Card>
+
             {/* Bonus dialog + Balances table */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -3710,6 +3846,7 @@ export default function AdminDashboard() {
                       <SelectItem value="usage">Uso</SelectItem>
                       <SelectItem value="adjustment">Ajuste</SelectItem>
                       <SelectItem value="bonus">Bonificacao</SelectItem>
+                      <SelectItem value="attendance_bonus">Presença</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={creditPlanFilter} onValueChange={setCreditPlanFilter}>
