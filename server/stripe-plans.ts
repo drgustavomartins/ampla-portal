@@ -33,8 +33,8 @@ export interface PlanConfig {
 export const PLANS: Record<PlanKey, PlanConfig> = {
   tester: {
     key: "tester",
-    name: "Experiência Gratuita",
-    description: "Explore o portal com acesso às 2 primeiras aulas de cada módulo",
+    name: "Trial",
+    description: "Acesso trial de 7 dias ao portal com as 2 primeiras aulas de cada módulo",
     price: 0,
     installments12x: null,
     group: "digital",
