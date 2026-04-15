@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Sparkles, Eye, EyeOff, CheckCircle2, Star, Users, Clock, Play, ArrowRight, Camera, Instagram, Phone } from "lucide-react";
-import { handlePhoneInput, formatPhone, stripPhone } from "@/lib/phone";
+import { PhoneInput } from "@/components/PhoneInput";
 import { trackEvent } from "@/lib/funnel";
 import type { z } from "zod";
 
@@ -57,7 +57,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [lgpdAccepted, setLgpdAccepted] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [phoneDisplay, setPhoneDisplay] = useState(formatPhone("55"));
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const avatarFileStore = useRef<File | null>(null);
   const { login } = useAuth();
@@ -336,7 +335,7 @@ export default function LoginPage() {
                   )}
                 </div>
 
-                {/* Telefone — obrigatório, com máscara */}
+                {/* Telefone — obrigatório, com seletor de país */}
                 <div className="space-y-1.5">
                   <Label htmlFor="trial-phone" className="text-xs text-white/50">
                     <span className="flex items-center gap-1.5">
@@ -344,18 +343,13 @@ export default function LoginPage() {
                       Telefone
                     </span>
                   </Label>
-                  <Input
-                    id="trial-phone"
-                    type="tel"
-                    placeholder="+55 (21) 99999-9999"
-                    className="bg-white/5 border-white/10 focus:border-gold/50 text-white placeholder:text-white/20"
-                    value={phoneDisplay}
-                    onChange={(e) => {
-                      const { raw, formatted } = handlePhoneInput(e.target.value);
-                      setPhoneDisplay(formatted);
+                  <PhoneInput
+                    value={trialForm.watch("phone")}
+                    onChange={(raw) => {
                       trialForm.setValue("phone", raw, { shouldValidate: true });
                       clearError();
                     }}
+                    variant="dark"
                   />
                   {trialForm.formState.errors.phone && (
                     <p className="text-xs text-red-400">{trialForm.formState.errors.phone.message}</p>

@@ -234,30 +234,38 @@ function sanitize(val: any): string {
   return val.trim().slice(0, 500);
 }
 
-// Strip phone to raw digits and ensure Brazilian +55 prefix.
-// e.g. "+55 (21) 97626-3881" → "5521976263881"
-//      "+21 (97) 66417-28"   → "5521976641728" (fixes missing country code)
-//      "21976641728"          → "5521976641728"
+// Known international dialing codes (sorted longest first for matching)
+const KNOWN_COUNTRY_CODES = ["351", "595", "598", "55", "54", "57", "56", "52", "34", "39", "81", "1"];
+
+// Strip phone to raw digits. Accepts international country codes.
+// For ambiguous numbers (10-11 digits without a recognized prefix),
+// assumes Brazilian and prepends 55 — since most users are Brazilian.
 function sanitizePhone(val: any): string {
   if (typeof val !== "string") return "";
   let digits = val.replace(/\D/g, "");
   if (!digits) return "";
-  // Already starts with 55 and has enough digits — keep as-is
-  if (digits.startsWith("55") && digits.length >= 12) {
-    return digits.slice(0, 13);
+
+  // Check if it already starts with a known country code
+  const hasKnownPrefix = KNOWN_COUNTRY_CODES.some(cc => digits.startsWith(cc) && digits.length >= cc.length + 7);
+  if (hasKnownPrefix) {
+    return digits.slice(0, 15); // max 15 digits per E.164
   }
-  // Starts with 0 (old trunk dialing): strip 0, prepend 55
+
+  // Starts with 0 (old Brazilian trunk dialing): strip 0, prepend 55
   if (digits.startsWith("0") && digits.length >= 11) {
-    digits = digits.slice(1);
+    digits = "55" + digits.slice(1);
+    return digits.slice(0, 15);
   }
-  // 10-11 digits starting with valid DDD (11-99): prepend 55
+
+  // 10-11 digits without a known prefix — assume Brazilian DDD
   if (digits.length >= 10 && digits.length <= 11) {
     const ddd = parseInt(digits.slice(0, 2), 10);
     if (ddd >= 11 && ddd <= 99) {
       digits = "55" + digits;
     }
   }
-  return digits.slice(0, 13);
+
+  return digits.slice(0, 15);
 }
 
 export async function registerRoutes(server: Server, app: Express) {

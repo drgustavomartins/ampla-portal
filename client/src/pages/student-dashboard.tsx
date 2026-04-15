@@ -23,7 +23,8 @@ import {
   Users, MessageCircle, Lock, ShoppingCart, ExternalLink, Paperclip, DollarSign,
   Search, Bell, Camera, Instagram, Phone
 } from "lucide-react";
-import { handlePhoneInput, formatPhoneDisplay, stripPhone } from "@/lib/phone";
+import { stripPhone } from "@/lib/phone";
+import { PhoneInput } from "@/components/PhoneInput";
 import MateriaisComplementares from "./materiais-complementares";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 import { CreditsDashboardCard } from "@/components/CreditsDashboardCard";
@@ -1526,15 +1527,9 @@ export default function StudentDashboard() {
                 <Phone className="w-3 h-3" />
                 Telefone
               </Label>
-              <Input
-                type="tel"
-                placeholder="+55 (21) 99999-9999"
-                value={formatPhoneDisplay(profileForm.phone)}
-                onChange={(e) => {
-                  const { raw } = handlePhoneInput(e.target.value);
-                  setProfileForm((f) => ({ ...f, phone: raw }));
-                }}
-                className="bg-background/50 border-border/40"
+              <PhoneInput
+                value={profileForm.phone}
+                onChange={(raw) => setProfileForm((f) => ({ ...f, phone: raw }))}
               />
             </div>
             <div className="w-full h-px bg-border/30" />
