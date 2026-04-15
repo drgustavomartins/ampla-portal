@@ -3083,6 +3083,64 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   });
 
+  // POST /api/admin/credits/attendance — creditação de presença em aula ao vivo
+  app.post("/api/admin/credits/attendance", async (req: Request, res: Response) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { title, date, studentIds, amount } = req.body;
+      if (!title || !date || !Array.isArray(studentIds) || studentIds.length === 0) {
+        return res.status(400).json({ message: "title, date e studentIds (array não vazio) são obrigatórios" });
+      }
+      const creditAmount = amount && amount > 0 ? amount : 10000; // default R$100
+      const { db } = await import("./db");
+      const now = new Date().toISOString();
+      const expiresAt = new Date(Date.now() + 180 * 86400000).toISOString(); // 6 meses
+
+      const credited: { userId: number; name: string }[] = [];
+      const skipped: { userId: number; name: string; reason: string }[] = [];
+
+      for (const studentId of studentIds) {
+        const user = await storage.getUser(studentId);
+        if (!user) {
+          skipped.push({ userId: studentId, name: "?", reason: "Usuário não encontrado" });
+          continue;
+        }
+
+        // Prevent duplicates: check if this student already got credit for this class
+        const refId = `attendance_${date}_${studentId}`;
+        const existing = await db.execute(sql`SELECT id FROM credit_transactions WHERE reference_id = ${refId} LIMIT 1`);
+        if ((existing as any).rows?.length > 0) {
+          skipped.push({ userId: studentId, name: user.name, reason: "Já creditado para esta aula" });
+          continue;
+        }
+
+        const desc = `Presença ativa: ${title} — ${date}`;
+        await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at, expires_at)
+          VALUES (${studentId}, 'attendance_bonus', ${creditAmount}, ${desc}, ${refId}, ${now}, ${expiresAt})`);
+        credited.push({ userId: studentId, name: user.name });
+      }
+
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || "Admin", "credit_attendance", "credits", undefined, undefined, {
+        title, date, amount: creditAmount, creditedCount: credited.length, skippedCount: skipped.length,
+        creditedStudents: credited.map(s => s.name),
+      });
+
+      res.json({
+        success: true,
+        credited: credited.length,
+        skipped: skipped.length,
+        skippedDetails: skipped,
+        totalAmount: credited.length * creditAmount,
+        students: credited,
+      });
+    } catch (e: any) {
+      console.error("[admin/credits/attendance] Error:", e.message);
+      res.status(500).json({ message: "Erro ao creditar presença" });
+    }
+  });
+
   // GET /api/cron/credit-expiry-notify — notify users about expiring credits
   app.get("/api/cron/credit-expiry-notify", async (req: Request, res: Response) => {
     const cronSecret = req.headers["x-cron-secret"] || req.query.secret;
