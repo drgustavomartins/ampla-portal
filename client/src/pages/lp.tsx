@@ -717,14 +717,25 @@ export default function LandingPage() {
               Veja a experiência real de quem está na mentoria Ampla Facial
             </p>
 
-            <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/10 bg-[#0F1A2E]">
-              <iframe
-                src="https://www.youtube.com/embed/LEQKPpbfnFU?rel=0&modestbranding=1"
-                title="Depoimento de uma aluna em mentoria Ampla Facial"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="absolute inset-0 w-full h-full"
-              />
+            <div className="flex justify-center">
+              <div
+                className="relative w-full overflow-hidden bg-[#0F1A2E]"
+                style={{
+                  maxWidth: 360,
+                  aspectRatio: "9 / 16",
+                  borderRadius: 24,
+                  boxShadow:
+                    "0 32px 80px rgba(11,29,58,0.22), 0 8px 24px rgba(11,29,58,0.12), 0 0 0 1px rgba(212,168,67,0.18)",
+                }}
+              >
+                <iframe
+                  src="https://www.youtube.com/embed/LEQKPpbfnFU?rel=0&modestbranding=1"
+                  title="Depoimento de uma aluna em mentoria Ampla Facial"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full"
+                />
+              </div>
             </div>
 
             <p className="mt-6 text-sm text-gray-500 italic">
