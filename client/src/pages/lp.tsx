@@ -705,7 +705,37 @@ export default function LandingPage() {
       </section>
 
       {/* ════════════════════════════════════════════════════════════════════
-          7 · FAQ
+          7 · TESTIMONIAL VIDEO
+         ════════════════════════════════════════════════════════════════════ */}
+      <section className="bg-[#0A1628] py-14 md:py-20">
+        <div className="max-w-3xl mx-auto px-5 text-center">
+          <FadeIn>
+            <h2 className="lp-serif text-2xl md:text-3xl font-bold mb-3">
+              O Que Nossos Alunos Dizem
+            </h2>
+            <p className="text-gray-400 max-w-xl mx-auto mb-10">
+              Veja a experiência real de quem está na mentoria Ampla Facial
+            </p>
+
+            <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/10 bg-[#0F1A2E]">
+              <iframe
+                src="https://www.youtube.com/embed/LEQKPpbfnFU?rel=0&modestbranding=1"
+                title="Depoimento de uma aluna em mentoria Ampla Facial"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full"
+              />
+            </div>
+
+            <p className="mt-6 text-sm text-gray-500 italic">
+              Depoimento real de aluna em mentoria com o Dr. Gustavo Martins
+            </p>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          8 · FAQ
          ════════════════════════════════════════════════════════════════════ */}
       <section className="py-12 md:py-16">
         <div className="max-w-2xl mx-auto px-5">
@@ -761,7 +791,7 @@ export default function LandingPage() {
       </section>
 
       {/* ════════════════════════════════════════════════════════════════════
-          8 · FINAL CTA
+          9 · FINAL CTA
          ════════════════════════════════════════════════════════════════════ */}
       <section className="relative py-16 md:py-24">
         {/* gold gradient top border */}
@@ -804,7 +834,7 @@ export default function LandingPage() {
       </section>
 
       {/* ════════════════════════════════════════════════════════════════════
-          9 · FOOTER
+          10 · FOOTER
          ════════════════════════════════════════════════════════════════════ */}
       <footer className="border-t border-white/5 py-8">
         <div className="max-w-5xl mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500">
