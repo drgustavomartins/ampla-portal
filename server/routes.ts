@@ -104,18 +104,19 @@ async function notifyNewRegistration(user: { name: string; email: string; phone?
     await resend.emails.send({
       from: "Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",
       to: "gustavo.m.martins@outlook.com",
-      subject: `🔔 Novo cadastro: ${user.name}`,
+      subject: `🆕 Novo aluno em Trial: ${user.name}`,
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0A1628;color:#fff;padding:32px;border-radius:12px">
-          <div style="color:#D4A843;font-size:20px;font-weight:bold;margin-bottom:24px">Ampla Facial — Novo Cadastro</div>
-          <p style="margin:0 0 16px">Um novo aluno solicitou acesso à plataforma:</p>
+          <div style="color:#D4A843;font-size:20px;font-weight:bold;margin-bottom:24px">Ampla Facial — Novo Aluno em Trial</div>
+          <p style="margin:0 0 16px">Um novo aluno se cadastrou e já está em <strong style="color:#D4A843">Trial (7 dias)</strong>:</p>
           <table style="width:100%;border-collapse:collapse">
             <tr><td style="padding:8px 0;color:#999">Nome</td><td style="padding:8px 0;font-weight:bold">${user.name}</td></tr>
             <tr><td style="padding:8px 0;color:#999">Email</td><td style="padding:8px 0">${user.email}</td></tr>
             <tr><td style="padding:8px 0;color:#999">Telefone</td><td style="padding:8px 0">${user.phone || "—"}</td></tr>
           </table>
+          <p style="margin-top:16px;color:#999;font-size:13px">O aluno já tem acesso às primeiras aulas de cada módulo. Nenhuma ação necessária — você pode converter para um plano pago a qualquer momento no painel admin.</p>
           <div style="margin-top:24px">
-            <a href="https://portal.amplafacial.com.br/#/admin" style="background:#D4A843;color:#0A1628;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">Aprovar no painel admin</a>
+            <a href="https://portal.amplafacial.com.br/#/admin" style="background:#D4A843;color:#0A1628;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block">Ver no painel admin</a>
           </div>
           <p style="margin-top:24px;font-size:12px;color:#666">portal.amplafacial.com.br</p>
         </div>
@@ -1240,6 +1241,10 @@ export async function registerRoutes(server: Server, app: Express) {
         return res.status(400).json({ message: "Email já cadastrado" });
       }
       const hashedPassword = await bcrypt.hash(data.password, 10);
+      const trialExpires = new Date();
+      trialExpires.setDate(trialExpires.getDate() + 7);
+      const now = new Date().toISOString();
+
       const user = await storage.createUser({
         name: sanitize(data.name),
         email: data.email.trim().toLowerCase(),
@@ -1247,12 +1252,31 @@ export async function registerRoutes(server: Server, app: Express) {
         password: hashedPassword,
         instagram: data.instagram ? sanitize(data.instagram.replace(/^@/, "").trim()) : "",
         planId: null,
-        createdAt: new Date().toISOString(),
+        createdAt: now,
       });
-      // Notify admin via email (non-blocking)
+
+      // Auto-approve as trial with 7-day expiry
+      await storage.updateUser(user.id, {
+        role: "trial",
+        approved: true,
+        accessExpiresAt: trialExpires.toISOString(),
+        trialStartedAt: now,
+      } as any);
+
+      // Issue JWT so frontend can log in immediately
+      const token = jwt.sign({ userId: user.id, role: "trial" }, JWT_SECRET, { expiresIn: "7d" });
+      res.cookie("ampla_token", token, { httpOnly: true, secure: true, sameSite: "none", maxAge: 30 * 24 * 60 * 60 * 1000 });
+
+      // Send welcome email and notify admin (non-blocking)
+      sendWelcomeEmail({ name: user.name, email: user.email });
       notifyNewRegistration({ name: user.name, email: user.email, phone: user.phone ?? undefined });
 
-      return res.json({ message: "Cadastro realizado! Aguarde a aprovação do administrador.", user: { id: user.id, name: user.name, email: user.email } });
+      const { password: _p, lockedUntil: _l, loginAttempts: _a, ...safeUser } = user;
+      return res.json({
+        message: "Seu teste gratuito de 7 dias foi ativado!",
+        user: { ...safeUser, role: "trial", approved: true, accessExpiresAt: trialExpires.toISOString() },
+        token,
+      });
     } catch (e: any) {
       return res.status(400).json({ message: e.message || "Erro no cadastro" });
     }
