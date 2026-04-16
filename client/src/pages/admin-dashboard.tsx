@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LeadsTab } from "@/components/LeadsTab";
+import { CrmTab } from "@/components/CrmTab";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription
 } from "@/components/ui/dialog";
@@ -1683,6 +1684,7 @@ export default function AdminDashboard() {
               const allTabs: { value: string; label: string; icon: any; badge?: number; group: string }[] = [
                 { value: "students", label: "Alunos", icon: Users, group: "Pessoas" },
                 { value: "leads", label: "Leads", icon: Zap, badge: trialStudents.length > 0 ? trialStudents.length : undefined, group: "Pessoas" },
+                { value: "crm", label: "CRM", icon: BarChart3, group: "Pessoas" },
                 { value: "profiles", label: "Perfis", icon: FileText, group: "Pessoas" },
                 { value: "modules", label: "Modulos", icon: Layers, group: "Conteudo" },
                 { value: "lessons", label: "Aulas", icon: Video, group: "Conteudo" },
@@ -1798,6 +1800,14 @@ export default function AdminDashboard() {
                         {trialStudents.length}
                       </span>
                     )}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="crm"
+                    data-testid="tab-crm-d"
+                    className="data-[state=active]:bg-gold/15 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-[0_0_12px_rgba(212,168,67,0.1)] data-[state=active]:shadow-none border border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all"
+                  >
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    CRM
                   </TabsTrigger>
                   <TabsTrigger
                     value="profiles"
@@ -3941,6 +3951,11 @@ export default function AdminDashboard() {
               onConvert={(id) => approveMutation.mutate({ id })}
               onEdit={(s) => openEditStudent(s)}
             />
+          </TabsContent>
+
+          {/* ========== CRM TAB ========== */}
+          <TabsContent value="crm" className="space-y-6 mt-0">
+            <CrmTab />
           </TabsContent>
 
           {/* ========== COMMUNITY TAB ========== */}

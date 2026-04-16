@@ -269,6 +269,18 @@ function sanitizePhone(val: any): string {
   return digits.slice(0, 15);
 }
 
+// Compute lead_source from utm_source
+function computeLeadSource(utmSource?: string | null): string {
+  if (!utmSource) return "Direto";
+  const src = utmSource.toLowerCase();
+  if (src === "instagram" || src === "ig") return "Instagram";
+  if (src === "facebook" || src === "fb" || src === "meta") return "Meta Ads";
+  if (src === "whatsapp" || src === "wa") return "WhatsApp";
+  if (src === "google") return "Google";
+  if (src === "referral" || src === "indicacao") return "Indicação";
+  return "Direto";
+}
+
 export async function registerRoutes(server: Server, app: Express) {
   // ==================== AUTO-MIGRATE critical columns on startup ====================
   // This ensures new columns exist before any Drizzle query tries to SELECT them.
@@ -307,7 +319,18 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS instagram TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS module_content_expires_at TEXT`).catch(() => {});
-    console.log("[auto-migrate] material_topics, order, materials_access, mentorship dates, user_modules, user_material_categories, material_themes/subcategories/files, stripe columns ensured");
+    // UTM tracking columns
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS utm_source TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS utm_medium TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS utm_campaign TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS utm_content TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS utm_term TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS lead_source TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS converted_at TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS landing_page TEXT`).catch(() => {});
+    // Tracking events table (WhatsApp clicks, etc.)
+    await db.execute(`CREATE TABLE IF NOT EXISTS tracking_events (id SERIAL PRIMARY KEY, event_type TEXT NOT NULL, source_page TEXT, utm_source TEXT, metadata TEXT, created_at TEXT NOT NULL)`).catch(() => {});
+    console.log("[auto-migrate] material_topics, order, materials_access, mentorship dates, user_modules, user_material_categories, material_themes/subcategories/files, stripe columns, utm columns ensured");
     // Tabelas de quiz e funil
     await db.execute(`CREATE TABLE IF NOT EXISTS quiz_leads (id SERIAL PRIMARY KEY, nome TEXT NOT NULL, email TEXT NOT NULL, whatsapp TEXT NOT NULL, resultado TEXT NOT NULL, respostas JSONB, created_at TEXT NOT NULL)`).catch(() => {});
     await db.execute(`CREATE TABLE IF NOT EXISTS quiz_clicks (id SERIAL PRIMARY KEY, source TEXT NOT NULL, ip TEXT, user_agent TEXT, created_at TEXT NOT NULL)`).catch(() => {});
@@ -1245,6 +1268,9 @@ export async function registerRoutes(server: Server, app: Express) {
       trialExpires.setDate(trialExpires.getDate() + 7);
       const now = new Date().toISOString();
 
+      // Compute lead_source from utm_source if not explicitly provided
+      const leadSource = data.lead_source || computeLeadSource(data.utm_source);
+
       const user = await storage.createUser({
         name: sanitize(data.name),
         email: data.email.trim().toLowerCase(),
@@ -1255,12 +1281,19 @@ export async function registerRoutes(server: Server, app: Express) {
         createdAt: now,
       });
 
-      // Auto-approve as trial with 7-day expiry
+      // Auto-approve as trial with 7-day expiry + save UTM data
       await storage.updateUser(user.id, {
         role: "trial",
         approved: true,
         accessExpiresAt: trialExpires.toISOString(),
         trialStartedAt: now,
+        utmSource: data.utm_source || null,
+        utmMedium: data.utm_medium || null,
+        utmCampaign: data.utm_campaign || null,
+        utmContent: data.utm_content || null,
+        utmTerm: data.utm_term || null,
+        leadSource,
+        landingPage: data.landing_page || null,
       } as any);
 
       // Issue JWT so frontend can log in immediately
@@ -1300,6 +1333,9 @@ export async function registerRoutes(server: Server, app: Express) {
       trialExpires.setDate(trialExpires.getDate() + 7);
       const now = new Date().toISOString();
 
+      // Compute lead_source from utm_source if not explicitly provided
+      const leadSource = data.lead_source || computeLeadSource(data.utm_source);
+
       const user = await storage.createUser({
         name: sanitize(data.name),
         email: data.email.trim().toLowerCase(),
@@ -1310,13 +1346,20 @@ export async function registerRoutes(server: Server, app: Express) {
         createdAt: now,
       });
 
-      // Auto-approve as trial with 7-day expiry
+      // Auto-approve as trial with 7-day expiry + save UTM data
       await storage.updateUser(user.id, {
         role: "trial",
         approved: true,
         accessExpiresAt: trialExpires.toISOString(),
         trialStartedAt: now,
         lgpdAcceptedAt: now,
+        utmSource: data.utm_source || null,
+        utmMedium: data.utm_medium || null,
+        utmCampaign: data.utm_campaign || null,
+        utmContent: data.utm_content || null,
+        utmTerm: data.utm_term || null,
+        leadSource,
+        landingPage: data.landing_page || null,
       } as any);
 
       // Issue JWT so frontend can log in immediately without a second request
@@ -1895,6 +1938,7 @@ export async function registerRoutes(server: Server, app: Express) {
       accessExpiresAt: expiresAt.toISOString(),
       moduleContentExpiresAt: expiresAt.toISOString(),
       materialsAccess: true,
+      convertedAt: new Date().toISOString(),
     };
     if (bodyPlanId) updateData.planId = bodyPlanId;
     const updated = await storage.updateUser(user.id, updateData);
@@ -4556,6 +4600,131 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
     } catch (e: any) {
       console.error("[GET /api/users/:id/profile]", e.message);
       res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ==================== TRACKING EVENTS ====================
+  app.post("/api/tracking/event", async (req, res) => {
+    try {
+      const { db } = await import("./db");
+      const { event_type, source_page, utm_source, metadata } = req.body;
+      if (!event_type) return res.status(400).json({ message: "event_type required" });
+      await db.execute(
+        sql`INSERT INTO tracking_events (event_type, source_page, utm_source, metadata, created_at)
+            VALUES (${event_type}, ${source_page || null}, ${utm_source || null}, ${metadata ? JSON.stringify(metadata) : null}, ${new Date().toISOString()})`
+      );
+      return res.json({ ok: true });
+    } catch (e: any) {
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ==================== CRM / LEAD ANALYTICS ENDPOINTS ====================
+
+  // CRM overview stats
+  app.get("/api/admin/crm/stats", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+      // All users (for leads and conversions)
+      const allUsersResult = await db.execute(sql`
+        SELECT id, role, lead_source, utm_source, utm_medium, utm_campaign,
+               created_at, converted_at, plan_key, plan_amount_paid,
+               access_expires_at, trial_started_at
+        FROM users
+        WHERE role IN ('trial', 'student')
+        ORDER BY created_at DESC
+      `);
+      const allUsers = (allUsersResult as any).rows || [];
+
+      // Leads this month
+      const leadsThisMonth = allUsers.filter((u: any) => u.created_at >= monthStart);
+
+      // Leads by source
+      const sourceMap: Record<string, number> = {};
+      leadsThisMonth.forEach((u: any) => {
+        const src = u.lead_source || "Direto";
+        sourceMap[src] = (sourceMap[src] || 0) + 1;
+      });
+
+      // Conversion rate (users who converted from trial to paid)
+      const totalTrialEver = allUsers.filter((u: any) => u.trial_started_at).length;
+      const totalConverted = allUsers.filter((u: any) => u.converted_at || (u.role === "student" && u.plan_key)).length;
+      const conversionRate = totalTrialEver > 0 ? Math.round((totalConverted / totalTrialEver) * 100) : 0;
+
+      // Source performance (aggregate table)
+      const sources = ["Instagram", "Meta Ads", "WhatsApp", "Google", "Indicação", "Direto"];
+      const sourcePerformance = sources.map(src => {
+        const leads = allUsers.filter((u: any) => (u.lead_source || "Direto") === src);
+        const converted = leads.filter((u: any) => u.converted_at || (u.role === "student" && u.plan_key));
+        const revenue = converted.reduce((sum: number, u: any) => sum + (u.plan_amount_paid || 0), 0);
+        return {
+          source: src,
+          leads: leads.length,
+          converted: converted.length,
+          rate: leads.length > 0 ? Math.round((converted.length / leads.length) * 100) : 0,
+          revenue,
+        };
+      }).filter(s => s.leads > 0);
+
+      // Funnel: LP visits (from funnel_events), registered, converted
+      const lpVisitsResult = await db.execute(sql`
+        SELECT COUNT(DISTINCT session_id) as count FROM funnel_events
+        WHERE event = 'banner_click' OR event = 'quiz_start' OR event = 'plan_click'
+      `).catch(() => ({ rows: [{ count: 0 }] }));
+      const lpVisits = Number((lpVisitsResult as any).rows?.[0]?.count || 0);
+
+      // WhatsApp click count
+      const waClicksResult = await db.execute(sql`
+        SELECT COUNT(*) as count FROM tracking_events WHERE event_type = 'whatsapp_click'
+      `).catch(() => ({ rows: [{ count: 0 }] }));
+      const waClicks = Number((waClicksResult as any).rows?.[0]?.count || 0);
+
+      return res.json({
+        leadsThisMonth: leadsThisMonth.length,
+        leadsBySource: sourceMap,
+        conversionRate,
+        totalTrials: totalTrialEver,
+        totalConverted,
+        sourcePerformance,
+        funnel: {
+          lpVisits,
+          registered: allUsers.length,
+          converted: totalConverted,
+        },
+        waClicks,
+      });
+    } catch (e: any) {
+      console.error("[GET /api/admin/crm/stats]", e.message);
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // CRM leads list (all users with UTM data)
+  app.get("/api/admin/crm/leads", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const result = await db.execute(sql`
+        SELECT u.id, u.name, u.email, u.phone, u.role, u.plan_key, u.plan_id,
+               u.created_at, u.access_expires_at, u.approved,
+               u.utm_source, u.utm_medium, u.utm_campaign, u.utm_content, u.utm_term,
+               u.lead_source, u.converted_at, u.landing_page,
+               u.trial_started_at, u.plan_amount_paid,
+               p.name as plan_name
+        FROM users u
+        LEFT JOIN plans p ON u.plan_id = p.id
+        WHERE u.role IN ('trial', 'student')
+        ORDER BY u.created_at DESC
+      `);
+      const leads = (result as any).rows || [];
+      return res.json(leads);
+    } catch (e: any) {
+      console.error("[GET /api/admin/crm/leads]", e.message);
+      return res.status(500).json({ message: "Erro interno" });
     }
   });
 
