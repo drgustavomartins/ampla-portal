@@ -278,6 +278,7 @@ function computeLeadSource(utmSource?: string | null): string {
   if (src === "whatsapp" || src === "wa") return "WhatsApp";
   if (src === "google") return "Google";
   if (src === "referral" || src === "indicacao") return "Indicação";
+  if (src === "quiz" || src === "questionario") return "Questionário";
   return "Direto";
 }
 
@@ -356,7 +357,9 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`CREATE TABLE IF NOT EXISTS community_comments (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, post_id INTEGER, lesson_id INTEGER, parent_comment_id INTEGER, content TEXT NOT NULL, likes_count INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)`).catch(() => {});
     await db.execute(`CREATE TABLE IF NOT EXISTS community_likes (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, post_id INTEGER, comment_id INTEGER, created_at TEXT NOT NULL, UNIQUE(user_id, post_id), UNIQUE(user_id, comment_id))`).catch(() => {});
     await db.execute(`CREATE TABLE IF NOT EXISTS credit_requests (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, action_type TEXT NOT NULL, reference_type TEXT NOT NULL, reference_id INTEGER NOT NULL, amount INTEGER NOT NULL DEFAULT 5000, status TEXT NOT NULL DEFAULT 'pending', admin_note TEXT, created_at TEXT NOT NULL, reviewed_at TEXT, reviewed_by INTEGER)`).catch(() => {});
-    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts, community tables ensured");
+    // Lead Events (CRM activity timeline)
+    await db.execute(`CREATE TABLE IF NOT EXISTS lead_events (id SERIAL PRIMARY KEY, user_id INTEGER, quiz_lead_id INTEGER, event_type TEXT NOT NULL, event_description TEXT NOT NULL, metadata TEXT, created_at TEXT NOT NULL)`).catch(() => {});
+    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts, community, lead_events tables ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
@@ -965,16 +968,28 @@ export async function registerRoutes(server: Server, app: Express) {
 
       // Salvar lead do quiz (upsert por email - 1 registro por pessoa, resultado final sobrescreve parcial)
       const existing_lead = await db.execute(sql`SELECT id, resultado FROM quiz_leads WHERE email = ${email} LIMIT 1`);
+      let quizLeadId: number | null = null;
       if (existing_lead.rows.length === 0) {
         // Novo lead (parcial ou final)
-        await db.execute(sql`INSERT INTO quiz_leads (nome, email, whatsapp, resultado, respostas, created_at)
-           VALUES (${nome}, ${email}, ${whatsapp}, ${resultado}, ${JSON.stringify(respostas || {})}, ${new Date().toISOString()})`);
+        const qlInsert = await db.execute(sql`INSERT INTO quiz_leads (nome, email, whatsapp, resultado, respostas, created_at)
+           VALUES (${nome}, ${email}, ${whatsapp}, ${resultado}, ${JSON.stringify(respostas || {})}, ${new Date().toISOString()}) RETURNING id`);
+        quizLeadId = (qlInsert.rows[0]?.id as number) ?? null;
       } else {
         // Lead existente: atualizar com resultado final (nunca regredir de final para parcial)
         const lid = existing_lead.rows[0].id as number;
+        quizLeadId = lid;
         const currentResult = existing_lead.rows[0].resultado as string;
         if (currentResult === "parcial" || resultado !== "parcial") {
           await db.execute(sql`UPDATE quiz_leads SET nome = ${nome}, whatsapp = ${whatsapp}, resultado = ${resultado}, respostas = ${JSON.stringify(respostas || {})} WHERE id = ${lid}`);
+        }
+      }
+
+      // Log quiz event for the quiz_lead (for leads who haven't registered yet)
+      if (quizLeadId && resultado !== "parcial") {
+        const existingUser = await db.execute(sql`SELECT id FROM users WHERE email = ${email} LIMIT 1`);
+        if (existingUser.rows.length === 0) {
+          await db.execute(sql`INSERT INTO lead_events (quiz_lead_id, event_type, event_description, metadata, created_at)
+            VALUES (${quizLeadId}, 'quiz_completo', ${'Completou questionário: ' + (resultado === 'vip' ? 'Mentoria VIP' : resultado === 'observador' ? 'Plano Observador' : 'Acesso Digital')}, ${JSON.stringify({ resultado, respostas: respostas || {} })}, ${new Date().toISOString()})`).catch(() => {});
         }
       }
 
@@ -995,14 +1010,26 @@ export async function registerRoutes(server: Server, app: Express) {
           const trialExpiry = new Date(Date.now() + 7 * 86400000).toISOString();
 
           const now = new Date().toISOString();
-          const inserted = await db.execute(sql`INSERT INTO users (name, email, phone, password, role, approved, access_expires_at, materials_access, trial_started_at, created_at)
-             VALUES (${nome}, ${email}, ${sanitizePhone(whatsapp)}, ${hash}, 'trial', true, ${trialExpiry}, false, ${now}, ${now})
+          const inserted = await db.execute(sql`INSERT INTO users (name, email, phone, password, role, approved, access_expires_at, materials_access, trial_started_at, created_at, lead_source)
+             VALUES (${nome}, ${email}, ${sanitizePhone(whatsapp)}, ${hash}, 'trial', true, ${trialExpiry}, false, ${now}, ${now}, 'Questionário')
              RETURNING id`);
           userId = (inserted.rows[0]?.id as number) ?? null;
           isNew = true;
           console.log(`[quiz] Trial criado automaticamente para ${email} (userId: ${userId})`);
+
+          // Log lead events for new quiz-created users
+          if (userId) {
+            await db.execute(sql`INSERT INTO lead_events (user_id, event_type, event_description, metadata, created_at)
+              VALUES (${userId}, 'cadastro', ${'Cadastrou via Questionário'}, ${JSON.stringify({ source: 'quiz', resultado })}, ${now})`).catch(() => {});
+            await db.execute(sql`INSERT INTO lead_events (user_id, event_type, event_description, metadata, created_at)
+              VALUES (${userId}, 'quiz_completo', ${'Completou questionário: ' + (resultado === 'vip' ? 'Mentoria VIP' : resultado === 'observador' ? 'Plano Observador' : 'Acesso Digital')}, ${JSON.stringify({ resultado, respostas: respostas || {} })}, ${now})`).catch(() => {});
+            await db.execute(sql`INSERT INTO lead_events (user_id, event_type, event_description, metadata, created_at)
+              VALUES (${userId}, 'trial_inicio', ${'Iniciou Trial (7 dias)'}, ${JSON.stringify({ source: 'quiz' })}, ${now})`).catch(() => {});
+          }
         } else {
           userId = (existing.rows[0].id as number) ?? null;
+          // Update lead_source to "Questionário" if not already set
+          await db.execute(sql`UPDATE users SET lead_source = 'Questionário' WHERE id = ${userId} AND (lead_source IS NULL OR lead_source = 'Direto')`).catch(() => {});
           console.log(`[quiz] Usuário já existe: ${email}`);
         }
 
@@ -1365,6 +1392,15 @@ export async function registerRoutes(server: Server, app: Express) {
       // Issue JWT so frontend can log in immediately without a second request
       const token = jwt.sign({ userId: user.id, role: "trial" }, JWT_SECRET, { expiresIn: "7d" });
       res.cookie("ampla_token", token, { httpOnly: true, secure: true, sameSite: "none", maxAge: 30 * 24 * 60 * 60 * 1000 });
+
+      // Log lead events for registration
+      try {
+        const { db: evDb } = await import("./db");
+        await evDb.execute(sql`INSERT INTO lead_events (user_id, event_type, event_description, metadata, created_at)
+          VALUES (${user.id}, 'cadastro', ${'Cadastrou na plataforma via ' + leadSource}, ${JSON.stringify({ source: leadSource, utm_source: data.utm_source })}, ${now})`);
+        await evDb.execute(sql`INSERT INTO lead_events (user_id, event_type, event_description, metadata, created_at)
+          VALUES (${user.id}, 'trial_inicio', 'Iniciou Trial (7 dias)', ${JSON.stringify({ source: 'registration' })}, ${now})`);
+      } catch {} // non-blocking
 
       // Send welcome email and notify admin (non-blocking)
       sendWelcomeEmail({ name: user.name, email: user.email });
@@ -1946,6 +1982,12 @@ export async function registerRoutes(server: Server, app: Express) {
     const { password, ...safe } = updated;
     const admin = await storage.getUser(auth.userId);
     await logAction(auth.userId, admin?.name || "Admin", "student_approved", "student", user.id, user.name, { planId: effectivePlanId, planName: plan?.name });
+    // Log lead event for conversion
+    try {
+      const { db: evDb } = await import("./db");
+      await evDb.execute(sql`INSERT INTO lead_events (user_id, event_type, event_description, metadata, created_at)
+        VALUES (${user.id}, 'convertido', ${'Convertido para ' + (plan?.name || 'Aluno Pagante') + ' por ' + (admin?.name || 'Admin')}, ${JSON.stringify({ planId: effectivePlanId, planName: plan?.name, adminId: auth.userId })}, ${new Date().toISOString()})`);
+    } catch {} // non-blocking
     res.json(safe);
   });
 
@@ -4656,7 +4698,7 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
       const conversionRate = totalTrialEver > 0 ? Math.round((totalConverted / totalTrialEver) * 100) : 0;
 
       // Source performance (aggregate table)
-      const sources = ["Instagram", "Meta Ads", "WhatsApp", "Google", "Indicação", "Direto"];
+      const sources = ["Instagram", "Meta Ads", "WhatsApp", "Google", "Indicação", "Questionário", "Direto"];
       const sourcePerformance = sources.map(src => {
         const leads = allUsers.filter((u: any) => (u.lead_source || "Direto") === src);
         const converted = leads.filter((u: any) => u.converted_at || (u.role === "student" && u.plan_key));
@@ -4724,6 +4766,302 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
       return res.json(leads);
     } catch (e: any) {
       console.error("[GET /api/admin/crm/leads]", e.message);
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ==================== CRM PIPELINE ENDPOINTS ====================
+
+  // GET /api/admin/crm/pipeline — unified pipeline view with all stages
+  app.get("/api/admin/crm/pipeline", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const now = new Date().toISOString();
+
+      // Get all users (trial + student)
+      const usersResult = await db.execute(sql`
+        SELECT u.id, u.name, u.email, u.phone, u.role, u.plan_key, u.plan_id,
+               u.created_at, u.access_expires_at, u.approved,
+               u.lead_source, u.trial_started_at, u.converted_at,
+               u.plan_amount_paid, p.name as plan_name
+        FROM users u
+        LEFT JOIN plans p ON u.plan_id = p.id
+        WHERE u.role IN ('trial', 'student')
+        ORDER BY u.created_at DESC
+      `);
+      const allUsers = (usersResult as any).rows || [];
+
+      // Get quiz leads
+      const quizResult = await db.execute(sql`SELECT * FROM quiz_leads ORDER BY created_at DESC`);
+      const quizLeads = (quizResult as any).rows || [];
+
+      // Cross-reference: find quiz leads that have NOT registered
+      const registeredEmails = new Set(allUsers.map((u: any) => u.email.toLowerCase()));
+
+      // Build pipeline stages
+      const pipeline: Record<string, any[]> = {
+        novo_lead: [],
+        quiz_completo: [],
+        trial_ativo: [],
+        trial_expirado: [],
+        aluno_pagante: [],
+        expirado: [],
+      };
+
+      // Classify users into stages
+      for (const u of allUsers) {
+        const isTrialRole = u.role === "trial";
+        const isStudentRole = u.role === "student";
+        const expiresAt = u.access_expires_at ? new Date(u.access_expires_at) : null;
+        const isExpired = expiresAt ? expiresAt < new Date() : false;
+        const hasPlan = !!u.plan_key;
+        const isApproved = u.approved;
+
+        // Find matching quiz lead data
+        const ql = quizLeads.find((q: any) => q.email.toLowerCase() === u.email.toLowerCase());
+        const userData = {
+          ...u,
+          quiz_resultado: ql?.resultado || null,
+          quiz_respostas: ql?.respostas || null,
+          days_in_stage: Math.ceil((Date.now() - new Date(u.created_at).getTime()) / 86400000),
+        };
+
+        if (isStudentRole && hasPlan && isApproved) {
+          if (isExpired) {
+            pipeline.expirado.push(userData);
+          } else {
+            pipeline.aluno_pagante.push(userData);
+          }
+        } else if (isTrialRole) {
+          if (isExpired) {
+            pipeline.trial_expirado.push(userData);
+          } else {
+            pipeline.trial_ativo.push(userData);
+          }
+        } else {
+          // No plan, not trial — "Novo Lead" (registered but no trial)
+          pipeline.novo_lead.push(userData);
+        }
+      }
+
+      // Quiz leads without user accounts
+      for (const ql of quizLeads) {
+        if (!registeredEmails.has(ql.email.toLowerCase())) {
+          const quizData = {
+            id: `ql_${ql.id}`,
+            quiz_lead_id: ql.id,
+            name: ql.nome,
+            email: ql.email,
+            phone: ql.whatsapp,
+            role: null,
+            lead_source: "Questionário",
+            created_at: ql.created_at,
+            quiz_resultado: ql.resultado,
+            quiz_respostas: ql.respostas,
+            days_in_stage: Math.ceil((Date.now() - new Date(ql.created_at).getTime()) / 86400000),
+          };
+          if (ql.resultado && ql.resultado !== "parcial") {
+            pipeline.quiz_completo.push(quizData);
+          } else {
+            pipeline.novo_lead.push(quizData);
+          }
+        }
+      }
+
+      return res.json(pipeline);
+    } catch (e: any) {
+      console.error("[GET /api/admin/crm/pipeline]", e.message);
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // POST /api/admin/crm/pipeline/move — move a lead between stages
+  app.post("/api/admin/crm/pipeline/move", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const { userId, targetStage } = req.body;
+      if (!userId || !targetStage) return res.status(400).json({ message: "userId and targetStage required" });
+
+      const now = new Date().toISOString();
+      const adminId = (req as any).user?.id || 0;
+      const adminName = (req as any).user?.name || "Admin";
+
+      if (targetStage === "trial_ativo") {
+        // Convert to trial: set role=trial, approved=true, 7-day expiry
+        const trialExpiry = new Date(Date.now() + 7 * 86400000).toISOString();
+        await db.execute(sql`UPDATE users SET role = 'trial', approved = true, access_expires_at = ${trialExpiry}, trial_started_at = ${now} WHERE id = ${userId}`);
+        await db.execute(sql`INSERT INTO lead_events (user_id, event_type, event_description, metadata, created_at)
+          VALUES (${userId}, 'trial_inicio', 'Iniciou Trial (7 dias)', ${JSON.stringify({ adminId, action: 'pipeline_move' })}, ${now})`).catch(() => {});
+      } else if (targetStage === "aluno_pagante") {
+        // Convert to paid student
+        await db.execute(sql`UPDATE users SET role = 'student', approved = true, converted_at = ${now} WHERE id = ${userId}`);
+        await db.execute(sql`INSERT INTO lead_events (user_id, event_type, event_description, metadata, created_at)
+          VALUES (${userId}, 'convertido', ${'Convertido para Aluno Pagante por ' + adminName}, ${JSON.stringify({ adminId, action: 'pipeline_move' })}, ${now})`).catch(() => {});
+      }
+
+      return res.json({ ok: true });
+    } catch (e: any) {
+      console.error("[POST /api/admin/crm/pipeline/move]", e.message);
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ==================== CRM LEAD EVENTS / TIMELINE ENDPOINTS ====================
+
+  // GET /api/admin/crm/leads/:id/events — activity timeline for a lead
+  app.get("/api/admin/crm/leads/:id/events", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const leadId = parseInt(req.params.id);
+      if (isNaN(leadId)) return res.status(400).json({ message: "Invalid ID" });
+
+      const events = await db.execute(sql`
+        SELECT * FROM lead_events
+        WHERE user_id = ${leadId}
+        ORDER BY created_at DESC
+      `);
+
+      return res.json((events as any).rows || []);
+    } catch (e: any) {
+      console.error("[GET /api/admin/crm/leads/:id/events]", e.message);
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // GET /api/admin/crm/leads/:id/detail — full lead detail including quiz answers
+  app.get("/api/admin/crm/leads/:id/detail", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const leadId = parseInt(req.params.id);
+      if (isNaN(leadId)) return res.status(400).json({ message: "Invalid ID" });
+
+      // Get user data
+      const userResult = await db.execute(sql`
+        SELECT u.*, p.name as plan_name
+        FROM users u
+        LEFT JOIN plans p ON u.plan_id = p.id
+        WHERE u.id = ${leadId}
+      `);
+      if (!((userResult as any).rows?.length > 0)) {
+        return res.status(404).json({ message: "Lead não encontrado" });
+      }
+      const user = (userResult as any).rows[0];
+
+      // Get quiz data if available
+      const quizResult = await db.execute(sql`
+        SELECT * FROM quiz_leads WHERE email = ${user.email} LIMIT 1
+      `);
+      const quizData = (quizResult as any).rows?.[0] || null;
+
+      // Get events
+      const eventsResult = await db.execute(sql`
+        SELECT * FROM lead_events WHERE user_id = ${leadId} ORDER BY created_at DESC
+      `);
+
+      return res.json({
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          plan_key: user.plan_key,
+          plan_name: user.plan_name,
+          created_at: user.created_at,
+          access_expires_at: user.access_expires_at,
+          approved: user.approved,
+          lead_source: user.lead_source,
+          utm_source: user.utm_source,
+          utm_medium: user.utm_medium,
+          utm_campaign: user.utm_campaign,
+          trial_started_at: user.trial_started_at,
+          converted_at: user.converted_at,
+          plan_amount_paid: user.plan_amount_paid,
+          landing_page: user.landing_page,
+        },
+        quiz: quizData,
+        events: (eventsResult as any).rows || [],
+      });
+    } catch (e: any) {
+      console.error("[GET /api/admin/crm/leads/:id/detail]", e.message);
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // GET /api/admin/crm/quiz-leads/:id/detail — detail for quiz-only leads (not registered)
+  app.get("/api/admin/crm/quiz-leads/:id/detail", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const quizId = parseInt(req.params.id);
+      if (isNaN(quizId)) return res.status(400).json({ message: "Invalid ID" });
+
+      const quizResult = await db.execute(sql`SELECT * FROM quiz_leads WHERE id = ${quizId}`);
+      if (!((quizResult as any).rows?.length > 0)) {
+        return res.status(404).json({ message: "Quiz lead não encontrado" });
+      }
+      const quiz = (quizResult as any).rows[0];
+
+      // Get events for this quiz lead
+      const eventsResult = await db.execute(sql`
+        SELECT * FROM lead_events WHERE quiz_lead_id = ${quizId} ORDER BY created_at DESC
+      `);
+
+      return res.json({
+        user: null,
+        quiz,
+        events: (eventsResult as any).rows || [],
+      });
+    } catch (e: any) {
+      console.error("[GET /api/admin/crm/quiz-leads/:id/detail]", e.message);
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // POST /api/admin/crm/leads/:id/note — add admin note to timeline
+  app.post("/api/admin/crm/leads/:id/note", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const leadId = parseInt(req.params.id);
+      const { note } = req.body;
+      if (isNaN(leadId) || !note?.trim()) return res.status(400).json({ message: "ID and note required" });
+
+      const adminName = (req as any).user?.name || "Admin";
+      const now = new Date().toISOString();
+
+      await db.execute(sql`INSERT INTO lead_events (user_id, event_type, event_description, metadata, created_at)
+        VALUES (${leadId}, 'nota_admin', ${note.trim()}, ${JSON.stringify({ admin: adminName })}, ${now})`);
+
+      return res.json({ ok: true });
+    } catch (e: any) {
+      console.error("[POST /api/admin/crm/leads/:id/note]", e.message);
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // POST /api/admin/crm/quiz-leads/:id/note — add admin note for quiz-only lead
+  app.post("/api/admin/crm/quiz-leads/:id/note", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const quizId = parseInt(req.params.id);
+      const { note } = req.body;
+      if (isNaN(quizId) || !note?.trim()) return res.status(400).json({ message: "ID and note required" });
+
+      const adminName = (req as any).user?.name || "Admin";
+      const now = new Date().toISOString();
+
+      await db.execute(sql`INSERT INTO lead_events (quiz_lead_id, event_type, event_description, metadata, created_at)
+        VALUES (${quizId}, 'nota_admin', ${note.trim()}, ${JSON.stringify({ admin: adminName })}, ${now})`);
+
+      return res.json({ ok: true });
+    } catch (e: any) {
+      console.error("[POST /api/admin/crm/quiz-leads/:id/note]", e.message);
       return res.status(500).json({ message: "Erro interno" });
     }
   });
