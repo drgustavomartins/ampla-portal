@@ -31,7 +31,8 @@ import {
   Sparkles, MessageCircle, Phone, Coins, Gift, Stethoscope, FileSignature, AlertTriangle, PenLine,
   TrendingUp, BarChart3, Zap, Menu, ChevronRight, Instagram
 } from "lucide-react";
-import { handlePhoneInput, formatPhoneDisplay, stripPhone } from "@/lib/phone";
+import { formatPhoneDisplay, stripPhone } from "@/lib/phone";
+import { PhoneInput } from "@/components/PhoneInput";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, TouchSensor,
   useSensor, useSensors, DragOverlay, type DragEndEvent, type DragStartEvent
@@ -2343,7 +2344,7 @@ export default function AdminDashboard() {
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                           <Phone className="w-3 h-3" /> Telefone
                         </Label>
-                        <Input type="tel" placeholder="+55 (21) 99999-9999" value={formatPhoneDisplay(editStudentForm.phone)} onChange={e => { const { raw } = handlePhoneInput(e.target.value); setEditStudentForm(f => ({ ...f, phone: raw })); }} className="bg-background/50 border-border/40" />
+                        <PhoneInput value={editStudentForm.phone} onChange={(raw) => setEditStudentForm(f => ({ ...f, phone: raw }))} />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground">Instagram</Label>
@@ -4329,7 +4330,7 @@ export default function AdminDashboard() {
                       <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Nome</Label><Input value={adminForm.name} onChange={e => setAdminForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex: Amanda Silva" className="bg-background/50 border-border/40" /></div>
                       <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Email</Label><Input type="email" value={adminForm.email} onChange={e => setAdminForm(f => ({ ...f, email: e.target.value }))} placeholder="admin@exemplo.com" className="bg-background/50 border-border/40" /></div>
                       <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Senha</Label><Input type="password" value={adminForm.password} onChange={e => setAdminForm(f => ({ ...f, password: e.target.value }))} placeholder="Mínimo 6 caracteres" className="bg-background/50 border-border/40" /></div>
-                      <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><Phone className="w-3 h-3" /> Telefone (opcional)</Label><Input type="tel" value={formatPhoneDisplay(adminForm.phone)} onChange={e => { const { raw } = handlePhoneInput(e.target.value); setAdminForm(f => ({ ...f, phone: raw })); }} placeholder="+55 (21) 99999-9999" className="bg-background/50 border-border/40" /></div>
+                      <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><Phone className="w-3 h-3" /> Telefone (opcional)</Label><PhoneInput value={adminForm.phone} onChange={(raw) => setAdminForm(f => ({ ...f, phone: raw }))} /></div>
                       <div className="rounded-md bg-gold/5 border border-gold/20 p-3 text-xs text-muted-foreground space-y-1">
                         <p className="font-medium text-gold">Permissões do admin secundário:</p>
                         <p>- Gerenciar alunos (converter, editar, renovar)</p>

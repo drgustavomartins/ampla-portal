@@ -234,10 +234,38 @@ function sanitize(val: any): string {
   return val.trim().slice(0, 500);
 }
 
-// Strip phone to raw digits only (e.g. "+55 (21) 97626-3881" → "5521976263881")
+// Known international dialing codes (sorted longest first for matching)
+const KNOWN_COUNTRY_CODES = ["351", "595", "598", "55", "54", "57", "56", "52", "34", "39", "81", "1"];
+
+// Strip phone to raw digits. Accepts international country codes.
+// For ambiguous numbers (10-11 digits without a recognized prefix),
+// assumes Brazilian and prepends 55 — since most users are Brazilian.
 function sanitizePhone(val: any): string {
   if (typeof val !== "string") return "";
-  return val.replace(/\D/g, "").slice(0, 14);
+  let digits = val.replace(/\D/g, "");
+  if (!digits) return "";
+
+  // Check if it already starts with a known country code
+  const hasKnownPrefix = KNOWN_COUNTRY_CODES.some(cc => digits.startsWith(cc) && digits.length >= cc.length + 7);
+  if (hasKnownPrefix) {
+    return digits.slice(0, 15); // max 15 digits per E.164
+  }
+
+  // Starts with 0 (old Brazilian trunk dialing): strip 0, prepend 55
+  if (digits.startsWith("0") && digits.length >= 11) {
+    digits = "55" + digits.slice(1);
+    return digits.slice(0, 15);
+  }
+
+  // 10-11 digits without a known prefix — assume Brazilian DDD
+  if (digits.length >= 10 && digits.length <= 11) {
+    const ddd = parseInt(digits.slice(0, 2), 10);
+    if (ddd >= 11 && ddd <= 99) {
+      digits = "55" + digits;
+    }
+  }
+
+  return digits.slice(0, 15);
 }
 
 export async function registerRoutes(server: Server, app: Express) {
@@ -347,6 +375,40 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   } catch (e: any) {
     console.error("[auto-migrate] rename_experiencia_to_trial failed:", e.message);
+  }
+
+  // Migration: fix phone numbers missing the +55 Brazilian country code
+  try {
+    const { db } = await import("./db");
+    const migName = 'fix_phone_55_prefix';
+    const alreadyApplied = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migName} LIMIT 1`);
+    if (!((alreadyApplied as any).rows?.length > 0)) {
+      // Fix users.phone: 10-11 digit numbers without 55 prefix (Brazilian DDDs 11-99)
+      // These are area codes that were mistakenly stored without the country code.
+      // E.g. "21976641728" (11 digits) → "5521976641728" (13 digits)
+      await db.execute(sql`UPDATE users SET phone = '55' || phone
+        WHERE phone IS NOT NULL
+        AND phone ~ '^[0-9]+$'
+        AND length(phone) >= 10 AND length(phone) <= 11
+        AND NOT phone LIKE '55%'
+        AND CAST(substring(phone from 1 for 2) AS INTEGER) BETWEEN 11 AND 99`);
+      // Also fix numbers that start with 0 (old trunk prefix): 021... → 5521...
+      await db.execute(sql`UPDATE users SET phone = '55' || substring(phone from 2)
+        WHERE phone IS NOT NULL
+        AND phone ~ '^0[0-9]+$'
+        AND length(phone) >= 11 AND length(phone) <= 12`);
+      // Fix quiz_leads.whatsapp with same logic
+      await db.execute(sql`UPDATE quiz_leads SET whatsapp = '55' || whatsapp
+        WHERE whatsapp IS NOT NULL
+        AND whatsapp ~ '^[0-9]+$'
+        AND length(whatsapp) >= 10 AND length(whatsapp) <= 11
+        AND NOT whatsapp LIKE '55%'
+        AND CAST(substring(whatsapp from 1 for 2) AS INTEGER) BETWEEN 11 AND 99`).catch(() => {});
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migName}, ${new Date().toISOString()})`);
+      console.log("[auto-migrate] fix_phone_55_prefix applied");
+    }
+  } catch (e: any) {
+    console.error("[auto-migrate] fix_phone_55_prefix failed:", e.message);
   }
 
   // ==================== ONE-TIME: Grant all materials access to existing users ====================
@@ -910,7 +972,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
           const now = new Date().toISOString();
           const inserted = await db.execute(sql`INSERT INTO users (name, email, phone, password, role, approved, access_expires_at, materials_access, trial_started_at, created_at)
-             VALUES (${nome}, ${email}, ${whatsapp}, ${hash}, 'trial', true, ${trialExpiry}, false, ${now}, ${now})
+             VALUES (${nome}, ${email}, ${sanitizePhone(whatsapp)}, ${hash}, 'trial', true, ${trialExpiry}, false, ${now}, ${now})
              RETURNING id`);
           userId = (inserted.rows[0]?.id as number) ?? null;
           isNew = true;
@@ -4413,7 +4475,7 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
       await db.execute(sql`
         UPDATE users SET
           name = COALESCE(${name || null}, name),
-          phone = COALESCE(${phone || null}, phone),
+          phone = COALESCE(${phone ? sanitizePhone(phone) : null}, phone),
           username = ${username !== undefined ? (username || null) : null},
           avatar_url = ${avatarUrl !== undefined ? (avatarUrl || null) : null},
           instagram = ${normalizedInstagram !== undefined ? (normalizedInstagram || null) : null}

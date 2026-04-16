@@ -196,7 +196,7 @@ export const insertMaterialFileSchema = createInsertSchema(materialFiles).omit({
 export const registerSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("Email inválido"),
-  phone: z.string().min(12, "Telefone inválido — informe com DDD").max(14, "Telefone inválido"),
+  phone: z.string().min(8, "Telefone inválido").max(15, "Telefone inválido"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   instagram: z.string().optional().default(""),
 });
@@ -205,7 +205,7 @@ export const registerSchema = z.object({
 export const trialRegisterSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("Email inválido"),
-  phone: z.string().min(12, "Telefone é obrigatório — informe com DDD").max(14, "Telefone inválido"),
+  phone: z.string().min(8, "Telefone é obrigatório").max(15, "Telefone inválido"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   instagram: z.string().optional().default(""),
   lgpdAccepted: z.boolean().refine((v) => v === true, "Você precisa aceitar os termos para continuar"),
