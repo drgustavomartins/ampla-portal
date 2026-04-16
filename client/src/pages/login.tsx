@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, trialRegisterSchema } from "@shared/schema";
@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Sparkles, Eye, EyeOff, CheckCircle2, Star, Users, Clock, Play, ArrowRight, Camera, Instagram, Phone } from "lucide-react";
 import { PhoneInput } from "@/components/PhoneInput";
 import { trackEvent } from "@/lib/funnel";
+import { captureUtmParams, getUtmData } from "@/lib/utm";
 import type { z } from "zod";
 
 // #33 — Humaniza erros de API em mensagens amigáveis
@@ -62,6 +63,9 @@ export default function LoginPage() {
   const { login } = useAuth();
   const { toast } = useToast();
 
+  // Capture UTM params on login/register page load
+  useEffect(() => { captureUtmParams(); }, []);
+
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
@@ -92,7 +96,8 @@ export default function LoginPage() {
   // #32 + #36 — Trial unificado: cadastro + login automático
   const trialMutation = useMutation({
     mutationFn: async (data: z.infer<typeof trialRegisterSchema>) => {
-      const res = await apiRequest("POST", "/api/auth/register-trial", data);
+      const utm = getUtmData();
+      const res = await apiRequest("POST", "/api/auth/register-trial", { ...data, ...utm });
       return res.json();
     },
     onSuccess: async (data) => {

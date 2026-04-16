@@ -1,4 +1,5 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
+import { captureUtmParams, trackWhatsAppClick } from "@/lib/utm";
 import {
   ShieldAlert,
   Puzzle,
@@ -123,6 +124,11 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  /* capture UTM params on LP load */
+  useEffect(() => {
+    captureUtmParams();
+  }, []);
+
   /* set page title */
   useEffect(() => {
     document.title = "Formação em Harmonização Orofacial | Ampla Facial";
@@ -218,6 +224,7 @@ export default function LandingPage() {
               href={WA_FREE_LESSON}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackWhatsAppClick("lp")}
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-white font-semibold text-sm"
               style={{ backgroundColor: '#25D366' }}
             >
@@ -432,6 +439,7 @@ export default function LandingPage() {
               href={WA_LINK}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackWhatsAppClick("lp")}
               className="inline-flex items-center justify-center gap-2 bg-[#25D366] text-white font-semibold text-sm px-8 py-3.5 rounded-xl hover:opacity-90 transition-opacity w-full"
             >
               <WhatsAppIcon className="w-5 h-5" />
@@ -458,6 +466,7 @@ export default function LandingPage() {
               href={WA_FREE_LESSON}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackWhatsAppClick("lp")}
               className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-base"
               style={{ backgroundColor: '#25D366' }}
             >
@@ -813,6 +822,7 @@ export default function LandingPage() {
               href={WA_LINK}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackWhatsAppClick("lp")}
               className="inline-flex items-center justify-center gap-2 bg-[#25D366] text-white font-semibold text-sm px-8 py-3.5 rounded-xl hover:opacity-90 transition-opacity w-full"
             >
               <WhatsAppIcon className="w-5 h-5" />
@@ -888,6 +898,7 @@ export default function LandingPage() {
               href={WA_LINK}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackWhatsAppClick("lp")}
               className="hover:text-gray-300 transition-colors flex items-center gap-1"
             >
               <WhatsAppIcon className="w-3.5 h-3.5" />
@@ -919,6 +930,7 @@ export default function LandingPage() {
         href={WA_LINK}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => trackWhatsAppClick("lp")}
         className="fixed bottom-5 right-5 z-50 w-14 h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
         aria-label="WhatsApp"
       >

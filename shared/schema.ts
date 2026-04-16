@@ -72,6 +72,15 @@ export const users = pgTable("users", {
   username: text("username"),
   instagram: text("instagram"),
   moduleContentExpiresAt: text("module_content_expires_at"),
+  // UTM tracking fields
+  utmSource: text("utm_source"),
+  utmMedium: text("utm_medium"),
+  utmCampaign: text("utm_campaign"),
+  utmContent: text("utm_content"),
+  utmTerm: text("utm_term"),
+  leadSource: text("lead_source"), // "Instagram", "Meta Ads", "WhatsApp", "Google", "Indicação", "Direto"
+  convertedAt: text("converted_at"), // ISO date when trial → paid
+  landingPage: text("landing_page"), // first page visited
 });
 
 // Modules
@@ -179,6 +188,16 @@ export const auditLogs = pgTable("audit_logs", {
   createdAt: text("created_at").notNull(),
 });
 
+// Tracking Events (WhatsApp clicks, etc.)
+export const trackingEvents = pgTable("tracking_events", {
+  id: serial("id").primaryKey(),
+  eventType: text("event_type").notNull(), // "whatsapp_click"
+  sourcePage: text("source_page"), // "lp", "admin", etc.
+  utmSource: text("utm_source"),
+  metadata: text("metadata"), // JSON string for extra data
+  createdAt: text("created_at").notNull(),
+});
+
 // Insert schemas
 export const insertPlanSchema = createInsertSchema(plans).omit({ id: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, approved: true, role: true, accessExpiresAt: true });
@@ -193,13 +212,24 @@ export const insertMaterialThemeSchema = createInsertSchema(materialThemes).omit
 export const insertMaterialSubcategorySchema = createInsertSchema(materialSubcategories).omit({ id: true });
 export const insertMaterialFileSchema = createInsertSchema(materialFiles).omit({ id: true });
 
+// UTM data schema (shared between register and register-trial)
+const utmSchema = z.object({
+  utm_source: z.string().optional(),
+  utm_medium: z.string().optional(),
+  utm_campaign: z.string().optional(),
+  utm_content: z.string().optional(),
+  utm_term: z.string().optional(),
+  lead_source: z.string().optional(),
+  landing_page: z.string().optional(),
+}).partial();
+
 export const registerSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("Email inválido"),
   phone: z.string().min(8, "Telefone inválido").max(15, "Telefone inválido"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   instagram: z.string().optional().default(""),
-});
+}).merge(utmSchema);
 
 // Trial registration — phone is now required
 export const trialRegisterSchema = z.object({
@@ -209,7 +239,7 @@ export const trialRegisterSchema = z.object({
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   instagram: z.string().optional().default(""),
   lgpdAccepted: z.boolean().refine((v) => v === true, "Você precisa aceitar os termos para continuar"),
-});
+}).merge(utmSchema);
 
 export const loginSchema = z.object({
   email: z.string().email("Email inválido"),
