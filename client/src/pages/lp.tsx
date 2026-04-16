@@ -100,9 +100,27 @@ const WA_LINK =
 
 export default function LandingPage() {
   const plansRef = useRef<HTMLDivElement>(null);
+  const freeLessonRef = useRef<HTMLDivElement>(null);
+  const [scrollIndicatorVisible, setScrollIndicatorVisible] = useState(true);
 
   const scrollToPlans = useCallback(() => {
     plansRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  const scrollToFreeLesson = useCallback(() => {
+    freeLessonRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  /* hide scroll indicator once user scrolls */
+  useEffect(() => {
+    const onScroll = () => {
+      if (window.scrollY > 80) {
+        setScrollIndicatorVisible(false);
+        window.removeEventListener("scroll", onScroll);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   /* set page title */
@@ -124,6 +142,8 @@ export default function LandingPage() {
         .lp-plan-highlight{box-shadow:0 0 0 2px #D4A843,0 8px 40px rgba(212,168,67,.18)}
         .lp-module-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.3)}
         .lp-module-card{transition:transform .25s ease,box-shadow .25s ease}
+        @keyframes lp-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+        .lp-scroll-indicator{animation:lp-bounce 2s ease-in-out infinite;transition:opacity .5s ease}
       `}</style>
 
       {/* ════════════════════════════════════════════════════════════════════
@@ -186,7 +206,7 @@ export default function LandingPage() {
           </button>
 
           {/* Free lesson CTA */}
-          <div className="mt-8 bg-[#0F1A2E] border border-[#D4A843]/30 rounded-2xl p-6 md:p-8 max-w-2xl mx-auto">
+          <div ref={freeLessonRef} className="mt-8 bg-[#0F1A2E] border border-[#D4A843]/30 rounded-2xl p-6 md:p-8 max-w-2xl mx-auto">
             <p className="lp-serif text-lg md:text-xl font-bold text-white mb-2">
               Participe de um encontro quinzenal de forma gratuita.
             </p>
@@ -206,6 +226,7 @@ export default function LandingPage() {
             </a>
           </div>
         </div>
+
       </section>
 
       {/* ════════════════════════════════════════════════════════════════════
@@ -875,6 +896,21 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* ════════════════════════════════════════════════════════════════════
+          SCROLL INDICATOR
+         ════════════════════════════════════════════════════════════════════ */}
+      <button
+        onClick={scrollToFreeLesson}
+        className="lp-scroll-indicator fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-1 cursor-pointer bg-transparent border-none outline-none"
+        style={{ opacity: scrollIndicatorVisible ? 1 : 0, pointerEvents: scrollIndicatorVisible ? "auto" : "none", color: "rgba(212,168,67,0.85)" }}
+        aria-label="Deslize para ver a aula gratuita"
+      >
+        <span className="text-[11px] md:text-xs tracking-wide whitespace-nowrap" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
+          Deslize para assistir a aula gratuita
+        </span>
+        <ChevronDown className="w-5 h-5" />
+      </button>
 
       {/* ════════════════════════════════════════════════════════════════════
           FLOATING WHATSAPP BUTTON
