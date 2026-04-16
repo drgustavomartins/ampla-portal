@@ -1649,6 +1649,17 @@ export default function AdminDashboard() {
                         <span className={`text-xs font-semibold ${daysLeft <= 7 ? 'text-red-400' : daysLeft <= 15 ? 'text-amber-400' : 'text-yellow-500'}`}>
                           {daysLeft}d restantes
                         </span>
+                        {s.phone && (
+                          <a
+                            href={`https://wa.me/${stripPhone(s.phone)}?text=${encodeURIComponent(`Oi, ${(s.name || '').split(' ')[0]}! Tudo bem? Vi que seu acesso à plataforma Ampla Facial expira em breve. Quer conversar sobre renovação?`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-green-400 hover:text-green-300 transition-colors"
+                            title="WhatsApp"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                          </a>
+                        )}
                         <button
                           className="text-xs text-gold hover:underline"
                           onClick={() => openEditStudent(s)}
