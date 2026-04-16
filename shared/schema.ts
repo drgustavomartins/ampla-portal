@@ -198,7 +198,19 @@ export const trackingEvents = pgTable("tracking_events", {
   createdAt: text("created_at").notNull(),
 });
 
+// Lead Events (CRM activity timeline)
+export const leadEvents = pgTable("lead_events", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"), // nullable for quiz-only leads
+  quizLeadId: integer("quiz_lead_id"), // nullable — links to quiz_leads for non-registered leads
+  eventType: text("event_type").notNull(), // "cadastro", "quiz_completo", "trial_inicio", "trial_expirado", "convertido", "modulo_acesso", "credito", "whatsapp_lp", "nota_admin"
+  eventDescription: text("event_description").notNull(),
+  metadata: text("metadata"), // JSON string
+  createdAt: text("created_at").notNull(),
+});
+
 // Insert schemas
+export const insertLeadEventSchema = createInsertSchema(leadEvents).omit({ id: true });
 export const insertPlanSchema = createInsertSchema(plans).omit({ id: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, approved: true, role: true, accessExpiresAt: true });
 export const insertModuleSchema = createInsertSchema(modules).omit({ id: true });
@@ -272,3 +284,5 @@ export type MaterialSubcategory = typeof materialSubcategories.$inferSelect;
 export type InsertMaterialSubcategory = z.infer<typeof insertMaterialSubcategorySchema>;
 export type MaterialFile = typeof materialFiles.$inferSelect;
 export type InsertMaterialFile = z.infer<typeof insertMaterialFileSchema>;
+export type LeadEvent = typeof leadEvents.$inferSelect;
+export type InsertLeadEvent = z.infer<typeof insertLeadEventSchema>;
