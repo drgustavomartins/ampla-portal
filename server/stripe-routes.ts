@@ -37,7 +37,7 @@ export function registerStripeRoutes(app: Express) {
   // ─── GET /api/stripe/plans ─────────────────────────────────────────────────
   // Retorna todos os planos com preços formatados para o frontend
   app.get("/api/stripe/plans", (_req: Request, res: Response) => {
-    const plans = Object.values(PLANS).map((p) => ({
+    const plans = Object.values(PLANS).filter((p) => !p.hidden).map((p) => ({
       key: p.key,
       name: p.name,
       description: p.description,
