@@ -794,9 +794,10 @@ export function registerStripeRoutes(app: Express) {
 
   // GET /api/cron/abandoned-checkout — send email to users with pending checkouts
   app.get("/api/cron/abandoned-checkout", async (req: Request, res: Response) => {
-    const cronSecret = req.headers["x-cron-secret"] || req.query.secret;
-    if (cronSecret !== (process.env.CRON_SECRET || "ampla-cron-x8k2m9p4")) {
-      return res.status(401).json({ message: "Unauthorized" });
+    const cronSecret = req.headers["x-cron-secret"];
+    const CRON_SECRET_ENV = process.env.CRON_SECRET;
+    if (!CRON_SECRET_ENV || cronSecret !== CRON_SECRET_ENV) {
+      return res.status(401).json({ message: "Não autorizado" });
     }
     try {
       const { db } = await import("./db");

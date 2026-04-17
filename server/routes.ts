@@ -831,6 +831,10 @@ export async function registerRoutes(server: Server, app: Express) {
   // POST /api/funnel/event — registrar evento do funil
   app.post("/api/funnel/event", async (req, res) => {
     try {
+      const trackIp = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
+      if (!rateLimit(`tracking:${trackIp}`, 100, 60 * 1000)) {
+        return res.status(429).json({ message: "Muitas requisições. Tente novamente em breve." });
+      }
       const { db } = await import("./db");
       const { session_id, email, event, metadata } = req.body;
       if (!session_id || !event) return res.status(400).json({ message: "session_id e event são obrigatórios" });
@@ -869,9 +873,9 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   });
 
-  // POST /api/admin/broadcast-email — envia email para todos os alunos aprovados
+  // POST /api/admin/broadcast-email — envia email para todos os alunos aprovados (super_admin only)
   app.post("/api/admin/broadcast-email", async (req, res) => {
-    const auth = requireAdmin(req, res);
+    const auth = requireSuperAdmin(req, res);
     if (!auth) return;
     try {
       const { subject, html, excludeEmails = [] } = req.body;
@@ -920,6 +924,10 @@ export async function registerRoutes(server: Server, app: Express) {
   // POST /api/quiz/click — registrar clique no banner
   app.post("/api/quiz/click", async (req, res) => {
     try {
+      const clickIp = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
+      if (!rateLimit(`tracking:${clickIp}`, 100, 60 * 1000)) {
+        return res.status(429).json({ message: "Muitas requisições. Tente novamente em breve." });
+      }
       const { db } = await import("./db");
       const source = req.body?.source || "unknown";
       const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0] || req.socket.remoteAddress || "";
@@ -1116,8 +1124,8 @@ export async function registerRoutes(server: Server, app: Express) {
   app.post("/api/cron/reengajamento-quiz", async (req, res) => {
     // Autenticacao simples via header secret
     const secret = req.headers["x-cron-secret"];
-    const CRON_SECRET = process.env.CRON_SECRET || "ampla-cron-x8k2m9p4";
-    if (secret !== CRON_SECRET) {
+    const CRON_SECRET = process.env.CRON_SECRET;
+    if (!CRON_SECRET || secret !== CRON_SECRET) {
       return res.status(401).json({ message: "Nao autorizado" });
     }
 
@@ -1336,6 +1344,7 @@ export async function registerRoutes(server: Server, app: Express) {
         approved: true,
         accessExpiresAt: accessExpires.toISOString(),
         trialStartedAt: now,
+        lgpdAcceptedAt: now,
         utmSource: data.utm_source || null,
         utmMedium: data.utm_medium || null,
         utmCampaign: data.utm_campaign || null,
@@ -1375,7 +1384,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
       // Issue JWT so frontend can log in immediately
       const token = jwt.sign({ userId: user.id, role }, JWT_SECRET, { expiresIn: inviteData ? `${inviteData.durationDays}d` : "7d" });
-      res.cookie("ampla_token", token, { httpOnly: true, secure: true, sameSite: "none", maxAge: 30 * 24 * 60 * 60 * 1000 });
+      res.cookie("ampla_token", token, { httpOnly: true, secure: true, sameSite: "strict", maxAge: 30 * 24 * 60 * 60 * 1000, path: "/" });
 
       // Send welcome email and notify admin (non-blocking)
       sendWelcomeEmail({ name: user.name, email: user.email });
@@ -1476,7 +1485,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
       // Issue JWT so frontend can log in immediately without a second request
       const token = jwt.sign({ userId: user.id, role }, JWT_SECRET, { expiresIn: inviteData ? `${inviteData.durationDays}d` : "7d" });
-      res.cookie("ampla_token", token, { httpOnly: true, secure: true, sameSite: "none", maxAge: 30 * 24 * 60 * 60 * 1000 });
+      res.cookie("ampla_token", token, { httpOnly: true, secure: true, sameSite: "strict", maxAge: 30 * 24 * 60 * 60 * 1000, path: "/" });
 
       // Link anonymous visitor to this user account
       if (data.visitor_id) {
@@ -1638,7 +1647,7 @@ export async function registerRoutes(server: Server, app: Express) {
       // Set httpOnly cookie
       res.cookie("ampla_token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: true,
         sameSite: "strict",
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         path: "/",
@@ -1668,7 +1677,7 @@ export async function registerRoutes(server: Server, app: Express) {
     const freshToken = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
     res.cookie("ampla_token", freshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
       sameSite: "strict",
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       path: "/",
@@ -1899,64 +1908,90 @@ export async function registerRoutes(server: Server, app: Express) {
   });
 
   // ==================== LESSONS ====================
-  // Helper: check if authenticated user has valid (non-expired) access
-  async function hasVideoAccess(auth: { userId: number; role: string } | null): Promise<boolean> {
-    if (!auth) return false;
-    if (auth.role === "admin" || auth.role === "super_admin") return true;
+  // Helper: determine video access level for a user.
+  // Returns { canSeeVideo: boolean, allowedLessonIds: number[] | null }
+  // allowedLessonIds = null means full access; number[] means only those IDs get videoUrl
+  async function getVideoAccessInfo(auth: { userId: number; role: string } | null): Promise<{ canSeeVideo: boolean; allowedLessonIds: number[] | null }> {
+    if (!auth) return { canSeeVideo: false, allowedLessonIds: null };
+    if (auth.role === "admin" || auth.role === "super_admin") return { canSeeVideo: true, allowedLessonIds: null };
     try {
       const { db } = await import("./db");
-      const userRow = await db.execute(sql`SELECT role, approved, access_expires_at FROM users WHERE id = ${auth.userId}`);
+      const userRow = await db.execute(sql`SELECT role, approved, access_expires_at, plan_key FROM users WHERE id = ${auth.userId}`);
       const user = (userRow as any).rows?.[0];
-      if (!user || user.approved === false) return false;
+      if (!user || user.approved === false) return { canSeeVideo: false, allowedLessonIds: null };
       if (user.access_expires_at) {
         const expires = new Date(user.access_expires_at);
-        if (new Date() > expires) return false;
+        if (new Date() > expires) return { canSeeVideo: false, allowedLessonIds: null };
       }
-      return true;
-    } catch { return false; }
+      // Workshop invite users get full access
+      if (user.plan_key === "workshop") return { canSeeVideo: true, allowedLessonIds: null };
+      // Paid plan users get full access
+      const isTester = user.plan_key === "tester" || user.role === "trial" || !user.plan_key;
+      if (!isTester && user.plan_key) return { canSeeVideo: true, allowedLessonIds: null };
+      // Trial/tester: first 2 lessons per module only
+      const lessonsResult = await db.execute(sql`SELECT id, module_id, "order" FROM lessons ORDER BY module_id, "order"`);
+      const rows = (lessonsResult as any).rows || [];
+      const moduleMap: Record<number, number[]> = {};
+      for (const l of rows) {
+        if (!moduleMap[l.module_id]) moduleMap[l.module_id] = [];
+        moduleMap[l.module_id].push(l.id);
+      }
+      const allowedIds: number[] = [];
+      for (const moduleId of Object.keys(moduleMap)) {
+        allowedIds.push(...moduleMap[Number(moduleId)].slice(0, 2));
+      }
+      return { canSeeVideo: true, allowedLessonIds: allowedIds };
+    } catch { return { canSeeVideo: false, allowedLessonIds: null }; }
+  }
+
+  // Strip videoUrl from lessons the user cannot access
+  function filterLessons(lessons: any[], canSeeVideo: boolean, allowedLessonIds: number[] | null) {
+    if (!canSeeVideo) {
+      return lessons.map(({ videoUrl, ...rest }) => rest);
+    }
+    if (allowedLessonIds !== null) {
+      const allowedSet = new Set(allowedLessonIds);
+      return lessons.map((lesson) => {
+        if (allowedSet.has(lesson.id)) return lesson;
+        const { videoUrl, ...rest } = lesson;
+        return rest;
+      });
+    }
+    return lessons;
   }
 
   app.get("/api/lessons", async (req, res) => {
     const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
     const l = await storage.getLessons();
-    const canSeeVideo = await hasVideoAccess(auth);
-    if (!canSeeVideo) {
-      res.json(l.map(({ videoUrl, ...rest }) => rest));
-    } else {
-      res.json(l);
-    }
+    const { canSeeVideo, allowedLessonIds } = await getVideoAccessInfo(auth);
+    res.json(filterLessons(l, canSeeVideo, allowedLessonIds));
   });
 
   app.get("/api/modules/:id/lessons", async (req, res) => {
     const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
     const l = await storage.getLessonsByModule(parseInt(req.params.id));
-    const canSeeVideo = await hasVideoAccess(auth);
-    if (!canSeeVideo) {
-      res.json(l.map(({ videoUrl, ...rest }) => rest));
-    } else {
-      res.json(l);
-    }
+    const { canSeeVideo, allowedLessonIds } = await getVideoAccessInfo(auth);
+    res.json(filterLessons(l, canSeeVideo, allowedLessonIds));
   });
 
   app.get("/api/lessons/:id", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
     const lesson = await storage.getLesson(parseInt(req.params.id));
     if (!lesson) return res.status(404).json({ message: "Aula não encontrada" });
-    const auth = authenticateRequest(req);
-    const canSeeVideo = await hasVideoAccess(auth);
-    if (!canSeeVideo) {
-      const { videoUrl, ...rest } = lesson;
-      res.json(rest);
-    } else {
-      res.json(lesson);
-    }
+    const { canSeeVideo, allowedLessonIds } = await getVideoAccessInfo(auth);
+    const [filtered] = filterLessons([lesson], canSeeVideo, allowedLessonIds);
+    res.json(filtered);
   });
 
   // ==================== LESSON ACCESS (tester gating) ====================
   app.get("/api/lessons/access", async (req: Request, res: Response) => {
     try {
-      const { db } = await import("./db");
       const auth = authenticateRequest(req);
       if (!auth) return res.status(401).json({ message: "Não autorizado" });
+      const { db } = await import("./db");
 
       const userResult = await db.execute(sql`SELECT role, plan_key, access_expires_at FROM users WHERE id = ${auth.userId}`);
       const user = (userResult as any).rows?.[0];
@@ -2011,7 +2046,7 @@ export async function registerRoutes(server: Server, app: Express) {
     const auth = authenticateRequest(req);
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
     const targetUserId = parseInt(req.params.userId);
-    if (auth.role === "student" && auth.userId !== targetUserId) {
+    if (auth.role !== "admin" && auth.role !== "super_admin" && auth.userId !== targetUserId) {
       return res.status(403).json({ message: "Acesso negado" });
     }
     const progress = await storage.getProgress(targetUserId);
@@ -2728,20 +2763,40 @@ export async function registerRoutes(server: Server, app: Express) {
   };
 
   app.get("/api/materials", async (req, res) => {
-    // Public endpoint — materials catalog is visible to all (files are PDFs/links, not sensitive)
+    // Materials catalog: structure is visible to authenticated users, but driveId/youtubeId
+    // only for users with active non-expired access
     try {
       const auth = authenticateRequest(req);
-      const isAdmin = auth && (auth.role === "admin" || auth.role === "super_admin");
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+      const isAdmin = auth.role === "admin" || auth.role === "super_admin";
+
+      // Determine if this user has active materials access (approved + non-expired)
+      let hasActiveAccess = isAdmin;
+      if (!isAdmin) {
+        try {
+          const { db: matDb } = await import("./db");
+          const uRow = await matDb.execute(sql`SELECT approved, access_expires_at, materials_access FROM users WHERE id = ${auth.userId}`);
+          const u = (uRow as any).rows?.[0];
+          if (u && u.approved !== false && u.materials_access !== false) {
+            if (u.access_expires_at) {
+              hasActiveAccess = new Date() <= new Date(u.access_expires_at);
+            } else {
+              hasActiveAccess = true;
+            }
+          }
+        } catch { /* default to no access */ }
+      }
+
       const allThemes = await storage.getMaterialThemes();
       const themes = isAdmin ? allThemes : allThemes.filter(t => t.visible !== false);
       const result = await Promise.all(themes.map(async (theme) => {
         const subcategories = await storage.getMaterialSubcategories(theme.id);
         const subsWithFiles = await Promise.all(subcategories.map(async (sub) => {
           const files = await storage.getMaterialFiles(sub.id);
-          // Include driveId for authenticated users (needed for view/download)
-          const sanitizedFiles = auth
+          // Only include driveId/youtubeId for users with active, non-expired access
+          const sanitizedFiles = hasActiveAccess
             ? files
-            : files.map(({ driveId: _d, ...rest }) => rest);
+            : files.map(({ driveId: _d, youtubeId: _y, ...rest }) => rest);
           return { ...sub, files: sanitizedFiles };
         }));
         const fileCount = subsWithFiles.reduce((acc, sub) => acc + sub.files.length, 0);
@@ -2947,7 +3002,7 @@ export async function registerRoutes(server: Server, app: Express) {
   });
 
   // ==================== SEED (only if empty) ====================
-  app.all("/api/admin/seed", async (req, res) => {
+  app.post("/api/admin/seed", async (req, res) => {
     if (!requireAdmin(req, res)) return;
     const existingPlans = await storage.getPlans();
     if (existingPlans.length > 0) {
@@ -2991,7 +3046,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // ==================== MIGRATE ====================
   app.post("/api/admin/migrate", async (req, res) => {
-    const migrateKey = req.headers["x-migrate-key"] || req.body?.migrateKey;
+    const migrateKey = req.headers["x-migrate-key"];
     const expectedKey = process.env.MIGRATE_KEY;
     // Auth: require either valid MIGRATE_KEY or super_admin JWT
     if (migrateKey) {
@@ -3466,9 +3521,10 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // GET /api/cron/credit-expiry-notify — notify users about expiring credits
   app.get("/api/cron/credit-expiry-notify", async (req: Request, res: Response) => {
-    const cronSecret = req.headers["x-cron-secret"] || req.query.secret;
-    if (cronSecret !== (process.env.CRON_SECRET || "ampla-cron-x8k2m9p4")) {
-      return res.status(401).json({ message: "Unauthorized" });
+    const cronSecret = req.headers["x-cron-secret"];
+    const CRON_SECRET_ENV = process.env.CRON_SECRET;
+    if (!CRON_SECRET_ENV || cronSecret !== CRON_SECRET_ENV) {
+      return res.status(401).json({ message: "Não autorizado" });
     }
     try {
       const { db } = await import("./db");
@@ -4779,6 +4835,10 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
   // ==================== TRACKING EVENTS ====================
   app.post("/api/tracking/event", async (req, res) => {
     try {
+      const trkIp = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
+      if (!rateLimit(`tracking:${trkIp}`, 100, 60 * 1000)) {
+        return res.status(429).json({ message: "Muitas requisições. Tente novamente em breve." });
+      }
       const { db } = await import("./db");
       const { event_type, source_page, utm_source, metadata } = req.body;
       if (!event_type) return res.status(400).json({ message: "event_type required" });
@@ -4797,6 +4857,10 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
   // POST /api/tracking/pagevisit — record a page visit for an anonymous or logged-in visitor
   app.post("/api/tracking/pagevisit", async (req, res) => {
     try {
+      const pvIp = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
+      if (!rateLimit(`tracking:${pvIp}`, 100, 60 * 1000)) {
+        return res.status(429).json({ message: "Muitas requisições. Tente novamente em breve." });
+      }
       const { db } = await import("./db");
       const { visitor_id, page, referrer, utm_source, utm_medium, utm_campaign, utm_content, utm_term, lead_source } = req.body;
       if (!visitor_id || !page) return res.status(400).json({ message: "visitor_id and page required" });
@@ -4825,14 +4889,16 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
     }
   });
 
-  // POST /api/tracking/link-visitor — link a visitor_id to a user_id after registration
+  // POST /api/tracking/link-visitor — link a visitor_id to the authenticated user
   app.post("/api/tracking/link-visitor", async (req, res) => {
     try {
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
       const { db } = await import("./db");
-      const { visitor_id, user_id } = req.body;
-      if (!visitor_id || !user_id) return res.status(400).json({ message: "visitor_id and user_id required" });
+      const { visitor_id } = req.body;
+      if (!visitor_id) return res.status(400).json({ message: "visitor_id é obrigatório" });
       await db.execute(sql`
-        UPDATE site_visitors SET user_id = ${user_id} WHERE visitor_id = ${visitor_id} AND user_id IS NULL
+        UPDATE site_visitors SET user_id = ${auth.userId} WHERE visitor_id = ${visitor_id} AND user_id IS NULL
       `);
       return res.json({ ok: true });
     } catch (e: any) {
@@ -5435,6 +5501,10 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
   // Validate invite code (public — used during registration)
   app.get("/api/invite/:code", async (req, res) => {
     try {
+      const inviteIp = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
+      if (!rateLimit(`invite_check:${inviteIp}`, 10, 15 * 60 * 1000)) {
+        return res.status(429).json({ message: "Muitas tentativas. Aguarde alguns minutos." });
+      }
       const { db } = await import("./db");
       const code = req.params.code?.trim();
       if (!code) return res.status(400).json({ message: "Código inválido" });
