@@ -4,6 +4,7 @@
 
 const UTM_STORAGE_KEY = "ampla_utm";
 const LANDING_PAGE_KEY = "ampla_landing_page";
+const INVITE_CODE_KEY = "ampla_invite_code";
 
 export interface UtmData {
   utm_source?: string;
@@ -15,9 +16,15 @@ export interface UtmData {
   landing_page?: string;
 }
 
-/** Read UTM params from the current URL and store in localStorage. Call on page load. */
+/** Read UTM params and invite code from the current URL and store in localStorage. Call on page load. */
 export function captureUtmParams(): void {
   const params = new URLSearchParams(window.location.search);
+
+  // Capture invite code from ?invite=CODE (before the hash)
+  const inviteCode = params.get("invite");
+  if (inviteCode) {
+    localStorage.setItem(INVITE_CODE_KEY, inviteCode.trim());
+  }
   const utmSource = params.get("utm_source");
   const utmMedium = params.get("utm_medium");
   const utmCampaign = params.get("utm_campaign");
@@ -83,6 +90,16 @@ export function getUtmData(): UtmData {
   }
 
   return data;
+}
+
+/** Get stored invite code (captured from ?invite=CODE URL param) */
+export function getInviteCode(): string | null {
+  return localStorage.getItem(INVITE_CODE_KEY);
+}
+
+/** Clear stored invite code after successful registration */
+export function clearInviteCode(): void {
+  localStorage.removeItem(INVITE_CODE_KEY);
 }
 
 /** Track a WhatsApp click event */

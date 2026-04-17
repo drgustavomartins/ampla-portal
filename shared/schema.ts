@@ -32,6 +32,7 @@ export const PLAN_KEYS = [
   "observacao_extra_1",
   "observacao_extra_2",
   "observacao_extra_3",
+  "workshop",
 ] as const;
 export type PlanKey = typeof PLAN_KEYS[number];
 
@@ -81,6 +82,7 @@ export const users = pgTable("users", {
   leadSource: text("lead_source"), // "Instagram", "Meta Ads", "WhatsApp", "Google", "Indicação", "Direto"
   convertedAt: text("converted_at"), // ISO date when trial → paid
   landingPage: text("landing_page"), // first page visited
+  inviteCode: text("invite_code"), // invite code used during registration
 });
 
 // Modules
@@ -209,7 +211,23 @@ export const leadEvents = pgTable("lead_events", {
   createdAt: text("created_at").notNull(),
 });
 
+// Invite Codes (workshop/special access links)
+export const inviteCodes = pgTable("invite_codes", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  accessType: text("access_type").notNull().default("full"), // "full" = all modules/lessons
+  durationDays: integer("duration_days").notNull().default(7),
+  campaign: text("campaign").notNull(), // e.g. "workshop_merz_abril2026"
+  maxUses: integer("max_uses").notNull().default(0), // 0 = unlimited
+  usedCount: integer("used_count").notNull().default(0),
+  usedBy: text("used_by").notNull().default("[]"), // JSON array of { email, usedAt }
+  active: boolean("active").notNull().default(true),
+  createdBy: integer("created_by").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
 // Insert schemas
+export const insertInviteCodeSchema = createInsertSchema(inviteCodes).omit({ id: true, usedCount: true, usedBy: true });
 export const insertLeadEventSchema = createInsertSchema(leadEvents).omit({ id: true });
 export const insertPlanSchema = createInsertSchema(plans).omit({ id: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, approved: true, role: true, accessExpiresAt: true });
@@ -241,6 +259,7 @@ export const registerSchema = z.object({
   phone: z.string().min(8, "Telefone inválido").max(15, "Telefone inválido"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   instagram: z.string().optional().default(""),
+  invite_code: z.string().optional(),
 }).merge(utmSchema);
 
 // Trial registration — phone is now required
@@ -251,6 +270,7 @@ export const trialRegisterSchema = z.object({
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   instagram: z.string().optional().default(""),
   lgpdAccepted: z.boolean().refine((v) => v === true, "Você precisa aceitar os termos para continuar"),
+  invite_code: z.string().optional(),
 }).merge(utmSchema);
 
 export const loginSchema = z.object({
@@ -286,3 +306,5 @@ export type MaterialFile = typeof materialFiles.$inferSelect;
 export type InsertMaterialFile = z.infer<typeof insertMaterialFileSchema>;
 export type LeadEvent = typeof leadEvents.$inferSelect;
 export type InsertLeadEvent = z.infer<typeof insertLeadEventSchema>;
+export type InviteCode = typeof inviteCodes.$inferSelect;
+export type InsertInviteCode = z.infer<typeof insertInviteCodeSchema>;
