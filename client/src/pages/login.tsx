@@ -346,9 +346,9 @@ export default function LoginPage() {
                 })}
                 className="space-y-4"
               >
-                <div className="rounded-lg border border-gold/15 bg-gold/5 px-3 py-2.5 text-xs text-gold/70 flex items-start gap-2">
-                  <Sparkles className="w-3.5 h-3.5 mt-0.5 shrink-0 text-gold" />
-                  <span>Acesso imediato. Primeiras 2 aulas de cada módulo liberadas por 7 dias.</span>
+                <div className={`rounded-lg border px-3 py-2.5 text-xs flex items-start gap-2 ${inviteInfo ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-400/80" : "border-gold/15 bg-gold/5 text-gold/70"}`}>
+                  {inviteInfo ? <Star className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-400" /> : <Sparkles className="w-3.5 h-3.5 mt-0.5 shrink-0 text-gold" />}
+                  <span>{inviteInfo ? `Acesso imediato. Todas as aulas e módulos liberados por ${inviteInfo.durationDays} dias.` : "Acesso imediato. Primeiras 2 aulas de cada módulo liberadas por 7 dias."}</span>
                 </div>
 
                 <div className="space-y-1.5">
