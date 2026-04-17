@@ -7,11 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Users, TrendingUp, BarChart3, Search, MessageCircle, ChevronDown, ChevronUp,
-  ArrowRight, Filter, Kanban, LayoutDashboard,
+  ArrowRight, Filter, Kanban, LayoutDashboard, Activity, Eye, Globe, FileText,
+  ArrowLeft, Calendar, MapPin,
 } from "lucide-react";
 import { formatPhoneDisplay, stripPhone } from "@/lib/phone";
 import { PipelineView } from "./PipelineView";
 import { LeadDetail } from "./LeadDetail";
+import { AnalyticsView } from "./AnalyticsView";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -104,7 +106,7 @@ function getDaysLeft(expiresAt: string | null): number | null {
 
 // ─── Sub-tab type ────────────────────────────────────────────────────────────
 
-type CrmSubTab = "overview" | "pipeline";
+type CrmSubTab = "overview" | "pipeline" | "analytics";
 
 // ─── Lead Detail State ───────────────────────────────────────────────────────
 
@@ -233,6 +235,17 @@ export function CrmTab() {
         >
           <Kanban className="w-3.5 h-3.5" />
           Pipeline
+        </button>
+        <button
+          onClick={() => setSubTab("analytics")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors
+            ${subTab === "analytics"
+              ? "bg-gold/15 text-gold border border-gold/30"
+              : "text-muted-foreground hover:text-foreground"
+            }`}
+        >
+          <Activity className="w-3.5 h-3.5" />
+          Analytics
         </button>
       </div>
 
@@ -542,6 +555,11 @@ export function CrmTab() {
             </CardContent>
           </Card>
         </>
+      )}
+
+      {/* Analytics View */}
+      {subTab === "analytics" && (
+        <AnalyticsView />
       )}
     </div>
   );
