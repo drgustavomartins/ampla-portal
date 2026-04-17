@@ -544,9 +544,9 @@ export default function StudentDashboard() {
             </span>
             <span className="text-white/40 text-xs hidden sm:inline truncate">Acesso às 2 primeiras aulas de cada módulo</span>
           </div>
-          <Link href="/planos">
+          <Link href="/lp">
             <button className="shrink-0 text-xs font-semibold bg-gold text-background px-3 py-1.5 rounded-full hover:bg-gold/90 transition-colors">
-              Ver planos
+              Conheça a formação completa
             </button>
           </Link>
         </div>
