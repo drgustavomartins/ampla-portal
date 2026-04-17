@@ -574,6 +574,19 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("lessons");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Invite codes
+  type InviteCodeRow = { id: number; code: string; access_type: string; duration_days: number; campaign: string; max_uses: number; used_count: number; used_by: string; active: boolean; created_by: number; created_at: string };
+  const { data: inviteCodes = [] } = useQuery<InviteCodeRow[]>({
+    queryKey: ["/api/admin/invite-codes"],
+    queryFn: async () => { const res = await apiRequest("GET", "/api/admin/invite-codes"); return res.json(); },
+  });
+  const [newInviteCampaign, setNewInviteCampaign] = useState("");
+  const [newInviteDuration, setNewInviteDuration] = useState("7");
+  const [newInviteMaxUses, setNewInviteMaxUses] = useState("0");
+  const [newInviteCode, setNewInviteCode] = useState("");
+  const [inviteCreating, setInviteCreating] = useState(false);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
   // Materials CRUD
   type MaterialThemeWithNested = MaterialTheme & { subcategories: (MaterialSubcategory & { files: MaterialFile[] })[]; fileCount: number };
   const { data: trialStudents = [] } = useQuery<SafeUser[]>({ queryKey: ["/api/admin/students/trial"] });
@@ -1692,6 +1705,7 @@ export default function AdminDashboard() {
                 { value: "practices", label: "Praticas", icon: Stethoscope, group: "Conteudo" },
                 { value: "community", label: "Comunidade", icon: MessageCircle, group: "Engajamento" },
                 { value: "credits", label: "Creditos", icon: Coins, group: "Engajamento" },
+                { value: "invites", label: "Convites", icon: KeyRound, group: "Engajamento" },
                 ...(isSuperAdmin ? [
                   { value: "admins", label: "Admins", icon: UserCog, group: "Sistema" },
                   { value: "history", label: "Historico", icon: History, group: "Sistema" },
@@ -1878,6 +1892,14 @@ export default function AdminDashboard() {
                   >
                     <Coins className="w-3.5 h-3.5" />
                     Creditos
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="invites"
+                    data-testid="tab-invites-d"
+                    className="data-[state=active]:bg-gold/15 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-[0_0_12px_rgba(212,168,67,0.1)] data-[state=active]:shadow-none border border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" />
+                    Convites
                   </TabsTrigger>
                 </div>
 
@@ -4410,6 +4432,217 @@ export default function AdminDashboard() {
           )}
 
 
+
+          {/* ========== INVITES TAB ========== */}
+          <TabsContent value="invites" className="space-y-6 mt-0">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Codigos de Convite ({inviteCodes.length})</h3>
+            </div>
+
+            {/* Create new invite code */}
+            <Card className="border-border/30 bg-card/40">
+              <CardContent className="p-4 sm:p-6 space-y-4">
+                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2"><Plus className="w-4 h-4 text-gold" /> Criar novo codigo de convite</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Campanha *</Label>
+                    <Input
+                      placeholder="ex: workshop_merz_abril2026"
+                      className="bg-background/50 border-border/40 text-sm h-9"
+                      value={newInviteCampaign}
+                      onChange={e => setNewInviteCampaign(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Duracao (dias)</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="7"
+                      className="bg-background/50 border-border/40 text-sm h-9"
+                      value={newInviteDuration}
+                      onChange={e => setNewInviteDuration(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Limite de usos (0 = ilimitado)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      className="bg-background/50 border-border/40 text-sm h-9"
+                      value={newInviteMaxUses}
+                      onChange={e => setNewInviteMaxUses(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Codigo (opcional, auto-gera)</Label>
+                    <Input
+                      placeholder="AUTO"
+                      className="bg-background/50 border-border/40 text-sm h-9 font-mono uppercase"
+                      value={newInviteCode}
+                      onChange={e => setNewInviteCode(e.target.value.toUpperCase())}
+                    />
+                  </div>
+                </div>
+                <Button
+                  className="bg-gold text-[#0A1628] hover:bg-gold/90 font-medium text-xs h-9"
+                  disabled={!newInviteCampaign.trim() || inviteCreating}
+                  onClick={async () => {
+                    setInviteCreating(true);
+                    try {
+                      const res = await apiRequest("POST", "/api/admin/invite-codes", {
+                        campaign: newInviteCampaign.trim(),
+                        durationDays: parseInt(newInviteDuration) || 7,
+                        maxUses: parseInt(newInviteMaxUses) || 0,
+                        code: newInviteCode.trim() || undefined,
+                      });
+                      const data = await res.json();
+                      queryClient.invalidateQueries({ queryKey: ["/api/admin/invite-codes"] });
+                      toast({ title: "Codigo criado!", description: `Codigo: ${data.code}` });
+                      setNewInviteCampaign("");
+                      setNewInviteDuration("7");
+                      setNewInviteMaxUses("0");
+                      setNewInviteCode("");
+                    } catch (e: any) {
+                      toast({ title: "Erro", description: e.message || "Erro ao criar codigo", variant: "destructive" });
+                    } finally {
+                      setInviteCreating(false);
+                    }
+                  }}
+                >
+                  {inviteCreating ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <Plus className="w-3.5 h-3.5 mr-1.5" />}
+                  Criar codigo
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* List of invite codes */}
+            {inviteCodes.length === 0 ? (
+              <Card className="border-border/30 bg-card/40">
+                <CardContent className="p-12 text-center">
+                  <div className="w-14 h-14 rounded-xl bg-card/80 flex items-center justify-center mx-auto mb-4"><KeyRound className="w-7 h-7 text-muted-foreground/40" /></div>
+                  <p className="text-sm text-muted-foreground">Nenhum codigo de convite criado</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Crie um codigo acima para gerar links de convite</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {inviteCodes.map((inv) => {
+                  const usedByList: { email: string; usedAt: string }[] = (() => {
+                    try { return typeof inv.used_by === "string" ? JSON.parse(inv.used_by) : (Array.isArray(inv.used_by) ? inv.used_by : []); } catch { return []; }
+                  })();
+                  const inviteUrl = `https://portal.amplafacial.com.br/?invite=${inv.code}#/`;
+                  return (
+                    <Card key={inv.id} className={`border-border/30 bg-card/40 ${!inv.active ? "opacity-60" : ""}`}>
+                      <CardContent className="p-4 sm:p-5">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-mono text-sm font-bold text-gold tracking-wider">{inv.code}</span>
+                              <Badge className={`text-[10px] px-1.5 py-0 border-0 ${inv.active ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"}`}>
+                                {inv.active ? "Ativo" : "Inativo"}
+                              </Badge>
+                              <Badge className="text-[10px] px-1.5 py-0 border-0 bg-blue-500/15 text-blue-400">
+                                {inv.duration_days} dias
+                              </Badge>
+                              {inv.max_uses > 0 && (
+                                <Badge className="text-[10px] px-1.5 py-0 border-0 bg-purple-500/15 text-purple-400">
+                                  {inv.used_count}/{inv.max_uses} usos
+                                </Badge>
+                              )}
+                              {inv.max_uses === 0 && (
+                                <Badge className="text-[10px] px-1.5 py-0 border-0 bg-purple-500/15 text-purple-400">
+                                  {inv.used_count} usos (ilimitado)
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">{inv.campaign}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <code className="text-[11px] text-muted-foreground bg-background/50 px-2 py-1 rounded font-mono break-all">{inviteUrl}</code>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0 shrink-0"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(inviteUrl);
+                                  setCopiedCode(inv.code);
+                                  setTimeout(() => setCopiedCode(null), 2000);
+                                  toast({ title: "Link copiado!" });
+                                }}
+                              >
+                                {copiedCode === inv.code ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                              </Button>
+                            </div>
+                            {usedByList.length > 0 && (
+                              <div className="mt-3 space-y-1">
+                                <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-semibold">Registros:</p>
+                                {usedByList.map((u, i) => (
+                                  <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <Users className="w-3 h-3" />
+                                    <span>{u.email}</span>
+                                    <span className="text-muted-foreground/40">·</span>
+                                    <span className="text-muted-foreground/40">{new Date(u.usedAt).toLocaleDateString("pt-BR")}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <p className="text-[10px] text-muted-foreground/40 mt-2">Criado em {new Date(inv.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 text-xs"
+                              onClick={async () => {
+                                try {
+                                  await apiRequest("PATCH", `/api/admin/invite-codes/${inv.id}`, { active: !inv.active });
+                                  queryClient.invalidateQueries({ queryKey: ["/api/admin/invite-codes"] });
+                                  toast({ title: inv.active ? "Codigo desativado" : "Codigo ativado" });
+                                } catch {
+                                  toast({ title: "Erro ao atualizar", variant: "destructive" });
+                                }
+                              }}
+                            >
+                              {inv.active ? "Desativar" : "Ativar"}
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"><Trash2 className="w-4 h-4" /></Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="bg-card border-border/40">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir codigo de convite</AlertDialogTitle>
+                                  <AlertDialogDescription>Tem certeza que deseja excluir o codigo "{inv.code}"? Esta acao nao pode ser desfeita.</AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    onClick={async () => {
+                                      try {
+                                        await apiRequest("DELETE", `/api/admin/invite-codes/${inv.id}`);
+                                        queryClient.invalidateQueries({ queryKey: ["/api/admin/invite-codes"] });
+                                        toast({ title: "Codigo excluido" });
+                                      } catch {
+                                        toast({ title: "Erro ao excluir", variant: "destructive" });
+                                      }
+                                    }}
+                                  >
+                                    Excluir
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
 
           {/* ========== HISTORY TAB (super_admin: all logs, admin: own logs inline) ========== */}
           {isSuperAdmin && (

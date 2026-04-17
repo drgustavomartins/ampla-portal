@@ -359,13 +359,17 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`CREATE TABLE IF NOT EXISTS credit_requests (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, action_type TEXT NOT NULL, reference_type TEXT NOT NULL, reference_id INTEGER NOT NULL, amount INTEGER NOT NULL DEFAULT 5000, status TEXT NOT NULL DEFAULT 'pending', admin_note TEXT, created_at TEXT NOT NULL, reviewed_at TEXT, reviewed_by INTEGER)`).catch(() => {});
     // Lead Events (CRM activity timeline)
     await db.execute(`CREATE TABLE IF NOT EXISTS lead_events (id SERIAL PRIMARY KEY, user_id INTEGER, quiz_lead_id INTEGER, event_type TEXT NOT NULL, event_description TEXT NOT NULL, metadata TEXT, created_at TEXT NOT NULL)`).catch(() => {});
+    // Invite codes table
+    await db.execute(`CREATE TABLE IF NOT EXISTS invite_codes (id SERIAL PRIMARY KEY, code TEXT NOT NULL UNIQUE, access_type TEXT NOT NULL DEFAULT 'full', duration_days INTEGER NOT NULL DEFAULT 7, campaign TEXT NOT NULL, max_uses INTEGER NOT NULL DEFAULT 0, used_count INTEGER NOT NULL DEFAULT 0, used_by TEXT NOT NULL DEFAULT '[]', active BOOLEAN NOT NULL DEFAULT true, created_by INTEGER NOT NULL, created_at TEXT NOT NULL)`).catch(() => {});
+    // Invite code column on users
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS invite_code TEXT`).catch(() => {});
     // Site Visitors / Page Visits (visitor tracking)
     await db.execute(`CREATE TABLE IF NOT EXISTS site_visitors (id SERIAL PRIMARY KEY, visitor_id TEXT NOT NULL UNIQUE, user_id INTEGER, utm_source TEXT, utm_medium TEXT, utm_campaign TEXT, utm_content TEXT, utm_term TEXT, lead_source TEXT, referrer TEXT, first_page TEXT, created_at TEXT NOT NULL, last_seen_at TEXT NOT NULL)`).catch(() => {});
     await db.execute(`CREATE TABLE IF NOT EXISTS page_visits (id SERIAL PRIMARY KEY, visitor_id TEXT NOT NULL, page TEXT NOT NULL, referrer TEXT, created_at TEXT NOT NULL)`).catch(() => {});
     await db.execute(`CREATE INDEX IF NOT EXISTS idx_page_visits_visitor ON page_visits(visitor_id)`).catch(() => {});
     await db.execute(`CREATE INDEX IF NOT EXISTS idx_page_visits_created ON page_visits(created_at)`).catch(() => {});
     await db.execute(`CREATE INDEX IF NOT EXISTS idx_site_visitors_created ON site_visitors(created_at)`).catch(() => {});
-    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts, community, lead_events, site_visitors, page_visits tables ensured");
+    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts, community, lead_events, invite_codes, site_visitors, page_visits tables ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
@@ -1297,12 +1301,24 @@ export async function registerRoutes(server: Server, app: Express) {
         return res.status(400).json({ message: "Email já cadastrado" });
       }
       const hashedPassword = await bcrypt.hash(data.password, 10);
-      const trialExpires = new Date();
-      trialExpires.setDate(trialExpires.getDate() + 7);
       const now = new Date().toISOString();
 
       // Compute lead_source from utm_source if not explicitly provided
       const leadSource = data.lead_source || computeLeadSource(data.utm_source);
+
+      // Check for invite code
+      let inviteData: { code: string; durationDays: number; campaign: string; id: number } | null = null;
+      if (data.invite_code) {
+        const { db: invDb } = await import("./db");
+        const invResult = await invDb.execute(sql`SELECT * FROM invite_codes WHERE code = ${data.invite_code} AND active = true`);
+        const inv = (invResult as any).rows?.[0];
+        if (inv && (inv.max_uses === 0 || inv.used_count < inv.max_uses)) {
+          inviteData = { code: inv.code, durationDays: inv.duration_days, campaign: inv.campaign, id: inv.id };
+        }
+      }
+
+      const accessExpires = new Date();
+      accessExpires.setDate(accessExpires.getDate() + (inviteData ? inviteData.durationDays : 7));
 
       const user = await storage.createUser({
         name: sanitize(data.name),
@@ -1314,11 +1330,11 @@ export async function registerRoutes(server: Server, app: Express) {
         createdAt: now,
       });
 
-      // Auto-approve as trial with 7-day expiry + save UTM data
-      await storage.updateUser(user.id, {
-        role: "trial",
+      const role = inviteData ? "student" : "trial";
+      const updateFields: any = {
+        role,
         approved: true,
-        accessExpiresAt: trialExpires.toISOString(),
+        accessExpiresAt: accessExpires.toISOString(),
         trialStartedAt: now,
         utmSource: data.utm_source || null,
         utmMedium: data.utm_medium || null,
@@ -1327,7 +1343,27 @@ export async function registerRoutes(server: Server, app: Express) {
         utmTerm: data.utm_term || null,
         leadSource,
         landingPage: data.landing_page || null,
-      } as any);
+      };
+      if (inviteData) {
+        updateFields.planKey = "workshop";
+        updateFields.inviteCode = inviteData.code;
+      }
+      await storage.updateUser(user.id, updateFields);
+
+      // If invite code was used, increment usage
+      if (inviteData) {
+        try {
+          const { db: invDb } = await import("./db");
+          const usedByEntry = JSON.stringify({ email: data.email.trim().toLowerCase(), usedAt: now });
+          await invDb.execute(sql`UPDATE invite_codes SET used_count = used_count + 1, used_by = used_by::jsonb || ${usedByEntry}::jsonb WHERE id = ${inviteData.id}`);
+        } catch {
+          // Non-blocking: fallback to simple text concat if jsonb fails
+          try {
+            const { db: invDb } = await import("./db");
+            await invDb.execute(sql`UPDATE invite_codes SET used_count = used_count + 1 WHERE id = ${inviteData.id}`);
+          } catch {}
+        }
+      }
 
       // Link anonymous visitor to this user account
       if (data.visitor_id) {
@@ -1338,7 +1374,7 @@ export async function registerRoutes(server: Server, app: Express) {
       }
 
       // Issue JWT so frontend can log in immediately
-      const token = jwt.sign({ userId: user.id, role: "trial" }, JWT_SECRET, { expiresIn: "7d" });
+      const token = jwt.sign({ userId: user.id, role }, JWT_SECRET, { expiresIn: inviteData ? `${inviteData.durationDays}d` : "7d" });
       res.cookie("ampla_token", token, { httpOnly: true, secure: true, sameSite: "none", maxAge: 30 * 24 * 60 * 60 * 1000 });
 
       // Send welcome email and notify admin (non-blocking)
@@ -1346,9 +1382,12 @@ export async function registerRoutes(server: Server, app: Express) {
       notifyNewRegistration({ name: user.name, email: user.email, phone: user.phone ?? undefined });
 
       const { password: _p, lockedUntil: _l, loginAttempts: _a, ...safeUser } = user;
+      const message = inviteData
+        ? `Acesso completo ativado por ${inviteData.durationDays} dias!`
+        : "Seu teste gratuito de 7 dias foi ativado!";
       return res.json({
-        message: "Seu teste gratuito de 7 dias foi ativado!",
-        user: { ...safeUser, role: "trial", approved: true, accessExpiresAt: trialExpires.toISOString() },
+        message,
+        user: { ...safeUser, role, approved: true, accessExpiresAt: accessExpires.toISOString(), planKey: inviteData ? "workshop" : null, inviteCode: inviteData?.code || null },
         token,
       });
     } catch (e: any) {
@@ -1358,6 +1397,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
   // ==================== AUTH: Trial Register ====================
   // Auto-approves the user with role='trial' and 7-day expiry. No admin needed.
+  // If invite code is present and valid, grants full workshop access instead.
   app.post("/api/auth/register-trial", async (req, res) => {
     try {
       const ip = req.ip || req.socket.remoteAddress || "unknown";
@@ -1370,12 +1410,24 @@ export async function registerRoutes(server: Server, app: Express) {
         return res.status(400).json({ message: "Email já cadastrado. Tente fazer login ou recuperar sua senha." });
       }
       const hashedPassword = await bcrypt.hash(data.password, 10);
-      const trialExpires = new Date();
-      trialExpires.setDate(trialExpires.getDate() + 7);
       const now = new Date().toISOString();
 
       // Compute lead_source from utm_source if not explicitly provided
       const leadSource = data.lead_source || computeLeadSource(data.utm_source);
+
+      // Check for invite code
+      let inviteData: { code: string; durationDays: number; campaign: string; id: number } | null = null;
+      if (data.invite_code) {
+        const { db: invDb } = await import("./db");
+        const invResult = await invDb.execute(sql`SELECT * FROM invite_codes WHERE code = ${data.invite_code} AND active = true`);
+        const inv = (invResult as any).rows?.[0];
+        if (inv && (inv.max_uses === 0 || inv.used_count < inv.max_uses)) {
+          inviteData = { code: inv.code, durationDays: inv.duration_days, campaign: inv.campaign, id: inv.id };
+        }
+      }
+
+      const accessExpires = new Date();
+      accessExpires.setDate(accessExpires.getDate() + (inviteData ? inviteData.durationDays : 7));
 
       const user = await storage.createUser({
         name: sanitize(data.name),
@@ -1387,11 +1439,11 @@ export async function registerRoutes(server: Server, app: Express) {
         createdAt: now,
       });
 
-      // Auto-approve as trial with 7-day expiry + save UTM data
-      await storage.updateUser(user.id, {
-        role: "trial",
+      const role = inviteData ? "student" : "trial";
+      const updateFields: any = {
+        role,
         approved: true,
-        accessExpiresAt: trialExpires.toISOString(),
+        accessExpiresAt: accessExpires.toISOString(),
         trialStartedAt: now,
         lgpdAcceptedAt: now,
         utmSource: data.utm_source || null,
@@ -1401,10 +1453,29 @@ export async function registerRoutes(server: Server, app: Express) {
         utmTerm: data.utm_term || null,
         leadSource,
         landingPage: data.landing_page || null,
-      } as any);
+      };
+      if (inviteData) {
+        updateFields.planKey = "workshop";
+        updateFields.inviteCode = inviteData.code;
+      }
+      await storage.updateUser(user.id, updateFields);
+
+      // If invite code was used, increment usage
+      if (inviteData) {
+        try {
+          const { db: invDb } = await import("./db");
+          const usedByEntry = JSON.stringify({ email: data.email.trim().toLowerCase(), usedAt: now });
+          await invDb.execute(sql`UPDATE invite_codes SET used_count = used_count + 1, used_by = used_by::jsonb || ${usedByEntry}::jsonb WHERE id = ${inviteData.id}`);
+        } catch {
+          try {
+            const { db: invDb } = await import("./db");
+            await invDb.execute(sql`UPDATE invite_codes SET used_count = used_count + 1 WHERE id = ${inviteData.id}`);
+          } catch {}
+        }
+      }
 
       // Issue JWT so frontend can log in immediately without a second request
-      const token = jwt.sign({ userId: user.id, role: "trial" }, JWT_SECRET, { expiresIn: "7d" });
+      const token = jwt.sign({ userId: user.id, role }, JWT_SECRET, { expiresIn: inviteData ? `${inviteData.durationDays}d` : "7d" });
       res.cookie("ampla_token", token, { httpOnly: true, secure: true, sameSite: "none", maxAge: 30 * 24 * 60 * 60 * 1000 });
 
       // Link anonymous visitor to this user account
@@ -1418,10 +1489,16 @@ export async function registerRoutes(server: Server, app: Express) {
       // Log lead events for registration
       try {
         const { db: evDb } = await import("./db");
+        const regSource = inviteData ? `convite (${inviteData.campaign})` : leadSource;
         await evDb.execute(sql`INSERT INTO lead_events (user_id, event_type, event_description, metadata, created_at)
-          VALUES (${user.id}, 'cadastro', ${'Cadastrou na plataforma via ' + leadSource}, ${JSON.stringify({ source: leadSource, utm_source: data.utm_source })}, ${now})`);
-        await evDb.execute(sql`INSERT INTO lead_events (user_id, event_type, event_description, metadata, created_at)
-          VALUES (${user.id}, 'trial_inicio', 'Iniciou Trial (7 dias)', ${JSON.stringify({ source: 'registration' })}, ${now})`);
+          VALUES (${user.id}, 'cadastro', ${'Cadastrou na plataforma via ' + regSource}, ${JSON.stringify({ source: regSource, utm_source: data.utm_source, invite_code: inviteData?.code })}, ${now})`);
+        if (inviteData) {
+          await evDb.execute(sql`INSERT INTO lead_events (user_id, event_type, event_description, metadata, created_at)
+            VALUES (${user.id}, 'workshop_acesso', ${'Acesso Workshop ativado — ' + inviteData.campaign + ' (' + inviteData.durationDays + ' dias)'}, ${JSON.stringify({ campaign: inviteData.campaign, code: inviteData.code, durationDays: inviteData.durationDays })}, ${now})`);
+        } else {
+          await evDb.execute(sql`INSERT INTO lead_events (user_id, event_type, event_description, metadata, created_at)
+            VALUES (${user.id}, 'trial_inicio', 'Iniciou Trial (7 dias)', ${JSON.stringify({ source: 'registration' })}, ${now})`);
+        }
       } catch {} // non-blocking
 
       // Send welcome email and notify admin (non-blocking)
@@ -1429,9 +1506,12 @@ export async function registerRoutes(server: Server, app: Express) {
       notifyNewRegistration({ name: user.name, email: user.email, phone: user.phone ?? undefined });
 
       const { password: _p, lockedUntil: _l, loginAttempts: _a, ...safeUser } = user;
+      const message = inviteData
+        ? `Acesso completo ativado por ${inviteData.durationDays} dias!`
+        : "Seu teste gratuito de 7 dias foi ativado!";
       return res.json({
-        message: "Seu teste gratuito de 7 dias foi ativado!",
-        user: { ...safeUser, role: "trial", approved: true, accessExpiresAt: trialExpires.toISOString() },
+        message,
+        user: { ...safeUser, role, approved: true, accessExpiresAt: accessExpires.toISOString(), planKey: inviteData ? "workshop" : null, inviteCode: inviteData?.code || null },
         token,
       });
     } catch (e: any) {
@@ -1722,6 +1802,11 @@ export async function registerRoutes(server: Server, app: Express) {
       return res.json({ accessAll: false, moduleIds: [] });
     }
 
+    // Workshop invite users get full access to all modules
+    if ((user as any).planKey === "workshop" || (user as any).inviteCode) {
+      return res.json({ accessAll: true, moduleIds: [] });
+    }
+
     // Check for per-user module overrides first
     const userMods = await storage.getUserModules(auth.userId);
     if (userMods.length > 0) {
@@ -1865,6 +1950,11 @@ export async function registerRoutes(server: Server, app: Express) {
       const userResult = await db.execute(sql`SELECT role, plan_key FROM users WHERE id = ${auth.userId}`);
       const user = (userResult as any).rows?.[0];
       if (!user) return res.json({ accessType: "none", allowedLessonIds: [] });
+
+      // Workshop invite users get full access
+      if (user.plan_key === "workshop") {
+        return res.json({ accessType: "full", allowedLessonIds: [] });
+      }
 
       const isTester = user.plan_key === "tester" || user.role === "trial" || !user.plan_key;
 
@@ -5318,6 +5408,143 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
     } catch (e: any) {
       console.error("[POST /api/admin/crm/quiz-leads/:id/note]", e.message);
       return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ==================== INVITE CODES (Workshop Access) ====================
+
+  // Validate invite code (public — used during registration)
+  app.get("/api/invite/:code", async (req, res) => {
+    try {
+      const { db } = await import("./db");
+      const code = req.params.code?.trim();
+      if (!code) return res.status(400).json({ message: "Código inválido" });
+
+      const result = await db.execute(sql`SELECT * FROM invite_codes WHERE code = ${code} AND active = true`);
+      const invite = (result as any).rows?.[0];
+      if (!invite) return res.status(404).json({ message: "Código de convite inválido ou expirado" });
+
+      if (invite.max_uses > 0 && invite.used_count >= invite.max_uses) {
+        return res.status(410).json({ message: "Este código de convite já atingiu o limite de usos" });
+      }
+
+      return res.json({
+        code: invite.code,
+        accessType: invite.access_type,
+        durationDays: invite.duration_days,
+        campaign: invite.campaign,
+      });
+    } catch (e: any) {
+      return res.status(500).json({ message: "Erro ao validar código" });
+    }
+  });
+
+  // Admin: List all invite codes
+  app.get("/api/admin/invite-codes", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db } = await import("./db");
+      const result = await db.execute(sql`SELECT * FROM invite_codes ORDER BY created_at DESC`);
+      return res.json((result as any).rows || []);
+    } catch (e: any) {
+      return res.status(500).json({ message: "Erro ao listar códigos" });
+    }
+  });
+
+  // Admin: Create invite code
+  app.post("/api/admin/invite-codes", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db } = await import("./db");
+      const { campaign, durationDays, maxUses, code: customCode } = req.body;
+      if (!campaign?.trim()) return res.status(400).json({ message: "Nome da campanha é obrigatório" });
+
+      const code = customCode?.trim() || crypto.randomBytes(4).toString("hex").toUpperCase();
+      const duration = parseInt(durationDays) || 7;
+      const max = parseInt(maxUses) || 0;
+      const now = new Date().toISOString();
+
+      // Check for duplicate code
+      const existing = await db.execute(sql`SELECT id FROM invite_codes WHERE code = ${code}`);
+      if ((existing as any).rows?.length > 0) {
+        return res.status(409).json({ message: "Este código já existe. Escolha outro." });
+      }
+
+      await db.execute(sql`INSERT INTO invite_codes (code, access_type, duration_days, campaign, max_uses, used_count, used_by, active, created_by, created_at)
+        VALUES (${code}, 'full', ${duration}, ${campaign.trim()}, ${max}, 0, '[]', true, ${auth.userId}, ${now})`);
+
+      // Audit log
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || "Admin", "create_invite_code", "invite_code", 0, code, { campaign: campaign.trim(), durationDays: duration, maxUses: max });
+
+      return res.json({ code, campaign: campaign.trim(), durationDays: duration, maxUses: max });
+    } catch (e: any) {
+      return res.status(500).json({ message: "Erro ao criar código de convite" });
+    }
+  });
+
+  // Admin: Toggle invite code active/inactive
+  app.patch("/api/admin/invite-codes/:id", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db } = await import("./db");
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
+
+      const { active } = req.body;
+      if (typeof active !== "boolean") return res.status(400).json({ message: "Campo 'active' é obrigatório" });
+
+      await db.execute(sql`UPDATE invite_codes SET active = ${active} WHERE id = ${id}`);
+
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || "Admin", active ? "activate_invite_code" : "deactivate_invite_code", "invite_code", id, "", {});
+
+      return res.json({ ok: true });
+    } catch (e: any) {
+      return res.status(500).json({ message: "Erro ao atualizar código" });
+    }
+  });
+
+  // Admin: Delete invite code
+  app.delete("/api/admin/invite-codes/:id", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db } = await import("./db");
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
+
+      await db.execute(sql`DELETE FROM invite_codes WHERE id = ${id}`);
+
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || "Admin", "delete_invite_code", "invite_code", id, "", {});
+
+      return res.json({ ok: true });
+    } catch (e: any) {
+      return res.status(500).json({ message: "Erro ao excluir código" });
+    }
+  });
+
+  // Admin: Delete test account by email
+  app.delete("/api/admin/test-account/:email", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const email = decodeURIComponent(req.params.email).trim().toLowerCase();
+      const user = await storage.getUserByEmail(email);
+      if (!user) return res.status(404).json({ message: "Conta não encontrada" });
+
+      await storage.deleteUser(user.id);
+
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || "Admin", "delete_test_account", "user", user.id, user.name, { email });
+
+      return res.json({ ok: true, message: `Conta ${email} excluída` });
+    } catch (e: any) {
+      return res.status(500).json({ message: "Erro ao excluir conta" });
     }
   });
 

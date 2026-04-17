@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Sparkles, Eye, EyeOff, CheckCircle2, Star, Users, Clock, Play, ArrowRight, Camera, Instagram, Phone } from "lucide-react";
 import { PhoneInput } from "@/components/PhoneInput";
 import { trackEvent } from "@/lib/funnel";
-import { captureUtmParams, getUtmData } from "@/lib/utm";
+import { captureUtmParams, getUtmData, getInviteCode, clearInviteCode } from "@/lib/utm";
 import type { z } from "zod";
 
 // #33 — Humaniza erros de API em mensagens amigáveis
@@ -63,8 +63,27 @@ export default function LoginPage() {
   const { login } = useAuth();
   const { toast } = useToast();
 
+  // Invite code state
+  const [inviteInfo, setInviteInfo] = useState<{ code: string; durationDays: number; campaign: string } | null>(null);
+
   // Capture UTM params on login/register page load
   useEffect(() => { captureUtmParams(); }, []);
+
+  // Check for invite code and auto-switch to registration
+  useEffect(() => {
+    const code = getInviteCode();
+    if (code) {
+      fetch(`/api/invite/${encodeURIComponent(code)}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data) {
+            setInviteInfo(data);
+            setMode("trial"); // auto-switch to registration form
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -97,7 +116,11 @@ export default function LoginPage() {
   const trialMutation = useMutation({
     mutationFn: async (data: z.infer<typeof trialRegisterSchema>) => {
       const utm = getUtmData();
-      const res = await apiRequest("POST", "/api/auth/register-trial", { ...data, ...utm });
+      const payload: any = { ...data, ...utm };
+      // Include invite code if present
+      const inviteCode = getInviteCode();
+      if (inviteCode) payload.invite_code = inviteCode;
+      const res = await apiRequest("POST", "/api/auth/register-trial", payload);
       return res.json();
     },
     onSuccess: async (data) => {
@@ -113,6 +136,8 @@ export default function LoginPage() {
           });
         } catch { /* silently ignore — avatar is optional */ }
       }
+      // Clear invite code after successful registration
+      clearInviteCode();
       // Backend já retorna o token — login imediato, sem segunda requisição
       login(data.user, data.token);
     },
@@ -177,8 +202,21 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* Invite code badge — shown when user arrived via invite link */}
+          {inviteInfo && (
+            <div className="w-full flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <Star className="w-4 h-4 text-emerald-400 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-emerald-300 leading-tight">Convite Especial — Acesso Completo</p>
+                  <p className="text-xs text-white/50 mt-0.5">Todas as aulas e módulos por {inviteInfo.durationDays} dias</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Trial banner — #36 removido o modo "register" separado */}
-          {mode === "login" && (
+          {mode === "login" && !inviteInfo && (
             <button
               type="button"
               onClick={() => switchMode("trial")}
@@ -203,14 +241,14 @@ export default function LoginPage() {
               {mode === "login" && <h2 className="text-lg font-medium text-white">Entrar</h2>}
               {mode === "trial" && (
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-gold" />
-                  <h2 className="text-lg font-medium text-white">Começar teste gratuito</h2>
+                  {inviteInfo ? <Star className="w-4 h-4 text-emerald-400" /> : <Sparkles className="w-4 h-4 text-gold" />}
+                  <h2 className="text-lg font-medium text-white">{inviteInfo ? "Criar sua conta" : "Começar teste gratuito"}</h2>
                 </div>
               )}
               {mode === "forgot" && <h2 className="text-lg font-medium text-white">Recuperar senha</h2>}
               <p className="text-sm text-white/40">
                 {mode === "login" && "Acesse suas aulas da mentoria"}
-                {mode === "trial" && "7 dias sem cartão de crédito"}
+                {mode === "trial" && (inviteInfo ? `Acesso completo por ${inviteInfo.durationDays} dias` : "7 dias sem cartão de crédito")}
                 {mode === "forgot" && "Enviaremos um link para seu e-mail"}
               </p>
             </div>

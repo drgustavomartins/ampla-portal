@@ -513,6 +513,30 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     hasNaturalUp: false,
     canUpgradeTo: [],
   },
+  workshop: {
+    key: "workshop",
+    name: "Workshop",
+    description: "Acesso completo via convite de workshop",
+    price: 0,
+    installments12x: null,
+    group: "digital",
+    features: [
+      "Acesso completo a todos os módulos",
+      "Todas as aulas disponíveis",
+      "Acesso por tempo limitado (convite)",
+    ],
+    accessDays: 7,
+    includesModules: true,
+    clinicalHours: 0,
+    practiceHours: 0,
+    hasDirectChannel: false,
+    channelMonths: 0,
+    hasMentorship: false,
+    mentorshipMonths: 0,
+    hasLiveEvents: false,
+    hasNaturalUp: false,
+    canUpgradeTo: ["modulo_avulso", "pacote_completo", "observador_essencial", "observador_avancado", "observador_intensivo", "imersao", "vip_online", "vip_presencial", "vip_completo"],
+  },
 };
 
 // ─── Cálculo de crédito de upgrade ──────────────────────────────────────────
@@ -561,6 +585,7 @@ export const CASHBACK_RATES: Record<PlanKey, number> = {
   observacao_extra_1: 0.05,
   observacao_extra_2: 0.05,
   observacao_extra_3: 0.05,
+  workshop: 0,
 };
 
 // ─── Formatar preço em BRL ───────────────────────────────────────────────────
