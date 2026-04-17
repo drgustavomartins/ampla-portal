@@ -21,6 +21,7 @@ import CreditsPage from "./pages/credits";
 import CreditsRulesPage from "./pages/credits-rules";
 import ComunidadePage from "./pages/comunidade";
 import LandingPage from "./pages/lp";
+import { VisitorTracker } from "./components/VisitorTracker";
 
 function AppContent() {
   const { user, isAdmin } = useAuth();
@@ -60,6 +61,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router hook={useHashLocation}>
+          <VisitorTracker />
           <Switch>
             <Route path="/" component={AppContent} />
             <Route path="/module/:id" component={ProtectedModulePage} />

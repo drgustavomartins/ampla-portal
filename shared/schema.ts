@@ -209,7 +209,35 @@ export const leadEvents = pgTable("lead_events", {
   createdAt: text("created_at").notNull(),
 });
 
+// Site Visitors — anonymous visitor tracking
+export const siteVisitors = pgTable("site_visitors", {
+  id: serial("id").primaryKey(),
+  visitorId: text("visitor_id").notNull().unique(), // UUID from localStorage
+  userId: integer("user_id"), // linked after registration
+  utmSource: text("utm_source"),
+  utmMedium: text("utm_medium"),
+  utmCampaign: text("utm_campaign"),
+  utmContent: text("utm_content"),
+  utmTerm: text("utm_term"),
+  leadSource: text("lead_source"),
+  referrer: text("referrer"),
+  firstPage: text("first_page"),
+  createdAt: text("created_at").notNull(),
+  lastSeenAt: text("last_seen_at").notNull(),
+});
+
+// Page Visits — individual page view tracking
+export const pageVisits = pgTable("page_visits", {
+  id: serial("id").primaryKey(),
+  visitorId: text("visitor_id").notNull(), // references site_visitors.visitor_id
+  page: text("page").notNull(),
+  referrer: text("referrer"),
+  createdAt: text("created_at").notNull(),
+});
+
 // Insert schemas
+export const insertSiteVisitorSchema = createInsertSchema(siteVisitors).omit({ id: true });
+export const insertPageVisitSchema = createInsertSchema(pageVisits).omit({ id: true });
 export const insertLeadEventSchema = createInsertSchema(leadEvents).omit({ id: true });
 export const insertPlanSchema = createInsertSchema(plans).omit({ id: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, approved: true, role: true, accessExpiresAt: true });
@@ -233,6 +261,7 @@ const utmSchema = z.object({
   utm_term: z.string().optional(),
   lead_source: z.string().optional(),
   landing_page: z.string().optional(),
+  visitor_id: z.string().optional(), // links anonymous visitor to new account
 }).partial();
 
 export const registerSchema = z.object({
@@ -286,3 +315,7 @@ export type MaterialFile = typeof materialFiles.$inferSelect;
 export type InsertMaterialFile = z.infer<typeof insertMaterialFileSchema>;
 export type LeadEvent = typeof leadEvents.$inferSelect;
 export type InsertLeadEvent = z.infer<typeof insertLeadEventSchema>;
+export type SiteVisitor = typeof siteVisitors.$inferSelect;
+export type InsertSiteVisitor = z.infer<typeof insertSiteVisitorSchema>;
+export type PageVisit = typeof pageVisits.$inferSelect;
+export type InsertPageVisit = z.infer<typeof insertPageVisitSchema>;
