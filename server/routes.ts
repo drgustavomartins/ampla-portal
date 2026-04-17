@@ -1115,6 +1115,76 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   });
 
+  // ==================== CRON: TRIAL DAY-5 URGENCY EMAIL ====================
+
+  app.post("/api/cron/trial-urgency", async (req, res) => {
+    try {
+      const { db } = await import("./db");
+      if (!resend) return res.json({ sent: 0, message: "Resend not configured" });
+
+      // Find trial users on day 5 (2 days left) who haven't received this email
+      const now = new Date();
+      const trials = await db.execute(sql`
+        SELECT id, name, email, trial_started_at, created_at
+        FROM users
+        WHERE role = 'trial'
+          AND trial_started_at IS NOT NULL
+          AND trial_urgency_sent IS NOT TRUE
+      `);
+
+      let sent = 0;
+      for (const user of trials.rows) {
+        const startDate = new Date(user.trial_started_at || user.created_at);
+        const daysSinceStart = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysSinceStart >= 5) {
+          const firstName = (user.name as string || "").split(" ")[0];
+          try {
+            await resend.emails.send({
+              from: "Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",
+              to: user.email as string,
+              subject: "Seu teste gratuito termina em 2 dias",
+              html: `
+                <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0A1628;color:#fff;padding:40px 32px;border-radius:16px">
+                  <img src="https://portal.amplafacial.com.br/logo-icon.png" alt="Ampla Facial" style="width:72px;display:block;margin:0 auto 24px" />
+                  <h1 style="text-align:center;color:#D4A843;font-size:22px;margin:0 0 8px">${firstName}, seu teste termina em 2 dias</h1>
+                  <div style="width:48px;height:1px;background:#D4A843;opacity:0.5;margin:0 auto 24px"></div>
+                  <div style="text-align:center;margin:0 0 24px">
+                    <div style="display:inline-block;width:64px;height:64px;border-radius:50%;border:3px solid #D4A843;line-height:64px;font-size:28px;font-weight:bold;color:#D4A843">2</div>
+                    <p style="color:#D4A843;font-size:14px;margin:8px 0 0;font-weight:600">dias restantes</p>
+                  </div>
+                  <p style="color:#ccc;font-size:15px;line-height:1.6;margin:0 0 20px">
+                    Voce teve acesso a uma amostra do que a Ampla Facial oferece. Imagina ter acesso a <strong style="color:#D4A843">todos os modulos</strong>, todos os materiais cientificos e acompanhamento direto com o Dr. Gustavo.
+                  </p>
+                  <p style="color:#ccc;font-size:15px;line-height:1.6;margin:0 0 24px">
+                    Assine antes que seu acesso expire e continue evoluindo na harmonizacao orofacial.
+                  </p>
+                  <div style="text-align:center">
+                    <a href="https://portal.amplafacial.com.br/#/lp" style="display:inline-block;background:#D4A843;color:#0A0D14;font-weight:700;font-size:14px;padding:14px 32px;border-radius:12px;text-decoration:none">
+                      Conheca a formacao completa
+                    </a>
+                  </div>
+                  <p style="color:#666;font-size:12px;text-align:center;margin:24px 0 0">
+                    Se preferir, fale diretamente com o Dr. Gustavo pelo <a href="https://wa.me/5521976263881" style="color:#D4A843">WhatsApp</a>
+                  </p>
+                </div>
+              `,
+            });
+            await db.execute(sql`UPDATE users SET trial_urgency_sent = true WHERE id = ${user.id}`);
+            sent++;
+          } catch (e) {
+            console.error("Trial urgency email failed for", user.email, e);
+          }
+        }
+      }
+
+      res.json({ sent, message: `${sent} trial urgency email(s) sent` });
+    } catch (err: any) {
+      console.error("Trial urgency cron error:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ==================== CRON: REENGAJAMENTO QUIZ ====================
 
   // POST /api/cron/reengajamento-quiz
