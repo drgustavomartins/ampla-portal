@@ -7,7 +7,7 @@ import {
 
 const cashbackTable = [
   { plan: "Módulo Avulso", rate: "3%" },
-  { plan: "Curso Completo", rate: "5%" },
+  { plan: "Curso Online", rate: "5%" },
   { plan: "Observador Essencial", rate: "5%" },
   { plan: "Observador Avançado", rate: "7%" },
   { plan: "Observador Intensivo", rate: "8%" },

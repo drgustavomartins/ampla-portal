@@ -491,13 +491,13 @@ export default function LandingPage() {
           </FadeIn>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-            {/* ── Card 1: Curso Completo ───────────────────────────────── */}
+            {/* ── Card 1: Curso Online ────────────────────────────────── */}
             <FadeIn className="h-full">
               <div className="bg-[#0F1A2E] border border-white/10 rounded-2xl p-7 flex flex-col h-full">
                 <span className="inline-block text-[11px] font-semibold uppercase tracking-widest text-[#D4A843] bg-[#D4A843]/10 px-3 py-1 rounded-full self-start mb-5">
                   Online
                 </span>
-                <h3 className="lp-serif text-xl font-bold mb-1">Curso Completo</h3>
+                <h3 className="lp-serif text-xl font-bold mb-1">Curso Online</h3>
                 <p className="text-sm text-gray-400 mb-4">Estude online, no seu ritmo</p>
 
                 <div className="mb-6">
@@ -528,13 +528,13 @@ export default function LandingPage() {
 
                 <div className="mt-auto pt-4 border-t border-white/10">
                   <a
-                    href="https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20no%20Curso%20Completo%20(online).%20Podemos%20conversar%3F"
+                    href="https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20no%20Curso%20Online.%20Podemos%20conversar%3F"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
                     className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
                   >
-                    Quero o Curso Completo
+                    Quero o Curso Online
                   </a>
                 </div>
               </div>
@@ -556,7 +556,7 @@ export default function LandingPage() {
 
                 <ul className="space-y-3 mb-8 flex-1">
                   {[
-                    "Tudo do Curso Completo",
+                    "Tudo do Curso Online",
                     "24h de observação clínica presencial (6 turnos)",
                     "Acompanhe procedimentos reais ao vivo",
                     "Encontros quinzenais ao vivo por 6 meses",
@@ -684,7 +684,7 @@ export default function LandingPage() {
               <div className="bg-[#0A0D14] rounded-xl p-6 border border-white/10">
                 <h3 className="text-[#D4A843] font-semibold text-sm uppercase tracking-wider mb-3">Upgrade com crédito integral</h3>
                 <p className="text-gray-300 text-sm leading-relaxed">
-                  Fez o Curso Completo e quer partir para a Imersão ou Mentoria VIP?
+                  Fez o Curso Online e quer partir para a Imersão ou Mentoria VIP?
                   Nos primeiros 60 dias, 100% do que você pagou vira crédito no upgrade.
                   Após 60 dias, você ainda aproveita 70% como crédito.
                   Você nunca perde o que investiu.
@@ -693,7 +693,7 @@ export default function LandingPage() {
               <div className="bg-[#0A0D14] rounded-xl p-6 border border-white/10">
                 <h3 className="text-[#D4A843] font-semibold text-sm uppercase tracking-wider mb-3">Cashback em créditos</h3>
                 <p className="text-gray-300 text-sm leading-relaxed">
-                  Cada plano gera cashback automático na plataforma: 5% no Curso Completo
+                  Cada plano gera cashback automático na plataforma: 5% no Curso Online
                   e 10% na Imersão e Mentoria VIP. Use seus créditos para adquirir
                   horas extras de prática, módulos avulsos ou upgrades de plano.
                 </p>

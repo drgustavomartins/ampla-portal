@@ -86,7 +86,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
 
   pacote_completo: {
     key: "pacote_completo",
-    name: "Curso Completo",
+    name: "Curso Online",
     description: "Todos os módulos online — estude no seu ritmo",
     price: 597000,
     installments12x: 54700,

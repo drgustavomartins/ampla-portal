@@ -658,7 +658,7 @@ export default function PlanosPublicos() {
               </span>
             ))}
             <span className="rounded-full px-3.5 py-1.5 text-xs text-gray-400 border border-gray-200 bg-white">
-              todos inclusos no Curso Completo →
+              todos inclusos no Curso Online →
             </span>
           </div>
 
