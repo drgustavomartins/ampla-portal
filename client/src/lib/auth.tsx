@@ -14,6 +14,7 @@ interface AuthContextType {
   isTrial: boolean;
   isTrialExpired: boolean;
   trialDaysLeft: number | null;
+  isAccessExpired: boolean;
   isLoading: boolean;
 }
 
@@ -129,6 +130,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ? Math.max(0, Math.ceil((new Date(user.accessExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : null;
   const isTrialExpired = isTrial && trialDaysLeft !== null && trialDaysLeft <= 0;
+  // Universal access expiration: works for ALL plan types (Trial, Workshop, Online, VIP, etc.)
+  const isAccessExpired = (() => {
+    if (!user || isAdmin || isSuperAdmin) return false;
+    if (!user.accessExpiresAt) return false;
+    return new Date(user.accessExpiresAt).getTime() < Date.now();
+  })();
 
   if (isLoading) {
     return (
@@ -142,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin, isSuperAdmin, isStudent, isTrial, isTrialExpired, trialDaysLeft, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isAdmin, isSuperAdmin, isStudent, isTrial, isTrialExpired, trialDaysLeft, isAccessExpired, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

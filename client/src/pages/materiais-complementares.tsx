@@ -284,7 +284,9 @@ function ThemeDetail({ theme, onBack, isTrial = false }: { theme: Theme; onBack:
       {isTrial && (
         <div className="flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-lg px-4 py-2.5">
           <Lock className="w-4 h-4 text-gold shrink-0" />
-          <p className="text-xs text-gold/90">Você está no modo teste. <a href="/#/planos" className="underline font-semibold hover:text-gold">Adquira um plano</a> para ter acesso completo a todos os materiais.</p>
+          <p className="text-xs text-gold/90">
+            Seu acesso está limitado. <a href="https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20gostaria%20de%20saber%20mais%20sobre%20os%20planos%20da%20Ampla%20Facial" target="_blank" rel="noopener noreferrer" className="underline font-semibold hover:text-gold">Fale com Dr. Gustavo</a> para ter acesso completo a todos os materiais.
+          </p>
         </div>
       )}
       {theme.subcategories.map((sub, i) => (
@@ -326,7 +328,8 @@ function ThemeDetail({ theme, onBack, isTrial = false }: { theme: Theme; onBack:
 
 export default function MateriaisComplementares({ onBack }: { onBack?: () => void }) {
   const [selectedTheme, setSelectedTheme] = useState<Theme | null>(null);
-  const { user, isTrial } = useAuth();
+  const { user, isTrial, isAccessExpired } = useAuth();
+  const isContentLocked = isTrial || isAccessExpired;
   const matShelfRef = useRef<HTMLDivElement>(null);
 
   const scrollMatShelf = (direction: "left" | "right") => {
@@ -366,15 +369,15 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
     return null;
   }
 
-  // Trial: show ALL themes but lock non-Toxina ones
-  const visibleThemes = isTrial
+  // Trial/Expired: show ALL themes but lock non-Toxina ones
+  const visibleThemes = isContentLocked
     ? allThemes.filter((t) => t.fileCount > 0)
     : allowedThemes;
 
   if (selectedTheme) {
     return (
       <div className="max-w-4xl mx-auto">
-        <ThemeDetail theme={selectedTheme} onBack={() => setSelectedTheme(null)} isTrial={isTrial} />
+        <ThemeDetail theme={selectedTheme} onBack={() => setSelectedTheme(null)} isTrial={isContentLocked} />
       </div>
     );
   }
@@ -402,10 +405,15 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
         </div>
       </div>
 
-      {isTrial && (
+      {isContentLocked && (
         <div className="flex items-center gap-2 bg-gold/10 border border-gold/20 rounded-lg px-4 py-2.5">
           <Lock className="w-4 h-4 text-gold shrink-0" />
-          <p className="text-xs text-gold/90">Modo teste. <a href="/#/planos" className="underline font-semibold hover:text-gold">Adquira um plano</a> para ter acesso completo a todos os materiais.</p>
+          <p className="text-xs text-gold/90">
+            {isAccessExpired
+              ? <>Seu acesso expirou. <a href="https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20gostaria%20de%20saber%20mais%20sobre%20os%20planos%20da%20Ampla%20Facial" target="_blank" rel="noopener noreferrer" className="underline font-semibold hover:text-gold">Renove seu plano</a> para ter acesso completo a todos os materiais.</>
+              : <>Modo teste. <a href="/#/planos" className="underline font-semibold hover:text-gold">Adquira um plano</a> para ter acesso completo a todos os materiais.</>
+            }
+          </p>
         </div>
       )}
       <div className="relative group/matshelf">
@@ -426,7 +434,7 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
 
         <div ref={matShelfRef} className="shelf-scroll flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6">
         {visibleThemes.map((theme) => {
-          const isLockedForTrial = isTrial && theme.title !== "Toxina Botul\u00ednica";
+          const isLockedForTrial = isContentLocked && theme.title !== "Toxina Botul\u00ednica";
           return (
           <div
             key={theme.id}
@@ -448,15 +456,21 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
               {/* Soft vignette */}
               <div className="absolute inset-0 bg-gradient-to-t from-white/[0.06] via-transparent to-transparent" />
 
-              {/* Lock overlay for empty or trial-locked */}
+              {/* Lock overlay for empty or trial/expired-locked */}
               {(theme.fileCount === 0 || isLockedForTrial) && (
                 <div className="absolute inset-0 bg-black/50 backdrop-blur-[3px] flex flex-col items-center justify-center gap-2">
                   <Lock className={`w-6 h-6 ${isLockedForTrial ? 'text-gold/60' : 'text-white/20'}`} />
                   {isLockedForTrial && (
-                    <span className="text-[11px] text-white/70 font-medium text-center px-4 leading-snug">Adquira um plano para ter acesso completo a todos os materiais</span>
+                    <span className="text-[11px] text-white/70 font-medium text-center px-4 leading-snug">
+                      {isAccessExpired ? "Renove seu plano para acessar os materiais" : "Adquira um plano para ter acesso completo a todos os materiais"}
+                    </span>
                   )}
                   {isLockedForTrial && (
-                    <a href="/#/planos" className="text-[10px] text-gold/80 font-medium hover:text-gold transition-colors">Ver planos</a>
+                    isAccessExpired ? (
+                      <a href="https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20gostaria%20de%20saber%20mais%20sobre%20os%20planos%20da%20Ampla%20Facial" target="_blank" rel="noopener noreferrer" className="text-[10px] text-gold/80 font-medium hover:text-gold transition-colors">Renovar acesso</a>
+                    ) : (
+                      <a href="/#/planos" className="text-[10px] text-gold/80 font-medium hover:text-gold transition-colors">Ver planos</a>
+                    )
                   )}
                 </div>
               )}

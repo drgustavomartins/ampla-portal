@@ -1802,6 +1802,17 @@ export async function registerRoutes(server: Server, app: Express) {
       return res.json({ accessAll: false, moduleIds: [] });
     }
 
+    // Check if access is expired (for ANY plan type)
+    const accessExpired = user.accessExpiresAt
+      ? new Date(user.accessExpiresAt) < new Date()
+      : false;
+
+    // If access is expired, return all modules visible but flagged as expired
+    // so the frontend can show locked overlays with CTA
+    if (accessExpired) {
+      return res.json({ accessAll: true, moduleIds: [], expired: true });
+    }
+
     // Workshop invite users get full access to all modules
     if ((user as any).planKey === "workshop" || (user as any).inviteCode) {
       return res.json({ accessAll: true, moduleIds: [] });
@@ -1947,9 +1958,17 @@ export async function registerRoutes(server: Server, app: Express) {
       const auth = authenticateRequest(req);
       if (!auth) return res.status(401).json({ message: "Não autorizado" });
 
-      const userResult = await db.execute(sql`SELECT role, plan_key FROM users WHERE id = ${auth.userId}`);
+      const userResult = await db.execute(sql`SELECT role, plan_key, access_expires_at FROM users WHERE id = ${auth.userId}`);
       const user = (userResult as any).rows?.[0];
       if (!user) return res.json({ accessType: "none", allowedLessonIds: [] });
+
+      // Check if access is expired (for ANY plan type)
+      if (user.access_expires_at) {
+        const expires = new Date(user.access_expires_at);
+        if (new Date() > expires) {
+          return res.json({ accessType: "expired", allowedLessonIds: [] });
+        }
+      }
 
       // Workshop invite users get full access
       if (user.plan_key === "workshop") {

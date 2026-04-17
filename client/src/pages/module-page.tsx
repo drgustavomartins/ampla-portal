@@ -171,7 +171,7 @@ function getCourseImage(mod: Module): string | null {
 }
 
 export default function ModulePage() {
-  const { user, isTrial, trialDaysLeft } = useAuth();
+  const { user, isTrial, trialDaysLeft, isAccessExpired } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [, params] = useRoute("/module/:id");
@@ -264,14 +264,18 @@ export default function ModulePage() {
   const courseImage = getCourseImage(currentModule);
   const hasContent = moduleLessons.length > 0;
 
+  const whatsappRenewUrl = "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20gostaria%20de%20saber%20mais%20sobre%20os%20planos%20da%20Ampla%20Facial";
+
   // Check module access
   const isBoasVindas = currentModule.order === 1 || currentModule.title.toLowerCase().includes("boas vindas") || currentModule.title.toLowerCase().includes("boas-vindas");
-  const hasAccess = isBoasVindas || !myModules || myModules.accessAll || myModules.moduleIds.includes(currentModule.id);
+  const hasAccess = isAccessExpired ? false : (isBoasVindas || !myModules || myModules.accessAll || myModules.moduleIds.includes(currentModule.id));
   const isUnlocked = hasContent && hasAccess;
   const isLocked = hasContent && !hasAccess;
 
-  // Trial/Tester: check if a lesson is locked
+  // Trial/Tester/Expired: check if a lesson is locked
   const isLessonTrialLocked = (lesson: Lesson) => {
+    // All lessons locked when access is expired
+    if (isAccessExpired) return true;
     // API-based access: check allowedLessonIds
     if (isTesterAccess && allowedLessonIds.size > 0) {
       return !allowedLessonIds.has(lesson.id);
@@ -330,8 +334,10 @@ export default function ModulePage() {
 
   // ========== LESSON VIEW ==========
   if (selectedLesson && !isLocked) {
+    const lessonLockedForExpiry = isAccessExpired;
     const lessonLockedForTester = isLessonTrialLocked(selectedLesson);
-    const embedUrl = lessonLockedForTester ? null : getEmbedUrl(selectedLesson.videoUrl || "");
+    const isLessonLocked = lessonLockedForExpiry || lessonLockedForTester;
+    const embedUrl = isLessonLocked ? null : getEmbedUrl(selectedLesson.videoUrl || "");
     const isCompleted = completedIds.has(selectedLesson.id);
     const currentIdx = moduleLessons.findIndex(l => l.id === selectedLesson.id);
     const nextLesson = moduleLessons[currentIdx + 1];
@@ -358,14 +364,25 @@ export default function ModulePage() {
           {/* Left: Video + details centered */}
           <div ref={leftPanelRef} className="flex-[3] overflow-y-auto p-6 flex flex-col justify-center">
             <div className="max-w-4xl mx-auto w-full space-y-4">
-              {lessonLockedForTester ? (
+              {isLessonLocked ? (
                 <div className="aspect-video bg-card rounded-lg flex items-center justify-center ring-1 ring-border/30">
                   <div className="text-center space-y-3 px-6">
                     <Lock className="w-10 h-10 text-gold/60 mx-auto" />
-                    <p className="text-sm font-semibold text-foreground">Aula bloqueada</p>
-                    <p className="text-xs text-muted-foreground max-w-sm">Adquira um plano para assistir esta aula e ter acesso completo a todos os módulos.</p>
-                    <a href="/#/planos" style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>
-                      Ver planos e preços
+                    <p className="text-sm font-semibold text-foreground">
+                      {lessonLockedForExpiry ? "Seu acesso expirou" : "Aula bloqueada"}
+                    </p>
+                    <p className="text-xs text-muted-foreground max-w-sm">
+                      {lessonLockedForExpiry
+                        ? "Renove seu plano para continuar assistindo as aulas e ter acesso completo a todos os módulos."
+                        : "Adquira um plano para assistir esta aula e ter acesso completo a todos os módulos."}
+                    </p>
+                    <a
+                      href={lessonLockedForExpiry ? whatsappRenewUrl : "/#/planos"}
+                      target={lessonLockedForExpiry ? "_blank" : undefined}
+                      rel={lessonLockedForExpiry ? "noopener noreferrer" : undefined}
+                      style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}
+                    >
+                      {lessonLockedForExpiry ? "Quero Continuar Aprendendo" : "Ver planos e preços"}
                     </a>
                   </div>
                 </div>
@@ -671,8 +688,26 @@ export default function ModulePage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Expired Access Banner */}
+      {isAccessExpired && (
+        <div className="w-full bg-gold/10 border-b border-gold/20 px-4 py-2.5 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-sm">
+            <Lock className="w-4 h-4 text-gold shrink-0" />
+            <span className="text-gold font-semibold">Seu acesso expirou. Renove para continuar aprendendo!</span>
+          </div>
+          <a
+            href={whatsappRenewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"
+            style={{ backgroundColor: '#D4A843', color: '#0A0D14' }}
+          >
+            Quero Continuar Aprendendo
+          </a>
+        </div>
+      )}
       {/* Trial / Tester Banner */}
-      {(isTrial || isTesterAccess) && (
+      {!isAccessExpired && (isTrial || isTesterAccess) && (
         <div className="w-full bg-gold/10 border-b border-gold/20 px-4 py-2.5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm">
             <span className="text-gold font-semibold">
@@ -766,17 +801,25 @@ export default function ModulePage() {
               <Lock className="w-7 h-7 text-gold" />
             </div>
             <div className="space-y-2">
-              <h3 className="font-semibold text-foreground text-lg">Este módulo não está incluso no seu plano atual</h3>
+              <h3 className="font-semibold text-foreground text-lg">
+                {isAccessExpired
+                  ? "Seu acesso expirou"
+                  : "Este módulo não está incluso no seu plano atual"}
+              </h3>
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                Adquira um plano que inclui este conteúdo. Seus créditos serão aplicados como desconto.
+                {isAccessExpired
+                  ? "Renove seu plano para continuar aprendendo. Fale com Dr. Gustavo para desbloquear todo o conteúdo."
+                  : "Adquira um plano que inclui este conteúdo. Seus créditos serão aplicados como desconto."}
               </p>
             </div>
             <a
-              href="/#/planos-publicos"
+              href={isAccessExpired ? whatsappRenewUrl : "/#/planos-publicos"}
+              target={isAccessExpired ? "_blank" : undefined}
+              rel={isAccessExpired ? "noopener noreferrer" : undefined}
               className="inline-flex items-center gap-2 rounded-xl bg-gold/90 hover:bg-gold text-[#0A0D14] font-semibold px-6 py-3 text-sm transition-colors"
             >
               <ShoppingCart className="w-4 h-4" />
-              Adquirir este módulo
+              {isAccessExpired ? "Quero Continuar Aprendendo" : "Adquirir este módulo"}
             </a>
           </div>
         </div>
@@ -874,14 +917,25 @@ export default function ModulePage() {
               );
             })}
 
-            {/* CTA card for tester users */}
-            {(isTesterAccess || isTrial) && moduleLessons.some(l => isLessonTrialLocked(l)) && (
+            {/* CTA card for tester/expired users */}
+            {(isAccessExpired || isTesterAccess || isTrial) && moduleLessons.some(l => isLessonTrialLocked(l)) && (
               <div className="rounded-xl bg-gold/5 border border-gold/20 p-4 text-center mt-4">
                 <Lock className="w-5 h-5 text-gold mx-auto mb-2" />
-                <p className="text-sm font-medium">Quer assistir todas as aulas?</p>
-                <p className="text-xs text-muted-foreground mb-3">Adquira um plano e tenha acesso completo a todos os módulos e materiais.</p>
-                <a href="/#/planos" style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>
-                  Ver planos e preços
+                <p className="text-sm font-medium">
+                  {isAccessExpired ? "Seu acesso expirou" : "Quer assistir todas as aulas?"}
+                </p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  {isAccessExpired
+                    ? "Renove seu plano para continuar aprendendo e ter acesso completo a todos os módulos."
+                    : "Adquira um plano e tenha acesso completo a todos os módulos e materiais."}
+                </p>
+                <a
+                  href={isAccessExpired ? whatsappRenewUrl : "/#/planos"}
+                  target={isAccessExpired ? "_blank" : undefined}
+                  rel={isAccessExpired ? "noopener noreferrer" : undefined}
+                  style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}
+                >
+                  {isAccessExpired ? "Quero Continuar Aprendendo" : "Ver planos e preços"}
                 </a>
               </div>
             )}

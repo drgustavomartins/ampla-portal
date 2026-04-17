@@ -68,7 +68,7 @@ function getFirstDescLine(desc: string): string | null {
 }
 
 export default function StudentDashboard() {
-  const { user, logout, login, isTrial, isTrialExpired, trialDaysLeft } = useAuth();
+  const { user, logout, login, isTrial, isTrialExpired, trialDaysLeft, isAccessExpired } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [selectedModule, setSelectedModule] = useState<number | null>(null);
@@ -230,6 +230,8 @@ export default function StudentDashboard() {
     return isTesterAccess && allowedLessonIds.size > 0 && !allowedLessonIds.has(lessonId);
   };
 
+  const whatsappRenewUrl = "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20gostaria%20de%20saber%20mais%20sobre%20os%20planos%20da%20Ampla%20Facial";
+
   const getWhatsAppUrl = (mod: Module) => {
     const msg = encodeURIComponent(`Olá! Tenho interesse em adquirir o módulo ${mod.title} da mentoria Ampla Facial. Meu email de acesso é ${user?.email || ""}.`);
     return `https://wa.me/5521976263881?text=${msg}`;
@@ -260,8 +262,10 @@ export default function StudentDashboard() {
 
   // ========== LESSON VIEW ==========
   if (selectedLesson) {
-    const lessonLockedForTester = isLessonLockedForTester(selectedLesson.id);
-    const embedUrl = lessonLockedForTester ? null : getEmbedUrl(selectedLesson.videoUrl || "");
+    const lessonLockedForExpiry = isAccessExpired;
+    const lessonLockedForTester = !lessonLockedForExpiry && isLessonLockedForTester(selectedLesson.id);
+    const isLessonLocked = lessonLockedForExpiry || lessonLockedForTester;
+    const embedUrl = isLessonLocked ? null : getEmbedUrl(selectedLesson.videoUrl || "");
     const isCompleted = completedIds.has(selectedLesson.id);
     const currentModule = modules.find(m => m.id === selectedLesson.moduleId);
     const moduleLessons = getLessonsForModule(selectedLesson.moduleId);
@@ -291,14 +295,25 @@ export default function StudentDashboard() {
           <div className="grid lg:grid-cols-[1fr_320px] gap-6">
             {/* Video Area */}
             <div className="space-y-4">
-              {lessonLockedForTester ? (
+              {isLessonLocked ? (
                 <div className="aspect-video bg-card rounded-lg flex items-center justify-center ring-1 ring-border/30 relative">
                   <div className="text-center space-y-3 px-6">
                     <Lock className="w-10 h-10 text-gold/60 mx-auto" />
-                    <p className="text-sm font-semibold text-foreground">Aula bloqueada</p>
-                    <p className="text-xs text-muted-foreground max-w-sm">Adquira um plano para assistir esta aula e ter acesso completo a todos os módulos.</p>
-                    <a href="/#/planos" style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>
-                      Ver planos e preços
+                    <p className="text-sm font-semibold text-foreground">
+                      {lessonLockedForExpiry ? "Seu acesso expirou" : "Aula bloqueada"}
+                    </p>
+                    <p className="text-xs text-muted-foreground max-w-sm">
+                      {lessonLockedForExpiry
+                        ? "Renove seu plano para continuar assistindo as aulas e ter acesso completo a todos os módulos."
+                        : "Adquira um plano para assistir esta aula e ter acesso completo a todos os módulos."}
+                    </p>
+                    <a
+                      href={lessonLockedForExpiry ? whatsappRenewUrl : "/#/planos"}
+                      target={lessonLockedForExpiry ? "_blank" : undefined}
+                      rel={lessonLockedForExpiry ? "noopener noreferrer" : undefined}
+                      style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}
+                    >
+                      {lessonLockedForExpiry ? "Quero Continuar Aprendendo" : "Ver planos e preços"}
                     </a>
                   </div>
                 </div>
@@ -376,7 +391,7 @@ export default function StudentDashboard() {
               {moduleLessons.map((lesson, i) => {
                 const done = completedIds.has(lesson.id);
                 const isActive = lesson.id === selectedLesson.id;
-                const testerLocked = isLessonLockedForTester(lesson.id);
+                const testerLocked = isAccessExpired || isLessonLockedForTester(lesson.id);
                 const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
                 const supportLink = lesson.description ? extractFirstLink(lesson.description) : null;
                 return (
@@ -760,43 +775,26 @@ export default function StudentDashboard() {
       <main className="flex-1">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 lg:py-10 space-y-10">
 
-          {/* Access expiry banners */}
-          {isTrialExpired && (
+          {/* Access expiry banner — unified for ALL plan types */}
+          {isAccessExpired && (
             <div className="rounded-2xl border border-gold/30 bg-gradient-to-r from-gold/10 via-gold/5 to-transparent p-5 flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-start gap-3">
                 <Lock className="w-5 h-5 text-gold shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-foreground">Seu período de teste encerrou</p>
+                  <p className="font-semibold text-foreground">Seu acesso expirou. Renove para continuar aprendendo!</p>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    Seus créditos continuam salvos. Adquira um plano para desbloquear as aulas e usar seu saldo.
+                    Seus créditos continuam salvos. Entre em contato para renovar seu plano e desbloquear todo o conteúdo.
                   </p>
                 </div>
               </div>
               <a
-                href="/#/planos-publicos"
+                href={whatsappRenewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="shrink-0 rounded-xl bg-gold/90 hover:bg-gold px-5 py-2.5 text-sm font-semibold text-[#0A0D14] transition-colors"
               >
-                Ver planos
+                Quero Continuar Aprendendo
               </a>
-            </div>
-          )}
-          {isExpired && !isTrialExpired && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 flex items-center justify-between gap-4 flex-wrap">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-destructive">Seu acesso expirou</p>
-                  <p className="text-sm text-destructive/80 mt-0.5">
-                    Escolha um plano para continuar acessando as aulas.
-                  </p>
-                </div>
-              </div>
-              <Link
-                href="/planos"
-                className="shrink-0 rounded-lg bg-destructive px-4 py-2 text-sm font-semibold text-white hover:bg-destructive/90 transition-colors"
-              >
-                Ver planos
-              </Link>
             </div>
           )}
           {isExpiringSoon && (
@@ -844,18 +842,18 @@ export default function StudentDashboard() {
             <div className="relative grid lg:grid-cols-[1fr_340px] gap-6 items-start p-6 sm:p-8 lg:p-10">
             <div className="space-y-3">
               <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-foreground leading-tight">
-                {isTrialExpired
+                {isAccessExpired
                   ? <>Olá, <span className="text-gold">{firstName}</span></>
                   : <>Boas-vindas à sua mentoria, <span className="text-gold">{firstName}</span></>
                 }
               </h1>
               <p className="text-muted-foreground text-sm sm:text-base max-w-lg leading-relaxed">
-                {isTrialExpired
-                  ? "Seu período de teste encerrou, mas seus créditos continuam aqui. Adquira um plano para desbloquear todo o conteúdo."
+                {isAccessExpired
+                  ? "Seu acesso expirou, mas seus créditos continuam aqui. Entre em contato para renovar e desbloquear todo o conteúdo."
                   : <>Explore os cursos do Método NaturalUp&reg; e evolua sua prática clínica em harmonização facial com excelência e naturalidade.</>
                 }
               </p>
-              {totalLessons > 0 && !isTrialExpired && (
+              {totalLessons > 0 && !isAccessExpired && (
                 <div className="mt-6 rounded-xl bg-white/5 border border-white/10 p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold text-white">Seu progresso na plataforma</p>
@@ -892,13 +890,15 @@ export default function StudentDashboard() {
                 <span className="font-medium text-gold">{completedCount}/{totalLessons}</span>
               </div>
               {/* CTA de planos no card */}
-              {isTrialExpired ? (
+              {isAccessExpired ? (
                 <a
-                  href="/#/planos-publicos"
+                  href={whatsappRenewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gold/90 hover:bg-gold px-3 py-2.5 text-xs font-semibold text-[#0A0D14] transition-colors"
                 >
                   <Star className="w-3 h-3" />
-                  Adquirir um plano
+                  Quero Continuar Aprendendo
                 </a>
               ) : (
               <Link
@@ -914,7 +914,7 @@ export default function StudentDashboard() {
           </section>
 
           {/* ===== BOAS VINDAS (Featured/Hero Section) ===== */}
-          {introModule && introLessons.length > 0 && !isTrialExpired && (
+          {introModule && introLessons.length > 0 && !isAccessExpired && (
             <section className="space-y-4">
               <h2 className="font-serif text-2xl font-semibold text-foreground">Boas-Vindas</h2>
               <div
@@ -1000,7 +1000,7 @@ export default function StudentDashboard() {
                 const modLessons = getLessonsForModule(mod.id);
                 const allLessons = idx === 0 ? [...introLessons, ...modLessons] : modLessons;
                 const hasContent = allLessons.length > 0;
-                const accessible = isTrialExpired ? false : hasModuleAccess(mod);
+                const accessible = isAccessExpired ? false : hasModuleAccess(mod);
                 const isUnlocked = hasContent && accessible;
                 const isPurchasable = hasContent && !accessible;
                 const isLocked = !hasContent;
@@ -1013,11 +1013,12 @@ export default function StudentDashboard() {
                   <div
                     key={mod.id}
                     className={`shelf-card shrink-0 group transition-all duration-500 ${
-                      isUnlocked || isPurchasable || isTrialExpired ? "cursor-pointer" : "cursor-default"
+                      isUnlocked || isPurchasable || isAccessExpired ? "cursor-pointer" : "cursor-default"
                     }`}
                     onClick={() => {
-                      if (isTrialExpired) {
-                        window.location.href = "/#/planos-publicos";
+                      if (isAccessExpired) {
+                        window.open(whatsappRenewUrl, "_blank");
+                        return;
                       } else if (isPurchasable) {
                         setPurchaseModule(mod);
                       } else if (isUnlocked) {
@@ -1046,13 +1047,13 @@ export default function StudentDashboard() {
                       </span>
 
                       {/* Frosted lock overlay */}
-                      {isTrialExpired && (
+                      {isAccessExpired && (
                         <div className="absolute inset-0 bg-black/50 backdrop-blur-[3px] flex flex-col items-center justify-center gap-2">
                           <Lock className="w-5 h-5 text-gold/60" />
-                          <span className="text-xs font-semibold text-gold/80 bg-black/40 px-3 py-1 rounded-full">Ver planos</span>
+                          <span className="text-xs font-semibold text-gold/80 bg-black/40 px-3 py-1 rounded-full">Renovar acesso</span>
                         </div>
                       )}
-                      {!isTrialExpired && (isPurchasable || isLocked) && (
+                      {!isAccessExpired && (isPurchasable || isLocked) && (
                         <div className="absolute inset-0 bg-black/40 backdrop-blur-[3px] flex items-center justify-center">
                           <Lock className={`w-5 h-5 ${isPurchasable ? "text-white/40" : "text-white/20"}`} />
                         </div>
@@ -1439,13 +1440,15 @@ export default function StudentDashboard() {
         </div>
       </footer>
 
-      {/* Purchase Module Dialog */}
+      {/* Purchase Module Dialog / Expired Access Dialog */}
       <Dialog open={!!purchaseModule} onOpenChange={(open) => !open && setPurchaseModule(null)}>
         <DialogContent className="bg-card border-border/40 max-w-md">
           <DialogHeader>
             <DialogTitle className="text-lg">{purchaseModule?.title}</DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              Este módulo não está incluso no seu plano atual
+              {isAccessExpired
+                ? "Seu acesso expirou — renove para desbloquear este conteúdo"
+                : "Este módulo não está incluso no seu plano atual"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
@@ -1460,17 +1463,26 @@ export default function StudentDashboard() {
             </div>
             <div className="rounded-lg border border-gold/20 bg-gold/5 p-4 text-center space-y-3">
               <p className="text-sm text-foreground font-medium">
-                Adquira um plano que inclui este módulo
+                {isAccessExpired
+                  ? "Renove seu acesso para continuar aprendendo"
+                  : "Adquira um plano que inclui este módulo"}
               </p>
               <p className="text-xs text-muted-foreground">
-                Seus créditos serão aplicados automaticamente como desconto.
+                {isAccessExpired
+                  ? "Fale com Dr. Gustavo para renovar seu plano e desbloquear todo o conteúdo."
+                  : "Seus créditos serão aplicados automaticamente como desconto."}
               </p>
               <a
-                href="/#/planos-publicos"
+                href={isAccessExpired ? whatsappRenewUrl : "/#/planos-publicos"}
+                target={isAccessExpired ? "_blank" : undefined}
+                rel={isAccessExpired ? "noopener noreferrer" : undefined}
                 className="inline-flex items-center gap-2 rounded-xl bg-gold/90 hover:bg-gold text-[#0A0D14] font-semibold px-6 py-3 text-sm transition-colors"
               >
-                <ShoppingCart className="w-4 h-4" />
-                Ver planos disponíveis
+                {isAccessExpired ? (
+                  <><ExternalLink className="w-4 h-4" /> Quero Continuar Aprendendo</>
+                ) : (
+                  <><ShoppingCart className="w-4 h-4" /> Ver planos disponíveis</>
+                )}
               </a>
             </div>
           </div>
