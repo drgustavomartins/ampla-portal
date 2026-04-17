@@ -22,7 +22,7 @@ interface PlanData {
   valorMercado: number | null;
 }
 
-type Tab = "online" | "observação" | "mentoria";
+type Tab = "online" | "observação" | "mentoria" | "cursos";
 
 function formatBRL(c: number) {
   return (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -264,6 +264,7 @@ export default function PlanosPublicos() {
     online:     useRef<HTMLDivElement>(null),
     observação: useRef<HTMLDivElement>(null),
     mentoria:   useRef<HTMLDivElement>(null),
+    cursos:     useRef<HTMLDivElement>(null),
   };
 
   // Hash router: query params live after the hash, e.g. /#/comecar?plan=vip_completo
@@ -277,7 +278,8 @@ export default function PlanosPublicos() {
     if (!urlPlan) return;
     const vipPlans = ["vip_online", "vip_presencial", "vip_completo"];
     const obsPlans = ["observador_essencial", "observador_avancado", "observador_intensivo", "imersao"];
-    if (vipPlans.includes(urlPlan)) setActiveTab("mentoria");
+    if (urlPlan === "cursos") setActiveTab("cursos");
+    else if (vipPlans.includes(urlPlan)) setActiveTab("mentoria");
     else if (obsPlans.includes(urlPlan)) setActiveTab("observação");
     else setActiveTab("online");
   }, [urlPlan]);
@@ -364,7 +366,7 @@ export default function PlanosPublicos() {
   useEffect(() => {
     if (!data) return;
     const obs: IntersectionObserver[] = [];
-    (["online", "observação", "mentoria"] as Tab[]).forEach((key) => {
+    (["online", "observação", "mentoria", "cursos"] as Tab[]).forEach((key) => {
       const el = sectionRefs[key].current;
       if (!el) return;
       const o = new IntersectionObserver(
@@ -397,6 +399,7 @@ export default function PlanosPublicos() {
     { key: "online",     label: "Online",                desc: "Aulas gravadas no seu ritmo" },
     { key: "observação", label: "Com Observação Clínica", desc: "Presencial com o Dr. Gustavo" },
     { key: "mentoria",   label: "Mentoria VIP",           desc: "Acompanhamento individual" },
+    { key: "cursos",     label: "Cursos Individuais",     desc: "Teoria + prática presencial" },
   ];
 
   return (
@@ -900,6 +903,162 @@ export default function PlanosPublicos() {
                   <ul className="mt-4 space-y-2 flex-1">
                     {pkg.features.map((f, i) => (<li key={i} className="flex items-start gap-2 text-sm text-gray-700"><Check className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />{f}</li>))}
                   </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── CURSOS INDIVIDUAIS ──────────────────────────────── */}
+        <div className="my-16 h-px bg-gray-200" />
+
+        <div ref={sectionRefs.cursos}>
+          <SectionLabel
+            eyebrow="Cursos Individuais"
+            title="Domine um tema de cada vez"
+            sub="Teoria online + encontro ao vivo + prática presencial com pacientes-modelo"
+            color="#C9A84C"
+          />
+
+          <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 max-w-4xl mx-auto">
+            {[
+              {
+                title: "Curso de Toxina Botulínica",
+                subtitle: "Domine toxina botulínica da teoria à prática clínica",
+                features: [
+                  "30 aulas teóricas online",
+                  "Casos clínicos gravados",
+                  "Materiais complementares (PDFs, áudios)",
+                  "Encontro ao vivo pré-prática com Dr. Gustavo",
+                  "Prática presencial com pacientes-modelo",
+                  "Certificado de conclusão",
+                ],
+                badge: "Conteúdo completo",
+                url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20Curso%20de%20Toxina%20Botul%C3%ADnica",
+              },
+              {
+                title: "Curso de Preenchedores Faciais",
+                subtitle: "Preenchimento com segurança em todas as regiões da face",
+                features: [
+                  "17 aulas teóricas online",
+                  "Anatomia vascular e zonas de perigo",
+                  "Materiais complementares",
+                  "Encontro ao vivo pré-prática com Dr. Gustavo",
+                  "Prática presencial com pacientes-modelo",
+                  "Certificado de conclusão",
+                ],
+                url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20Curso%20de%20Preenchedores%20Faciais",
+              },
+              {
+                title: "Curso de Bioestimuladores de Colágeno",
+                subtitle: "CaHA, PLLA e PCL — protocolos baseados em evidência científica",
+                features: [
+                  "Aulas teóricas online (conteúdo em expansão)",
+                  "Demonstrações práticas gravadas",
+                  "Revisões científicas e artigos",
+                  "Encontro ao vivo pré-prática com Dr. Gustavo",
+                  "Prática presencial com pacientes-modelo",
+                  "Certificado de conclusão",
+                ],
+                url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20Curso%20de%20Bioestimuladores%20de%20Col%C3%A1geno",
+              },
+              {
+                title: "Curso de Biorregeneradores",
+                subtitle: "iPRF, PDRN, exossomos e intradermoterapia avançada",
+                features: [
+                  "Aulas teóricas online (conteúdo em expansão)",
+                  "Protocolos de aplicação detalhados",
+                  "Evidências científicas atualizadas",
+                  "Encontro ao vivo pré-prática com Dr. Gustavo",
+                  "Prática presencial com pacientes-modelo",
+                  "Certificado de conclusão",
+                ],
+                url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20Curso%20de%20Biorregeneradores",
+              },
+            ].map((curso) => (
+              <div
+                key={curso.title}
+                className="relative flex flex-col rounded-[28px] overflow-hidden"
+                style={{
+                  background: "linear-gradient(145deg,#0A1628 0%,#0F2040 55%,#162C52 100%)",
+                  boxShadow: "0 8px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
+                }}
+              >
+                {/* SVG pattern */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 260 200" preserveAspectRatio="xMaxYMin slice" fill="none">
+                  <circle cx="220" cy="10" r="100" fill="#C9A84C" fillOpacity="0.07"/>
+                  <circle cx="10" cy="150" r="65" fill="#C9A84C" fillOpacity="0.05"/>
+                </svg>
+
+                {/* Gold accent line */}
+                <div className="h-[3px] w-full flex-shrink-0" style={{ background: "#C9A84C" }} />
+
+                {/* Header */}
+                <div className="relative px-7 pt-6 pb-0">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wide" style={{ background: "rgba(201,168,76,0.15)", color: "#C9A84C" }}>
+                      Teoria + Prática
+                    </span>
+                    {curso.badge && (
+                      <span className="rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wide" style={{ background: "rgba(34,197,94,0.14)", color: "#22C55E" }}>
+                        {curso.badge}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-bold leading-snug text-white">{curso.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>{curso.subtitle}</p>
+                </div>
+
+                {/* Price */}
+                <div className="relative px-7 pt-5 pb-0">
+                  <span className="text-[32px] font-bold tabular-nums leading-none" style={{ color: "#C9A84C" }}>
+                    R$ 4.997
+                  </span>
+                  <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.32)" }}>
+                    ou 12× de R$ 467
+                  </p>
+                </div>
+
+                {/* Divider */}
+                <div className="mx-7 mt-5 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
+
+                {/* Features */}
+                <ul className="relative flex-1 px-7 pt-4 pb-0 space-y-2.5">
+                  {curso.features.map((f, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.09)" }}>
+                        <Check className="h-[10px] w-[10px]" style={{ color: "#C9A84C" }} />
+                      </div>
+                      <span className="text-[13px] leading-snug" style={{ color: "rgba(255,255,255,0.55)" }}>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Location */}
+                <div className="relative px-7 pt-4 pb-0">
+                  <div className="flex items-start gap-2 text-[12px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+                    <svg className="w-3.5 h-3.5 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
+                    </svg>
+                    <span>Prática na Clínica Gustavo Martins — Rio de Janeiro</span>
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <div className="relative px-7 pt-5 pb-7">
+                  <a
+                    href={curso.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold transition-all duration-200 hover:brightness-110"
+                    style={{ background: "#C9A84C", color: "#0A0500", boxShadow: "0 4px 20px rgba(201,168,76,0.35)" }}
+                  >
+                    <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    Quero este curso
+                    <ArrowRight className="h-4 w-4" />
+                  </a>
                 </div>
               </div>
             ))}

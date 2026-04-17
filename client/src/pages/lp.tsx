@@ -19,7 +19,6 @@ import {
   FlaskConical,
   Gem,
 } from "lucide-react";
-import { useState } from "react";
 
 /* ────────────────────────────────────────────────────────────────────────────
    SCROLL ANIMATION HOOK
@@ -655,6 +654,21 @@ export default function LandingPage() {
               </div>
             </FadeIn>
           </div>
+        </div>
+      </section>
+
+      {/* ── Individual courses mention ─────────────────────── */}
+      <section className="py-8 border-t border-white/5">
+        <div className="max-w-2xl mx-auto px-5 text-center">
+          <p className="text-gray-500 text-sm mb-1">Prefere dominar um tema de cada vez?</p>
+          <p className="text-gray-600 text-xs mb-4">Conheça nossos cursos individuais com teoria online e prática presencial</p>
+          <a
+            href="/#/planos-publicos?plan=cursos"
+            className="inline-flex items-center gap-1.5 text-[#D4A843] text-sm font-medium hover:text-[#e8b84d] transition-colors"
+          >
+            Ver cursos
+            <ChevronRight className="w-4 h-4" />
+          </a>
         </div>
       </section>
 
