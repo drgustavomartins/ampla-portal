@@ -520,26 +520,26 @@ export default function PlanosPage() {
                   {
                     title: "Curso de Toxina Botulínica",
                     desc: "Domine toxina botulínica da teoria à prática clínica",
-                    features: ["30 aulas teóricas online", "Casos clínicos gravados", "Materiais complementares (PDFs, áudios)", "Encontro ao vivo pré-prática com Dr. Gustavo", "Prática presencial com pacientes-modelo", "Certificado de conclusão"],
+                    features: ["30 aulas teóricas online", "Casos clínicos gravados", "Materiais complementares (PDFs, áudios, artigos)", "Encontro ao vivo pré-prática com Dr. Gustavo", "10h de prática clínica presencial", "4 encontros curtos ou 2 encontros maiores — você escolhe", "Certificado de conclusão"],
                     badge: "Conteúdo completo",
                     url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20Curso%20de%20Toxina%20Botul%C3%ADnica",
                   },
                   {
                     title: "Curso de Preenchedores Faciais",
                     desc: "Preenchimento com segurança em todas as regiões da face",
-                    features: ["17 aulas teóricas online", "Anatomia vascular e zonas de perigo", "Materiais complementares", "Encontro ao vivo pré-prática com Dr. Gustavo", "Prática presencial com pacientes-modelo", "Certificado de conclusão"],
+                    features: ["17 aulas teóricas online", "Anatomia vascular e zonas de perigo", "Materiais complementares (PDFs, áudios, artigos)", "Encontro ao vivo pré-prática com Dr. Gustavo", "10h de prática clínica presencial", "4 encontros curtos ou 2 encontros maiores — você escolhe", "Certificado de conclusão"],
                     url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20Curso%20de%20Preenchedores%20Faciais",
                   },
                   {
                     title: "Curso de Bioestimuladores de Colágeno",
                     desc: "CaHA, PLLA e PCL — protocolos baseados em evidência científica",
-                    features: ["Aulas teóricas online (conteúdo em expansão)", "Demonstrações práticas gravadas", "Revisões científicas e artigos", "Encontro ao vivo pré-prática com Dr. Gustavo", "Prática presencial com pacientes-modelo", "Certificado de conclusão"],
+                    features: ["Aulas teóricas online (conteúdo em expansão)", "Demonstrações práticas gravadas", "Materiais complementares (PDFs, áudios, artigos)", "Encontro ao vivo pré-prática com Dr. Gustavo", "10h de prática clínica presencial", "4 encontros curtos ou 2 encontros maiores — você escolhe", "Certificado de conclusão"],
                     url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20Curso%20de%20Bioestimuladores%20de%20Col%C3%A1geno",
                   },
                   {
                     title: "Curso de Biorregeneradores",
                     desc: "iPRF, PDRN, exossomos e intradermoterapia avançada",
-                    features: ["Aulas teóricas online (conteúdo em expansão)", "Protocolos de aplicação detalhados", "Evidências científicas atualizadas", "Encontro ao vivo pré-prática com Dr. Gustavo", "Prática presencial com pacientes-modelo", "Certificado de conclusão"],
+                    features: ["Aulas teóricas online (conteúdo em expansão)", "Protocolos de aplicação detalhados", "Materiais complementares (PDFs, áudios, artigos)", "Encontro ao vivo pré-prática com Dr. Gustavo", "10h de prática clínica presencial", "4 encontros curtos ou 2 encontros maiores — você escolhe", "Certificado de conclusão"],
                     url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20Curso%20de%20Biorregeneradores",
                   },
                 ].map((curso) => (
@@ -570,12 +570,15 @@ export default function PlanosPage() {
 
                     {/* Features */}
                     <ul className="flex-1 space-y-2 mb-4">
-                      {curso.features.map((f, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                          <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#C9A84C]" />
-                          <span>{f}</span>
-                        </li>
-                      ))}
+                      {curso.features.map((f, i) => {
+                        const isPractice = f.startsWith("10h de prática");
+                        return (
+                          <li key={i} className={`flex items-start gap-2 text-sm ${isPractice ? "text-[#B8860B] font-semibold" : "text-gray-600"}`}>
+                            <Check className={`mt-0.5 h-4 w-4 shrink-0 ${isPractice ? "text-[#B8860B]" : "text-[#C9A84C]"}`} />
+                            <span>{f}</span>
+                          </li>
+                        );
+                      })}
                     </ul>
 
                     {/* Location */}

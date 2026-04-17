@@ -928,9 +928,10 @@ export default function PlanosPublicos() {
                 features: [
                   "30 aulas teóricas online",
                   "Casos clínicos gravados",
-                  "Materiais complementares (PDFs, áudios)",
+                  "Materiais complementares (PDFs, áudios, artigos)",
                   "Encontro ao vivo pré-prática com Dr. Gustavo",
-                  "Prática presencial com pacientes-modelo",
+                  "10h de prática clínica presencial",
+                  "4 encontros curtos ou 2 encontros maiores — você escolhe",
                   "Certificado de conclusão",
                 ],
                 badge: "Conteúdo completo",
@@ -942,9 +943,10 @@ export default function PlanosPublicos() {
                 features: [
                   "17 aulas teóricas online",
                   "Anatomia vascular e zonas de perigo",
-                  "Materiais complementares",
+                  "Materiais complementares (PDFs, áudios, artigos)",
                   "Encontro ao vivo pré-prática com Dr. Gustavo",
-                  "Prática presencial com pacientes-modelo",
+                  "10h de prática clínica presencial",
+                  "4 encontros curtos ou 2 encontros maiores — você escolhe",
                   "Certificado de conclusão",
                 ],
                 url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20Curso%20de%20Preenchedores%20Faciais",
@@ -955,9 +957,10 @@ export default function PlanosPublicos() {
                 features: [
                   "Aulas teóricas online (conteúdo em expansão)",
                   "Demonstrações práticas gravadas",
-                  "Revisões científicas e artigos",
+                  "Materiais complementares (PDFs, áudios, artigos)",
                   "Encontro ao vivo pré-prática com Dr. Gustavo",
-                  "Prática presencial com pacientes-modelo",
+                  "10h de prática clínica presencial",
+                  "4 encontros curtos ou 2 encontros maiores — você escolhe",
                   "Certificado de conclusão",
                 ],
                 url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20Curso%20de%20Bioestimuladores%20de%20Col%C3%A1geno",
@@ -968,9 +971,10 @@ export default function PlanosPublicos() {
                 features: [
                   "Aulas teóricas online (conteúdo em expansão)",
                   "Protocolos de aplicação detalhados",
-                  "Evidências científicas atualizadas",
+                  "Materiais complementares (PDFs, áudios, artigos)",
                   "Encontro ao vivo pré-prática com Dr. Gustavo",
-                  "Prática presencial com pacientes-modelo",
+                  "10h de prática clínica presencial",
+                  "4 encontros curtos ou 2 encontros maiores — você escolhe",
                   "Certificado de conclusão",
                 ],
                 url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20Curso%20de%20Biorregeneradores",
@@ -1012,7 +1016,7 @@ export default function PlanosPublicos() {
                 {/* Price */}
                 <div className="relative px-7 pt-5 pb-0">
                   <span className="text-[32px] font-bold tabular-nums leading-none" style={{ color: "#C9A84C" }}>
-                    R$ 4.997
+                    R$ 4.997,00
                   </span>
                   <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.32)" }}>
                     ou 12× de R$ 467
@@ -1024,14 +1028,17 @@ export default function PlanosPublicos() {
 
                 {/* Features */}
                 <ul className="relative flex-1 px-7 pt-4 pb-0 space-y-2.5">
-                  {curso.features.map((f, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.09)" }}>
-                        <Check className="h-[10px] w-[10px]" style={{ color: "#C9A84C" }} />
-                      </div>
-                      <span className="text-[13px] leading-snug" style={{ color: "rgba(255,255,255,0.55)" }}>{f}</span>
-                    </li>
-                  ))}
+                  {curso.features.map((f, i) => {
+                    const isPractice = f.startsWith("10h de prática");
+                    return (
+                      <li key={i} className="flex items-start gap-3">
+                        <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center" style={{ background: isPractice ? "rgba(201,168,76,0.25)" : "rgba(255,255,255,0.09)" }}>
+                          <Check className="h-[10px] w-[10px]" style={{ color: "#C9A84C" }} />
+                        </div>
+                        <span className={`text-[13px] leading-snug ${isPractice ? "font-semibold" : ""}`} style={{ color: isPractice ? "#C9A84C" : "rgba(255,255,255,0.55)" }}>{f}</span>
+                      </li>
+                    );
+                  })}
                 </ul>
 
                 {/* Location */}
