@@ -205,34 +205,21 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Invite code badge — shown when user arrived via invite link */}
-          {inviteInfo && (
-            <div className="w-full flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
-              <div className="flex items-center gap-2.5">
-                <Star className="w-4 h-4 text-emerald-400 shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-emerald-300 leading-tight">Convite Especial — Acesso Completo</p>
-                  <p className="text-xs text-white/50 mt-0.5">Todas as aulas e módulos por {inviteInfo.durationDays} dias</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Trial banner — #36 removido o modo "register" separado */}
+          {/* Trial banner */}
           {mode === "login" && (
             <button
               type="button"
               onClick={() => switchMode("trial")}
-              className="w-full flex items-center justify-between gap-3 rounded-xl border border-gold/30 bg-gold/5 hover:bg-gold/10 px-4 py-3 transition-colors text-left"
+              className="w-full flex items-center justify-between gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15 px-4 py-3 transition-colors text-left"
             >
               <div className="flex items-center gap-2.5">
-                <Sparkles className="w-4 h-4 text-gold shrink-0" />
+                <Star className="w-4 h-4 text-emerald-400 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-gold leading-tight">Teste grátis por 7 dias</p>
-                  <p className="text-xs text-white/40 mt-0.5">Sem cartão de crédito — acesso imediato</p>
+                  <p className="text-sm font-semibold text-emerald-300 leading-tight">Teste grátis por 7 dias</p>
+                  <p className="text-xs text-white/40 mt-0.5">Sem cartão de crédito, acesso imediato</p>
                 </div>
               </div>
-              <span className="text-xs text-gold/70 shrink-0">Começar &rarr;</span>
+              <span className="text-xs text-emerald-400/70 shrink-0">Começar &rarr;</span>
             </button>
           )}
 
