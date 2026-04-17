@@ -155,16 +155,35 @@ function PlanCard({ plan, onAcessar, isLoading }: {
 
       {/* Features */}
       <ul className="relative flex-1 px-7 pt-4 pb-0 space-y-2.5">
-        {plan.features.map((f, i) => (
-          <li key={i} className="flex items-start gap-3">
-            <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center"
-              style={{ background: chk }}>
-              <Check className="h-[10px] w-[10px]" style={{ color: accent }} />
-            </div>
-            <span className="text-[13px] leading-snug" style={{ color: ts }}>{f}</span>
-          </li>
-        ))}
+        {plan.features.map((f, i) => {
+          const isOnlineOnly = f.startsWith("Acesso exclusivamente online");
+          return (
+            <li key={i} className="flex items-start gap-3">
+              <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center"
+                style={{ background: isOnlineOnly ? "transparent" : chk }}>
+                {isOnlineOnly
+                  ? <svg className="h-[14px] w-[14px]" viewBox="0 0 24 24" fill="none" stroke={tt} strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                  : <Check className="h-[10px] w-[10px]" style={{ color: accent }} />}
+              </div>
+              <span className={`text-[13px] leading-snug ${isOnlineOnly ? "italic" : ""}`} style={{ color: isOnlineOnly ? tt : ts }}>{f}</span>
+            </li>
+          );
+        })}
       </ul>
+
+      {/* Link to cursos individuais (pacote_completo only) */}
+      {plan.key === "pacote_completo" && (
+        <div className="relative px-7 pt-3 pb-0">
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); const el = document.querySelector('[data-section="cursos"]'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+            className="text-[12px] hover:underline transition-colors"
+            style={{ color: accent }}
+          >
+            Quer prática presencial? Conheça nossos Cursos Individuais &rarr;
+          </a>
+        </div>
+      )}
 
       {/* Badges */}
       {(plan.clinicalHours > 0 || plan.practiceHours > 0 || plan.hasMentorship || plan.hasLiveEvents) && (
@@ -912,7 +931,7 @@ export default function PlanosPublicos() {
         {/* ── CURSOS INDIVIDUAIS ──────────────────────────────── */}
         <div className="my-16 h-px bg-gray-200" />
 
-        <div ref={sectionRefs.cursos}>
+        <div ref={sectionRefs.cursos} data-section="cursos">
           <SectionLabel
             eyebrow="Cursos Individuais"
             title="Domine um tema de cada vez"

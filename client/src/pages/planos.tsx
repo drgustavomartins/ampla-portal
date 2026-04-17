@@ -114,13 +114,31 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
 
       {/* Features */}
       <ul className="mb-2 flex-1 space-y-2">
-        {visibleFeatures.map((f, i) => (
-          <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-            <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
-            <span>{f}</span>
-          </li>
-        ))}
+        {visibleFeatures.map((f, i) => {
+          const isOnlineOnly = f.startsWith("Acesso exclusivamente online");
+          return (
+            <li key={i} className={`flex items-start gap-2 text-sm ${isOnlineOnly ? "text-gray-400 italic" : "text-gray-600"}`}>
+              {isOnlineOnly
+                ? <Info className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                : <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />}
+              <span>{f}</span>
+            </li>
+          );
+        })}
       </ul>
+
+      {/* Link to cursos individuais (pacote_completo only) */}
+      {plan.key === "pacote_completo" && (
+        <div className="mb-3">
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); document.querySelector('[data-section="cursos-auth"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
+            className="text-xs text-[#B8860B] hover:underline transition-colors"
+          >
+            Quer prática presencial? Conheça nossos Cursos Individuais &rarr;
+          </a>
+        </div>
+      )}
 
       {plan.features.length > 5 && (
         <button
@@ -508,7 +526,7 @@ export default function PlanosPage() {
 
           {/* ── CURSOS INDIVIDUAIS (static, WhatsApp CTA) ───── */}
           {(!selectedGroup || selectedGroup === "cursos") && (
-            <div className="mb-14">
+            <div className="mb-14" data-section="cursos-auth">
               <div className="mb-6 text-center">
                 <div className="inline-block rounded-full border border-[#C9A84C]/40 bg-[#C9A84C]/10 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-[#C9A84C]">
                   Cursos Individuais
