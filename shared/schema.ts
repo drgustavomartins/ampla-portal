@@ -223,6 +223,8 @@ export const inviteCodes = pgTable("invite_codes", {
   usedBy: text("used_by").notNull().default("[]"), // JSON array of { email, usedAt }
   active: boolean("active").notNull().default(true),
   createdBy: integer("created_by").notNull(),
+  createdAt: text("created_at").notNull(),
+});
 
 // Site Visitors — anonymous visitor tracking
 export const siteVisitors = pgTable("site_visitors", {
