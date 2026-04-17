@@ -604,10 +604,10 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Link planos publicos */}
+          {/* Link para LP */}
           <div className="mt-6 text-center">
-            <a href="/#/planos-publicos" className="text-sm text-gold hover:text-gold/80 font-medium underline-offset-4 hover:underline transition-colors">
-              Ver todos os planos e preços
+            <a href="/#/lp" className="text-sm text-gold hover:text-gold/80 font-medium underline-offset-4 hover:underline transition-colors">
+              Conheça a formação completa
             </a>
           </div>
 
