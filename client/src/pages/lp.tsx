@@ -190,7 +190,7 @@ export default function LandingPage() {
             className="relative max-w-3xl mx-auto aspect-video rounded-2xl overflow-hidden border border-white/10 bg-[#0F1A2E]"
           >
             <iframe
-              src="https://www.youtube.com/embed/XtMfQaahauQ?rel=0&modestbranding=1&controls=0&disablekb=1&autoplay=1&mute=1"
+              src="https://www.youtube.com/embed/XtMfQaahauQ?rel=0&modestbranding=1&disablekb=1"
               title="Apresentação Ampla Facial"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
