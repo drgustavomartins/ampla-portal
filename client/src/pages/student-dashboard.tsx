@@ -534,23 +534,51 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       {/* ===== TRIAL BANNER ===== */}
-      {isTrial && (
-        <div className="w-full bg-gold/10 border-b border-gold/20 px-4 py-2.5 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-gold font-semibold text-sm shrink-0">
-              {trialDaysLeft !== null && trialDaysLeft > 0
-                ? `Teste gratuito — ${trialDaysLeft} dia${trialDaysLeft === 1 ? "" : "s"} restante${trialDaysLeft === 1 ? "" : "s"}`
-                : "Teste gratuito encerrado"}
-            </span>
-            <span className="text-white/40 text-xs hidden sm:inline truncate">Acesso às 2 primeiras aulas de cada módulo</span>
+      {isTrial && (() => {
+        const days = trialDaysLeft ?? 0;
+        const urgent = days <= 2;
+        const expired = days <= 0;
+        const bgClass = expired
+          ? "bg-red-500/20 border-red-500/40"
+          : urgent
+            ? "bg-red-500/10 border-red-500/30"
+            : "bg-gold/10 border-gold/20";
+        const textClass = expired || urgent ? "text-red-400" : "text-gold";
+        const btnClass = expired || urgent
+          ? "bg-red-500 hover:bg-red-600 text-white"
+          : "bg-gold hover:bg-gold/90 text-background";
+        return (
+          <div className={`w-full border-b px-4 py-3 ${bgClass}`}>
+            <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                {/* Timer circle */}
+                <div className={`shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold text-lg ${expired ? "border-red-500 text-red-400" : urgent ? "border-red-400 text-red-400 animate-pulse" : "border-gold text-gold"}`}>
+                  {expired ? "!" : days}
+                </div>
+                <div className="min-w-0">
+                  <p className={`font-semibold text-sm ${textClass}`}>
+                    {expired
+                      ? "Seu teste gratuito encerrou"
+                      : `${days} dia${days === 1 ? "" : "s"} restante${days === 1 ? "" : "s"} no teste gratuito`}
+                  </p>
+                  <p className="text-white/40 text-xs truncate">
+                    {expired
+                      ? "Assine para continuar acessando todas as aulas"
+                      : urgent
+                        ? "Corra! Seu acesso está acabando"
+                        : "Acesso às 2 primeiras aulas de cada módulo"}
+                  </p>
+                </div>
+              </div>
+              <Link href="/lp">
+                <button className={`shrink-0 text-xs font-semibold px-4 py-2 rounded-full transition-colors ${btnClass}`}>
+                  {expired ? "Assinar agora" : "Conheça a formação completa"}
+                </button>
+              </Link>
+            </div>
           </div>
-          <Link href="/lp">
-            <button className="shrink-0 text-xs font-semibold bg-gold text-background px-3 py-1.5 rounded-full hover:bg-gold/90 transition-colors">
-              Conheça a formação completa
-            </button>
-          </Link>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ===== HEADER ===== */}
       <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm sticky top-0 z-10">
