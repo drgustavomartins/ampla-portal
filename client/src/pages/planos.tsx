@@ -335,7 +335,7 @@ export default function PlanosPage() {
     );
   }
 
-  const plans = data?.plans || [];
+  const plans = (data?.plans || []).filter((p) => p.key !== "workshop");
   const groupedPlans: Record<string, PlanData[]> = {};
   for (const p of plans) {
     if (!groupedPlans[p.group]) groupedPlans[p.group] = [];

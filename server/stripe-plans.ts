@@ -23,6 +23,8 @@ export interface PlanConfig {
   mentorshipMonths: number;
   hasLiveEvents: boolean; // encontros quinzenais ao vivo
   hasNaturalUp: boolean; // método NaturalUp® completo
+  // Visibilidade
+  hidden?: boolean; // true = não exibir em páginas públicas de planos (ex: workshop invite-only)
   // Upgrade — planos que este plano pode ser destino
   canUpgradeTo: PlanKey[];
   // Valor de mercado equivalente (para mostrar valor percebido)
@@ -520,6 +522,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 0,
     installments12x: null,
     group: "digital",
+    hidden: true,
     features: [
       "Acesso completo a todos os módulos",
       "Todas as aulas disponíveis",
