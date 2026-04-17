@@ -69,8 +69,11 @@ export default function LoginPage() {
   // Capture UTM params on login/register page load
   useEffect(() => { captureUtmParams(); }, []);
 
-  // Check for invite code and auto-switch to registration
+  // Check for invite code — only auto-switch to trial if invite param is in the CURRENT URL
   useEffect(() => {
+    const hashQuery = window.location.hash.includes("?") ? window.location.hash.split("?")[1] : "";
+    const urlParams = new URLSearchParams(hashQuery || window.location.search);
+    const freshInvite = urlParams.get("invite");
     const code = getInviteCode();
     if (code) {
       fetch(`/api/invite/${encodeURIComponent(code)}`)
@@ -78,7 +81,7 @@ export default function LoginPage() {
         .then(data => {
           if (data) {
             setInviteInfo(data);
-            setMode("trial"); // auto-switch to registration form
+            if (freshInvite) setMode("trial"); // only auto-switch if invite is in URL now
           }
         })
         .catch(() => {});
@@ -216,7 +219,7 @@ export default function LoginPage() {
           )}
 
           {/* Trial banner — #36 removido o modo "register" separado */}
-          {mode === "login" && !inviteInfo && (
+          {mode === "login" && (
             <button
               type="button"
               onClick={() => switchMode("trial")}
