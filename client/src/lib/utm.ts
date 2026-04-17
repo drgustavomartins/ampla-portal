@@ -75,10 +75,10 @@ function classifyFromReferrer(): string {
 }
 
 /** Get stored UTM data for inclusion in registration requests */
-export function getUtmData(): UtmData {
+export function getUtmData(): UtmData & { visitor_id?: string } {
   const stored = localStorage.getItem(UTM_STORAGE_KEY);
   const landingPage = localStorage.getItem(LANDING_PAGE_KEY);
-  const data: UtmData = stored ? JSON.parse(stored) : {};
+  const data: UtmData & { visitor_id?: string } = stored ? JSON.parse(stored) : {};
 
   // If no UTM data was captured, try to classify from referrer
   if (!data.lead_source) {
@@ -87,6 +87,12 @@ export function getUtmData(): UtmData {
 
   if (landingPage) {
     data.landing_page = landingPage;
+  }
+
+  // Include visitor_id for linking anonymous tracking to user account
+  const visitorId = localStorage.getItem("ampla_visitor_id");
+  if (visitorId) {
+    data.visitor_id = visitorId;
   }
 
   return data;

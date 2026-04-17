@@ -363,7 +363,13 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`CREATE TABLE IF NOT EXISTS invite_codes (id SERIAL PRIMARY KEY, code TEXT NOT NULL UNIQUE, access_type TEXT NOT NULL DEFAULT 'full', duration_days INTEGER NOT NULL DEFAULT 7, campaign TEXT NOT NULL, max_uses INTEGER NOT NULL DEFAULT 0, used_count INTEGER NOT NULL DEFAULT 0, used_by TEXT NOT NULL DEFAULT '[]', active BOOLEAN NOT NULL DEFAULT true, created_by INTEGER NOT NULL, created_at TEXT NOT NULL)`).catch(() => {});
     // Invite code column on users
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS invite_code TEXT`).catch(() => {});
-    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts, community, lead_events, invite_codes tables ensured");
+    // Site Visitors / Page Visits (visitor tracking)
+    await db.execute(`CREATE TABLE IF NOT EXISTS site_visitors (id SERIAL PRIMARY KEY, visitor_id TEXT NOT NULL UNIQUE, user_id INTEGER, utm_source TEXT, utm_medium TEXT, utm_campaign TEXT, utm_content TEXT, utm_term TEXT, lead_source TEXT, referrer TEXT, first_page TEXT, created_at TEXT NOT NULL, last_seen_at TEXT NOT NULL)`).catch(() => {});
+    await db.execute(`CREATE TABLE IF NOT EXISTS page_visits (id SERIAL PRIMARY KEY, visitor_id TEXT NOT NULL, page TEXT NOT NULL, referrer TEXT, created_at TEXT NOT NULL)`).catch(() => {});
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_page_visits_visitor ON page_visits(visitor_id)`).catch(() => {});
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_page_visits_created ON page_visits(created_at)`).catch(() => {});
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_site_visitors_created ON site_visitors(created_at)`).catch(() => {});
+    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts, community, lead_events, invite_codes, site_visitors, page_visits tables ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
@@ -1359,6 +1365,14 @@ export async function registerRoutes(server: Server, app: Express) {
         }
       }
 
+      // Link anonymous visitor to this user account
+      if (data.visitor_id) {
+        try {
+          const { db: vDb } = await import("./db");
+          await vDb.execute(sql`UPDATE site_visitors SET user_id = ${user.id} WHERE visitor_id = ${data.visitor_id} AND user_id IS NULL`);
+        } catch {} // non-blocking
+      }
+
       // Issue JWT so frontend can log in immediately
       const token = jwt.sign({ userId: user.id, role }, JWT_SECRET, { expiresIn: inviteData ? `${inviteData.durationDays}d` : "7d" });
       res.cookie("ampla_token", token, { httpOnly: true, secure: true, sameSite: "none", maxAge: 30 * 24 * 60 * 60 * 1000 });
@@ -1463,6 +1477,14 @@ export async function registerRoutes(server: Server, app: Express) {
       // Issue JWT so frontend can log in immediately without a second request
       const token = jwt.sign({ userId: user.id, role }, JWT_SECRET, { expiresIn: inviteData ? `${inviteData.durationDays}d` : "7d" });
       res.cookie("ampla_token", token, { httpOnly: true, secure: true, sameSite: "none", maxAge: 30 * 24 * 60 * 60 * 1000 });
+
+      // Link anonymous visitor to this user account
+      if (data.visitor_id) {
+        try {
+          const { db: vDb } = await import("./db");
+          await vDb.execute(sql`UPDATE site_visitors SET user_id = ${user.id} WHERE visitor_id = ${data.visitor_id} AND user_id IS NULL`);
+        } catch {} // non-blocking
+      }
 
       // Log lead events for registration
       try {
@@ -4747,6 +4769,239 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
       );
       return res.json({ ok: true });
     } catch (e: any) {
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ==================== VISITOR TRACKING ====================
+
+  // POST /api/tracking/pagevisit — record a page visit for an anonymous or logged-in visitor
+  app.post("/api/tracking/pagevisit", async (req, res) => {
+    try {
+      const { db } = await import("./db");
+      const { visitor_id, page, referrer, utm_source, utm_medium, utm_campaign, utm_content, utm_term, lead_source } = req.body;
+      if (!visitor_id || !page) return res.status(400).json({ message: "visitor_id and page required" });
+      const now = new Date().toISOString();
+
+      // Upsert visitor
+      await db.execute(sql`
+        INSERT INTO site_visitors (visitor_id, utm_source, utm_medium, utm_campaign, utm_content, utm_term, lead_source, referrer, first_page, created_at, last_seen_at)
+        VALUES (${visitor_id}, ${utm_source || null}, ${utm_medium || null}, ${utm_campaign || null}, ${utm_content || null}, ${utm_term || null}, ${lead_source || null}, ${referrer || null}, ${page}, ${now}, ${now})
+        ON CONFLICT (visitor_id) DO UPDATE SET last_seen_at = ${now},
+          utm_source = COALESCE(NULLIF(${utm_source || null}::text, ''), site_visitors.utm_source),
+          utm_medium = COALESCE(NULLIF(${utm_medium || null}::text, ''), site_visitors.utm_medium),
+          utm_campaign = COALESCE(NULLIF(${utm_campaign || null}::text, ''), site_visitors.utm_campaign),
+          lead_source = COALESCE(NULLIF(${lead_source || null}::text, ''), site_visitors.lead_source)
+      `);
+
+      // Record page visit
+      await db.execute(sql`
+        INSERT INTO page_visits (visitor_id, page, referrer, created_at)
+        VALUES (${visitor_id}, ${page}, ${referrer || null}, ${now})
+      `);
+
+      return res.json({ ok: true });
+    } catch (e: any) {
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // POST /api/tracking/link-visitor — link a visitor_id to a user_id after registration
+  app.post("/api/tracking/link-visitor", async (req, res) => {
+    try {
+      const { db } = await import("./db");
+      const { visitor_id, user_id } = req.body;
+      if (!visitor_id || !user_id) return res.status(400).json({ message: "visitor_id and user_id required" });
+      await db.execute(sql`
+        UPDATE site_visitors SET user_id = ${user_id} WHERE visitor_id = ${visitor_id} AND user_id IS NULL
+      `);
+      return res.json({ ok: true });
+    } catch (e: any) {
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ==================== ANALYTICS ADMIN ENDPOINTS ====================
+
+  // GET /api/admin/analytics/overview — visits today/week/month, registrations, conversion rate
+  app.get("/api/admin/analytics/overview", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const weekStart = new Date(now.getTime() - 7 * 86400000).toISOString();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+      // Visit counts
+      const visitsToday = await db.execute(sql`SELECT COUNT(*) as count FROM page_visits WHERE created_at >= ${todayStart}`).catch(() => ({ rows: [{ count: 0 }] }));
+      const visitsWeek = await db.execute(sql`SELECT COUNT(*) as count FROM page_visits WHERE created_at >= ${weekStart}`).catch(() => ({ rows: [{ count: 0 }] }));
+      const visitsMonth = await db.execute(sql`SELECT COUNT(*) as count FROM page_visits WHERE created_at >= ${monthStart}`).catch(() => ({ rows: [{ count: 0 }] }));
+
+      // Unique visitors
+      const uniqueToday = await db.execute(sql`SELECT COUNT(DISTINCT visitor_id) as count FROM page_visits WHERE created_at >= ${todayStart}`).catch(() => ({ rows: [{ count: 0 }] }));
+      const uniqueWeek = await db.execute(sql`SELECT COUNT(DISTINCT visitor_id) as count FROM page_visits WHERE created_at >= ${weekStart}`).catch(() => ({ rows: [{ count: 0 }] }));
+      const uniqueMonth = await db.execute(sql`SELECT COUNT(DISTINCT visitor_id) as count FROM page_visits WHERE created_at >= ${monthStart}`).catch(() => ({ rows: [{ count: 0 }] }));
+
+      // Registrations this month
+      const registrations = await db.execute(sql`SELECT COUNT(*) as count FROM users WHERE created_at >= ${monthStart} AND role IN ('trial', 'student')`).catch(() => ({ rows: [{ count: 0 }] }));
+      const regCount = Number((registrations as any).rows?.[0]?.count || 0);
+
+      // Conversion rate: visitors who registered / total unique visitors this month
+      const uniqueMonthCount = Number((uniqueMonth as any).rows?.[0]?.count || 0);
+      const conversionRate = uniqueMonthCount > 0 ? Math.round((regCount / uniqueMonthCount) * 100) : 0;
+
+      return res.json({
+        visitsToday: Number((visitsToday as any).rows?.[0]?.count || 0),
+        visitsWeek: Number((visitsWeek as any).rows?.[0]?.count || 0),
+        visitsMonth: Number((visitsMonth as any).rows?.[0]?.count || 0),
+        uniqueToday: Number((uniqueToday as any).rows?.[0]?.count || 0),
+        uniqueWeek: Number((uniqueWeek as any).rows?.[0]?.count || 0),
+        uniqueMonth: Number((uniqueMonth as any).rows?.[0]?.count || 0),
+        registrations: regCount,
+        conversionRate,
+      });
+    } catch (e: any) {
+      console.error("[GET /api/admin/analytics/overview]", e.message);
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // GET /api/admin/analytics/funnel — visits → registration started → completed → trial active → paid
+  app.get("/api/admin/analytics/funnel", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+
+      // Total unique visitors
+      const totalVisitors = await db.execute(sql`SELECT COUNT(*) as count FROM site_visitors`).catch(() => ({ rows: [{ count: 0 }] }));
+      // Visitors who started registration (visited comecar/planos/lp pages)
+      const regStarted = await db.execute(sql`SELECT COUNT(DISTINCT visitor_id) as count FROM page_visits WHERE page LIKE '%comecar%' OR page LIKE '%planos%' OR page LIKE '%trial%'`).catch(() => ({ rows: [{ count: 0 }] }));
+      // Visitors who completed registration (linked to a user)
+      const regCompleted = await db.execute(sql`SELECT COUNT(*) as count FROM site_visitors WHERE user_id IS NOT NULL`).catch(() => ({ rows: [{ count: 0 }] }));
+      // Active trials
+      const activeTrials = await db.execute(sql`SELECT COUNT(*) as count FROM users WHERE role = 'trial' AND approved = true`).catch(() => ({ rows: [{ count: 0 }] }));
+      // Paid conversions
+      const paidUsers = await db.execute(sql`SELECT COUNT(*) as count FROM users WHERE (converted_at IS NOT NULL OR (role = 'student' AND plan_key IS NOT NULL))`).catch(() => ({ rows: [{ count: 0 }] }));
+
+      return res.json({
+        visitors: Number((totalVisitors as any).rows?.[0]?.count || 0),
+        regStarted: Number((regStarted as any).rows?.[0]?.count || 0),
+        regCompleted: Number((regCompleted as any).rows?.[0]?.count || 0),
+        trialActive: Number((activeTrials as any).rows?.[0]?.count || 0),
+        paidConversion: Number((paidUsers as any).rows?.[0]?.count || 0),
+      });
+    } catch (e: any) {
+      console.error("[GET /api/admin/analytics/funnel]", e.message);
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // GET /api/admin/analytics/sources — traffic sources breakdown
+  app.get("/api/admin/analytics/sources", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const result = await db.execute(sql`
+        SELECT COALESCE(lead_source, 'Direto') as source,
+               COUNT(*) as visitors,
+               COUNT(user_id) as converted
+        FROM site_visitors
+        GROUP BY COALESCE(lead_source, 'Direto')
+        ORDER BY COUNT(*) DESC
+      `).catch(() => ({ rows: [] }));
+      return res.json((result as any).rows || []);
+    } catch (e: any) {
+      console.error("[GET /api/admin/analytics/sources]", e.message);
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // GET /api/admin/analytics/pages — most visited pages
+  app.get("/api/admin/analytics/pages", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const result = await db.execute(sql`
+        SELECT page, COUNT(*) as views, COUNT(DISTINCT visitor_id) as unique_visitors
+        FROM page_visits
+        GROUP BY page
+        ORDER BY COUNT(*) DESC
+        LIMIT 20
+      `).catch(() => ({ rows: [] }));
+      return res.json((result as any).rows || []);
+    } catch (e: any) {
+      console.error("[GET /api/admin/analytics/pages]", e.message);
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // GET /api/admin/analytics/visitors — list all tracked visitors with status
+  app.get("/api/admin/analytics/visitors", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const result = await db.execute(sql`
+        SELECT sv.id, sv.visitor_id, sv.user_id, sv.utm_source, sv.utm_medium, sv.utm_campaign,
+               sv.lead_source, sv.referrer, sv.first_page, sv.created_at, sv.last_seen_at,
+               u.name, u.email, u.phone, u.role, u.plan_key, u.access_expires_at,
+               (SELECT COUNT(*) FROM page_visits pv WHERE pv.visitor_id = sv.visitor_id) as page_count
+        FROM site_visitors sv
+        LEFT JOIN users u ON sv.user_id = u.id
+        ORDER BY sv.last_seen_at DESC
+        LIMIT 500
+      `).catch(() => ({ rows: [] }));
+      return res.json((result as any).rows || []);
+    } catch (e: any) {
+      console.error("[GET /api/admin/analytics/visitors]", e.message);
+      return res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // GET /api/admin/analytics/visitor/:visitorId — full journey for a specific visitor
+  app.get("/api/admin/analytics/visitor/:visitorId", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const { visitorId } = req.params;
+
+      // Get visitor info
+      const visitorResult = await db.execute(sql`
+        SELECT sv.*, u.name, u.email, u.phone, u.role, u.plan_key, u.plan_id,
+               u.created_at as user_created_at, u.access_expires_at, u.converted_at,
+               u.trial_started_at, u.plan_amount_paid, u.plan_paid_at,
+               p.name as plan_name
+        FROM site_visitors sv
+        LEFT JOIN users u ON sv.user_id = u.id
+        LEFT JOIN plans p ON u.plan_id = p.id
+        WHERE sv.visitor_id = ${visitorId}
+      `);
+      const visitor = (visitorResult as any).rows?.[0];
+      if (!visitor) return res.status(404).json({ message: "Visitor not found" });
+
+      // Get all page visits
+      const pagesResult = await db.execute(sql`
+        SELECT page, referrer, created_at FROM page_visits
+        WHERE visitor_id = ${visitorId}
+        ORDER BY created_at ASC
+      `);
+
+      // Get lead events if linked to a user
+      let events: any[] = [];
+      if (visitor.user_id) {
+        const eventsResult = await db.execute(sql`
+          SELECT * FROM lead_events WHERE user_id = ${visitor.user_id} ORDER BY created_at ASC
+        `);
+        events = (eventsResult as any).rows || [];
+      }
+
+      return res.json({
+        visitor,
+        pages: (pagesResult as any).rows || [],
+        events,
+      });
+    } catch (e: any) {
+      console.error("[GET /api/admin/analytics/visitor/:visitorId]", e.message);
       return res.status(500).json({ message: "Erro interno" });
     }
   });
