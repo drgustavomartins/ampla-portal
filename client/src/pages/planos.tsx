@@ -539,7 +539,6 @@ export default function PlanosPage() {
                     title: "Curso de Toxina Botulínica",
                     desc: "Domine toxina botulínica da teoria à prática clínica",
                     features: ["30 aulas teóricas online", "Casos clínicos gravados", "Materiais complementares (PDFs, áudios, artigos)", "Encontro ao vivo pré-prática com Dr. Gustavo", "10h de prática clínica presencial", "4 encontros curtos ou 2 encontros maiores — você escolhe", "Certificado de conclusão"],
-                    badge: "Conteúdo completo",
                     url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20Curso%20de%20Toxina%20Botul%C3%ADnica",
                   },
                   {
@@ -568,17 +567,13 @@ export default function PlanosPage() {
                     {/* Tags */}
                     <div className="flex items-center gap-2 mb-3">
                       <span className="rounded-full bg-[#C9A84C]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#C9A84C]">
-                        Teoria + Prática
+                        Tema Escolhido
                       </span>
-                      {curso.badge && (
-                        <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green-600">
-                          {curso.badge}
-                        </span>
-                      )}
                     </div>
 
                     <h3 className="text-lg font-bold text-[#1a1a1a]">{curso.title}</h3>
                     <p className="mt-1 text-sm text-gray-500">{curso.desc}</p>
+                    <p className="mt-1 text-[11px] font-medium text-[#C9A84C]">Escolha 1 tema — teoria online + 10h de prática presencial</p>
 
                     {/* Price */}
                     <div className="mt-4 mb-4">

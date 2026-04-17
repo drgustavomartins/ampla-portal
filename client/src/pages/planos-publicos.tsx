@@ -953,7 +953,6 @@ export default function PlanosPublicos() {
                   "4 encontros curtos ou 2 encontros maiores — você escolhe",
                   "Certificado de conclusão",
                 ],
-                badge: "Conteúdo completo",
                 url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20Curso%20de%20Toxina%20Botul%C3%ADnica",
               },
               {
@@ -1020,16 +1019,12 @@ export default function PlanosPublicos() {
                 <div className="relative px-7 pt-6 pb-0">
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wide" style={{ background: "rgba(201,168,76,0.15)", color: "#C9A84C" }}>
-                      Teoria + Prática
+                      Tema Escolhido
                     </span>
-                    {curso.badge && (
-                      <span className="rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wide" style={{ background: "rgba(34,197,94,0.14)", color: "#22C55E" }}>
-                        {curso.badge}
-                      </span>
-                    )}
                   </div>
                   <h3 className="text-xl font-bold leading-snug text-white">{curso.title}</h3>
                   <p className="mt-1 text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>{curso.subtitle}</p>
+                  <p className="mt-1.5 text-[11px] leading-snug font-medium" style={{ color: "rgba(201,168,76,0.7)" }}>Escolha 1 tema — teoria online + 10h de prática presencial</p>
                 </div>
 
                 {/* Price */}
