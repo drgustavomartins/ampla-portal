@@ -644,7 +644,7 @@ export default function AdminDashboard() {
     }
   };
   // Contracts data
-  type ContractEntry = { id: number; userId: number; userName: string; userEmail: string; planKey: string; planName: string; amountPaid: number; status: string; signedAt: string | null; contractGroup: string | null; acceptedAt: string | null; acceptedIp: string | null; contractHtml: string | null; createdAt: string };
+  type ContractEntry = { id: number; userId: number; userName: string; userEmail: string; planKey: string; planName: string; amountPaid: number; status: string; signedAt: string | null; contractGroup: string | null; acceptedAt: string | null; acceptedIp: string | null; contractHtml: string | null; stripeSessionId: string | null; createdAt: string };
   const { data: contractsData } = useQuery<{ contracts: ContractEntry[] }>({
     queryKey: ["/api/admin/contracts"],
     queryFn: async () => { const res = await apiRequest("GET", "/api/admin/contracts"); return res.json(); },
@@ -3067,8 +3067,8 @@ export default function AdminDashboard() {
                                 {contract.contractGroup === "digital" ? "Digital" : contract.contractGroup === "observacao" ? "Observação" : contract.contractGroup === "vip" ? "VIP" : contract.contractGroup === "horas" ? "Horas" : contract.contractGroup}
                               </Badge>
                             )}
-                            <Badge variant="outline" className={contract.status === "accepted" ? "border-emerald-500/30 text-emerald-400" : contract.status === "active" ? "border-green-500/30 text-green-400" : "border-yellow-500/30 text-yellow-400"}>
-                              {contract.status === "accepted" ? "Aceito" : contract.status === "active" ? "Ativo" : contract.status}
+                            <Badge variant="outline" className={contract.status === "accepted" ? "border-emerald-500/30 text-emerald-400" : contract.status === "active" ? "border-green-500/30 text-green-400" : contract.status === "cancelled" ? "border-red-500/30 text-red-400" : "border-yellow-500/30 text-yellow-400"}>
+                              {contract.status === "accepted" ? "Aceito" : contract.status === "active" ? "Ativo" : contract.status === "cancelled" ? "Cancelado" : contract.status}
                             </Badge>
                             <span className="text-xs text-muted-foreground">R$ {(contract.amountPaid / 100).toFixed(2)}</span>
                             <span className="text-xs text-muted-foreground">{new Date(contract.createdAt).toLocaleDateString("pt-BR")}</span>
@@ -3082,6 +3082,7 @@ export default function AdminDashboard() {
                         {contract.acceptedAt && (
                           <p className="text-[11px] text-muted-foreground mt-1 ml-7">
                             Aceito em {new Date(contract.acceptedAt).toLocaleString("pt-BR")} · IP: {contract.acceptedIp || "—"}
+                            {contract.stripeSessionId && <> · Stripe: <span className="font-mono">{contract.stripeSessionId.substring(0, 20)}…</span></>}
                           </p>
                         )}
                       </CardContent>

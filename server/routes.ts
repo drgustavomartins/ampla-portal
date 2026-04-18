@@ -352,6 +352,7 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS accepted_user_agent TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS contract_group TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS contract_html TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE contracts ADD COLUMN IF NOT EXISTS stripe_session_id TEXT`).catch(() => {});
     // Community tables
     await db.execute(`CREATE TABLE IF NOT EXISTS community_posts (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, content TEXT NOT NULL, image_urls TEXT DEFAULT '[]', post_type TEXT NOT NULL DEFAULT 'general', likes_count INTEGER NOT NULL DEFAULT 0, comments_count INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT)`).catch(() => {});
     await db.execute(`CREATE TABLE IF NOT EXISTS community_comments (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, post_id INTEGER, lesson_id INTEGER, parent_comment_id INTEGER, content TEXT NOT NULL, likes_count INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)`).catch(() => {});
@@ -826,6 +827,41 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`CREATE INDEX IF NOT EXISTS idx_funnel_email ON funnel_events(email)`);
   } catch (e: any) {
     console.error("[funnel] Failed to create funnel_events table:", e.message);
+  }
+
+  // Migration: clean up orphaned phantom contracts (no valid user data, pre-payment bug)
+  try {
+    const { db } = await import("./db");
+    const migName = 'cleanup_orphaned_contracts_2026_04';
+    const alreadyApplied = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migName} LIMIT 1`);
+    if (!((alreadyApplied as any).rows?.length > 0)) {
+      // Contracts #2 (uid 33) and #3 (uid 34) — Imersão, status "active", no user data
+      // Contract #8 (uid 51) — Módulo Avulso, no user data
+      // Contract #11 (uid 61) — Victor Nobre, Trial user, no Stripe payment
+      // Mark as 'cancelled' with note, don't delete (audit trail)
+      const orphanedUserIds = [33, 34, 51];
+      for (const uid of orphanedUserIds) {
+        const userCheck = await db.execute(sql`SELECT id FROM users WHERE id = ${uid} LIMIT 1`);
+        if (!((userCheck as any).rows?.length > 0)) {
+          await db.execute(sql`UPDATE contracts SET status = 'cancelled' WHERE user_id = ${uid} AND status IN ('active', 'accepted')`);
+          console.log(`[cleanup] Cancelled orphaned contracts for non-existent userId ${uid}`);
+        }
+      }
+      // Contract #11 (uid 61, Victor Nobre) — phantom contract, Trial user with no payment
+      const victorCheck = await db.execute(sql`SELECT plan_paid_at, stripe_payment_intent_id FROM users WHERE id = 61 LIMIT 1`);
+      const victorUser = (victorCheck as any).rows?.[0];
+      if (victorUser && !victorUser.plan_paid_at && !victorUser.stripe_payment_intent_id) {
+        await db.execute(sql`UPDATE contracts SET status = 'cancelled' WHERE id = 11 AND user_id = 61 AND status = 'accepted'`);
+        console.log("[cleanup] Cancelled phantom contract #11 (Victor Nobre, no payment)");
+      }
+      // NOTE: Contract #12 (uid 12, Dra. Carolina) is NOT orphaned — it was paid with credits
+      // (credit transaction: -R$1000, ref checkout_12_1776448863961_g2hs77).
+      // Credit-paid contracts legitimately have no stripe_session_id.
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migName}, ${new Date().toISOString()})`);
+      console.log("[auto-migrate] cleanup_orphaned_contracts applied");
+    }
+  } catch (e: any) {
+    console.error("[auto-migrate] cleanup_orphaned_contracts failed:", e.message);
   }
 
   // POST /api/funnel/event — registrar evento do funil
@@ -4035,6 +4071,7 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
         acceptedAt: r.accepted_at || null,
         acceptedIp: r.accepted_ip || null,
         contractHtml: r.contract_html || null,
+        stripeSessionId: r.stripe_session_id || null,
         createdAt: r.created_at,
       }));
       res.json({ contracts });
@@ -4095,6 +4132,9 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
   });
 
   // POST /api/contracts/accept — student accepts contract terms
+  // For paid plans (price > 0), contracts are now created AFTER Stripe payment
+  // confirmation in the webhook. This endpoint only works for free plans (Trial/R$0)
+  // or admin-initiated flows.
   app.post("/api/contracts/accept", async (req: Request, res: Response) => {
     const auth = authenticateRequest(req);
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
@@ -4106,6 +4146,16 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
       if (!planKey) return res.status(400).json({ message: "planKey obrigatório" });
       const plan = PLANS[planKey as keyof typeof PLANS];
       if (!plan) return res.status(404).json({ message: "Plano não encontrado" });
+
+      // Block contract acceptance for paid plans — contracts for paid plans
+      // are created after Stripe payment confirmation in the webhook
+      if (plan.price > 0 && auth.role !== "admin" && auth.role !== "super_admin") {
+        return res.status(400).json({
+          message: "Contratos para planos pagos são gerados automaticamente após a confirmação do pagamento.",
+          previewOnly: true,
+        });
+      }
+
       const userResult = await db.execute(sql`SELECT name, email, phone FROM users WHERE id = ${auth.userId}`);
       const user = (userResult as any).rows?.[0];
       const group = getContractGroup(planKey);

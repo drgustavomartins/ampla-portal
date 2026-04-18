@@ -300,16 +300,11 @@ export default function PlanosPage() {
       checkoutMutation.mutate(planKey);
       return;
     }
-    // Check if contract already accepted
+    // Show contract terms as preview before checkout
+    // For paid plans, the contract is created AFTER payment (in the Stripe webhook)
     setContractLoading(true);
     try {
-      const checkRes = await apiRequest("GET", `/api/contracts/check/${planKey}`);
-      const checkData = await checkRes.json();
-      if (checkData.accepted) {
-        proceedToCheckout(planKey);
-        return;
-      }
-      // Fetch contract terms
+      // Fetch contract terms for preview
       const termsRes = await apiRequest("GET", `/api/contracts/terms/${planKey}`);
       const termsData = await termsRes.json();
       setContractHtml(termsData.html);
@@ -317,7 +312,7 @@ export default function PlanosPage() {
       setContractAccepted(false);
       setContractDialogOpen(true);
     } catch {
-      // If contract check fails, proceed to checkout anyway
+      // If contract fetch fails, proceed to checkout anyway
       proceedToCheckout(planKey);
     } finally {
       setContractLoading(false);
@@ -325,16 +320,10 @@ export default function PlanosPage() {
   };
 
   const handleAcceptContract = async () => {
-    setContractLoading(true);
-    try {
-      await apiRequest("POST", "/api/contracts/accept", { planKey: contractPlanKey });
-      setContractDialogOpen(false);
-      proceedToCheckout(contractPlanKey);
-    } catch {
-      alert("Erro ao aceitar contrato. Tente novamente.");
-    } finally {
-      setContractLoading(false);
-    }
+    // For paid plans: skip contract creation, go straight to Stripe checkout
+    // The contract will be auto-generated after payment confirmation (webhook)
+    setContractDialogOpen(false);
+    proceedToCheckout(contractPlanKey);
   };
 
   const { data: myPlan } = useQuery<{
@@ -484,7 +473,7 @@ export default function PlanosPage() {
               </div>
               <div className="flex items-start gap-3">
                 <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#B8860B]">2</span>
-                <span>Clique em "Pagar e acessar agora" — você é redirecionado para o checkout seguro</span>
+                <span>Revise os termos e clique em "Continuar para pagamento" — checkout seguro via Stripe</span>
               </div>
               <div className="flex items-start gap-3">
                 <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#D4A843]/15 text-xs font-bold text-[#B8860B]">3</span>
@@ -658,7 +647,7 @@ export default function PlanosPage() {
               />
             </div>
 
-            {/* Accept */}
+            {/* Accept & proceed to payment */}
             <div className="border-t border-gray-200 px-6 py-4 space-y-3">
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
@@ -668,9 +657,12 @@ export default function PlanosPage() {
                   className="mt-1 h-4 w-4 rounded border-gray-600 text-[#B8860B] focus:ring-[#D4A843] accent-[#D4A843]"
                 />
                 <span className="text-sm text-gray-600">
-                  Li e aceito integralmente os termos de contratação acima
+                  Li e concordo com os termos de contratação acima
                 </span>
               </label>
+              <p className="text-xs text-gray-400">
+                O contrato será formalizado automaticamente após a confirmação do pagamento.
+              </p>
               <button
                 disabled={!contractAccepted || contractLoading}
                 onClick={handleAcceptContract}
@@ -679,7 +671,7 @@ export default function PlanosPage() {
                 {contractLoading ? (
                   <><Loader2 className="h-4 w-4 animate-spin" /> Processando...</>
                 ) : (
-                  <><Check className="h-4 w-4" /> Aceitar e continuar</>
+                  <><ArrowRight className="h-4 w-4" /> Continuar para pagamento</>
                 )}
               </button>
             </div>
