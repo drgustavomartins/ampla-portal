@@ -406,7 +406,7 @@ export default function PlanosPublicos() {
     );
   }
 
-  const plans       = (data?.plans || []).filter((p) => p.key !== "workshop");
+  const plans       = (data?.plans || []).filter((p) => p.key !== "workshop" && p.key !== "tester");
   const digital     = plans.filter((p) => p.group === "digital");
   const observador  = plans.filter((p) => p.group === "observador");
   const vip         = plans.filter((p) => p.group === "vip");

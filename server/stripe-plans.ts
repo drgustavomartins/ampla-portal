@@ -40,6 +40,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 0,
     installments12x: null,
     group: "digital",
+    hidden: true,
     features: [
       "2 primeiras aulas de cada módulo",
       "Acesso ao portal por tempo indeterminado",
