@@ -228,6 +228,24 @@ export function registerStripeRoutes(app: Express) {
           const accessExpiry = new Date(Date.now() + plan.accessDays * 86400000).toISOString();
           await db.execute(sql`UPDATE users SET plan_key = ${planKey}, role = 'student', trial_started_at = NULL, plan_paid_at = ${now}, plan_amount_paid = ${plan.price}, approved = true, access_expires_at = ${accessExpiry}, module_content_expires_at = ${accessExpiry}, materials_access = true WHERE id = ${auth.userId}`);
         }
+        // Auto-generate contract for credit-paid purchases
+        try {
+          const { getContractGroup, getContractHTML } = await import("./contract-templates");
+          const group = getContractGroup(planKey);
+          const studentResult = await db.execute(sql`SELECT name, email, phone FROM users WHERE id = ${auth.userId}`);
+          const student = (studentResult as any).rows?.[0];
+          const contractHtml = getContractHTML(planKey, {
+            studentName: student?.name || "N/A",
+            studentEmail: student?.email || "N/A",
+            studentPhone: student?.phone || "",
+            startDate: new Date().toLocaleDateString("pt-BR"),
+          });
+          await db.execute(sql`INSERT INTO contracts (user_id, plan_key, plan_name, amount_paid, status, contract_group, contract_html, accepted_at, stripe_session_id, created_at)
+            VALUES (${auth.userId}, ${planKey}, ${plan.name}, ${plan.price}, 'accepted', ${group}, ${contractHtml}, ${now}, ${'credits_' + uniqueRef}, ${now})`);
+          console.log(`[checkout credits 100%] Contrato gerado para userId ${auth.userId} plano ${planKey}`);
+        } catch (contractErr: any) {
+          console.error("[checkout credits 100%] Contract generation error:", contractErr.message);
+        }
         return res.json({ url: null, sessionId: null, paidWithCredits: true });
       } else {
         // Partial credits — do NOT debit now, will debit in webhook after payment confirmed
@@ -638,15 +656,24 @@ export function registerStripeRoutes(app: Express) {
           console.error("[stripe webhook] Referral credit error:", e.message);
         }
 
-        // ─── Auto-generate contract ─────────────────────────────────────
+        // ─── Auto-generate contract with full HTML (post-payment) ────────
         try {
           if (!isUpgrade) {
-            const { getContractGroup } = await import("./contract-templates");
+            const { getContractGroup, getContractHTML } = await import("./contract-templates");
             const group = getContractGroup(planKey);
-            const now = new Date().toISOString();
-            await db.execute(sql`INSERT INTO contracts (user_id, plan_key, plan_name, amount_paid, status, contract_group, created_at)
-              VALUES (${userId}, ${planKey}, ${plan.name}, ${amountPaid}, 'active', ${group}, ${now})`);
-            console.log(`[stripe webhook] Contrato gerado para userId ${userId} plano ${planKey} grupo ${group}`);
+            const contractNow = new Date().toISOString();
+            // Fetch student data for contract HTML
+            const studentResult = await db.execute(sql`SELECT name, email, phone FROM users WHERE id = ${userId}`);
+            const student = (studentResult as any).rows?.[0];
+            const contractHtml = getContractHTML(planKey, {
+              studentName: student?.name || "N/A",
+              studentEmail: student?.email || "N/A",
+              studentPhone: student?.phone || "",
+              startDate: new Date().toLocaleDateString("pt-BR"),
+            });
+            await db.execute(sql`INSERT INTO contracts (user_id, plan_key, plan_name, amount_paid, status, contract_group, contract_html, accepted_at, stripe_session_id, created_at)
+              VALUES (${userId}, ${planKey}, ${plan.name}, ${amountPaid}, 'accepted', ${group}, ${contractHtml}, ${contractNow}, ${session.id}, ${contractNow})`);
+            console.log(`[stripe webhook] Contrato aceito automaticamente para userId ${userId} plano ${planKey} grupo ${group} (stripe session: ${session.id})`);
           }
         } catch (e: any) {
           console.error("[stripe webhook] Contract generation error:", e.message);
@@ -793,6 +820,9 @@ export function registerStripeRoutes(app: Express) {
   });
 
   // GET /api/cron/abandoned-checkout — send email to users with pending checkouts
+  // NOTE: Since contracts are now created AFTER payment (not before), this query
+  // will no longer find pre-payment "abandoned" contracts. Kept for backwards
+  // compatibility with any existing pre-payment contracts still in the DB.
   app.get("/api/cron/abandoned-checkout", async (req: Request, res: Response) => {
     const cronSecret = req.headers["x-cron-secret"];
     const CRON_SECRET_ENV = process.env.CRON_SECRET;
