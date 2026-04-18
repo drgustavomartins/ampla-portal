@@ -13,7 +13,7 @@ import {
 type FileEntry = {
   id: number;
   name: string;
-  type: "pdf" | "docx" | "mp3";
+  type: "pdf" | "docx" | "mp3" | "video";
   driveId: string;
   youtubeId?: string | null;
   order: number;
@@ -59,16 +59,19 @@ function FileTypeIcon({ type }: { type: FileEntry["type"] }) {
       return <FileText className="w-4 h-4 text-red-400 shrink-0" />;
     case "mp3":
       return <Headphones className="w-4 h-4 text-emerald-400 shrink-0" />;
+    case "video":
+      return <FileIcon className="w-4 h-4 text-purple-400 shrink-0" />;
     case "docx":
       return <FileIcon className="w-4 h-4 text-blue-400 shrink-0" />;
   }
 }
 
 function TypeLabel({ type }: { type: FileEntry["type"] }) {
-  const labels: Record<FileEntry["type"], string> = { pdf: "PDF", mp3: "MP3", docx: "DOCX" };
+  const labels: Record<FileEntry["type"], string> = { pdf: "PDF", mp3: "MP3", video: "V\u00eddeo", docx: "DOCX" };
   const colors: Record<FileEntry["type"], string> = {
     pdf: "bg-red-500/15 text-red-400 border-red-500/20",
     mp3: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
+    video: "bg-purple-500/15 text-purple-400 border-purple-500/20",
     docx: "bg-blue-500/15 text-blue-400 border-blue-500/20",
   };
   return (
