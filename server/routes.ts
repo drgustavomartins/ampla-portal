@@ -838,7 +838,6 @@ export async function registerRoutes(server: Server, app: Express) {
       // Contracts #2 (uid 33) and #3 (uid 34) — Imersão, status "active", no user data
       // Contract #8 (uid 51) — Módulo Avulso, no user data
       // Contract #11 (uid 61) — Victor Nobre, Trial user, no Stripe payment
-      // Contract #12 (uid 12) — extra hours contract with no Stripe payment
       // Mark as 'cancelled' with note, don't delete (audit trail)
       const orphanedUserIds = [33, 34, 51];
       for (const uid of orphanedUserIds) {
@@ -855,15 +854,9 @@ export async function registerRoutes(server: Server, app: Express) {
         await db.execute(sql`UPDATE contracts SET status = 'cancelled' WHERE id = 11 AND user_id = 61 AND status = 'accepted'`);
         console.log("[cleanup] Cancelled phantom contract #11 (Victor Nobre, no payment)");
       }
-      // Contract #12 (uid 12) — extra hours with no Stripe payment record
-      const carolinaCheck = await db.execute(sql`SELECT stripe_payment_intent_id FROM users WHERE id = 12 LIMIT 1`);
-      const carolinaUser = (carolinaCheck as any).rows?.[0];
-      const contract12Check = await db.execute(sql`SELECT id, stripe_session_id FROM contracts WHERE id = 12 AND user_id = 12 AND status = 'accepted' LIMIT 1`);
-      const contract12 = (contract12Check as any).rows?.[0];
-      if (contract12 && !contract12.stripe_session_id) {
-        await db.execute(sql`UPDATE contracts SET status = 'cancelled' WHERE id = 12 AND user_id = 12 AND status = 'accepted'`);
-        console.log("[cleanup] Cancelled phantom contract #12 (uid 12, no stripe session)");
-      }
+      // NOTE: Contract #12 (uid 12, Dra. Carolina) is NOT orphaned — it was paid with credits
+      // (credit transaction: -R$1000, ref checkout_12_1776448863961_g2hs77).
+      // Credit-paid contracts legitimately have no stripe_session_id.
       await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migName}, ${new Date().toISOString()})`);
       console.log("[auto-migrate] cleanup_orphaned_contracts applied");
     }
