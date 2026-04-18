@@ -37,13 +37,19 @@ type Theme = {
 
 /* ───────── Helpers ───────── */
 
+function isFullUrl(id: string) {
+  return id.startsWith("http://") || id.startsWith("https://");
+}
 function driveViewUrl(id: string) {
+  if (isFullUrl(id)) return id;
   return `https://drive.google.com/file/d/${id}/view`;
 }
 function driveDownloadUrl(id: string) {
+  if (isFullUrl(id)) return id;
   return `https://drive.google.com/uc?export=download&id=${id}`;
 }
 function drivePreviewUrl(id: string) {
+  if (isFullUrl(id)) return id;
   return `https://drive.google.com/file/d/${id}/preview`;
 }
 
@@ -79,6 +85,7 @@ function getFileThumbnail(file: FileEntry): string | null {
     return `https://img.youtube.com/vi/${file.youtubeId}/mqdefault.jpg`;
   }
   if (file.type === "pdf") {
+    if (isFullUrl(file.driveId)) return null; // No thumbnail for direct URLs
     return `https://lh3.googleusercontent.com/d/${file.driveId}=w200`;
   }
   return null;
