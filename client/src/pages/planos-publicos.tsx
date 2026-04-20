@@ -236,10 +236,10 @@ export default function PlanosPublicos() {
 
       {/* ═══ CARDS ═══ */}
       <main className="mx-auto max-w-6xl px-5 sm:px-8 pb-24">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-5 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-5 items-stretch">
 
           {/* ── Card 1: Acesso Vitalicio (highlighted) ── */}
-          <div ref={cardRef} className="relative rounded-[28px] overflow-hidden lg:scale-[1.03] lg:-mt-2 lg:mb-2 z-10"
+          <div ref={cardRef} className="relative rounded-[28px] overflow-hidden lg:scale-[1.03] lg:-mt-2 lg:mb-2 z-10 flex flex-col"
             style={{
               background: "linear-gradient(145deg, #12244A 0%, #0F2040 50%, #0A1628 100%)",
               boxShadow: countdown.expired
@@ -272,7 +272,7 @@ export default function PlanosPublicos() {
             {/* Gold accent line */}
             <div className="h-[3px] w-full" style={{ background: countdown.expired ? "rgba(255,255,255,0.1)" : "linear-gradient(90deg, #D4A843, #F0D78C, #D4A843)" }} />
 
-            <div className="relative p-7 sm:p-8">
+            <div className="relative p-7 sm:p-8 flex flex-col flex-1">
               {/* Header */}
               <div className="pt-6">
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A843] mb-2">Conteúdo Online</p>
@@ -359,7 +359,7 @@ export default function PlanosPublicos() {
               <button
                 onClick={handleCheckout}
                 disabled={loadingCheckout || countdown.expired}
-                className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-all duration-200 disabled:opacity-50 hover:brightness-110"
+                className="mt-auto pt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-all duration-200 disabled:opacity-50 hover:brightness-110"
                 style={{
                   background: countdown.expired ? "rgba(255,255,255,0.1)" : "linear-gradient(135deg, #D4A843, #F0D78C)",
                   color: countdown.expired ? "rgba(255,255,255,0.3)" : "#0A0D14",
@@ -379,7 +379,7 @@ export default function PlanosPublicos() {
           </div>
 
           {/* ── Card 2: Curso com Prática Clínica ── */}
-          <div className="relative rounded-[28px] overflow-hidden"
+          <div className="relative rounded-[28px] overflow-hidden flex flex-col"
             style={{
               background: "linear-gradient(145deg, #0D2818 0%, #0A2015 50%, #071A10 100%)",
               boxShadow: "0 8px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(52,211,153,0.1)",
@@ -392,7 +392,7 @@ export default function PlanosPublicos() {
 
             <div className="h-[3px] w-full" style={{ background: "#34D399" }} />
 
-            <div className="relative p-7 sm:p-8">
+            <div className="relative p-7 sm:p-8 flex flex-col flex-1">
               {/* Header */}
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-400 mb-2">Presencial</p>
@@ -450,7 +450,7 @@ export default function PlanosPublicos() {
                 href={WHATSAPP_PRATICA}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-all duration-200 hover:brightness-110"
+                className="mt-auto pt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-all duration-200 hover:brightness-110"
                 style={{ background: "#34D399", color: "#071A10", boxShadow: "0 4px 24px rgba(52,211,153,0.25)" }}
               >
                 <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -462,7 +462,7 @@ export default function PlanosPublicos() {
           </div>
 
           {/* ── Card 3: Mentoria Completa NaturalUp (premium) ── */}
-          <div className="relative rounded-[28px] overflow-hidden"
+          <div className="relative rounded-[28px] overflow-hidden flex flex-col"
             style={{
               background: "linear-gradient(145deg, #1A103A 0%, #12082E 50%, #0D0622 100%)",
               boxShadow: "0 8px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(147,130,220,0.12)",
@@ -482,7 +482,7 @@ export default function PlanosPublicos() {
 
             <div className="h-[3px] w-full" style={{ background: "linear-gradient(90deg, #8B5CF6, #C084FC, #8B5CF6)" }} />
 
-            <div className="relative p-7 sm:p-8">
+            <div className="relative p-7 sm:p-8 flex flex-col flex-1">
               {/* Header */}
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-purple-400 mb-2">Formação Completa</p>
@@ -525,7 +525,7 @@ export default function PlanosPublicos() {
                 href={WHATSAPP_MENTORIA}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-all duration-200 hover:brightness-110"
+                className="mt-auto pt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-all duration-200 hover:brightness-110"
                 style={{ background: "linear-gradient(135deg, #8B5CF6, #C084FC)", color: "#fff", boxShadow: "0 4px 24px rgba(139,92,246,0.3)" }}
               >
                 <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
