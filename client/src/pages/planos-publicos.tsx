@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Check, X, ArrowRight, Loader2, Gift, Star, Tag, Shield, Crown, Sparkles } from "lucide-react";
+import { Check, X, ArrowRight, Loader2, Gift, Star, Tag, Shield, Crown, Sparkles, Clock } from "lucide-react";
+import { useCountdown } from "@/hooks/use-countdown";
 
 function formatBRL(c: number) {
   return (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -10,10 +11,30 @@ const WHATSAPP_URL = "https://wa.me/5521976263881";
 const WHATSAPP_PRATICA = `${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse no Curso com Prática Clínica da Ampla Facial.")}`;
 const WHATSAPP_MENTORIA = `${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse na Mentoria Completa NaturalUp® da Ampla Facial.")}`;
 
+function CountdownDigit({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="flex flex-col items-center">
+      <span
+        className="text-xl sm:text-2xl font-bold tabular-nums leading-none px-2.5 py-1.5 rounded-lg"
+        style={{ color: "#D4A843", background: "rgba(212,168,67,0.08)", minWidth: 44, textAlign: "center" }}
+      >
+        {String(value).padStart(2, "0")}
+      </span>
+      <span className="text-[9px] uppercase tracking-wider text-white/35 mt-1">{label}</span>
+    </div>
+  );
+}
+
+function CountdownSeparator() {
+  return <span className="text-lg font-bold text-[#D4A843]/50 self-start mt-1.5">:</span>;
+}
+
 export default function PlanosPublicos() {
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const countdown = useCountdown();
+  const cardRef = useRef<HTMLDivElement>(null);
 
   // Referral code state
   const hashQuery = window.location.hash.includes("?") ? window.location.hash.split("?")[1] : "";
@@ -66,6 +87,10 @@ export default function PlanosPublicos() {
   });
 
   const handleCheckout = () => { setLoadingCheckout(true); checkoutMutation.mutate(); };
+
+  const scrollToCard = useCallback(() => {
+    cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 10);
@@ -135,6 +160,37 @@ export default function PlanosPublicos() {
 
       <div style={{ height: `${HEADER_H}px` }} />
 
+      {/* ═══ STICKY URGENCY BAR ═══ */}
+      {!countdown.expired && (
+        <div
+          className="fixed left-0 right-0 z-40 flex items-center justify-center gap-3 sm:gap-4 px-4 py-2.5"
+          style={{
+            top: `${HEADER_H}px`,
+            background: "linear-gradient(90deg, #0A0D14 0%, #12192A 50%, #0A0D14 100%)",
+            borderBottom: "1px solid rgba(212,168,67,0.15)",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+          }}
+        >
+          <div className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-[13px] text-white/80 flex-wrap justify-center">
+            <Clock className="w-3.5 h-3.5 text-[#D4A843] shrink-0 hidden sm:block" />
+            <span>
+              <span className="hidden sm:inline">Oferta de lançamento R$197 — Acesso Vitalício encerra em </span>
+              <span className="sm:hidden">R$197 encerra em </span>
+              <span className="font-bold text-[#D4A843]">
+                {countdown.days}d {String(countdown.hours).padStart(2,"0")}h {String(countdown.minutes).padStart(2,"0")}m {String(countdown.seconds).padStart(2,"0")}s
+              </span>
+            </span>
+          </div>
+          <button
+            onClick={scrollToCard}
+            className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] sm:text-xs font-bold transition-all hover:brightness-110"
+            style={{ background: "linear-gradient(135deg, #D4A843, #F0D78C)", color: "#0A0D14" }}
+          >
+            Garantir Acesso <span className="hidden sm:inline">&rarr;</span>
+          </button>
+        </div>
+      )}
+
       {/* ═══ HERO ═══ */}
       <div className="relative overflow-hidden">
         {/* Background decoration */}
@@ -143,7 +199,7 @@ export default function PlanosPublicos() {
             style={{ background: "radial-gradient(ellipse, #D4A843 0%, transparent 70%)" }} />
         </div>
 
-        <div className="relative mx-auto max-w-6xl px-5 sm:px-8 pt-12 sm:pt-20 pb-6 sm:pb-10 text-center">
+        <div className={`relative mx-auto max-w-6xl px-5 sm:px-8 pb-6 sm:pb-10 text-center ${countdown.expired ? "pt-12 sm:pt-20" : "pt-20 sm:pt-28"}`}>
           {/* Coupon badge */}
           {couponValid === true && (
             <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 text-xs font-semibold text-emerald-400">
@@ -183,10 +239,13 @@ export default function PlanosPublicos() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-5 items-start">
 
           {/* ── Card 1: Acesso Vitalicio (highlighted) ── */}
-          <div className="relative rounded-[28px] overflow-hidden lg:scale-[1.03] lg:-mt-2 lg:mb-2 z-10"
+          <div ref={cardRef} className="relative rounded-[28px] overflow-hidden lg:scale-[1.03] lg:-mt-2 lg:mb-2 z-10"
             style={{
               background: "linear-gradient(145deg, #12244A 0%, #0F2040 50%, #0A1628 100%)",
-              boxShadow: "0 8px 56px rgba(212,168,67,0.15), 0 0 0 1px rgba(212,168,67,0.15)",
+              boxShadow: countdown.expired
+                ? "0 8px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06)"
+                : "0 8px 56px rgba(212,168,67,0.15), 0 0 0 1px rgba(212,168,67,0.15)",
+              opacity: countdown.expired ? 0.75 : 1,
             }}
           >
             {/* Top badge */}
@@ -195,10 +254,13 @@ export default function PlanosPublicos() {
                 Mais Popular
               </span>
             </div>
-            <div className="absolute top-4 left-4 z-10">
+            <div className="absolute top-4 left-4 z-10 flex flex-col gap-1">
               <span className="rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                 Oferta de Lançamento
               </span>
+              {!countdown.expired && (
+                <span className="text-[9px] text-emerald-400/60 pl-1">Válida até 30/04</span>
+              )}
             </div>
 
             {/* SVG background */}
@@ -208,7 +270,7 @@ export default function PlanosPublicos() {
             </svg>
 
             {/* Gold accent line */}
-            <div className="h-[3px] w-full" style={{ background: "linear-gradient(90deg, #D4A843, #F0D78C, #D4A843)" }} />
+            <div className="h-[3px] w-full" style={{ background: countdown.expired ? "rgba(255,255,255,0.1)" : "linear-gradient(90deg, #D4A843, #F0D78C, #D4A843)" }} />
 
             <div className="relative p-7 sm:p-8">
               {/* Header */}
@@ -220,11 +282,38 @@ export default function PlanosPublicos() {
 
               {/* Price */}
               <div className="mt-6">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl sm:text-[42px] font-bold tabular-nums text-[#D4A843]">R$ 197</span>
-                </div>
-                <p className="text-xs text-white/30 mt-1">Pagamento único &middot; Sem mensalidade</p>
+                {countdown.expired ? (
+                  <>
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-4xl sm:text-[42px] font-bold tabular-nums text-white/30 line-through">R$ 197</span>
+                    </div>
+                    <p className="text-sm font-semibold text-red-400 mt-2">Oferta encerrada</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl sm:text-[42px] font-bold tabular-nums text-[#D4A843]">R$ 197</span>
+                    </div>
+                    <p className="text-xs text-white/30 mt-1">Pagamento único &middot; Sem mensalidade</p>
+                  </>
+                )}
               </div>
+
+              {/* Countdown Timer */}
+              {!countdown.expired && (
+                <div className="mt-5 rounded-xl p-4" style={{ background: "rgba(212,168,67,0.05)", border: "1px solid rgba(212,168,67,0.12)" }}>
+                  <p className="text-[10px] uppercase tracking-wider text-white/40 mb-2.5 text-center">Essa oferta expira em:</p>
+                  <div className="flex items-center justify-center gap-2">
+                    <CountdownDigit value={countdown.days} label="Dias" />
+                    <CountdownSeparator />
+                    <CountdownDigit value={countdown.hours} label="Horas" />
+                    <CountdownSeparator />
+                    <CountdownDigit value={countdown.minutes} label="Min" />
+                    <CountdownSeparator />
+                    <CountdownDigit value={countdown.seconds} label="Seg" />
+                  </div>
+                </div>
+              )}
 
               {/* Divider */}
               <div className="my-6 h-px bg-white/[0.07]" />
@@ -269,12 +358,22 @@ export default function PlanosPublicos() {
               {/* CTA */}
               <button
                 onClick={handleCheckout}
-                disabled={loadingCheckout}
+                disabled={loadingCheckout || countdown.expired}
                 className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-all duration-200 disabled:opacity-50 hover:brightness-110"
-                style={{ background: "linear-gradient(135deg, #D4A843, #F0D78C)", color: "#0A0D14", boxShadow: "0 4px 24px rgba(212,168,67,0.35)" }}
+                style={{
+                  background: countdown.expired ? "rgba(255,255,255,0.1)" : "linear-gradient(135deg, #D4A843, #F0D78C)",
+                  color: countdown.expired ? "rgba(255,255,255,0.3)" : "#0A0D14",
+                  boxShadow: countdown.expired ? "none" : "0 4px 24px rgba(212,168,67,0.35)",
+                  cursor: countdown.expired ? "not-allowed" : undefined,
+                }}
               >
-                {loadingCheckout ? <><Loader2 className="h-5 w-5 animate-spin" /> Aguarde...</>
-                  : <>Garantir Acesso — R$ 197 <ArrowRight className="h-4 w-4" /></>}
+                {countdown.expired ? (
+                  "Oferta encerrada"
+                ) : loadingCheckout ? (
+                  <><Loader2 className="h-5 w-5 animate-spin" /> Aguarde...</>
+                ) : (
+                  <>Garantir Acesso — R$ 197 <ArrowRight className="h-4 w-4" /></>
+                )}
               </button>
             </div>
           </div>
