@@ -32,6 +32,12 @@ const MATS_4_CORE = [MAT_TOXINA, MAT_PREENCHEDORES, MAT_BIOESTIM, MAT_MODULADORE
 const MATS_COMPLETO = [...MATS_4_CORE, MAT_NATURALUP];
 
 export const PLAN_PROVISIONING: Record<string, PlanProvisioning> = {
+  acesso_vitalicio: {
+    modules: MODULES_COMPLETO.map(id => ({ moduleId: id, enabled: true })),
+    materials: MATS_COMPLETO,
+    mentorshipMonths: 0,
+    supportMonths: 0,
+  },
   modulo_avulso: {
     modules: [MODULE_BOAS_VINDAS].map(id => ({ moduleId: id, enabled: true })),
     materials: [],   // acesso a 1 módulo à escolha — admin confirma qual

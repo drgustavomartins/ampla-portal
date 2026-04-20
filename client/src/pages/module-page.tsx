@@ -9,7 +9,8 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, ChevronLeft,
-  ChevronRight, Layers, Lock, Paperclip, ExternalLink, ShoppingCart
+  ChevronRight, Layers, Lock, Paperclip, ExternalLink, ShoppingCart,
+  ArrowRight, X as XIcon, Award
 } from "lucide-react";
 import type { Module, Lesson, LessonProgress } from "@shared/schema";
 
@@ -170,6 +171,69 @@ function getCourseImage(mod: Module): string | null {
   return null;
 }
 
+// ─── Upsell CTA Banner (shown to online-only students after every few lessons) ─────
+function MentoriaCTABanner({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <div className="mt-4 rounded-xl border border-[#D4A843]/20 bg-[#D4A843]/5 p-4 flex items-center gap-4">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-foreground">
+          Quer aplicar o que aprendeu em pacientes reais?
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Conheça a Mentoria Presencial com o Dr. Gustavo.
+        </p>
+      </div>
+      <a
+        href="/#/planos-publicos"
+        className="shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-colors"
+        style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
+      >
+        Ver planos <ArrowRight className="w-3 h-3" />
+      </a>
+      <button onClick={onDismiss} className="shrink-0 text-muted-foreground hover:text-foreground transition-colors">
+        <XIcon className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
+// ─── Module Completion Congratulations ─────
+function ModuleCompletionCard({ moduleName, onDismiss }: { moduleName: string; onDismiss: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onDismiss(); }}>
+      <div className="relative w-full max-w-md rounded-2xl p-8 text-center"
+        style={{ background: "linear-gradient(145deg, #12244A 0%, #0F2040 50%, #0A1628 100%)", boxShadow: "0 8px 56px rgba(212,168,67,0.15), 0 0 0 1px rgba(212,168,67,0.12)" }}>
+        <button onClick={onDismiss} className="absolute top-4 right-4 text-white/30 hover:text-white/60 transition-colors">
+          <XIcon className="w-5 h-5" />
+        </button>
+        <div className="w-16 h-16 rounded-full bg-[#D4A843]/15 flex items-center justify-center mx-auto mb-4">
+          <Award className="w-8 h-8 text-[#D4A843]" />
+        </div>
+        <h3 className="text-xl font-bold text-white mb-2">
+          Parabéns!
+        </h3>
+        <p className="text-sm text-white/60 leading-relaxed mb-1">
+          Você concluiu a teoria de <span className="text-[#D4A843] font-semibold">{moduleName}</span>.
+        </p>
+        <p className="text-sm text-white/50 leading-relaxed mb-6">
+          O próximo passo para aplicar em pacientes reais é a Mentoria Presencial.
+        </p>
+        <a
+          href="/#/planos-publicos"
+          className="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition-all hover:brightness-110"
+          style={{ background: "linear-gradient(135deg, #D4A843, #F0D78C)", color: "#0A0D14", boxShadow: "0 4px 20px rgba(212,168,67,0.3)" }}
+        >
+          Conhecer Mentoria Presencial <ArrowRight className="w-4 h-4" />
+        </a>
+        <button onClick={onDismiss} className="block mx-auto mt-3 text-xs text-white/30 hover:text-white/50 transition-colors">
+          Fechar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ModulePage() {
   const { user, isTrial, trialDaysLeft, isAccessExpired } = useAuth();
   const { toast } = useToast();
@@ -179,6 +243,17 @@ export default function ModulePage() {
   const TRIAL_FREE_LESSONS = 2; // trial users can access first N lessons per module
 
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+
+  // Upsell state: show CTA after every N lessons viewed in session
+  const [sessionLessonCount, setSessionLessonCount] = useState(0);
+  const [showUpsellBanner, setShowUpsellBanner] = useState(false);
+  const [upsellDismissed, setUpsellDismissed] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [completionModalShownFor, setCompletionModalShownFor] = useState<number | null>(null);
+
+  // Determine if user is online-only (should see upsell)
+  const isOnlineOnlyStudent = user?.planKey === "acesso_vitalicio" || user?.planKey === "tester" || user?.role === "trial";
+  const isVipOrMentoria = user?.planKey?.startsWith("vip_") || user?.planKey === "imersao" || user?.planKey?.startsWith("observador_");
 
   const { data: modules = [] } = useQuery<Module[]>({ queryKey: ["/api/modules"] });
   const { data: lessons = [] } = useQuery<Lesson[]>({ queryKey: ["/api/lessons"] });
@@ -309,6 +384,32 @@ export default function ModulePage() {
     setSelectedLesson(lesson);
     if (!lesson) window.scrollTo(0, 0);
   }, [moduleLessons, isTrial, isTesterAccess, allowedLessonIds]);
+
+  // Track lesson views for upsell
+  useEffect(() => {
+    if (!selectedLesson || !isOnlineOnlyStudent || isVipOrMentoria) return;
+    setSessionLessonCount(c => {
+      const next = c + 1;
+      // Show upsell banner after every 4th lesson viewed (3-5 range)
+      if (next % 4 === 0 && !upsellDismissed) {
+        setShowUpsellBanner(true);
+      }
+      return next;
+    });
+  }, [selectedLesson?.id]);
+
+  // Check module completion for congratulations modal
+  useEffect(() => {
+    if (!currentModule || !isOnlineOnlyStudent || isVipOrMentoria) return;
+    if (completionModalShownFor === currentModule.id) return;
+    const theoryLessons = moduleLessons.filter(l => !l.title.startsWith("\u2501"));
+    if (theoryLessons.length === 0) return;
+    const allCompleted = theoryLessons.every(l => completedIds.has(l.id));
+    if (allCompleted) {
+      setShowCompletionModal(true);
+      setCompletionModalShownFor(currentModule.id);
+    }
+  }, [completedIds.size, currentModule?.id, moduleLessons.length]);
 
   // Auto-scroll to video when a lesson is selected
   useEffect(() => {
@@ -454,6 +555,11 @@ export default function ModulePage() {
                     </Button>
                   )}
                 </div>
+
+                {/* Upsell CTA banner for online-only students */}
+                {showUpsellBanner && isOnlineOnlyStudent && !isVipOrMentoria && (
+                  <MentoriaCTABanner onDismiss={() => { setShowUpsellBanner(false); setUpsellDismissed(true); }} />
+                )}
               </div>
             </div>
           </div>
@@ -609,6 +715,10 @@ export default function ModulePage() {
                     Proxima
                   </Button>
                 )}
+              {/* Upsell CTA banner for online-only students (mobile) */}
+              {showUpsellBanner && isOnlineOnlyStudent && !isVipOrMentoria && (
+                <MentoriaCTABanner onDismiss={() => { setShowUpsellBanner(false); setUpsellDismissed(true); }} />
+              )}
               </div>
             </div>
           </div>
@@ -679,6 +789,14 @@ export default function ModulePage() {
             </div>
           </div>
         </div>
+
+        {/* Module completion congratulations modal */}
+        {showCompletionModal && isOnlineOnlyStudent && !isVipOrMentoria && currentModule && (
+          <ModuleCompletionCard
+            moduleName={currentModule.title}
+            onDismiss={() => setShowCompletionModal(false)}
+          />
+        )}
       </div>
     );
   }
