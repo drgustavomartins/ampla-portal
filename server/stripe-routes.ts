@@ -225,7 +225,9 @@ export function registerStripeRoutes(app: Express) {
           }
         } else {
           // Plano normal: atualizar plan_key, acesso, etc
-          const accessExpiry = new Date(Date.now() + plan.accessDays * 86400000).toISOString();
+          const accessExpiry = planKey === "acesso_vitalicio"
+            ? "2099-12-31T23:59:59.000Z"
+            : new Date(Date.now() + plan.accessDays * 86400000).toISOString();
           await db.execute(sql`UPDATE users SET plan_key = ${planKey}, role = 'student', trial_started_at = NULL, plan_paid_at = ${now}, plan_amount_paid = ${plan.price}, approved = true, access_expires_at = ${accessExpiry}, module_content_expires_at = ${accessExpiry}, materials_access = true WHERE id = ${auth.userId}`);
         }
         // Auto-generate contract for credit-paid purchases
@@ -452,7 +454,10 @@ export function registerStripeRoutes(app: Express) {
       } else if (session.payment_status === "paid") {
         // Pagamento confirmado — liberar acesso completo
         const paymentIntentId = session.payment_intent as string;
-        const accessExpiry = new Date(Date.now() + plan.accessDays * 86400000).toISOString();
+        // Lifetime plans get a far-future expiry instead of computed days
+        const accessExpiry = planKey === "acesso_vitalicio"
+          ? "2099-12-31T23:59:59.000Z"
+          : new Date(Date.now() + plan.accessDays * 86400000).toISOString();
         const now = new Date().toISOString();
 
         // Buscar valor pago e plano anterior (para detectar renovação)

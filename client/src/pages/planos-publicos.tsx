@@ -1,322 +1,35 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Check, ArrowRight, Loader2, Gift, Star, ChevronLeft, Tag, X, Shield } from "lucide-react";
-
-interface PlanData {
-  key: string;
-  name: string;
-  description: string;
-  group: "digital" | "observador" | "vip" | "horas";
-  highlight?: string;
-  price: number;
-  priceFormatted: string;
-  installments12x: number | null;
-  installments12xFormatted: string | null;
-  features: string[];
-  clinicalHours: number;
-  practiceHours: number;
-  hasDirectChannel: boolean;
-  hasMentorship: boolean;
-  hasLiveEvents: boolean;
-  hasNaturalUp: boolean;
-  valorMercado: number | null;
-}
-
-type Tab = "online" | "observação" | "mentoria" | "cursos";
+import { useState, useEffect, useCallback } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { Check, X, ArrowRight, Loader2, Gift, Star, Tag, Shield, Crown, Sparkles } from "lucide-react";
 
 function formatBRL(c: number) {
   return (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-// ─── Temas visuais dos cards ───────────────────────────────────────────────
-const CARD_THEMES: Record<string, { grad: string; accent: string; dark: boolean; pattern: string }> = {
-  modulo_avulso: {
-    dark: false, accent: "#1A56A4",
-    grad: "linear-gradient(145deg,#EBF4FF 0%,#DBEAFE 60%,#BFDBFE 100%)",
-    pattern: `<circle cx="210" cy="20" r="90" fill="#93C5FD" fill-opacity="0.2"/><circle cx="20" cy="140" r="55" fill="#BFDBFE" fill-opacity="0.25"/>`,
-  },
-  pacote_completo: {
-    dark: true, accent: "#D4A843",
-    grad: "linear-gradient(145deg,#0A1628 0%,#0F2040 55%,#162C52 100%)",
-    pattern: `<circle cx="220" cy="10" r="100" fill="#D4A843" fill-opacity="0.07"/><circle cx="10" cy="150" r="65" fill="#D4A843" fill-opacity="0.05"/>`,
-  },
-  observador_essencial: {
-    dark: false, accent: "#0D7A5F",
-    grad: "linear-gradient(145deg,#ECFDF5 0%,#D1FAE5 60%,#A7F3D0 100%)",
-    pattern: `<circle cx="200" cy="30" r="75" fill="#6EE7B7" fill-opacity="0.22"/><circle cx="30" cy="130" r="50" fill="#A7F3D0" fill-opacity="0.28"/>`,
-  },
-  observador_avancado: {
-    dark: false, accent: "#065F46",
-    grad: "linear-gradient(145deg,#F0FDF4 0%,#BBF7D0 55%,#86EFAC 100%)",
-    pattern: `<circle cx="215" cy="20" r="85" fill="#4ADE80" fill-opacity="0.18"/><circle cx="20" cy="140" r="55" fill="#86EFAC" fill-opacity="0.22"/>`,
-  },
-  observador_intensivo: {
-    dark: true, accent: "#D4A843",
-    grad: "linear-gradient(145deg,#052E16 0%,#064E3B 55%,#065F46 100%)",
-    pattern: `<circle cx="215" cy="20" r="90" fill="#D4A843" fill-opacity="0.06"/><circle cx="20" cy="145" r="60" fill="#6EE7B7" fill-opacity="0.04"/>`,
-  },
-  imersao: {
-    dark: true, accent: "#D4A843",
-    grad: "linear-gradient(145deg,#0A1628 0%,#14213D 50%,#1C2E4A 100%)",
-    pattern: `<circle cx="200" cy="25" r="95" fill="#D4A843" fill-opacity="0.08"/><circle cx="25" cy="135" r="70" fill="#D4A843" fill-opacity="0.05"/>`,
-  },
-  vip_online: {
-    dark: true, accent: "#60A5FA",
-    grad: "linear-gradient(145deg,#0A1628 0%,#0F2040 50%,#162C52 100%)",
-    pattern: `<circle cx="220" cy="15" r="110" fill="#60A5FA" fill-opacity="0.08"/><circle cx="15" cy="145" r="75" fill="#3B82F6" fill-opacity="0.06"/>`,
-  },
-  vip_presencial: {
-    dark: true, accent: "#60A5FA",
-    grad: "linear-gradient(145deg,#0B1A30 0%,#112240 50%,#19305A 100%)",
-    pattern: `<circle cx="215" cy="20" r="100" fill="#60A5FA" fill-opacity="0.08"/><path d="M75 20 L130 105 L75 160 L20 105 Z" fill="#3B82F6" fill-opacity="0.04"/>`,
-  },
-  vip_completo: {
-    dark: true, accent: "#93C5FD",
-    grad: "linear-gradient(145deg,#060E1E 0%,#0C1A35 45%,#12244A 100%)",
-    pattern: `<circle cx="220" cy="10" r="115" fill="#93C5FD" fill-opacity="0.1"/><circle cx="10" cy="150" r="80" fill="#60A5FA" fill-opacity="0.07"/><circle cx="125" cy="80" r="38" fill="#3B82F6" fill-opacity="0.04"/>`,
-  },
-};
+const WHATSAPP_URL = "https://wa.me/5521976263881";
+const WHATSAPP_PRATICA = `${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse no Curso com Prática Clínica da Ampla Facial.")}`;
+const WHATSAPP_MENTORIA = `${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse na Mentoria Completa NaturalUp® da Ampla Facial.")}`;
 
-// ─── Card de plano ─────────────────────────────────────────────────────────
-function PlanCard({ plan, onAcessar, isLoading }: {
-  plan: PlanData; onAcessar: (k: string) => void; isLoading: boolean;
-}) {
-  const theme = CARD_THEMES[plan.key] ?? CARD_THEMES["pacote_completo"];
-  const { dark, accent, grad, pattern } = theme;
-  const economia = plan.valorMercado ? Math.round((1 - plan.price / plan.valorMercado) * 100) : null;
-  const tp  = dark ? "#fff"                   : "#111827";
-  const ts  = dark ? "rgba(255,255,255,0.55)" : "#6B7280";
-  const tt  = dark ? "rgba(255,255,255,0.32)" : "#9CA3AF";
-  const div = dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
-  const chk = dark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.05)";
-  const bdg = dark ? "rgba(255,255,255,0.1)"  : "rgba(0,0,0,0.06)";
-  const bdt = dark ? "rgba(255,255,255,0.7)"  : "#374151";
-
-  return (
-    <div
-      className="relative flex flex-col rounded-[28px] overflow-hidden transition-all duration-300 hover:-translate-y-1"
-      style={{
-        background: grad,
-        boxShadow: dark
-          ? "0 8px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)"
-          : "0 4px 28px rgba(0,0,0,0.09), 0 0 0 1px rgba(0,0,0,0.06)",
-      }}
-    >
-      {/* Badge */}
-      {plan.highlight && (
-        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10">
-          <span className="rounded-full px-2 sm:px-3 py-0.5 sm:py-1 text-[9px] sm:text-[11px] font-semibold tracking-wide"
-            style={{ background: accent, color: dark ? "#0A0500" : "#fff" }}>
-            {plan.highlight}
-          </span>
-        </div>
-      )}
-
-      {/* Padrão SVG de fundo */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 260 200"
-        preserveAspectRatio="xMaxYMin slice" fill="none" dangerouslySetInnerHTML={{ __html: pattern }} />
-
-      {/* Linha de acento */}
-      <div className="h-[3px] w-full flex-shrink-0" style={{ background: accent }} />
-
-      {/* Cabeçalho */}
-      <div className="relative px-7 pt-6 pb-0">
-        <p className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5 pr-20 sm:pr-0" style={{ color: accent }}>
-          {plan.group === "digital" ? "Online" : plan.group === "observador" ? "Observação Clínica" : plan.group === "horas" ? "Horas Clínicas" : "Mentoria VIP"}
-        </p>
-        <h3 className="text-xl font-bold leading-snug" style={{ color: tp }}>{plan.name}</h3>
-        <p className="mt-1 text-sm leading-relaxed" style={{ color: ts }}>{plan.description}</p>
-      </div>
-
-      {/* Preço */}
-      <div className="relative px-7 pt-5 pb-0">
-        {plan.valorMercado && (
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-sm line-through" style={{ color: tt }}>{formatBRL(plan.valorMercado)}</span>
-            {economia && (
-              <span className="rounded-full px-2 py-0.5 text-[11px] font-bold"
-                style={{ background: "rgba(34,197,94,0.14)", color: "#16A34A" }}>
-                −{economia}%
-              </span>
-            )}
-          </div>
-        )}
-        <span className="text-[32px] font-bold tabular-nums leading-none"
-          style={{ color: plan.valorMercado ? accent : tp }}>
-          {plan.priceFormatted}
-        </span>
-        <p className="text-xs mt-1" style={{ color: tt }}>
-          {plan.installments12xFormatted ? `ou 12× de ${plan.installments12xFormatted}` : "à vista"}
-        </p>
-      </div>
-
-      {/* Divider */}
-      <div className="mx-7 mt-5 h-px" style={{ background: div }} />
-
-      {/* Features */}
-      <ul className="relative flex-1 px-7 pt-4 pb-0 space-y-2.5">
-        {plan.features.map((f, i) => {
-          const isOnlineOnly = f.startsWith("Acesso exclusivamente online");
-          return (
-            <li key={i} className="flex items-start gap-3">
-              <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center"
-                style={{ background: isOnlineOnly ? "transparent" : chk }}>
-                {isOnlineOnly
-                  ? <svg className="h-[14px] w-[14px]" viewBox="0 0 24 24" fill="none" stroke={tt} strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-                  : <Check className="h-[10px] w-[10px]" style={{ color: accent }} />}
-              </div>
-              <span className={`text-[13px] leading-snug ${isOnlineOnly ? "italic" : ""}`} style={{ color: isOnlineOnly ? tt : ts }}>{f}</span>
-            </li>
-          );
-        })}
-      </ul>
-
-      {/* Link to cursos individuais (pacote_completo only) */}
-      {plan.key === "pacote_completo" && (
-        <div className="relative px-7 pt-3 pb-0">
-          <a
-            href="#"
-            onClick={(e) => { e.preventDefault(); const el = document.querySelector('[data-section="cursos"]'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}
-            className="text-[12px] hover:underline transition-colors"
-            style={{ color: accent }}
-          >
-            Quer prática presencial? Conheça nossos Cursos Individuais &rarr;
-          </a>
-        </div>
-      )}
-
-      {/* Badges */}
-      {(plan.clinicalHours > 0 || plan.practiceHours > 0 || plan.hasMentorship || plan.hasLiveEvents) && (
-        <div className="relative px-7 pt-4 pb-0 flex flex-wrap gap-1.5">
-          {plan.clinicalHours > 0 && <span className="rounded-full px-2.5 py-1 text-[11px] font-medium" style={{ background: bdg, color: bdt }}>{plan.clinicalHours}h observação</span>}
-          {plan.practiceHours > 0 && <span className="rounded-full px-2.5 py-1 text-[11px] font-medium" style={{ background: bdg, color: bdt }}>{plan.practiceHours}h prática</span>}
-          {plan.hasMentorship   && <span className="rounded-full px-2.5 py-1 text-[11px] font-medium" style={{ background: bdg, color: bdt }}>Mentoria individual</span>}
-          {plan.hasLiveEvents   && <span className="rounded-full px-2.5 py-1 text-[11px] font-medium" style={{ background: bdg, color: bdt }}>Encontros ao vivo</span>}
-        </div>
-      )}
-
-      {/* CTA */}
-      <div className="relative px-7 pt-5 pb-7">
-        <button
-          onClick={() => onAcessar(plan.key)}
-          disabled={isLoading}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold transition-all duration-200 disabled:opacity-50"
-          style={{ background: accent, color: dark ? "#0A0500" : "#fff", boxShadow: `0 4px 20px ${accent}45` }}
-        >
-          {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Aguarde...</>
-            : <>Acessar agora <ArrowRight className="h-4 w-4" /></>}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Card compacto módulo avulso ───────────────────────────────────────────
-function ModuloAvulsoCard({ plan, onAcessar, isLoading }: {
-  plan: PlanData; onAcessar: (k: string) => void; isLoading: boolean;
-}) {
-  return (
-    <div
-      className="relative flex flex-col sm:flex-row items-center gap-6 rounded-[28px] p-7 transition-all duration-300 hover:-translate-y-0.5 overflow-hidden"
-      style={{
-        background: "linear-gradient(145deg,#EBF4FF 0%,#DBEAFE 60%,#BFDBFE 100%)",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.05)",
-      }}
-    >
-      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-60" viewBox="0 0 500 120" fill="none" preserveAspectRatio="xMaxYMin slice">
-        <circle cx="460" cy="20" r="90" fill="#93C5FD" fillOpacity="0.2"/>
-        <circle cx="20" cy="100" r="55" fill="#BFDBFE" fillOpacity="0.25"/>
-      </svg>
-      <div className="relative shrink-0 h-14 w-14 rounded-2xl flex items-center justify-center"
-        style={{ background: "rgba(26,86,164,0.12)" }}>
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-          <rect x="3" y="6" width="22" height="14" rx="2.5" stroke="#1A56A4" strokeWidth="1.6"/>
-          <path d="M9.5 20l1.5-2.5h6l1.5 2.5" stroke="#1A56A4" strokeWidth="1.6" strokeLinecap="round"/>
-          <circle cx="14" cy="13" r="3" stroke="#1A56A4" strokeWidth="1.4"/>
-        </svg>
-      </div>
-      <div className="relative flex-1 text-center sm:text-left">
-        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#1A56A4] mb-0.5">Módulo Avulso</p>
-        <h3 className="text-base font-bold text-gray-900">Escolha 1 módulo</h3>
-        <p className="text-sm text-gray-500 mt-0.5 leading-snug">{plan.description}</p>
-      </div>
-      <div className="relative shrink-0 flex flex-col items-center sm:items-end gap-3">
-        <div>
-          <div className="text-2xl font-bold text-gray-900 tabular-nums">{plan.priceFormatted}</div>
-          <p className="text-xs text-gray-400 text-center sm:text-right">acesso por 1 ano</p>
-        </div>
-        <button
-          onClick={() => onAcessar(plan.key)} disabled={isLoading}
-          className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 disabled:opacity-50"
-          style={{ background: "#1A56A4", boxShadow: "0 4px 16px rgba(26,86,164,0.28)" }}
-        >
-          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Acessar agora <ArrowRight className="h-3.5 w-3.5" /></>}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─── Rótulo de seção ───────────────────────────────────────────────────────
-function SectionLabel({ eyebrow, title, sub, color }: { eyebrow: string; title: string; sub: string; color?: string }) {
-  const c = color || "#D4A843";
-  return (
-    <div className="mb-10">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="h-px w-6" style={{ background: c }} />
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: c }}>{eyebrow}</p>
-      </div>
-      <h2 className="text-2xl sm:text-[28px] font-bold text-gray-900 leading-tight">{title}</h2>
-      <p className="mt-1.5 text-sm text-gray-500 max-w-lg leading-relaxed">{sub}</p>
-    </div>
-  );
-}
-
-// ─── Página ────────────────────────────────────────────────────────────────
 export default function PlanosPublicos() {
-  const [activeTab, setActiveTab] = useState<Tab>("online");
-  const [loadingKey, setLoadingKey] = useState<string | null>(null);
+  const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const sectionRefs = {
-    online:     useRef<HTMLDivElement>(null),
-    observação: useRef<HTMLDivElement>(null),
-    mentoria:   useRef<HTMLDivElement>(null),
-    cursos:     useRef<HTMLDivElement>(null),
-  };
-
-  // Hash router: query params live after the hash, e.g. /#/comecar?plan=vip_completo
+  // Referral code state
   const hashQuery = window.location.hash.includes("?") ? window.location.hash.split("?")[1] : "";
   const urlParams = new URLSearchParams(hashQuery || window.location.search);
   const urlRef = urlParams.get("ref") || "";
-  const urlPlan = urlParams.get("plan") || "";
 
-  // Auto-select tab based on ?plan= parameter
-  useEffect(() => {
-    if (!urlPlan) return;
-    const vipPlans = ["vip_online", "vip_presencial", "vip_completo"];
-    const obsPlans = ["observador_essencial", "observador_avancado", "observador_intensivo", "imersao"];
-    if (urlPlan === "cursos") setActiveTab("cursos");
-    else if (vipPlans.includes(urlPlan)) setActiveTab("mentoria");
-    else if (obsPlans.includes(urlPlan)) setActiveTab("observação");
-    else setActiveTab("online");
-  }, [urlPlan]);
-
-  // Estado do codigo de convite
   const [couponCode, setCouponCode] = useState(urlRef);
   const [couponInput, setCouponInput] = useState(urlRef);
-  const [couponValid, setCouponValid] = useState<boolean | null>(urlRef ? null : null);
+  const [couponValid, setCouponValid] = useState<boolean | null>(null);
   const [couponReferrer, setCouponReferrer] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
 
-  // Validar codigo de convite
   const validateCoupon = useCallback(async (code: string) => {
     const trimmed = code.trim();
     if (!trimmed) {
-      setCouponCode("");
-      setCouponValid(null);
-      setCouponReferrer("");
+      setCouponCode(""); setCouponValid(null); setCouponReferrer("");
       return;
     }
     setCouponLoading(true);
@@ -324,297 +37,140 @@ export default function PlanosPublicos() {
       const res = await fetch(`/api/referral/validate?code=${encodeURIComponent(trimmed)}`);
       const json = await res.json();
       if (json.valid) {
-        setCouponCode(trimmed);
-        setCouponValid(true);
-        setCouponReferrer(json.referrerName || "");
+        setCouponCode(trimmed); setCouponValid(true); setCouponReferrer(json.referrerName || "");
       } else {
-        setCouponCode("");
-        setCouponValid(false);
-        setCouponReferrer("");
+        setCouponCode(""); setCouponValid(false); setCouponReferrer("");
       }
     } catch {
-      setCouponValid(false);
-      setCouponReferrer("");
+      setCouponValid(false); setCouponReferrer("");
     } finally {
       setCouponLoading(false);
     }
   }, []);
 
-  // Validar automaticamente se veio pela URL
-  useEffect(() => {
-    if (urlRef) validateCoupon(urlRef);
-  }, [urlRef, validateCoupon]);
-
-  const { data, isLoading } = useQuery<{ plans: PlanData[] }>({ queryKey: ["/api/stripe/plans"] });
+  useEffect(() => { if (urlRef) validateCoupon(urlRef); }, [urlRef, validateCoupon]);
 
   const checkoutMutation = useMutation({
-    mutationFn: async (planKey: string) => {
+    mutationFn: async () => {
       const res = await fetch("/api/stripe/public-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planKey, referralCode: couponCode || undefined }),
+        body: JSON.stringify({ planKey: "acesso_vitalicio", referralCode: couponCode || undefined }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || "Erro");
       return json;
     },
     onSuccess: (res) => { if (res.url) window.location.href = res.url; },
-    onError: () => { setLoadingKey(null); alert("Erro ao gerar link. Tente novamente."); },
+    onError: () => { setLoadingCheckout(false); alert("Erro ao gerar link de pagamento. Tente novamente."); },
   });
 
-  const handleAcessar = (k: string) => { setLoadingKey(k); checkoutMutation.mutate(k); };
+  const handleCheckout = () => { setLoadingCheckout(true); checkoutMutation.mutate(); };
 
-  // Scroll listener → ativa glass no header
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", fn, { passive: true });
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
-  // Click no tab → scroll suave até seção
-  const HEADER_H = 72; // altura do header fixo
-  const scrollTo = (tab: Tab) => {
-    setActiveTab(tab);
-    const el = sectionRefs[tab].current;
-    if (!el) return;
-    const y = el.getBoundingClientRect().top + window.scrollY - HEADER_H - 24;
-    window.scrollTo({ top: y, behavior: "smooth" });
-  };
-
-  // Intersection observer → atualiza tab ativa ao rolar
-  useEffect(() => {
-    if (!data) return;
-    const obs: IntersectionObserver[] = [];
-    (["online", "observação", "mentoria", "cursos"] as Tab[]).forEach((key) => {
-      const el = sectionRefs[key].current;
-      if (!el) return;
-      const o = new IntersectionObserver(
-        ([e]) => { if (e.isIntersecting) setActiveTab(key); },
-        { rootMargin: "-25% 0px -65% 0px" }
-      );
-      o.observe(el);
-      obs.push(o);
-    });
-    return () => obs.forEach((o) => o.disconnect());
-  }, [data]);
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center" style={{ background: "#F8F7F4" }}>
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#0A1628] border-t-transparent" />
-      </div>
-    );
-  }
-
-  const plans       = (data?.plans || []).filter((p) => p.key !== "workshop" && p.key !== "tester");
-  const digital     = plans.filter((p) => p.group === "digital");
-  const observador  = plans.filter((p) => p.group === "observador");
-  const vip         = plans.filter((p) => p.group === "vip");
-  const avulso      = digital.find((p) => p.key === "modulo_avulso");
-  const digResto    = digital.filter((p) => p.key !== "modulo_avulso");
-
-  // ── Definição dos tabs ─────────────────────────────────────────────────
-  const TABS: { key: Tab; label: string; desc: string }[] = [
-    { key: "online",     label: "Online",                desc: "Aulas gravadas no seu ritmo" },
-    { key: "observação", label: "Com Observação Clínica", desc: "Presencial com o Dr. Gustavo" },
-    { key: "mentoria",   label: "Mentoria VIP",           desc: "Acompanhamento individual" },
-    { key: "cursos",     label: "Cursos Individuais",     desc: "Teoria + prática presencial" },
-  ];
+  const HEADER_H = 72;
 
   return (
-    <div style={{ background: "#F8F7F4", fontFamily: "-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',sans-serif" }}>
+    <div className="min-h-screen" style={{ background: "#0A1628", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif" }}>
 
-      {/* ══════════════════════════════════════════════════════
-          HEADER FIXO
-      ══════════════════════════════════════════════════════ */}
+      {/* ═══ HEADER ═══ */}
       <header
         className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
         style={{
           height: `${HEADER_H}px`,
-          background: scrolled ? "rgba(255,255,255,0.88)" : "rgba(255,255,255,0.98)",
+          background: scrolled ? "rgba(10,22,40,0.92)" : "rgba(10,22,40,0.98)",
           backdropFilter: scrolled ? "blur(24px) saturate(1.8)" : "none",
           WebkitBackdropFilter: scrolled ? "blur(24px) saturate(1.8)" : "none",
-          borderBottom: `1px solid ${scrolled ? "rgba(0,0,0,0.09)" : "rgba(0,0,0,0.06)"}`,
-          boxShadow: scrolled ? "0 1px 24px rgba(0,0,0,0.06)" : "none",
+          borderBottom: `1px solid ${scrolled ? "rgba(212,168,67,0.12)" : "rgba(255,255,255,0.05)"}`,
         }}
       >
-        <div className="mx-auto max-w-7xl h-full px-5 sm:px-8 flex items-center gap-6">
-
-          {/* Voltar */}
-          <a
-            href="/#/"
-            className="flex items-center gap-1 text-[13px] text-gray-400 hover:text-gray-700 transition-colors shrink-0"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">Voltar</span>
-          </a>
-
-          {/* Logo */}
-          <a href="/#/comecar" className="shrink-0 flex items-center gap-2.5">
+        <div className="mx-auto max-w-6xl h-full px-5 sm:px-8 flex items-center justify-between">
+          <a href="/#/comecar" className="flex items-center gap-2.5">
             <img src="/logo-icon.png" alt="" className="h-10 w-10 object-contain" />
             <div className="flex flex-col">
-              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#8B7A55]">Portal de Aulas</span>
-              <span className="text-[15px] font-bold uppercase tracking-[0.06em] text-gray-900 leading-tight">Ampla Facial</span>
-              <span className="text-[9px] text-[#8B7A55] tracking-wide">Dr. Gustavo Martins</span>
+              <span className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#D4A843]/70">Portal de Aulas</span>
+              <span className="text-[15px] font-bold uppercase tracking-[0.06em] text-white leading-tight">Ampla Facial</span>
             </div>
           </a>
-
-          {/* Separador */}
-          <div className="hidden md:block h-5 w-px bg-gray-200 shrink-0" />
-
-          {/* Tabs — desktop only */}
-          <nav className="hidden md:flex items-center gap-3 flex-1 justify-center">
-            {TABS.map((tab) => {
-              const active = activeTab === tab.key;
-              const isVip  = tab.key === "mentoria";
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => scrollTo(tab.key)}
-                  className="relative flex flex-col items-start rounded-2xl px-6 py-2 transition-all duration-200 group"
-                  style={{
-                    background: active
-                      ? isVip ? "#0C1A35" : "#0A1628"
-                      : "transparent",
-                    minWidth: 0,
-                  }}
-                >
-                  {isVip && !active && (
-                    <span
-                      className="absolute -top-2 -right-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide"
-                      style={{ background: "#3B82F6", color: "#fff", lineHeight: 1.6 }}
-                    >
-                      VIP
-                    </span>
-                  )}
-                  <span
-                    className="text-[13px] font-semibold leading-none whitespace-nowrap transition-colors duration-200"
-                    style={{ color: active ? "#fff" : "#374151" }}
-                  >
-                    {tab.label}
-                  </span>
-                  <span
-                    className="text-[11px] leading-none mt-0.5 whitespace-nowrap transition-colors duration-200"
-                    style={{ color: active ? (isVip ? "rgba(212,168,67,0.7)" : "rgba(255,255,255,0.55)") : "#9CA3AF" }}
-                  >
-                    {tab.desc}
-                  </span>
-                  {active && (
-                    <span
-                      className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full"
-                      style={{ background: isVip ? "#60A5FA" : "transparent" }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Spacer no mobile */}
-          <div className="flex-1 md:hidden" />
-
-          {/* Login — desktop */}
-          <a
-            href="/#/"
-            className="hidden md:inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-[13px] font-medium text-gray-600 hover:border-gray-300 hover:text-gray-900 transition-all shrink-0"
-          >
-            Entrar
-          </a>
-
-          {/* Hamburger — mobile only */}
-          <button
-            className="md:hidden flex items-center justify-center w-10 h-10 shrink-0"
-            onClick={() => setMobileMenuOpen(true)}
-            aria-label="Menu"
-          >
-            <svg width="18" height="12" viewBox="0 0 18 12" fill="none">
-              <path d="M0 0h18M0 6h18M0 12h18" stroke="#1a1a1a" strokeWidth="1.5" />
-            </svg>
-          </button>
-        </div>
-      </header>
-
-      {/* Mobile menu overlay — estilo Apple */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[60] bg-white animate-in fade-in duration-200">
-          <div className="flex justify-end p-5">
-            <button
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-10 h-10 flex items-center justify-center"
-              aria-label="Fechar menu"
+          <div className="flex items-center gap-3">
+            <a
+              href="/#/"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-[13px] font-medium text-white/70 hover:text-white hover:border-white/20 transition-all"
             >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M1 1l16 16M17 1L1 17" stroke="#1a1a1a" strokeWidth="1.5" />
+              Entrar
+            </a>
+            <button
+              className="sm:hidden flex items-center justify-center w-10 h-10"
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Menu"
+            >
+              <svg width="18" height="12" viewBox="0 0 18 12" fill="none">
+                <path d="M0 0h18M0 6h18M0 12h18" stroke="#fff" strokeWidth="1.5" />
               </svg>
             </button>
           </div>
+        </div>
+      </header>
+
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-[60] animate-in fade-in duration-200" style={{ background: "#0A1628" }}>
+          <div className="flex justify-end p-5">
+            <button onClick={() => setMobileMenuOpen(false)} className="w-10 h-10 flex items-center justify-center" aria-label="Fechar">
+              <X className="h-5 w-5 text-white" />
+            </button>
+          </div>
           <nav className="px-8 pt-4 space-y-1">
-            {TABS.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setTimeout(() => scrollTo(tab.key), 100);
-                }}
-                className="block w-full text-left py-3 border-b border-gray-100"
-              >
-                <span className="text-[22px] font-semibold text-gray-900">{tab.label}</span>
-              </button>
-            ))}
-            <a
-              href="/#/"
-              className="block w-full text-left py-3 border-b border-gray-100"
-            >
-              <span className="text-[22px] font-semibold text-gray-900">Entrar</span>
+            <a href="/#/" className="block w-full text-left py-3 border-b border-white/10">
+              <span className="text-[22px] font-semibold text-white">Entrar</span>
             </a>
           </nav>
         </div>
       )}
 
-      {/* Espaço do header fixo */}
       <div style={{ height: `${HEADER_H}px` }} />
 
-      {/* ══════════════════════════════════════════════════════
-          HERO — alinhado com o conteúdo, sem logo
-      ══════════════════════════════════════════════════════ */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8 py-14 sm:py-20 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-8">
+      {/* ═══ HERO ═══ */}
+      <div className="relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full opacity-[0.04]"
+            style={{ background: "radial-gradient(ellipse, #D4A843 0%, transparent 70%)" }} />
+        </div>
 
-          {/* Texto principal */}
-          <div className="max-w-xl">
-            {/* Coupon badge (shown when valid) */}
-            {couponValid === true && (
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200 px-4 py-1.5 text-xs font-semibold text-emerald-700">
-                <Gift className="h-3.5 w-3.5" />
-                10% de desconto ativo{couponReferrer ? ` (indicação de ${couponReferrer})` : ""}
-                <button
-                  onClick={() => { setCouponCode(""); setCouponInput(""); setCouponValid(null); setCouponReferrer(""); }}
-                  className="ml-1 hover:text-emerald-900 transition-colors"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            )}
-            <h1 className="text-[1.75rem] sm:text-5xl lg:text-[52px] font-bold tracking-tight text-gray-900 leading-[1.07]">
-              <span className="sm:whitespace-nowrap">Aprenda Harmonização Facial</span><br />
-              <span style={{ color: "#D4A843" }}>do jeito certo.</span>
-            </h1>
-            <p className="mt-4 text-base sm:text-lg text-gray-500 leading-relaxed max-w-lg">
-              Cursos clínicos do Dr. Gustavo Martins — da teoria à prática, com acesso imediato após o pagamento.
-            </p>
-          </div>
+        <div className="relative mx-auto max-w-6xl px-5 sm:px-8 pt-12 sm:pt-20 pb-6 sm:pb-10 text-center">
+          {/* Coupon badge */}
+          {couponValid === true && (
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 text-xs font-semibold text-emerald-400">
+              <Gift className="h-3.5 w-3.5" />
+              10% de desconto ativo{couponReferrer ? ` (indicação de ${couponReferrer})` : ""}
+              <button onClick={() => { setCouponCode(""); setCouponInput(""); setCouponValid(null); setCouponReferrer(""); }} className="ml-1 hover:text-emerald-300 transition-colors">
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
 
-          {/* Trust badges — lado direito */}
-          <div className="flex flex-col gap-3 shrink-0">
+          <h1 className="text-3xl sm:text-5xl lg:text-[56px] font-bold tracking-tight text-white leading-[1.07]">
+            Domine a Harmonização Facial
+          </h1>
+          <p className="mt-4 text-base sm:text-lg text-white/50 leading-relaxed max-w-2xl mx-auto">
+            Escolha o nível certo para você — do conteúdo online à mentoria completa com o Dr. Gustavo Martins.
+          </p>
+
+          {/* Trust badges */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-6">
             {[
               { icon: Shield, text: "Pagamento seguro via Stripe" },
               { icon: Star,   text: "Acesso vitalício ao conteúdo" },
-              { icon: Check,  text: "Upgrade com crédito garantido" },
+              { icon: Check,  text: "Satisfação garantida" },
             ].map(({ icon: Ic, text }) => (
-              <div key={text} className="flex items-center gap-2.5 text-[13px] text-gray-400">
-                <div className="h-6 w-6 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
-                  <Ic className="h-3 w-3 text-gray-400" />
-                </div>
+              <div key={text} className="flex items-center gap-2 text-[13px] text-white/35">
+                <Ic className="h-3.5 w-3.5 text-[#D4A843]/60" />
                 {text}
               </div>
             ))}
@@ -622,551 +178,346 @@ export default function PlanosPublicos() {
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════════════════
-          CONTEÚDO
-      ══════════════════════════════════════════════════════ */}
-      <main className="mx-auto max-w-7xl px-5 sm:px-8 pb-24">
+      {/* ═══ CARDS ═══ */}
+      <main className="mx-auto max-w-6xl px-5 sm:px-8 pb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-5 items-start">
 
-        {/* ── SEÇÃO ONLINE ───────────────────────────────────── */}
-        <div ref={sectionRefs.online} className="pt-16">
-          <SectionLabel
-            eyebrow="Online"
-            title="Estude no seu ritmo"
-            sub="Aulas gravadas com protocolo clínico completo, materiais científicos e certificado incluídos."
-          />
-
-          {/* Módulo avulso */}
-          {avulso && (
-            <div className="mb-5">
-              <ModuloAvulsoCard plan={avulso} onAcessar={handleAcessar}
-                isLoading={checkoutMutation.isPending && loadingKey === avulso.key} />
-            </div>
-          )}
-
-          {/* Chips dos módulos */}
-          <div className="flex flex-wrap gap-2 mb-8">
-            {[
-              { label: "Toxina Botulínica",           color: "#1A56A4" },
-              { label: "Preenchedores Faciais",        color: "#9B1C1C" },
-              { label: "Bioestimuladores de Colágeno", color: "#065F46" },
-              { label: "Biorregeneradores",            color: "#92400E" },
-              { label: "Método NaturalUp®",            color: "#5521B5" },
-            ].map(({ label, color }) => (
-              <span key={label} className="rounded-full px-3.5 py-1.5 text-xs font-medium border"
-                style={{ borderColor: color + "28", color, background: color + "0B" }}>
-                {label}
-              </span>
-            ))}
-            <span className="rounded-full px-3.5 py-1.5 text-xs text-gray-400 border border-gray-200 bg-white">
-              todos inclusos no Curso Online →
-            </span>
-          </div>
-
-          {/* Cards digitais */}
-          {digResto.length > 0 && (
-            <div className={`grid gap-5 mx-auto ${digResto.length === 1 ? "max-w-sm" : "grid-cols-1 sm:grid-cols-2 max-w-3xl"}`}>
-              {digResto.map((p) => (
-                <PlanCard key={p.key} plan={p} onAcessar={handleAcessar}
-                  isLoading={checkoutMutation.isPending && loadingKey === p.key} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Divider */}
-        <div className="my-16 h-px bg-gray-200" />
-
-        {/* ── SEÇÃO OBSERVAÇÃO CLÍNICA ───────────────────────── */}
-        <div ref={sectionRefs.observação}>
-          <SectionLabel
-            eyebrow="Presencial"
-            title="Com Observação Clínica"
-            sub="Acompanhe atendimentos reais do Dr. Gustavo. Teoria e prática no mesmo programa."
-          />
-          {/* Primeiros cards em grid */}
-          {observador.length > 3 ? (
-            <>
-              <div className="grid gap-5 mx-auto grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl">
-                {observador.slice(0, 3).map((p) => (
-                  <PlanCard key={p.key} plan={p} onAcessar={handleAcessar}
-                    isLoading={checkoutMutation.isPending && loadingKey === p.key} />
-                ))}
-              </div>
-              {/* Último card (Imersão) centralizado */}
-              <div className="mt-5 max-w-sm mx-auto">
-                {observador.slice(3).map((p) => (
-                  <PlanCard key={p.key} plan={p} onAcessar={handleAcessar}
-                    isLoading={checkoutMutation.isPending && loadingKey === p.key} />
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className={`grid gap-5 mx-auto ${
-              observador.length <= 2 ? "grid-cols-1 sm:grid-cols-2 max-w-3xl"
-                : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
-              {observador.map((p) => (
-                <PlanCard key={p.key} plan={p} onAcessar={handleAcessar}
-                  isLoading={checkoutMutation.isPending && loadingKey === p.key} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Divider especial antes da seção VIP */}
-        <div className="my-16 flex items-center gap-5">
-          <div className="h-px flex-1 bg-gradient-to-r from-gray-200 to-blue-400/30" />
-          <div className="flex items-center gap-2 shrink-0">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M7 1l1.5 3.5L12 5 9.5 7.5 10 11l-3-1.5L4 11l.5-3.5L2 5l3.5-.5z" fill="#60A5FA"/>
-            </svg>
-            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-blue-400">Formação exclusiva</span>
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M7 1l1.5 3.5L12 5 9.5 7.5 10 11l-3-1.5L4 11l.5-3.5L2 5l3.5-.5z" fill="#60A5FA"/>
-            </svg>
-          </div>
-          <div className="h-px flex-1 bg-gradient-to-l from-gray-200 to-blue-400/30" />
-        </div>
-
-        {/* ── SEÇÃO MENTORIA VIP — com destaque ─────────────── */}
-        <div ref={sectionRefs.mentoria}>
-
-          {/* Banner de destaque VIP */}
-          <div
-            className="relative rounded-[32px] overflow-hidden mb-10 px-8 sm:px-12 py-10"
+          {/* ── Card 1: Acesso Vitalicio (highlighted) ── */}
+          <div className="relative rounded-[28px] overflow-hidden lg:scale-[1.03] lg:-mt-2 lg:mb-2 z-10"
             style={{
-              background: "linear-gradient(130deg, #060E1E 0%, #0C1A35 45%, #12244A 100%)",
-              boxShadow: "0 8px 56px rgba(59,130,246,0.15), 0 0 0 1px rgba(96,165,250,0.10)",
+              background: "linear-gradient(145deg, #12244A 0%, #0F2040 50%, #0A1628 100%)",
+              boxShadow: "0 8px 56px rgba(212,168,67,0.15), 0 0 0 1px rgba(212,168,67,0.15)",
             }}
           >
-            {/* SVG decorativo fundo */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 900 200" fill="none" preserveAspectRatio="xMaxYMin slice">
-              <circle cx="820" cy="20" r="160" fill="#60A5FA" fillOpacity="0.06"/>
-              <circle cx="20" cy="180" r="110" fill="#3B82F6" fillOpacity="0.04"/>
-              <circle cx="500" cy="100" r="60" fill="#93C5FD" fillOpacity="0.03"/>
+            {/* Top badge */}
+            <div className="absolute top-4 right-4 z-10 flex gap-2">
+              <span className="rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide bg-[#D4A843] text-[#0A0D14]">
+                Mais Popular
+              </span>
+            </div>
+            <div className="absolute top-4 left-4 z-10">
+              <span className="rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                Oferta de Lançamento
+              </span>
+            </div>
+
+            {/* SVG background */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 600" fill="none" preserveAspectRatio="xMaxYMin slice">
+              <circle cx="350" cy="50" r="150" fill="#D4A843" fillOpacity="0.06"/>
+              <circle cx="30" cy="500" r="100" fill="#D4A843" fillOpacity="0.04"/>
             </svg>
 
-            {/* Conteúdo do banner */}
-            <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-              <div>
-                {/* Coroa SVG */}
-                <div className="flex items-center gap-3 mb-3">
-                  <svg width="24" height="20" viewBox="0 0 24 20" fill="none">
-                    <path d="M2 16h20V18H2zM2 16L4 8l4 5 4-8 4 8 4-5 2 8z" fill="#60A5FA"/>
-                    <circle cx="4" cy="7" r="2" fill="#60A5FA"/>
-                    <circle cx="12" cy="4" r="2" fill="#60A5FA"/>
-                    <circle cx="20" cy="7" r="2" fill="#60A5FA"/>
-                  </svg>
-                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#93C5FD]">Mentoria VIP</span>
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-white leading-tight">
-                  Acompanhamento individual<br />com o Dr. Gustavo
-                </h2>
-                <p className="mt-2 text-blue-300/60 text-sm max-w-md leading-relaxed">
-                  Mentoria exclusiva com o Dr. Gustavo, canal direto, encontros ao vivo e suporte contínuo. Cada plano com sua carga horária. Vagas limitadas por turma.
-                </p>
+            {/* Gold accent line */}
+            <div className="h-[3px] w-full" style={{ background: "linear-gradient(90deg, #D4A843, #F0D78C, #D4A843)" }} />
+
+            <div className="relative p-7 sm:p-8">
+              {/* Header */}
+              <div className="pt-6">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A843] mb-2">Conteúdo Online</p>
+                <h3 className="text-2xl sm:text-[28px] font-bold text-white leading-tight">Acesso Vitalício</h3>
+                <p className="mt-2 text-sm text-white/50 leading-relaxed">Todas as aulas gravadas, materiais e vídeos de casos clínicos — para sempre.</p>
               </div>
-              <div className="flex flex-wrap sm:flex-col gap-2 shrink-0">
-                {["Canal direto exclusivo", "Encontros ao vivo quinzenais", "Suporte por 6 meses", "Vagas limitadas por turma"].map((t) => (
-                  <div key={t} className="flex items-center gap-2">
-                    <div className="h-4 w-4 rounded-full flex items-center justify-center" style={{ background: "rgba(96,165,250,0.15)" }}>
-                      <Check className="h-2.5 w-2.5 text-blue-400" />
+
+              {/* Price */}
+              <div className="mt-6">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl sm:text-[42px] font-bold tabular-nums text-[#D4A843]">R$ 197</span>
+                </div>
+                <p className="text-xs text-white/30 mt-1">Pagamento único &middot; Sem mensalidade</p>
+              </div>
+
+              {/* Divider */}
+              <div className="my-6 h-px bg-white/[0.07]" />
+
+              {/* Features */}
+              <ul className="space-y-3">
+                {[
+                  "Todas as aulas gravadas",
+                  "Vídeos de casos clínicos reais",
+                  "Materiais e artigos científicos",
+                  "Acesso vitalício",
+                  "Atualizações futuras incluídas",
+                ].map((f) => (
+                  <li key={f} className="flex items-start gap-3">
+                    <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center bg-[#D4A843]/15">
+                      <Check className="h-[10px] w-[10px] text-[#D4A843]" />
                     </div>
-                    <span className="text-[12px] text-blue-300/75 whitespace-nowrap">{t}</span>
-                  </div>
+                    <span className="text-[13px] text-white/70 leading-snug">{f}</span>
+                  </li>
                 ))}
-              </div>
-            </div>
-          </div>
+              </ul>
 
-          {/* Cards VIP */}
-          {vip.length > 3 ? (
-            <>
-              <div className="grid gap-5 mx-auto grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-5xl">
-                {vip.slice(0, 3).map((p) => (
-                  <PlanCard key={p.key} plan={p} onAcessar={handleAcessar}
-                    isLoading={checkoutMutation.isPending && loadingKey === p.key} />
-                ))}
-              </div>
-              <div className="mt-5 max-w-sm mx-auto">
-                {vip.slice(3).map((p) => (
-                  <PlanCard key={p.key} plan={p} onAcessar={handleAcessar}
-                    isLoading={checkoutMutation.isPending && loadingKey === p.key} />
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className={`grid gap-5 mx-auto ${
-              vip.length === 1 ? "max-w-sm" :
-              vip.length === 2 ? "grid-cols-1 sm:grid-cols-2 max-w-3xl" :
-              "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
-              {vip.map((p) => (
-                <PlanCard key={p.key} plan={p} onAcessar={handleAcessar}
-                  isLoading={checkoutMutation.isPending && loadingKey === p.key} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ── HORAS CLINICAS EXTRAS ──────────────────────────── */}
-        <div className="my-16 h-px bg-gray-200" />
-
-        <div>
-          <SectionLabel
-            eyebrow="Add-on"
-            title="Horas Clínicas Extras"
-            sub="Pacotes de encontros clínicos presenciais para aprofundar a prática. Exclusivo para alunos com mentoria VIP ativa."
-            color="#0D7A5F"
-          />
-
-          <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 flex items-start gap-3">
-            <svg className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-sm text-amber-700">Exclusivo para alunos com mentoria VIP ativa. Para adquirir, acesse a área de planos após o login.</p>
-          </div>
-
-          <div className="grid gap-5 grid-cols-1 sm:grid-cols-3 max-w-4xl mx-auto">
-            {[
-              {
-                title: "1 Encontro Clínico",
-                hours: "4h",
-                price: "R$ 1.000",
-                features: ["1 sessão de 4 horas", "Observação de atendimentos reais", "Suporte técnico durante o encontro", "Certificado de participação"],
-              },
-              {
-                title: "2 Encontros Clínicos",
-                hours: "8h",
-                price: "R$ 1.800",
-                highlight: "Mais escolhido",
-                features: ["2 sessões de 4 horas cada", "Observação de atendimentos reais", "Suporte técnico durante os encontros", "Certificado de participação", "10% de economia vs avulso"],
-              },
-              {
-                title: "3 Encontros Clínicos",
-                hours: "12h",
-                price: "R$ 2.400",
-                features: ["3 sessões de 4 horas cada", "Observação de atendimentos reais", "Suporte técnico durante os encontros", "Certificado de participação", "20% de economia vs avulso"],
-              },
-            ].map((pkg) => (
-              <div
-                key={pkg.title}
-                className="relative flex flex-col rounded-[28px] overflow-hidden"
-                style={{
-                  background: "linear-gradient(145deg,#ECFDF5 0%,#D1FAE5 60%,#A7F3D0 100%)",
-                  boxShadow: "0 4px 28px rgba(0,0,0,0.09), 0 0 0 1px rgba(0,0,0,0.06)",
-                }}
-              >
-                {pkg.highlight && (
-                  <div className="absolute top-3 right-3 z-10">
-                    <span className="rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide" style={{ background: "#0D7A5F", color: "#fff" }}>
-                      {pkg.highlight}
-                    </span>
-                  </div>
-                )}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 260 200" preserveAspectRatio="xMaxYMin slice" fill="none">
-                  <circle cx="200" cy="30" r="75" fill="#6EE7B7" fillOpacity="0.22"/>
-                  <circle cx="30" cy="130" r="50" fill="#A7F3D0" fillOpacity="0.28"/>
-                </svg>
-                <div className="h-[3px] w-full flex-shrink-0" style={{ background: "#0D7A5F" }} />
-                <div className="relative px-7 pt-6 pb-0">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5" style={{ color: "#0D7A5F" }}>Horas Clínicas</p>
-                  <h3 className="text-xl font-bold leading-snug text-gray-900">{pkg.title}</h3>
-                  <p className="mt-1 text-sm text-gray-500">{pkg.hours} de observação clínica presencial</p>
-                </div>
-                <div className="relative px-7 pt-5 pb-0">
-                  <span className="text-[32px] font-bold tabular-nums leading-none" style={{ color: "#0D7A5F" }}>{pkg.price}</span>
-                  <p className="text-xs mt-1 text-gray-400">à vista</p>
-                </div>
-                <div className="mx-7 mt-5 h-px bg-black/[0.07]" />
-                <ul className="relative flex-1 px-7 pt-4 pb-7 space-y-2.5">
-                  {pkg.features.map((f, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.05)" }}>
-                        <Check className="h-[10px] w-[10px]" style={{ color: "#0D7A5F" }} />
+              {/* Not included */}
+              <div className="mt-5 pt-4 border-t border-white/[0.05]">
+                <p className="text-[10px] uppercase tracking-wider text-white/25 mb-2">Não incluso</p>
+                <ul className="space-y-2">
+                  {[
+                    "Prática clínica presencial",
+                    "Mentoria ao vivo",
+                    "Suporte direto com Dr. Gustavo",
+                  ].map((f) => (
+                    <li key={f} className="flex items-start gap-3">
+                      <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center bg-white/[0.04]">
+                        <X className="h-[10px] w-[10px] text-white/20" />
                       </div>
-                      <span className="text-[13px] leading-snug text-gray-500">{f}</span>
+                      <span className="text-[13px] text-white/30 leading-snug">{f}</span>
                     </li>
                   ))}
                 </ul>
-                <div className="relative px-7 pb-7">
-                  <div className="w-full flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold text-white" style={{ background: "#0D7A5F", opacity: 0.7 }}>
-                    Disponível após login
-                  </div>
-                </div>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* ── OBSERVAÇÃO CLÍNICA EXTRA ──────────────────────── */}
-        <div className="my-16 h-px bg-gray-200" />
-        <div>
-          <SectionLabel
-            eyebrow="Add-on"
-            title="Turnos de Observação Clínica"
-            sub="Acompanhe procedimentos ao vivo no consultório do Dr. Gustavo. Ideal para quem quer ver a prática antes de aplicar."
-            color="#6366F1"
-          />
-          <div className="grid gap-5 grid-cols-1 sm:grid-cols-3 max-w-4xl mx-auto">
-            {[
-              { title: "1 Turno", hours: "4h", price: "R$ 800", features: ["1 turno de 4 horas", "Observação ao vivo", "Discussão de casos", "Certificado"] },
-              { title: "2 Turnos", hours: "8h", price: "R$ 1.500", highlight: "Mais escolhido", features: ["2 turnos de 4h (8h total)", "Economia de R$ 100", "Observação ao vivo", "Discussão de casos", "Certificado"] },
-              { title: "4 Turnos", hours: "16h", price: "R$ 2.800", features: ["4 turnos de 4h (16h total)", "Economia de R$ 400", "Diferentes técnicas", "Discussão de casos", "Certificado"] },
-            ].map((pkg) => (
-              <div key={pkg.title} className="relative flex flex-col rounded-[28px] overflow-hidden" style={{ background: "linear-gradient(145deg,#EEF2FF 0%,#E0E7FF 60%,#C7D2FE 100%)", boxShadow: "0 4px 28px rgba(0,0,0,0.09), 0 0 0 1px rgba(0,0,0,0.06)" }}>
-                {pkg.highlight && (<div className="absolute top-3 right-3 z-10"><span className="rounded-full px-3 py-1 text-[11px] font-semibold" style={{ background: "#4F46E5", color: "#fff" }}>{pkg.highlight}</span></div>)}
-                <div className="relative p-6 flex flex-col flex-1">
-                  <p className="text-lg font-bold text-gray-900">{pkg.title}</p>
-                  <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full w-fit" style={{ background: "#4F46E5", color: "#fff" }}>{pkg.hours} observação</span>
-                  <p className="mt-4 text-3xl font-extrabold text-gray-900">{pkg.price}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">à vista</p>
-                  <ul className="mt-4 space-y-2 flex-1">
-                    {pkg.features.map((f, i) => (<li key={i} className="flex items-start gap-2 text-sm text-gray-700"><Check className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />{f}</li>))}
-                  </ul>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ── CURSOS INDIVIDUAIS ──────────────────────────────── */}
-        <div className="my-16 h-px bg-gray-200" />
-
-        <div ref={sectionRefs.cursos} data-section="cursos">
-          <SectionLabel
-            eyebrow="Cursos Individuais"
-            title="Escolha seu tema"
-            sub="Cada curso inclui teoria online completa + 10h de prática clínica presencial"
-            color="#C9A84C"
-          />
-
-          <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 max-w-4xl mx-auto">
-            {[
-              {
-                title: "Toxina Botulínica",
-                subtitle: "Teoria online + prática presencial",
-                features: [
-                  "30 aulas teóricas online",
-                  "Casos clínicos gravados",
-                  "Materiais complementares",
-                  "Encontro ao vivo com Dr. Gustavo",
-                  "10h de prática clínica presencial",
-                ],
-                cta: "Quero Toxina",
-                url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20curso%20de%20Toxina%20Botul%C3%ADnica",
-              },
-              {
-                title: "Preenchedores Faciais",
-                subtitle: "Teoria online + prática presencial",
-                features: [
-                  "17 aulas teóricas online",
-                  "Anatomia vascular e zonas de perigo",
-                  "Materiais complementares",
-                  "Encontro ao vivo com Dr. Gustavo",
-                  "10h de prática clínica presencial",
-                ],
-                cta: "Quero Preenchedores",
-                url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20curso%20de%20Preenchedores%20Faciais",
-              },
-              {
-                title: "Bioestimuladores de Colágeno",
-                subtitle: "Teoria online + prática presencial",
-                features: [
-                  "Aulas teóricas online",
-                  "Demonstrações práticas gravadas",
-                  "Revisões científicas e artigos",
-                  "Encontro ao vivo com Dr. Gustavo",
-                  "10h de prática clínica presencial",
-                ],
-                cta: "Quero Bioestimuladores",
-                url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20curso%20de%20Bioestimuladores%20de%20Col%C3%A1geno",
-              },
-              {
-                title: "Biorregeneradores",
-                subtitle: "Teoria online + prática presencial",
-                features: [
-                  "Aulas teóricas online",
-                  "Protocolos de aplicação detalhados",
-                  "Evidências científicas atualizadas",
-                  "Encontro ao vivo com Dr. Gustavo",
-                  "10h de prática clínica presencial",
-                ],
-                cta: "Quero Biorregeneradores",
-                url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20curso%20de%20Biorregeneradores",
-              },
-            ].map((curso) => (
-              <div
-                key={curso.title}
-                className="relative flex flex-col rounded-[28px] overflow-hidden"
-                style={{
-                  background: "linear-gradient(145deg,#0A1628 0%,#0F2040 55%,#162C52 100%)",
-                  boxShadow: "0 8px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
-                }}
+              {/* CTA */}
+              <button
+                onClick={handleCheckout}
+                disabled={loadingCheckout}
+                className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-all duration-200 disabled:opacity-50 hover:brightness-110"
+                style={{ background: "linear-gradient(135deg, #D4A843, #F0D78C)", color: "#0A0D14", boxShadow: "0 4px 24px rgba(212,168,67,0.35)" }}
               >
-                {/* SVG pattern */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 260 200" preserveAspectRatio="xMaxYMin slice" fill="none">
-                  <circle cx="220" cy="10" r="100" fill="#C9A84C" fillOpacity="0.07"/>
-                  <circle cx="10" cy="150" r="65" fill="#C9A84C" fillOpacity="0.05"/>
-                </svg>
+                {loadingCheckout ? <><Loader2 className="h-5 w-5 animate-spin" /> Aguarde...</>
+                  : <>Garantir Acesso — R$ 197 <ArrowRight className="h-4 w-4" /></>}
+              </button>
+            </div>
+          </div>
 
-                {/* Gold accent line */}
-                <div className="h-[3px] w-full flex-shrink-0" style={{ background: "#C9A84C" }} />
+          {/* ── Card 2: Curso com Prática Clínica ── */}
+          <div className="relative rounded-[28px] overflow-hidden"
+            style={{
+              background: "linear-gradient(145deg, #0D2818 0%, #0A2015 50%, #071A10 100%)",
+              boxShadow: "0 8px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(52,211,153,0.1)",
+            }}
+          >
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 600" fill="none" preserveAspectRatio="xMaxYMin slice">
+              <circle cx="350" cy="50" r="130" fill="#34D399" fillOpacity="0.05"/>
+              <circle cx="30" cy="500" r="90" fill="#34D399" fillOpacity="0.03"/>
+            </svg>
 
-                {/* Header */}
-                <div className="relative px-7 pt-6 pb-0">
-                  <h3 className="text-2xl font-bold leading-snug text-white">{curso.title}</h3>
-                  <p className="mt-1 text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>{curso.subtitle}</p>
-                </div>
+            <div className="h-[3px] w-full" style={{ background: "#34D399" }} />
 
-                {/* Price */}
-                <div className="relative px-7 pt-5 pb-0">
-                  <span className="text-[32px] font-bold tabular-nums leading-none" style={{ color: "#C9A84C" }}>
-                    R$ 4.997,00
-                  </span>
-                  <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.32)" }}>
-                    ou 12× de R$ 467
-                  </p>
-                </div>
-
-                {/* Divider */}
-                <div className="mx-7 mt-5 h-px" style={{ background: "rgba(255,255,255,0.07)" }} />
-
-                {/* Features */}
-                <ul className="relative flex-1 px-7 pt-4 pb-0 space-y-2.5">
-                  {curso.features.map((f, i) => {
-                    const isPractice = f.startsWith("10h de prática");
-                    return (
-                      <li key={i} className="flex items-start gap-3">
-                        <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center" style={{ background: isPractice ? "rgba(201,168,76,0.25)" : "rgba(255,255,255,0.09)" }}>
-                          <Check className="h-[10px] w-[10px]" style={{ color: "#C9A84C" }} />
-                        </div>
-                        <span className={`text-[13px] leading-snug ${isPractice ? "font-semibold" : ""}`} style={{ color: isPractice ? "#C9A84C" : "rgba(255,255,255,0.55)" }}>{f}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-
-                {/* Location */}
-                <div className="relative px-7 pt-4 pb-0">
-                  <div className="flex items-start gap-2 text-[12px]" style={{ color: "rgba(255,255,255,0.45)" }}>
-                    <svg className="w-3.5 h-3.5 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
-                    </svg>
-                    <span>Clínica Gustavo Martins — Rio de Janeiro</span>
-                  </div>
-                </div>
-
-                {/* CTA */}
-                <div className="relative px-7 pt-5 pb-7">
-                  <a
-                    href={curso.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold transition-all duration-200 hover:brightness-110"
-                    style={{ background: "#C9A84C", color: "#0A0500", boxShadow: "0 4px 20px rgba(201,168,76,0.35)" }}
-                  >
-                    <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                    </svg>
-                    {curso.cta} <ArrowRight className="h-4 w-4" />
-                  </a>
-                </div>
+            <div className="relative p-7 sm:p-8">
+              {/* Header */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-400 mb-2">Presencial</p>
+                <h3 className="text-2xl font-bold text-white leading-tight">Curso com Prática Clínica</h3>
+                <p className="mt-2 text-sm text-white/50 leading-relaxed">Teoria + 10h de prática supervisionada com pacientes reais. Por tema.</p>
               </div>
-            ))}
+
+              {/* Price */}
+              <div className="mt-6">
+                <span className="text-4xl font-bold tabular-nums text-emerald-400">R$ 4.997</span>
+                <p className="text-xs text-white/30 mt-1">Por tema &middot; Toxina, Preenchedores, Bioestimuladores ou Biorregeneradores</p>
+              </div>
+
+              <div className="my-6 h-px bg-white/[0.07]" />
+
+              {/* Features */}
+              <ul className="space-y-3">
+                {[
+                  "Tudo do Acesso Vitalício",
+                  "10h prática clínica supervisionada",
+                  "Pacientes modelo reais",
+                  "1 tema à escolha",
+                  "Grupo WhatsApp de mentorados",
+                  "Certificado do tema",
+                ].map((f, i) => (
+                  <li key={f} className="flex items-start gap-3">
+                    <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center bg-emerald-500/15">
+                      <Check className="h-[10px] w-[10px] text-emerald-400" />
+                    </div>
+                    <span className={`text-[13px] leading-snug ${i === 0 ? "text-emerald-400/80 font-medium" : "text-white/70"}`}>{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Not included */}
+              <div className="mt-5 pt-4 border-t border-white/[0.05]">
+                <p className="text-[10px] uppercase tracking-wider text-white/25 mb-2">Não incluso</p>
+                <ul className="space-y-2">
+                  {[
+                    "Mentoria completa",
+                    "Todos os temas",
+                  ].map((f) => (
+                    <li key={f} className="flex items-start gap-3">
+                      <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center bg-white/[0.04]">
+                        <X className="h-[10px] w-[10px] text-white/20" />
+                      </div>
+                      <span className="text-[13px] text-white/30 leading-snug">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* CTA */}
+              <a
+                href={WHATSAPP_PRATICA}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-all duration-200 hover:brightness-110"
+                style={{ background: "#34D399", color: "#071A10", boxShadow: "0 4px 24px rgba(52,211,153,0.25)" }}
+              >
+                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                Quero Praticar <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
+
+          {/* ── Card 3: Mentoria Completa NaturalUp (premium) ── */}
+          <div className="relative rounded-[28px] overflow-hidden"
+            style={{
+              background: "linear-gradient(145deg, #1A103A 0%, #12082E 50%, #0D0622 100%)",
+              boxShadow: "0 8px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(147,130,220,0.12)",
+            }}
+          >
+            {/* Premium badge */}
+            <div className="absolute top-4 right-4 z-10">
+              <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                <Crown className="h-3 w-3" /> Premium
+              </span>
+            </div>
+
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 600" fill="none" preserveAspectRatio="xMaxYMin slice">
+              <circle cx="350" cy="50" r="130" fill="#8B5CF6" fillOpacity="0.06"/>
+              <circle cx="30" cy="500" r="90" fill="#8B5CF6" fillOpacity="0.03"/>
+            </svg>
+
+            <div className="h-[3px] w-full" style={{ background: "linear-gradient(90deg, #8B5CF6, #C084FC, #8B5CF6)" }} />
+
+            <div className="relative p-7 sm:p-8">
+              {/* Header */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-purple-400 mb-2">Formação Completa</p>
+                <h3 className="text-2xl font-bold text-white leading-tight">Mentoria Completa NaturalUp&reg;</h3>
+                <p className="mt-2 text-sm text-white/50 leading-relaxed">A formação mais completa — teoria, prática em todos os temas e mentoria com Dr. Gustavo.</p>
+              </div>
+
+              {/* Price */}
+              <div className="mt-6">
+                <span className="text-4xl font-bold tabular-nums text-purple-400">R$ 17.350</span>
+                <p className="text-xs text-white/30 mt-1">Parcelamento disponível</p>
+              </div>
+
+              <div className="my-6 h-px bg-white/[0.07]" />
+
+              {/* Features */}
+              <ul className="space-y-3">
+                {[
+                  "Tudo do Acesso Vitalício",
+                  "Prática em TODOS os temas",
+                  "Aula ao vivo quinzenal com Dr. Gustavo",
+                  "Suporte direto ilimitado",
+                  "Acompanhamento individualizado",
+                  "Certificado completo Ampla Facial",
+                ].map((f, i) => (
+                  <li key={f} className="flex items-start gap-3">
+                    <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center bg-purple-500/15">
+                      {i === 0
+                        ? <Sparkles className="h-[10px] w-[10px] text-purple-400" />
+                        : <Check className="h-[10px] w-[10px] text-purple-400" />
+                      }
+                    </div>
+                    <span className={`text-[13px] leading-snug ${i === 0 ? "text-purple-400/80 font-medium" : "text-white/70"}`}>{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {/* CTA */}
+              <a
+                href={WHATSAPP_MENTORIA}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-all duration-200 hover:brightness-110"
+                style={{ background: "linear-gradient(135deg, #8B5CF6, #C084FC)", color: "#fff", boxShadow: "0 4px 24px rgba(139,92,246,0.3)" }}
+              >
+                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                Falar com Dr. Gustavo <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
           </div>
         </div>
 
-        {/* ── CÓDIGO DE CONVITE ──────────────────────────────── */}
+        {/* ═══ Trial CTA ═══ */}
+        <div className="mt-12 text-center">
+          <div className="inline-flex items-center gap-3 rounded-2xl px-6 py-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <span className="text-sm text-white/50">Ainda em dúvida?</span>
+            <a
+              href="/#/comecar"
+              className="text-sm font-semibold text-[#D4A843] hover:text-[#F0D78C] transition-colors"
+            >
+              Comece com o Trial gratuito — 7 dias de acesso &rarr;
+            </a>
+          </div>
+        </div>
+
+        {/* ═══ Referral code ═══ */}
         {couponValid !== true && (
-          <div className="mt-16 mb-4 max-w-md mx-auto">
-            <p className="text-center text-sm font-medium text-gray-500 mb-3">Tem um código de convite?</p>
+          <div className="mt-12 max-w-md mx-auto">
+            <p className="text-center text-sm font-medium text-white/40 mb-3">Tem um código de convite?</p>
             <div className="flex items-center justify-center gap-2">
               <div className="relative">
-                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/30" />
                 <input
                   type="text"
                   value={couponInput}
-                  onChange={(e) => {
-                    setCouponInput(e.target.value.toUpperCase());
-                    if (couponValid === false) setCouponValid(null);
-                  }}
+                  onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); if (couponValid === false) setCouponValid(null); }}
                   onKeyDown={(e) => { if (e.key === "Enter") validateCoupon(couponInput); }}
                   placeholder="Código de convite"
-                  className="pl-9 pr-3 py-2 rounded-xl border text-sm w-52 outline-none transition-all"
-                  style={{
-                    borderColor: couponValid === false ? "#FCA5A5" : "#E5E7EB",
-                    background: couponValid === false ? "#FEF2F2" : "#fff",
-                  }}
+                  className="pl-9 pr-3 py-2 rounded-xl border text-sm w-52 outline-none transition-all bg-white/5 text-white placeholder-white/30"
+                  style={{ borderColor: couponValid === false ? "#F87171" : "rgba(255,255,255,0.1)" }}
                 />
               </div>
               <button
                 onClick={() => validateCoupon(couponInput)}
                 disabled={!couponInput.trim() || couponLoading}
-                className="px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-40"
-                style={{ background: "#0A1628", color: "#fff" }}
+                className="px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-40 bg-white/10 text-white hover:bg-white/15"
               >
-                {couponLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : "Aplicar"}
+                {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Aplicar"}
               </button>
             </div>
             {couponValid === false && (
-              <p className="text-center text-xs text-red-500 mt-2">Código inválido</p>
+              <p className="text-center text-xs text-red-400 mt-2">Código inválido</p>
             )}
-            <p className="text-center text-xs text-gray-400 mt-2">Ganhe 10% de desconto na primeira compra</p>
+            <p className="text-center text-xs text-white/25 mt-2">Ganhe 10% de desconto na primeira compra</p>
           </div>
         )}
 
-        {/* ── RODAPE ─────────────────────────────────────────── */}
-        <div className="mt-20 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="rounded-3xl bg-white p-7 ring-1 ring-gray-100">
-            <Star className="h-4 w-4 text-[#D4A843] mb-3" />
-            <h3 className="font-semibold text-gray-900 mb-1.5">Upgrade com cashback integral</h3>
-            <p className="text-sm text-gray-500 leading-relaxed">
-              Em até 60 dias, 100% do valor pago vira cashback para o próximo plano. Após 60 dias, 70%. Você paga apenas a diferença.
-            </p>
-          </div>
-          <div className="rounded-3xl bg-white p-7 ring-1 ring-gray-100">
-            <Gift className="h-4 w-4 text-[#D4A843] mb-3" />
-            <h3 className="font-semibold text-gray-900 mb-1.5">Indique e ganhe R$1.000</h3>
-            <p className="text-sm text-gray-500 leading-relaxed">
-              Alunos matriculados recebem código único. Quando o indicado fechar qualquer plano, você ganha R$1.000 em crédito.
-            </p>
-          </div>
-        </div>
-
-        {/* Depoimentos */}
-        <section className="py-16 px-4 sm:px-6 max-w-5xl mx-auto">
-          <h2 className="text-center font-serif text-3xl font-semibold text-[#1a1a1a] mb-2">O que dizem nossos alunos</h2>
-          <p className="text-center text-sm text-gray-500 mb-10">Profissionais que transformaram sua prática clínica</p>
+        {/* ═══ Testimonials ═══ */}
+        <section className="mt-20 max-w-5xl mx-auto">
+          <h2 className="text-center text-2xl sm:text-3xl font-bold text-white mb-2">O que dizem nossos alunos</h2>
+          <p className="text-center text-sm text-white/40 mb-10">Profissionais que transformaram sua prática clínica</p>
           <div className="grid sm:grid-cols-3 gap-6">
             {[
               { name: "Dra. Carolina O.", role: "Dentista - RJ", text: "A mentoria do Dr. Gustavo mudou completamente minha forma de atender. Os protocolos do Método NaturalUp são incríveis, resultados muito mais naturais." },
               { name: "Dr. Felipe P.", role: "Dentista - RJ", text: "O conteúdo é extremamente prático. Já no primeiro mês consegui aplicar as técnicas com meus pacientes. O suporte é diferenciado." },
               { name: "Dra. Glaucia A.", role: "Biomedicina Estética - RJ", text: "Ter acesso às aulas e aos encontros ao vivo faz toda a diferença. A comunidade de alunos também agrega muito na troca de experiências." },
             ].map((t, i) => (
-              <div key={i} className="rounded-2xl border border-gray-200 bg-white p-6 space-y-4 shadow-sm">
+              <div key={i} className="rounded-2xl p-6 space-y-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
                 <div className="flex gap-1">
                   {[1,2,3,4,5].map(s => (
                     <svg key={s} className="w-4 h-4 text-[#D4A843]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                   ))}
                 </div>
-                <p className="text-sm text-gray-600 leading-relaxed">"{t.text}"</p>
+                <p className="text-sm text-white/60 leading-relaxed">"{t.text}"</p>
                 <div>
-                  <p className="text-sm font-semibold text-[#1a1a1a]">{t.name}</p>
-                  <p className="text-xs text-gray-400">{t.role}</p>
+                  <p className="text-sm font-semibold text-white">{t.name}</p>
+                  <p className="text-xs text-white/35">{t.role}</p>
                 </div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Link de login mobile */}
-        <div className="mt-8 text-center sm:hidden">
-          <a href="/#/" className="text-sm text-gray-400 hover:text-gray-700 transition-colors">
-            Já tenho conta - entrar
-          </a>
+        {/* ═══ Footer ═══ */}
+        <div className="mt-20 text-center text-xs text-white/20 space-y-2">
+          <p>&copy; 2026 Ampla Facial &mdash; Todos os direitos reservados</p>
+          <div className="flex items-center justify-center gap-4">
+            <a href="/#/termos" className="hover:text-white/40 transition-colors">Termos de Uso</a>
+            <a href="/#/privacidade" className="hover:text-white/40 transition-colors">Privacidade</a>
+            <a href="/#/" className="hover:text-white/40 transition-colors">Entrar</a>
+          </div>
         </div>
-
       </main>
     </div>
   );

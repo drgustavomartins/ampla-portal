@@ -56,7 +56,34 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
-    canUpgradeTo: ["modulo_avulso", "pacote_completo", "observador_essencial", "observador_avancado", "observador_intensivo", "imersao", "vip_online", "vip_presencial", "vip_completo"],
+    canUpgradeTo: ["acesso_vitalicio", "modulo_avulso", "pacote_completo", "observador_essencial", "observador_avancado", "observador_intensivo", "imersao", "vip_online", "vip_presencial", "vip_completo"],
+  },
+  acesso_vitalicio: {
+    key: "acesso_vitalicio",
+    name: "Acesso Vitalício",
+    description: "Todas as aulas gravadas, materiais e vídeos de casos clínicos — para sempre",
+    price: 19700,
+    installments12x: null,
+    group: "digital",
+    highlight: "Mais Popular",
+    features: [
+      "Todas as aulas gravadas",
+      "Vídeos de casos clínicos reais",
+      "Materiais e artigos científicos",
+      "Acesso vitalício",
+      "Atualizações futuras incluídas",
+    ],
+    accessDays: 36500,
+    includesModules: true,
+    clinicalHours: 0,
+    practiceHours: 0,
+    hasDirectChannel: false,
+    channelMonths: 0,
+    hasMentorship: false,
+    mentorshipMonths: 0,
+    hasLiveEvents: false,
+    hasNaturalUp: false,
+    canUpgradeTo: ["vip_online", "vip_presencial", "vip_completo"],
   },
   modulo_avulso: {
     key: "modulo_avulso",
@@ -65,6 +92,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 249000,
     installments12x: null,
     group: "digital",
+    hidden: true,
     features: [
       "1 módulo completo à sua escolha (Toxina, Preenchedores, Bioestimuladores ou Biorregeneradores)",
       "Aulas gravadas com protocolos clínicos detalhados",
@@ -92,6 +120,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 597000,
     installments12x: 54700,
     group: "digital",
+    hidden: true,
     highlight: "Melhor custo-benefício",
     valorMercado: 996000,
     features: [
@@ -122,6 +151,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 499700,
     installments12x: 46700,
     group: "observador",
+    hidden: true,
     features: [
       "4 módulos gravados",
       "Acesso ao portal por 6 meses",
@@ -149,6 +179,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 699700,
     installments12x: 64700,
     group: "observador",
+    hidden: true,
     features: [
       "4 módulos gravados",
       "Acesso ao portal por 6 meses",
@@ -176,6 +207,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 999700,
     installments12x: 91700,
     group: "observador",
+    hidden: true,
     features: [
       "4 módulos gravados",
       "Acesso ao portal por 6 meses",
@@ -203,6 +235,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 1199700,
     installments12x: null,
     group: "observador",
+    hidden: true,
     highlight: "Mais completo para iniciantes",
     valorMercado: 4000000,
     features: [
@@ -236,6 +269,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 743000,
     installments12x: null,
     group: "vip",
+    hidden: true,
     valorMercado: 2800000,
     features: [
       "Acompanhamento individual por 3 meses",
@@ -270,6 +304,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 1239000,
     installments12x: null,
     group: "vip",
+    hidden: true,
     valorMercado: 3500000,
     features: [
       "16h de atendimento presencial com pacientes modelo (4 encontros de 4h)",
@@ -573,6 +608,7 @@ export function calculateUpgradePrice(
 // ─── Cashback rates por plano ────────────────────────────────────────────────
 export const CASHBACK_RATES: Record<PlanKey, number> = {
   tester: 0,
+  acesso_vitalicio: 0.05,
   modulo_avulso: 0.03,
   pacote_completo: 0.05,
   observador_essencial: 0.05,

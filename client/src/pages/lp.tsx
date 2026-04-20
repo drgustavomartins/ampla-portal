@@ -491,143 +491,34 @@ export default function LandingPage() {
           </FadeIn>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-            {/* ── Card 1: Curso Online ────────────────────────────────── */}
-            <FadeIn className="h-full">
-              <div className="bg-[#0F1A2E] border border-white/10 rounded-2xl p-7 flex flex-col h-full">
-                <span className="inline-block text-[11px] font-semibold uppercase tracking-widest text-[#D4A843] bg-[#D4A843]/10 px-3 py-1 rounded-full self-start mb-5">
-                  Online
-                </span>
-                <h3 className="lp-serif text-xl font-bold mb-1">Curso Online</h3>
-                <p className="text-sm text-gray-400 mb-4">Estude online, no seu ritmo</p>
-
-                <div className="mb-6">
-                  <p className="text-2xl font-bold text-white">12x <span className="text-[#D4A843]">R$ 547</span></p>
-                  <p className="text-xs text-gray-500 mt-0.5">ou R$ 5.970 à vista</p>
-                </div>
-
-                <ul className="space-y-3 mb-8 flex-1">
-                  {[
-                    "Todos os 4 módulos completos (60+ aulas)",
-                    "Toxina, Preenchedores, Bioestimuladores e Biorregeneradores",
-                    "Encontros quinzenais ao vivo por 6 meses",
-                    "Materiais científicos de todos os módulos",
-                    "Cashback de 5% em créditos na plataforma",
-                    "Acesso ao portal por 12 meses",
-                    "Certificado de participação",
-                  ].map((f, i) => (
-                    <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
-                      <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <p className="text-xs text-gray-500 mb-5">
-                  Ideal para quem quer dominar a teoria completa antes de ir para a clínica
-                </p>
-
-                <div className="mt-auto pt-4 border-t border-white/10">
-                  <a
-                    href="https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20no%20Curso%20Online.%20Podemos%20conversar%3F"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
-                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
-                  >
-                    Quero o Curso Online
-                  </a>
-                </div>
-              </div>
-            </FadeIn>
-
-            {/* ── Card 2: Imersão ────────────────────────── */}
-            <FadeIn className="h-full">
-              <div className="bg-[#0F1A2E] border border-white/10 rounded-2xl p-7 flex flex-col relative h-full">
-                <span className="inline-block text-[11px] font-semibold uppercase tracking-widest text-[#D4A843] bg-[#D4A843]/10 px-3 py-1 rounded-full self-start mb-5">
-                  Observação Clínica
-                </span>
-                <h3 className="lp-serif text-xl font-bold mb-1">Imersão</h3>
-                <p className="text-sm text-gray-400 mb-4">Veja como eu faço na clínica</p>
-
-                <div className="mb-6">
-                  <p className="text-2xl font-bold text-white">A partir de <span className="text-[#D4A843]">R$ 11.997</span></p>
-                  <p className="text-xs text-gray-500 mt-0.5">Consulte condições de parcelamento</p>
-                </div>
-
-                <ul className="space-y-3 mb-8 flex-1">
-                  {[
-                    "Tudo do Curso Online",
-                    "24h de observação clínica presencial (6 turnos)",
-                    "Acompanhe procedimentos reais ao vivo",
-                    "Encontros quinzenais ao vivo por 6 meses",
-                    "Mentoria online com canal direto por 3 meses",
-                    "Cashback de 10% em créditos na plataforma",
-                    "Certificado com carga horária presencial",
-                  ].map((f, i) => (
-                    <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
-                      <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <p className="text-xs text-gray-500 mb-5">
-                  Ideal para quem quer ver de perto antes de atender
-                </p>
-
-                <div className="mt-auto pt-4 border-t border-white/10">
-                  <a
-                    href="https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20na%20Imers%C3%A3o%20(observa%C3%A7%C3%A3o%20cl%C3%ADnica).%20Podemos%20conversar%3F"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
-                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
-                  >
-                    Quero a Imersão
-                  </a>
-                </div>
-              </div>
-            </FadeIn>
-
-            {/* ── Card 3: Mentoria VIP Completa (MAIS INDICADO) ─────── */}
+            {/* ── Card 1: Acesso Vitalício (highlighted) ────────────── */}
             <FadeIn className="h-full">
               <div className="lp-plan-highlight bg-[#0F1A2E] rounded-2xl p-7 flex flex-col relative overflow-hidden h-full lg:-mt-3 lg:pb-9">
-                {/* subtle premium glow */}
                 <div
                   className="absolute -top-20 -right-20 w-40 h-40 pointer-events-none"
-                  style={{
-                    background:
-                      "radial-gradient(circle, rgba(212,168,67,0.12) 0%, transparent 70%)",
-                  }}
+                  style={{ background: "radial-gradient(circle, rgba(212,168,67,0.12) 0%, transparent 70%)" }}
                 />
-
                 <div className="relative flex items-center gap-2 mb-5">
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-[#0A0D14] bg-[#D4A843] px-3 py-1 rounded-full">
                     <Star className="w-3 h-3" />
-                    Mais Indicado
+                    Mais Popular
                   </span>
                 </div>
-                <h3 className="lp-serif text-xl font-bold mb-1 relative">Mentoria VIP Completa</h3>
-                <p className="text-sm text-gray-400 mb-4 relative">
-                  Bote a mão na massa e atenda pacientes
-                </p>
+                <h3 className="lp-serif text-xl font-bold mb-1 relative">Acesso Vitalício</h3>
+                <p className="text-sm text-gray-400 mb-4 relative">Todas as aulas gravadas, para sempre</p>
 
                 <div className="mb-6 relative">
-                  <p className="text-2xl font-bold text-white">A partir de <span className="text-[#D4A843]">R$ 17.350</span></p>
-                  <p className="text-xs text-gray-500 mt-0.5">Consulte condições de parcelamento</p>
+                  <p className="text-2xl font-bold text-white"><span className="text-[#D4A843]">R$ 197</span></p>
+                  <p className="text-xs text-gray-500 mt-0.5">Pagamento único &middot; Sem mensalidade</p>
                 </div>
 
                 <ul className="space-y-3 mb-8 flex-1 relative">
                   {[
-                    "Tudo da Imersão",
-                    "16h de prática hands-on com pacientes modelo",
-                    "Supervisão direta do Dr. Gustavo nos atendimentos",
-                    "Acompanhamento individual por 6 meses",
-                    "Encontros quinzenais ao vivo por 6 meses",
-                    "Canal exclusivo direto por 6 meses",
-                    "Método NaturalUp® completo (módulo exclusivo)",
-                    "Cashback de 10% em créditos na plataforma",
-                    "Análise de casos clínicos em grupo",
+                    "Todas as aulas gravadas (60+ aulas)",
+                    "Vídeos de casos clínicos reais",
+                    "Materiais e artigos científicos",
+                    "Acesso vitalício",
+                    "Atualizações futuras incluídas",
                   ].map((f, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                       <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
@@ -637,38 +528,119 @@ export default function LandingPage() {
                 </ul>
 
                 <p className="text-xs text-gray-500 mb-5 relative">
-                  Ideal para quem quer sair atendendo full face com confiança
+                  Ideal para dominar toda a teoria no seu ritmo
                 </p>
 
                 <div className="relative mt-auto pt-4 border-t border-white/10">
                   <a
-                    href="https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20na%20Mentoria%20VIP%20Completa%20(hands-on%20com%20pacientes).%20Podemos%20conversar%3F"
+                    href="/#/planos-publicos"
+                    style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
+                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
+                  >
+                    Garantir Acesso &mdash; R$ 197
+                  </a>
+                </div>
+              </div>
+            </FadeIn>
+
+            {/* ── Card 2: Curso com Prática Clínica ────────────────── */}
+            <FadeIn className="h-full">
+              <div className="bg-[#0F1A2E] border border-white/10 rounded-2xl p-7 flex flex-col relative h-full">
+                <span className="inline-block text-[11px] font-semibold uppercase tracking-widest text-[#D4A843] bg-[#D4A843]/10 px-3 py-1 rounded-full self-start mb-5">
+                  Presencial
+                </span>
+                <h3 className="lp-serif text-xl font-bold mb-1">Curso com Prática Clínica</h3>
+                <p className="text-sm text-gray-400 mb-4">Teoria + prática com pacientes reais</p>
+
+                <div className="mb-6">
+                  <p className="text-2xl font-bold text-white"><span className="text-[#D4A843]">R$ 4.997</span></p>
+                  <p className="text-xs text-gray-500 mt-0.5">Por tema &middot; Parcelamento disponível</p>
+                </div>
+
+                <ul className="space-y-3 mb-8 flex-1">
+                  {[
+                    "Tudo do Acesso Vitalício",
+                    "10h prática clínica supervisionada",
+                    "Pacientes modelo reais",
+                    "1 tema à escolha",
+                    "Grupo WhatsApp de mentorados",
+                    "Certificado do tema",
+                  ].map((f, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
+                      <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <p className="text-xs text-gray-500 mb-5">
+                  Ideal para quem quer praticar com supervisão
+                </p>
+
+                <div className="mt-auto pt-4 border-t border-white/10">
+                  <a
+                    href="https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20no%20Curso%20com%20Pr%C3%A1tica%20Cl%C3%ADnica.%20Podemos%20conversar%3F"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
                     className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
                   >
-                    Quero a Mentoria VIP
+                    Quero Praticar
+                  </a>
+                </div>
+              </div>
+            </FadeIn>
+
+            {/* ── Card 3: Mentoria Completa NaturalUp® ─────── */}
+            <FadeIn className="h-full">
+              <div className="bg-[#0F1A2E] border border-white/10 rounded-2xl p-7 flex flex-col h-full">
+                <span className="inline-block text-[11px] font-semibold uppercase tracking-widest text-[#D4A843] bg-[#D4A843]/10 px-3 py-1 rounded-full self-start mb-5">
+                  Formação Completa
+                </span>
+                <h3 className="lp-serif text-xl font-bold mb-1">Mentoria Completa NaturalUp&reg;</h3>
+                <p className="text-sm text-gray-400 mb-4">
+                  Teoria, prática em todos os temas e mentoria
+                </p>
+
+                <div className="mb-6">
+                  <p className="text-2xl font-bold text-white"><span className="text-[#D4A843]">R$ 17.350</span></p>
+                  <p className="text-xs text-gray-500 mt-0.5">Parcelamento disponível</p>
+                </div>
+
+                <ul className="space-y-3 mb-8 flex-1">
+                  {[
+                    "Tudo do Acesso Vitalício",
+                    "Prática em TODOS os temas",
+                    "Aula ao vivo quinzenal com Dr. Gustavo",
+                    "Suporte direto ilimitado",
+                    "Acompanhamento individualizado",
+                    "Certificado completo Ampla Facial",
+                  ].map((f, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
+                      <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <p className="text-xs text-gray-500 mb-5">
+                  Ideal para quem quer sair atendendo full face com confiança
+                </p>
+
+                <div className="mt-auto pt-4 border-t border-white/10">
+                  <a
+                    href="https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20na%20Mentoria%20Completa%20NaturalUp%C2%AE.%20Podemos%20conversar%3F"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
+                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
+                  >
+                    Falar com Dr. Gustavo
                   </a>
                 </div>
               </div>
             </FadeIn>
           </div>
-        </div>
-      </section>
-
-      {/* ── Individual courses mention ─────────────────────── */}
-      <section className="py-8 border-t border-white/5">
-        <div className="max-w-2xl mx-auto px-5 text-center">
-          <p className="text-gray-500 text-sm mb-1">Prefere dominar um tema de cada vez?</p>
-          <p className="text-gray-600 text-xs mb-4">Conheça nossos cursos individuais com teoria online e prática presencial</p>
-          <a
-            href="/#/planos-publicos?plan=cursos"
-            className="inline-flex items-center gap-1.5 text-[#D4A843] text-sm font-medium hover:text-[#e8b84d] transition-colors"
-          >
-            Ver cursos
-            <ChevronRight className="w-4 h-4" />
-          </a>
         </div>
       </section>
 
@@ -684,18 +656,17 @@ export default function LandingPage() {
               <div className="bg-[#0A0D14] rounded-xl p-6 border border-white/10">
                 <h3 className="text-[#D4A843] font-semibold text-sm uppercase tracking-wider mb-3">Upgrade com crédito integral</h3>
                 <p className="text-gray-300 text-sm leading-relaxed">
-                  Fez o Curso Online e quer partir para a Imersão ou Mentoria VIP?
+                  Começou com o Acesso Vitalício e quer partir para a Prática Clínica ou Mentoria?
                   Nos primeiros 60 dias, 100% do que você pagou vira crédito no upgrade.
                   Após 60 dias, você ainda aproveita 70% como crédito.
                   Você nunca perde o que investiu.
                 </p>
               </div>
               <div className="bg-[#0A0D14] rounded-xl p-6 border border-white/10">
-                <h3 className="text-[#D4A843] font-semibold text-sm uppercase tracking-wider mb-3">Cashback em créditos</h3>
+                <h3 className="text-[#D4A843] font-semibold text-sm uppercase tracking-wider mb-3">Trial gratuito de 7 dias</h3>
                 <p className="text-gray-300 text-sm leading-relaxed">
-                  Cada plano gera cashback automático na plataforma: 5% no Curso Online
-                  e 10% na Imersão e Mentoria VIP. Use seus créditos para adquirir
-                  horas extras de prática, módulos avulsos ou upgrades de plano.
+                  Ainda em dúvida? Crie uma conta gratuita e tenha acesso às primeiras aulas de cada módulo
+                  por 7 dias. Sem compromisso, sem cartão de crédito. Conheça a metodologia antes de investir.
                 </p>
               </div>
             </div>
