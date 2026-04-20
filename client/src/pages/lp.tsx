@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { captureUtmParams, trackWhatsAppClick } from "@/lib/utm";
+import { useCountdown } from "@/hooks/use-countdown";
 import {
   ShieldAlert,
   Puzzle,
@@ -18,6 +19,7 @@ import {
   Layers,
   FlaskConical,
   Gem,
+  Clock,
 } from "lucide-react";
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -91,6 +93,27 @@ function WhatsAppIcon({ className = "w-6 h-6" }: { className?: string }) {
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
+   COUNTDOWN DIGIT
+   ────────────────────────────────────────────────────────────────────────── */
+function CountdownDigit({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="flex flex-col items-center">
+      <span
+        className="text-lg sm:text-xl font-bold tabular-nums leading-none px-2 py-1.5 rounded-lg"
+        style={{ color: "#D4A843", background: "rgba(212,168,67,0.08)", minWidth: 38, textAlign: "center" }}
+      >
+        {String(value).padStart(2, "0")}
+      </span>
+      <span className="text-[8px] uppercase tracking-wider text-white/35 mt-1">{label}</span>
+    </div>
+  );
+}
+
+function CountdownSeparator() {
+  return <span className="text-base font-bold text-[#D4A843]/50 self-start mt-1">:</span>;
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
    MAIN LP COMPONENT
    ────────────────────────────────────────────────────────────────────────── */
 const WA_FREE_LESSON =
@@ -102,6 +125,7 @@ export default function LandingPage() {
   const plansRef = useRef<HTMLDivElement>(null);
   const freeLessonRef = useRef<HTMLDivElement>(null);
   const [scrollIndicatorVisible, setScrollIndicatorVisible] = useState(true);
+  const countdown = useCountdown();
 
   const scrollToPlans = useCallback(() => {
     plansRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -138,6 +162,36 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#0A0D14] text-white antialiased">
+      {/* ═══ STICKY URGENCY BAR ═══ */}
+      {!countdown.expired && (
+        <div
+          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-3 sm:gap-4 px-4 py-2.5"
+          style={{
+            background: "linear-gradient(90deg, #0A0D14 0%, #12192A 50%, #0A0D14 100%)",
+            borderBottom: "1px solid rgba(212,168,67,0.15)",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+          }}
+        >
+          <div className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-[13px] text-white/80 flex-wrap justify-center">
+            <Clock className="w-3.5 h-3.5 text-[#D4A843] shrink-0 hidden sm:block" />
+            <span>
+              <span className="hidden sm:inline">Oferta de lançamento R$197 — Acesso Vitalício encerra em </span>
+              <span className="sm:hidden">R$197 encerra em </span>
+              <span className="font-bold text-[#D4A843]">
+                {countdown.days}d {String(countdown.hours).padStart(2,"0")}h {String(countdown.minutes).padStart(2,"0")}m {String(countdown.seconds).padStart(2,"0")}s
+              </span>
+            </span>
+          </div>
+          <button
+            onClick={scrollToPlans}
+            className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] sm:text-xs font-bold transition-all hover:brightness-110"
+            style={{ background: "linear-gradient(135deg, #D4A843, #F0D78C)", color: "#0A0D14" }}
+          >
+            Garantir Acesso <span className="hidden sm:inline">&rarr;</span>
+          </button>
+        </div>
+      )}
+
       {/* ── inline animation styles ─────────────────────────────────────── */}
       <style>{`
         .lp-fade{opacity:0;transform:translateY(28px);transition:opacity .7s ease,transform .7s ease}
@@ -164,7 +218,7 @@ export default function LandingPage() {
           }}
         />
 
-        <div className="relative max-w-5xl mx-auto px-5 pt-6 pb-8 md:pt-10 md:pb-20 text-center">
+        <div className={`relative max-w-5xl mx-auto px-5 pb-8 md:pb-20 text-center ${countdown.expired ? "pt-6 md:pt-10" : "pt-14 md:pt-20"}`}>
           {/* logo */}
           <img
             src="/logo-transparent.png"
@@ -493,24 +547,61 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
             {/* ── Card 1: Acesso Vitalício (highlighted) ────────────── */}
             <FadeIn className="h-full">
-              <div className="lp-plan-highlight bg-[#0F1A2E] rounded-2xl p-7 flex flex-col relative overflow-hidden h-full lg:-mt-3 lg:pb-9">
+              <div
+                className={`${countdown.expired ? "border border-white/10" : "lp-plan-highlight"} bg-[#0F1A2E] rounded-2xl p-7 flex flex-col relative overflow-hidden h-full lg:-mt-3 lg:pb-9`}
+                style={{ opacity: countdown.expired ? 0.75 : 1 }}
+              >
                 <div
                   className="absolute -top-20 -right-20 w-40 h-40 pointer-events-none"
                   style={{ background: "radial-gradient(circle, rgba(212,168,67,0.12) 0%, transparent 70%)" }}
                 />
-                <div className="relative flex items-center gap-2 mb-5">
+                <div className="relative flex items-center gap-2 mb-1">
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-[#0A0D14] bg-[#D4A843] px-3 py-1 rounded-full">
                     <Star className="w-3 h-3" />
                     Mais Popular
                   </span>
+                  {!countdown.expired && (
+                    <span className="inline-flex items-center text-[11px] font-semibold tracking-wide bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full">
+                      Oferta de Lançamento
+                    </span>
+                  )}
                 </div>
+                {!countdown.expired && (
+                  <p className="text-[9px] text-emerald-400/60 mb-4 relative">Válida até 30/04</p>
+                )}
+                {countdown.expired && <div className="mb-4" />}
                 <h3 className="lp-serif text-xl font-bold mb-1 relative">Acesso Vitalício</h3>
                 <p className="text-sm text-gray-400 mb-4 relative">Todas as aulas gravadas, para sempre</p>
 
-                <div className="mb-6 relative">
-                  <p className="text-2xl font-bold text-white"><span className="text-[#D4A843]">R$ 197</span></p>
-                  <p className="text-xs text-gray-500 mt-0.5">Pagamento único &middot; Sem mensalidade</p>
+                <div className="mb-2 relative">
+                  {countdown.expired ? (
+                    <>
+                      <p className="text-2xl font-bold text-white"><span className="text-white/30 line-through">R$ 197</span></p>
+                      <p className="text-sm font-semibold text-red-400 mt-1">Oferta encerrada</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-bold text-white"><span className="text-[#D4A843]">R$ 197</span></p>
+                      <p className="text-xs text-gray-500 mt-0.5">Pagamento único &middot; Sem mensalidade</p>
+                    </>
+                  )}
                 </div>
+
+                {/* Countdown Timer */}
+                {!countdown.expired && (
+                  <div className="mb-4 rounded-xl p-3 relative" style={{ background: "rgba(212,168,67,0.05)", border: "1px solid rgba(212,168,67,0.12)" }}>
+                    <p className="text-[9px] uppercase tracking-wider text-white/40 mb-2 text-center">Essa oferta expira em:</p>
+                    <div className="flex items-center justify-center gap-1.5">
+                      <CountdownDigit value={countdown.days} label="Dias" />
+                      <CountdownSeparator />
+                      <CountdownDigit value={countdown.hours} label="Horas" />
+                      <CountdownSeparator />
+                      <CountdownDigit value={countdown.minutes} label="Min" />
+                      <CountdownSeparator />
+                      <CountdownDigit value={countdown.seconds} label="Seg" />
+                    </div>
+                  </div>
+                )}
 
                 <ul className="space-y-3 mb-8 flex-1 relative">
                   {[
@@ -532,13 +623,22 @@ export default function LandingPage() {
                 </p>
 
                 <div className="relative mt-auto pt-4 border-t border-white/10">
-                  <a
-                    href="/#/planos-publicos"
-                    style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
-                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
-                  >
-                    Garantir Acesso &mdash; R$ 197
-                  </a>
+                  {countdown.expired ? (
+                    <span
+                      className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-center text-sm"
+                      style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.3)", cursor: "not-allowed" }}
+                    >
+                      Oferta encerrada
+                    </span>
+                  ) : (
+                    <a
+                      href="/#/planos-publicos"
+                      style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
+                      className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
+                    >
+                      Garantir Acesso &mdash; R$ 197
+                    </a>
+                  )}
                 </div>
               </div>
             </FadeIn>
