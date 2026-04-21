@@ -162,6 +162,32 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#0A0D14] text-white antialiased">
+      {/* ═══ BANNER ACESSO VITALÍCIO (links to /planos-publicos) ═══ */}
+      {!countdown.expired && (
+        <a
+          href="/#/planos-publicos"
+          className="block w-full text-center px-4 py-3 sm:py-3.5 font-semibold text-sm sm:text-base no-underline hover:brightness-110 transition-all"
+          style={{
+            background: "linear-gradient(135deg, #D4A843 0%, #F0D78C 50%, #D4A843 100%)",
+            color: "#0A0D14",
+          }}
+        >
+          <span className="inline-flex items-center gap-2 flex-wrap justify-center">
+            <span>🎓 Agora com Acesso Vitalício por R$197</span>
+            <span className="hidden sm:inline">—</span>
+            <span>
+              oferta termina em{" "}
+              <span className="font-extrabold tabular-nums">
+                {String(countdown.days).padStart(2, "0")}d{" "}
+                {String(countdown.hours).padStart(2, "0")}h{" "}
+                {String(countdown.minutes).padStart(2, "0")}m{" "}
+                {String(countdown.seconds).padStart(2, "0")}s
+              </span>
+            </span>
+          </span>
+        </a>
+      )}
+
       {/* ═══ STICKY URGENCY BAR ═══ */}
       {!countdown.expired && (
         <div
