@@ -118,7 +118,7 @@ function CountdownSeparator() {
    MAIN LP COMPONENT
    ────────────────────────────────────────────────────────────────────────── */
 const WA_FREE_LESSON =
-  "https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20quero%20participar%20do%20pr%C3%B3ximo%20encontro%20quinzenal%20gratuito";
+  "https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20quero%20participar%20da%20pr%C3%B3xima%20sess%C3%A3o%20de%20acompanhamento%20gratuita";
 const WA_LINK =
   "https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20quero%20saber%20mais%20sobre%20a%20forma%C3%A7%C3%A3o";
 
@@ -294,7 +294,7 @@ export default function LandingPage() {
           {/* Free lesson CTA */}
           <div ref={freeLessonRef} className="mt-8 bg-[#0F1A2E] border border-[#D4A843]/30 rounded-2xl p-6 md:p-8 max-w-2xl mx-auto">
             <p className="lp-serif text-lg md:text-xl font-bold text-white mb-2">
-              Participe de um encontro quinzenal de forma gratuita.
+              Participe de uma sessão de acompanhamento de forma gratuita.
             </p>
             <p className="text-sm text-gray-400 mb-5">
               Assista uma aula ao vivo de mentoria avaliada em mais de R$ 1.000, sem pagar nada.
@@ -738,7 +738,7 @@ export default function LandingPage() {
                   {[
                     "Tudo do Acesso Vitalício",
                     "Prática em TODOS os temas",
-                    "Aula ao vivo quinzenal com Dr. Gustavo",
+                    "Acompanhamento quinzenal ao vivo com Dr. Gustavo",
                     "Suporte direto ilimitado",
                     "Acompanhamento individualizado",
                     "Certificado completo Ampla Facial",
@@ -974,7 +974,7 @@ export default function LandingPage() {
               />
               <FAQItem
                 q="As aulas são ao vivo ou gravadas?"
-                a="As aulas dos módulos são gravadas, então você assiste no seu ritmo. Os encontros quinzenais da mentoria VIP são ao vivo."
+                a="As aulas dos módulos são gravadas, então você assiste no seu ritmo. As sessões quinzenais de acompanhamento da mentoria VIP são ao vivo."
               />
               <FAQItem
                 q="Qual a forma de pagamento?"
@@ -1022,7 +1022,7 @@ export default function LandingPage() {
             <h2 className="lp-serif text-2xl md:text-3xl font-bold mb-3">
               Ainda tem dúvidas? Comece pela aula gratuita.
             </h2>
-            <p className="text-gray-400 mb-10">Participe de um encontro quinzenal ao vivo, conheça o método e decida com calma. Sem compromisso.</p>
+            <p className="text-gray-400 mb-10">Participe de uma sessão de acompanhamento ao vivo, conheça o método e decida com calma. Sem compromisso.</p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a

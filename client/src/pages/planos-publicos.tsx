@@ -342,7 +342,7 @@ export default function PlanosPublicos() {
                 <ul className="space-y-2">
                   {[
                     "Prática clínica presencial",
-                    "Mentoria ao vivo",
+                    "Acompanhamento ao vivo",
                     "Suporte direto com Dr. Gustavo",
                   ].map((f) => (
                     <li key={f} className="flex items-start gap-3">
@@ -503,7 +503,7 @@ export default function PlanosPublicos() {
                 {[
                   "Tudo do Acesso Vitalício",
                   "Prática em TODOS os temas",
-                  "Aula ao vivo quinzenal com Dr. Gustavo",
+                  "Acompanhamento quinzenal ao vivo com Dr. Gustavo",
                   "Suporte direto ilimitado",
                   "Acompanhamento individualizado",
                   "Certificado completo Ampla Facial",

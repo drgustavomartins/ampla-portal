@@ -21,7 +21,7 @@ export interface PlanConfig {
   channelMonths: number; // duração do canal direto
   hasMentorship: boolean; // acompanhamento individual
   mentorshipMonths: number;
-  hasLiveEvents: boolean; // encontros quinzenais ao vivo
+  hasLiveEvents: boolean; // sessões quinzenais de acompanhamento ao vivo
   hasNaturalUp: boolean; // aprende o método NaturalUp®
   naturalUpLicense: boolean; // licença para USAR a marca NaturalUp® (logo + nome) — só Elite
   // Visibilidade
@@ -74,7 +74,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
       "Materiais científicos complementares",
       "Acesso vitalício — assista no seu ritmo, sem prazo",
       "Atualizações futuras das aulas incluídas",
-      "Sem participação em encontros quinzenais ao vivo",
+      "Sem acompanhamento ao vivo (apenas aulas gravadas)",
       "Sem canal direto, sem suporte a dúvidas",
       "Sem acesso à comunidade do portal",
       "Sem certificado",
@@ -289,7 +289,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
       "Acompanhamento individual por 3 meses",
       "Canal exclusivo direto com Dr. Gustavo (3 meses)",
       "Suporte a dúvidas clínicas (3 meses)",
-      "Encontros quinzenais ao vivo — quartas 10h (3 meses)",
+      "Acompanhamento quinzenal ao vivo — quartas 10h (3 meses)",
       "Gravações dos encontros",
       "Networking com a turma",
       "4 módulos gravados: Toxina, Preenchedores, Bioestimuladores, Regeneradores",
@@ -365,7 +365,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
       "Acesso ao portal por 12 meses",
       "Acompanhamento individual por 6 meses",
       "Canal exclusivo direto com Dr. Gustavo (6 meses)",
-      "Encontros quinzenais ao vivo — quartas 10h",
+      "Acompanhamento quinzenal ao vivo — quartas 10h",
       "Gravações de todos os encontros",
       "Networking com a turma",
       "Aprende o método NaturalUp® completo (5º módulo exclusivo)",
@@ -407,7 +407,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
       "Acesso aos processos internos da Clínica Gustavo Martins",
       "Acompanhamento individual por 12 meses",
       "Canal direto prioritário com Dr. Gustavo (12 meses)",
-      "Encontros quinzenais ao vivo por 12 meses — quartas 10h",
+      "Acompanhamento quinzenal ao vivo — quartas 10h (12 meses)",
       "Acesso VIP à comunidade do portal com créditos",
       "Método NaturalUp® completo + protocolos exclusivos",
       "Licença oficial de uso da marca e logo NaturalUp® em seu consultório",

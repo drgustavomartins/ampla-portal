@@ -114,7 +114,7 @@ export function getContractHTML(planKey: string, data: ContractData): string {
   }
   if (plan.hasLiveEvents) {
     const dur = plan.mentorshipMonths || plan.channelMonths || 3;
-    extras.push(`Encontros quinzenais ao vivo às quartas-feiras, das 10h às 11h30, por ${monthsLabel(dur)}`);
+    extras.push(`Acompanhamento quinzenal ao vivo às quartas-feiras, das 10h às 11h30, por ${monthsLabel(dur)}`);
   }
   if (plan.practiceHours > 0) {
     extras.push(`${plan.practiceHours} horas de prática presencial com pacientes modelo sob supervisão direta do ${COMPANY.responsible}`);
@@ -171,7 +171,7 @@ export function getContractHTML(planKey: string, data: ContractData): string {
     body += `<p>c) Disponibilizar o acompanhamento individual pelo ${COMPANY.responsible} pelo período estipulado, com respostas em até 48 horas em dias úteis.</p>`;
   }
   if (plan.hasLiveEvents) {
-    body += `<p>d) Realizar os encontros quinzenais ao vivo conforme calendário divulgado, disponibilizando as gravações no portal.</p>`;
+    body += `<p>d) Realizar o acompanhamento quinzenal ao vivo conforme calendário divulgado, disponibilizando as gravações no portal.</p>`;
   }
   if (hasPresential) {
     body += `<p>e) Garantir supervisão presencial qualificada pelo ${COMPANY.responsible} durante todas as sessões clínicas.</p>`;
@@ -202,7 +202,7 @@ export function getContractHTML(planKey: string, data: ContractData): string {
   }
 
   if (plan.hasLiveEvents) {
-    body += `<p>${plan.practiceHours > 0 ? "m" : hasPresential ? "k" : "f"}) <strong>Encontros ao vivo:</strong> Comparecer aos encontros quinzenais agendados. Faltas não geram direito a reposição individual; as gravações estarão disponíveis no portal.</p>`;
+    body += `<p>${plan.practiceHours > 0 ? "m" : hasPresential ? "k" : "f"}) <strong>Acompanhamento ao vivo:</strong> Comparecer às sessões de acompanhamento quinzenal agendadas. Faltas não geram direito a reposição individual; as gravações estarão disponíveis no portal.</p>`;
   }
 
   if (plan.hasMentorship || plan.hasDirectChannel) {

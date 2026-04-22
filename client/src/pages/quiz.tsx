@@ -105,7 +105,7 @@ const RESULTADOS = {
       "Canal direto com o Dr. Gustavo",
       "Prática com pacientes modelo (planos presenciais)",
       "Método NaturalUp® completo",
-      "Encontros ao vivo quinzenais",
+      "Acompanhamento quinzenal ao vivo",
     ],
     cta: "Agendar entrevista com o Dr. Gustavo",
     whatsapp: "Olá! Fiz o quiz da Ampla Facial e meu perfil indicou a Mentoria VIP. Gostaria de agendar uma conversa!",
