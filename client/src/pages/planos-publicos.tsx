@@ -503,7 +503,8 @@ export default function PlanosPublicos() {
                 {[
                   "Tudo do Acesso Vitalício",
                   "Prática em TODOS os temas",
-                  "Acompanhamento quinzenal ao vivo com Dr. Gustavo",
+                  "Acompanhamento quinzenal ao vivo — aulona em grupo + tira-dúvidas",
+                  "Ganhe créditos na plataforma por participação no acompanhamento",
                   "Suporte direto ilimitado",
                   "Acompanhamento individualizado",
                   "Certificado completo Ampla Facial",

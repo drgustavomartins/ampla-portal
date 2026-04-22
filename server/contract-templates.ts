@@ -114,7 +114,7 @@ export function getContractHTML(planKey: string, data: ContractData): string {
   }
   if (plan.hasLiveEvents) {
     const dur = plan.mentorshipMonths || plan.channelMonths || 3;
-    extras.push(`Acompanhamento quinzenal ao vivo às quartas-feiras, das 10h às 11h30, por ${monthsLabel(dur)}`);
+    extras.push(`Acompanhamento quinzenal ao vivo às quartas-feiras, das 10h às 11h30 — aulona em grupo com aprofundamento teórico, tira-dúvidas e discussão de casos. Participação ativa (câmera aberta, interação) pode render créditos na plataforma, por ${monthsLabel(dur)}`);
   }
   if (plan.practiceHours > 0) {
     extras.push(`${plan.practiceHours} horas de prática presencial com pacientes modelo sob supervisão direta do ${COMPANY.responsible}`);

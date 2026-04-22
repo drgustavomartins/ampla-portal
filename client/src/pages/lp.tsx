@@ -738,7 +738,8 @@ export default function LandingPage() {
                   {[
                     "Tudo do Acesso Vitalício",
                     "Prática em TODOS os temas",
-                    "Acompanhamento quinzenal ao vivo com Dr. Gustavo",
+                    "Acompanhamento quinzenal ao vivo — aulona em grupo + tira-dúvidas",
+                    "Créditos na plataforma por participação ativa",
                     "Suporte direto ilimitado",
                     "Acompanhamento individualizado",
                     "Certificado completo Ampla Facial",
@@ -974,7 +975,7 @@ export default function LandingPage() {
               />
               <FAQItem
                 q="As aulas são ao vivo ou gravadas?"
-                a="As aulas dos módulos são gravadas, então você assiste no seu ritmo. As sessões quinzenais de acompanhamento da mentoria VIP são ao vivo."
+                a="As aulas dos módulos são gravadas, então você assiste no seu ritmo. O Acompanhamento quinzenal é ao vivo: uma aulona em grupo onde discutimos casos clínicos, tiramos dúvidas e você ainda ganha créditos na plataforma por participação ativa."
               />
               <FAQItem
                 q="Qual a forma de pagamento?"
@@ -1022,7 +1023,7 @@ export default function LandingPage() {
             <h2 className="lp-serif text-2xl md:text-3xl font-bold mb-3">
               Ainda tem dúvidas? Comece pela aula gratuita.
             </h2>
-            <p className="text-gray-400 mb-10">Participe de uma sessão de acompanhamento ao vivo, conheça o método e decida com calma. Sem compromisso.</p>
+            <p className="text-gray-400 mb-10">Participe de uma sessão de Acompanhamento ao vivo — uma aulona em grupo com discussão de casos clínicos e tira-dúvidas. Conheça o método, sinta a comunidade e decida com calma. Sem compromisso.</p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a
