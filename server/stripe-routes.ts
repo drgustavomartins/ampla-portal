@@ -68,6 +68,7 @@ export function registerStripeRoutes(app: Express) {
           hasMentorship: p.hasMentorship,
           hasLiveEvents: p.hasLiveEvents,
           hasNaturalUp: p.hasNaturalUp,
+          naturalUpLicense: p.naturalUpLicense,
           canUpgradeTo: p.canUpgradeTo,
           valorMercado: p.valorMercado ?? null,
         }));

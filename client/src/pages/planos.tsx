@@ -35,6 +35,7 @@ interface PlanData {
   hasMentorship: boolean;
   hasLiveEvents: boolean;
   hasNaturalUp: boolean;
+  naturalUpLicense?: boolean;
   canUpgradeTo: string[];
   valorMercado: number | null;
 }

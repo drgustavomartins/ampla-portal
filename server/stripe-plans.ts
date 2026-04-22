@@ -22,7 +22,8 @@ export interface PlanConfig {
   hasMentorship: boolean; // acompanhamento individual
   mentorshipMonths: number;
   hasLiveEvents: boolean; // encontros quinzenais ao vivo
-  hasNaturalUp: boolean; // método NaturalUp® completo
+  hasNaturalUp: boolean; // aprende o método NaturalUp®
+  naturalUpLicense: boolean; // licença para USAR a marca NaturalUp® (logo + nome) — só Elite
   // Visibilidade
   hidden?: boolean; // true = não exibir em páginas públicas de planos (ex: workshop invite-only)
   // Upgrade — planos que este plano pode ser destino
@@ -56,6 +57,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
+    naturalUpLicense: false,
     canUpgradeTo: ["acesso_vitalicio", "modulo_avulso", "pacote_completo", "observador_essencial", "observador_avancado", "observador_intensivo", "imersao", "vip_online", "vip_presencial", "vip_completo"],
   },
   acesso_vitalicio: {
@@ -88,6 +90,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
+    naturalUpLicense: false,
     canUpgradeTo: ["observador_essencial", "observador_avancado", "observador_intensivo", "imersao", "vip_online", "vip_presencial", "vip_completo", "imersao_elite"],
   },
   modulo_avulso: {
@@ -115,6 +118,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
+    naturalUpLicense: false,
     canUpgradeTo: ["pacote_completo", "observador_avancado", "observador_intensivo", "imersao", "vip_online", "vip_presencial", "vip_completo"],
   },
 
@@ -146,6 +150,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
+    naturalUpLicense: false,
     canUpgradeTo: ["observador_avancado", "observador_intensivo", "imersao", "vip_online", "vip_presencial", "vip_completo", "imersao_elite"],
   },
 
@@ -172,8 +177,9 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     channelMonths: 0,
     hasMentorship: false,
     mentorshipMonths: 0,
-    hasLiveEvents: false,
+    hasLiveEvents: true,
     hasNaturalUp: false,
+    naturalUpLicense: false,
     canUpgradeTo: ["observador_avancado", "observador_intensivo", "imersao", "vip_completo", "imersao_elite"],
   },
 
@@ -200,8 +206,9 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     channelMonths: 0,
     hasMentorship: false,
     mentorshipMonths: 0,
-    hasLiveEvents: false,
+    hasLiveEvents: true,
     hasNaturalUp: false,
+    naturalUpLicense: false,
     canUpgradeTo: ["observador_intensivo", "imersao", "vip_completo", "imersao_elite"],
   },
 
@@ -228,8 +235,9 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     channelMonths: 0,
     hasMentorship: false,
     mentorshipMonths: 0,
-    hasLiveEvents: false,
+    hasLiveEvents: true,
     hasNaturalUp: false,
+    naturalUpLicense: false,
     canUpgradeTo: ["imersao", "vip_completo", "imersao_elite"],
   },
 
@@ -262,8 +270,9 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     channelMonths: 3,
     hasMentorship: false,
     mentorshipMonths: 0,
-    hasLiveEvents: false,
+    hasLiveEvents: true,
     hasNaturalUp: false,
+    naturalUpLicense: false,
     canUpgradeTo: ["vip_completo", "imersao_elite"],
   },
 
@@ -299,6 +308,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 3,
     hasLiveEvents: true,
     hasNaturalUp: true,
+    naturalUpLicense: false,
     canUpgradeTo: ["vip_completo", "imersao_elite"],
   },
 
@@ -330,11 +340,14 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     channelMonths: 3,
     hasMentorship: true,
     mentorshipMonths: 3,
-    hasLiveEvents: false,
+    hasLiveEvents: true,
     hasNaturalUp: true,
+    naturalUpLicense: false,
     canUpgradeTo: ["vip_completo", "imersao_elite"],
   },
 
+  // ATENÇÃO: VIP Completo APRENDE o método NaturalUp® mas NÃO recebe licença
+  // para usar a marca/logo. Direitos de uso da marca só no plano Imersão Elite.
   vip_completo: {
     key: "vip_completo",
     name: "VIP Completo",
@@ -355,7 +368,8 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
       "Encontros quinzenais ao vivo — quartas 10h",
       "Gravações de todos os encontros",
       "Networking com a turma",
-      "Método NaturalUp® completo (5º módulo exclusivo)",
+      "Aprende o método NaturalUp® completo (5º módulo exclusivo)",
+      "Licença de uso da marca NaturalUp® não inclusa — exclusiva da Imersão Elite",
       "Análise de casos clínicos em grupo",
       "Certificado de conclusão com carga horária",
     ],
@@ -369,6 +383,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 6,
     hasLiveEvents: true,
     hasNaturalUp: true,
+    naturalUpLicense: false,
     canUpgradeTo: ["imersao_elite"],
   },
 
@@ -383,15 +398,20 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     highlight: "Experiência definitiva",
     valorMercado: 12000000,
     features: [
-      "Tudo da Mentoria VIP Completa",
+      "Tudo da Mentoria VIP Completa, acumulativo",
       "32h de prática hands-on com pacientes modelo (o dobro da VIP)",
       "7 dias clínicos completos de acompanhamento ao lado do Dr. Gustavo",
+      "1 ANO de acompanhamento direto — tudo que surgir no caminho, você vive",
       "Aprenda toda a rotina: atendimento, burocracia, administração e bastidores",
       "Observe como filmamos vídeos e criamos conteúdo",
       "Acesso aos processos internos da Clínica Gustavo Martins",
       "Acompanhamento individual por 12 meses",
       "Canal direto prioritário com Dr. Gustavo (12 meses)",
+      "Encontros quinzenais ao vivo por 12 meses — quartas 10h",
+      "Acesso VIP à comunidade do portal com créditos",
       "Método NaturalUp® completo + protocolos exclusivos",
+      "Licença oficial de uso da marca e logo NaturalUp® em seu consultório",
+      "Único plano com direito a usar a marca NaturalUp®",
       "Certificado premium com carga horária total",
     ],
     accessDays: 365,
@@ -404,6 +424,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 12,
     hasLiveEvents: true,
     hasNaturalUp: true,
+    naturalUpLicense: true,
     canUpgradeTo: [],
   },
 
@@ -431,6 +452,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 3,
     hasLiveEvents: false,
     hasNaturalUp: false,
+    naturalUpLicense: false,
     canUpgradeTo: [],
   },
 
@@ -457,6 +479,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
+    naturalUpLicense: false,
     canUpgradeTo: [],
   },
   horas_clinicas_2: {
@@ -483,6 +506,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
+    naturalUpLicense: false,
     canUpgradeTo: [],
   },
   horas_clinicas_3: {
@@ -509,6 +533,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
+    naturalUpLicense: false,
     canUpgradeTo: [],
   },
 
@@ -536,6 +561,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
+    naturalUpLicense: false,
     canUpgradeTo: [],
   },
   observacao_extra_2: {
@@ -562,6 +588,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
+    naturalUpLicense: false,
     canUpgradeTo: [],
   },
   observacao_extra_3: {
@@ -589,6 +616,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
+    naturalUpLicense: false,
     canUpgradeTo: [],
   },
   workshop: {
@@ -614,6 +642,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
+    naturalUpLicense: false,
     canUpgradeTo: ["modulo_avulso", "pacote_completo", "observador_essencial", "observador_avancado", "observador_intensivo", "imersao", "vip_online", "vip_presencial", "vip_completo"],
   },
 };
@@ -696,18 +725,22 @@ export function isPlanVisibleForStudent(
   // O próprio plano atual não aparece como "compre de novo".
   if (targetKey === currentKey) return false;
 
-  // Horas clínicas extras: Elite já tem 32h, não precisa.
+  // ─── HORAS EXTRAS DE PRÁTICA CLÍNICA (hands-on em pacientes modelo) ──────────
+  // Regra: só quem tem prática inclusa no plano pode comprar prática extra.
+  // Elite já tem 32h de prática — posição de topo, não oferece extras.
+  // Vitalício, Curso Completo, Observador: não têm prática no contrato, então não compram extra.
   if (targetKey === "horas_clinicas_1" || targetKey === "horas_clinicas_2" || targetKey === "horas_clinicas_3") {
     if (currentKey === "imersao_elite") return false;
-    // Só faz sentido para quem já tem mentoria/observação ativa.
-    return current.hasMentorship || current.clinicalHours > 0 || current.practiceHours > 0;
+    return current.practiceHours > 0;
   }
 
-  // Observação extra: Elite tem shadow completo.
+  // ─── OBSERVAÇÃO CLÍNICA EXTRA (turnos adicionais de shadow) ────────────────
+  // Regra: a partir do plano Observador em diante — qualquer plano com clinicalHours > 0.
+  // Elite já tem shadow completo, não oferece extras.
+  // Vitalício e Curso Completo: não têm observação no contrato.
   if (targetKey.startsWith("observacao_extra_")) {
     if (currentKey === "imersao_elite") return false;
-    // Só faz sentido para quem já tem plano de observação/mentoria ativo.
-    return current.clinicalHours > 0 || current.hasMentorship;
+    return current.clinicalHours > 0;
   }
 
   // Extensão de acompanhamento: só para quem tem mentoria ativa.

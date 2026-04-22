@@ -801,6 +801,8 @@ export default function LandingPage() {
                       "7 dias clínicos completos de acompanhamento",
                       "Bastidores: gestão, filmagem, operação",
                       "Mentoria individual por 12 meses",
+                      "Licença exclusiva da marca NaturalUp®",
+                      "Único plano com direito à logo oficial",
                     ].map((f, i) => (
                       <div key={i} className="flex items-start gap-2">
                         <Check className="w-4 h-4 text-[#E8C86A] mt-0.5 shrink-0" />
