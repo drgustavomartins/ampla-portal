@@ -1888,6 +1888,81 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json({ success: true, moduleIds });
   });
 
+  // ==================== STUDENT INIT (combined payload) ====================
+  // Returns modules, lessons, progress, plans, my-modules, and lesson-access
+  // in a SINGLE request — eliminates 6-request waterfall on student dashboard.
+  app.get("/api/student/init", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      // Fire all independent DB queries in parallel
+      const [allModules, allLessons, allPlans, userProgress] = await Promise.all([
+        storage.getModules(),
+        storage.getLessons(),
+        storage.getPlans(),
+        storage.getProgress(auth.userId),
+      ]);
+
+      // Compute my-modules access (inlined from /api/my-modules logic)
+      let myModules: { accessAll: boolean; moduleIds: number[] } = { accessAll: false, moduleIds: [] };
+      if (auth.role === "admin" || auth.role === "super_admin" || auth.role === "trial") {
+        myModules = { accessAll: true, moduleIds: [] };
+      } else {
+        const user = await storage.getUser(auth.userId);
+        if (user) {
+          const accessExpired = user.accessExpiresAt
+            ? new Date(user.accessExpiresAt) < new Date()
+            : false;
+          if (accessExpired || (user as any).planKey === "workshop" || (user as any).inviteCode) {
+            myModules = { accessAll: true, moduleIds: [] };
+          } else {
+            const userMods = await storage.getUserModules(auth.userId);
+            if (userMods.length > 0) {
+              const now = new Date().toISOString();
+              const enabledModuleIds = userMods
+                .filter(um => {
+                  if (!um.enabled) return false;
+                  if (um.startDate && now < um.startDate) return false;
+                  if (um.endDate && now > um.endDate) return false;
+                  return true;
+                })
+                .map(um => um.moduleId);
+              myModules = { accessAll: false, moduleIds: enabledModuleIds };
+            } else if (user.planId) {
+              const pm = await storage.getPlanModules(user.planId);
+              myModules = pm.length === 0
+                ? { accessAll: true, moduleIds: [] }
+                : { accessAll: false, moduleIds: pm.map(p => p.moduleId) };
+            }
+          }
+        }
+      }
+
+      // Compute lesson access (inlined from /api/lessons/access logic)
+      const { canSeeVideo, allowedLessonIds } = await getVideoAccessInfo(auth);
+      const filteredLessons = filterLessons(allLessons, canSeeVideo, allowedLessonIds);
+
+      let lessonAccess: { accessType: string; allowedLessonIds: number[] } = { accessType: "full", allowedLessonIds: [] };
+      if (allowedLessonIds !== null) {
+        lessonAccess = { accessType: "tester", allowedLessonIds };
+      }
+
+      // Set Cache-Control for semi-static data (modules/plans change rarely)
+      res.set("Cache-Control", "private, max-age=60");
+      res.json({
+        modules: allModules,
+        lessons: filteredLessons,
+        plans: allPlans,
+        progress: userProgress,
+        myModules,
+        lessonAccess,
+      });
+    } catch (e: any) {
+      console.error("[GET /api/student/init]", e?.message || e);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
   // ==================== MODULES ====================
   app.get("/api/modules", async (_req, res) => {
     const m = await storage.getModules();
@@ -2895,21 +2970,30 @@ export async function registerRoutes(server: Server, app: Express) {
 
       const allThemes = await storage.getMaterialThemes();
       const themes = isAdmin ? allThemes : allThemes.filter(t => t.visible !== false);
-      const result = await Promise.all(themes.map(async (theme) => {
-        const subcategories = await storage.getMaterialSubcategories(theme.id);
-        const subsWithFiles = await Promise.all(subcategories.map(async (sub) => {
-          const files = await storage.getMaterialFiles(sub.id);
-          // Only include driveId/youtubeId for users with active, non-expired access
+      // Fetch all subcategories in parallel (one query per theme, all themes at once)
+      const allSubcategories = await Promise.all(themes.map(t => storage.getMaterialSubcategories(t.id)));
+      // Collect all subcategory IDs, then fetch all files in parallel
+      const allSubsFlat = allSubcategories.flat();
+      const allFiles = await Promise.all(allSubsFlat.map(sub => storage.getMaterialFiles(sub.id)));
+      // Build a map: subcategoryId -> files
+      const filesMap = new Map<number, typeof allFiles[0]>();
+      allSubsFlat.forEach((sub, i) => { filesMap.set(sub.id, allFiles[i]); });
+      // Assemble result
+      const result = themes.map((theme, themeIdx) => {
+        const subcategories = allSubcategories[themeIdx];
+        const subsWithFiles = subcategories.map(sub => {
+          const files = filesMap.get(sub.id) || [];
           const sanitizedFiles = hasActiveAccess
             ? files
             : files.map(({ driveId: _d, youtubeId: _y, ...rest }) => rest);
           return { ...sub, files: sanitizedFiles };
-        }));
+        });
         const fileCount = subsWithFiles.reduce((acc, sub) => acc + sub.files.length, 0);
-        // Sempre usa o mapa canônico; só cai no banco se o titulo nao estiver mapeado
         const coverUrl = COVER_MAP[theme.title] ?? theme.coverUrl;
         return { ...theme, coverUrl, subcategories: subsWithFiles, fileCount };
-      }));
+      });
+      // Cache materials response (catalog changes infrequently)
+      res.set("Cache-Control", "private, max-age=300");
       res.json(result);
     } catch (e: any) {
       console.error("GET /api/materials error:", e?.message || e);

@@ -1,8 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, lazy, Suspense } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { useLocation, Link } from "wouter";
+import { useStudentInit } from "@/hooks/use-student-init";
 import { UpgradeBanner } from "@/components/UpgradeBanner";
 import { ReferralCard } from "@/components/ReferralCard";
 import { Check as CheckIcon, FileCheck, PenLine } from "lucide-react";
@@ -25,10 +26,12 @@ import {
 } from "lucide-react";
 import { stripPhone } from "@/lib/phone";
 import { PhoneInput } from "@/components/PhoneInput";
-import MateriaisComplementares from "./materiais-complementares";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 import { CreditsDashboardCard } from "@/components/CreditsDashboardCard";
 import { CreditsFullSection } from "@/components/CreditsFullSection";
+
+// Lazy-load heavy components that are below the fold
+const MateriaisComplementares = lazy(() => import("./materiais-complementares"));
 
 function linkifyText(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -90,34 +93,18 @@ export default function StudentDashboard() {
     });
   };
 
-  const { data: modules = [] } = useQuery<Module[]>({ queryKey: ["/api/modules"] });
-  const { data: lessons = [] } = useQuery<Lesson[]>({ queryKey: ["/api/lessons"] });
-  const { data: progress = [] } = useQuery<LessonProgress[]>({
-    queryKey: ["/api/progress", user?.id],
-    queryFn: async () => {
-      const res = await apiRequest("GET", `/api/progress/${user?.id}`);
-      return res.json();
-    },
-    enabled: !!user?.id,
-  });
-  const { data: plans = [] } = useQuery<Plan[]>({ queryKey: ["/api/plans"] });
-  const { data: myModules } = useQuery<{ accessAll: boolean; moduleIds: number[] }>({
-    queryKey: ["/api/my-modules"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/my-modules");
-      return res.json();
-    },
-    enabled: !!user?.id,
-  });
+  // Single combined request replaces 6 separate API calls
+  const { data: initData, isLoading: initLoading } = useStudentInit();
+  const modules = initData?.modules ?? [];
+  const lessons = initData?.lessons ?? [];
+  const progress = initData?.progress ?? [];
+  const plans = initData?.plans ?? [];
+  const myModules = initData?.myModules;
+  const lessonAccess = initData?.lessonAccess;
+
   const [purchaseModule, setPurchaseModule] = useState<Module | null>(null);
   const [signingSessionId, setSigningSessionId] = useState<number | null>(null);
   const [lessonSearch, setLessonSearch] = useState("");
-
-  const { data: lessonAccess } = useQuery<{ accessType: string; allowedLessonIds: number[] }>({
-    queryKey: ["/api/lessons/access"],
-    queryFn: async () => { const res = await apiRequest("GET", "/api/lessons/access"); return res.json(); },
-    enabled: !!user,
-  });
   const accessType = lessonAccess?.accessType || "full";
   const allowedLessonIds = new Set(lessonAccess?.allowedLessonIds || []);
   const isTesterAccess = accessType === "tester";
@@ -452,6 +439,52 @@ export default function StudentDashboard() {
   }
 
   // ========== MAIN DASHBOARD ==========
+
+  // Show loading skeleton while init data is being fetched
+  if (initLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
+        <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm sticky top-0 z-10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-full bg-muted animate-pulse" />
+              <div className="space-y-1.5">
+                <div className="h-2 w-16 bg-muted animate-pulse rounded" />
+                <div className="h-3 w-24 bg-muted animate-pulse rounded" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-20 bg-muted animate-pulse rounded-full" />
+              <div className="w-9 h-9 rounded-full bg-muted animate-pulse" />
+            </div>
+          </div>
+        </header>
+        <main className="flex-1">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 lg:py-10 space-y-10">
+            {/* Hero skeleton */}
+            <div className="rounded-2xl bg-card/60 p-6 sm:p-8 lg:p-10 space-y-4">
+              <div className="h-8 w-64 bg-muted animate-pulse rounded" />
+              <div className="h-4 w-96 max-w-full bg-muted animate-pulse rounded" />
+              <div className="h-12 w-full max-w-md bg-muted animate-pulse rounded-xl mt-4" />
+            </div>
+            {/* Course cards skeleton */}
+            <div className="space-y-4">
+              <div className="h-6 w-32 bg-muted animate-pulse rounded" />
+              <div className="flex gap-6 overflow-hidden">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="shrink-0 w-[220px] space-y-3">
+                    <div className="rounded-[20px] bg-muted animate-pulse" style={{ aspectRatio: "4/5" }} />
+                    <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+                    <div className="h-3 w-20 bg-muted animate-pulse rounded" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   const firstName = (() => {
     const parts = user?.name?.split(" ") || [];
@@ -1449,9 +1482,15 @@ export default function StudentDashboard() {
             </section>
           )}
 
-          {/* ===== MATERIAIS COMPLEMENTARES (inline) ===== */}
+          {/* ===== MATERIAIS COMPLEMENTARES (lazy-loaded, below the fold) ===== */}
           <section ref={materiaisRef} className="space-y-4 scroll-mt-20">
-            <MateriaisComplementares />
+            <Suspense fallback={
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-5 h-5 animate-spin text-gold" />
+              </div>
+            }>
+              <MateriaisComplementares />
+            </Suspense>
           </section>
 
           {/* ===== CRÉDITOS FULL SECTION ===== */}
