@@ -255,8 +255,29 @@ export default function ModulePage() {
   const isOnlineOnlyStudent = user?.planKey === "acesso_vitalicio" || user?.planKey === "tester" || user?.role === "trial";
   const isVipOrMentoria = user?.planKey?.startsWith("vip_") || user?.planKey === "imersao" || user?.planKey?.startsWith("observador_");
 
-  const { data: modules = [] } = useQuery<Module[]>({ queryKey: ["/api/modules"] });
-  const { data: lessons = [] } = useQuery<Lesson[]>({ queryKey: ["/api/lessons"] });
+  // Use cached data from student init (seeded by useStudentInit on dashboard)
+  // Falls back to individual queries if cache is empty (e.g. direct navigation)
+  const { data: modules = [] } = useQuery<Module[]>({
+    queryKey: ["/api/modules"],
+    staleTime: 5 * 60 * 1000,
+  });
+  // Fetch only lessons for THIS module instead of all lessons
+  const { data: moduleLessonsData = [] } = useQuery<Lesson[]>({
+    queryKey: ["/api/modules", moduleId, "lessons"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/modules/${moduleId}/lessons`);
+      return res.json();
+    },
+    enabled: !!moduleId && !!user?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+  // Also keep full lessons cache in sync for dashboard navigation
+  const { data: allLessons = [] } = useQuery<Lesson[]>({
+    queryKey: ["/api/lessons"],
+    staleTime: 5 * 60 * 1000,
+  });
+  // Merge: use module-specific lessons if available, else filter from all
+  const lessons = moduleLessonsData.length > 0 ? allLessons : allLessons;
   const { data: progress = [] } = useQuery<LessonProgress[]>({
     queryKey: ["/api/progress", user?.id],
     queryFn: async () => {
@@ -264,6 +285,7 @@ export default function ModulePage() {
       return res.json();
     },
     enabled: !!user?.id,
+    staleTime: 60 * 1000,
   });
   const { data: myModules } = useQuery<{ accessAll: boolean; moduleIds: number[] }>({
     queryKey: ["/api/my-modules"],
@@ -272,11 +294,13 @@ export default function ModulePage() {
       return res.json();
     },
     enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000,
   });
   const { data: lessonAccess } = useQuery<{ accessType: string; allowedLessonIds: number[] }>({
     queryKey: ["/api/lessons/access"],
     queryFn: async () => { const res = await apiRequest("GET", "/api/lessons/access"); return res.json(); },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000,
   });
   const accessType = lessonAccess?.accessType || "full";
   const allowedLessonIds = new Set(lessonAccess?.allowedLessonIds || []);
@@ -302,9 +326,12 @@ export default function ModulePage() {
   const introModule = sortedModules.find(m => m.order === 1 || m.title.toLowerCase().includes("boas vindas") || m.title.toLowerCase().includes("boas-vindas"));
   const courseModules = sortedModules.filter(m => m !== introModule);
 
-  // Get lessons for this module only (no merging from other modules)
+  // Use module-specific lessons if available (from /api/modules/:id/lessons),
+  // otherwise fall back to filtering from all lessons cache
   const moduleLessons = currentModule
-    ? lessons.filter(l => l.moduleId === currentModule.id).sort((a, b) => a.order - b.order)
+    ? (moduleLessonsData.length > 0
+        ? [...moduleLessonsData].sort((a, b) => a.order - b.order)
+        : lessons.filter(l => l.moduleId === currentModule.id).sort((a, b) => a.order - b.order))
     : [];
 
   const completedInModule = moduleLessons.filter(l => completedIds.has(l.id)).length;

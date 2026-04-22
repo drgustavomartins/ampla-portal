@@ -63,7 +63,7 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: true,
-      staleTime: 30000,
+      staleTime: 2 * 60 * 1000, // 2 min default — modules/lessons/plans rarely change
       retry: false,
     },
     mutations: {
