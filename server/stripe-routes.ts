@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
-import { PLANS, calculateUpgradePrice, formatBRL } from "./stripe-plans";
+import { PLANS, calculateUpgradePrice, formatBRL, isPlanVisibleForStudent } from "./stripe-plans";
 import type { PlanKey } from "@shared/schema";
 import jwt from "jsonwebtoken";
 
@@ -35,29 +35,48 @@ function authenticateRequest(req: Request): { userId: number; role: string } | n
 
 export function registerStripeRoutes(app: Express) {
   // ─── GET /api/stripe/plans ─────────────────────────────────────────────────
-  // Retorna todos os planos com preços formatados para o frontend
-  app.get("/api/stripe/plans", (_req: Request, res: Response) => {
-    const plans = Object.values(PLANS).filter((p) => !p.hidden).map((p) => ({
-      key: p.key,
-      name: p.name,
-      description: p.description,
-      group: p.group,
-      highlight: p.highlight,
-      price: p.price,
-      priceFormatted: formatBRL(p.price),
-      installments12x: p.installments12x,
-      installments12xFormatted: p.installments12x ? formatBRL(p.installments12x) : null,
-      features: p.features,
-      clinicalHours: p.clinicalHours,
-      practiceHours: p.practiceHours,
-      hasDirectChannel: p.hasDirectChannel,
-      hasMentorship: p.hasMentorship,
-      hasLiveEvents: p.hasLiveEvents,
-      hasNaturalUp: p.hasNaturalUp,
-      canUpgradeTo: p.canUpgradeTo,
-      valorMercado: p.valorMercado ?? null,
-    }));
-    res.json({ plans });
+  // Se o aluno estiver logado, filtra planos que fazem sentido para o plano atual.
+  // Se não estiver (página pública), retorna todos os não-hidden.
+  app.get("/api/stripe/plans", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      let currentKey: PlanKey | null = null;
+
+      const auth = authenticateRequest(req);
+      if (auth) {
+        const [u] = await db.select().from(users).where(eq(users.id, auth.userId));
+        if (u?.planKey) currentKey = u.planKey as PlanKey;
+      }
+
+      const plans = Object.values(PLANS)
+        .filter((p) => !p.hidden)
+        .filter((p) => isPlanVisibleForStudent(p.key, currentKey))
+        .map((p) => ({
+          key: p.key,
+          name: p.name,
+          description: p.description,
+          group: p.group,
+          highlight: p.highlight,
+          price: p.price,
+          priceFormatted: formatBRL(p.price),
+          installments12x: p.installments12x,
+          installments12xFormatted: p.installments12x ? formatBRL(p.installments12x) : null,
+          features: p.features,
+          clinicalHours: p.clinicalHours,
+          practiceHours: p.practiceHours,
+          hasDirectChannel: p.hasDirectChannel,
+          hasMentorship: p.hasMentorship,
+          hasLiveEvents: p.hasLiveEvents,
+          hasNaturalUp: p.hasNaturalUp,
+          canUpgradeTo: p.canUpgradeTo,
+          valorMercado: p.valorMercado ?? null,
+        }));
+
+      res.json({ plans, currentPlanKey: currentKey });
+    } catch (err) {
+      console.error("[stripe] GET /plans error:", err);
+      res.status(500).json({ message: "Erro ao carregar planos" });
+    }
   });
 
   // ─── GET /api/stripe/upgrade-options ──────────────────────────────────────

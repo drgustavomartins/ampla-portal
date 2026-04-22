@@ -229,9 +229,10 @@ export default function PlanosPage() {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(urlParams.get('grupo'));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loadingKey, setLoadingKey] = useState<string | null>(null);
-  const { data, isLoading } = useQuery<{ plans: PlanData[] }>({
+  const { data, isLoading } = useQuery<{ plans: PlanData[]; currentPlanKey: string | null }>({
     queryKey: ["/api/stripe/plans"],
   });
+  const currentPlanKey = data?.currentPlanKey || user?.planKey || null;
 
   const { data: creditsData } = useQuery<{ balance: number; referralCode: string }>({
     queryKey: ["/api/credits/balance"],
@@ -433,6 +434,15 @@ export default function PlanosPage() {
             <div className="mt-5 inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-5 py-2.5 text-sm text-amber-600">
               <Clock className="h-4 w-4 shrink-0" />
               Seu periodo gratuito encerra em <strong>{myPlan.trialDaysLeft} dia{myPlan.trialDaysLeft !== 1 ? "s" : ""}</strong>. Escolha um plano para continuar.
+            </div>
+          )}
+          {currentPlanKey && myPlan?.hasPlan && !myPlan?.isTrialActive && (
+            <div className="mt-5 inline-flex flex-col sm:flex-row items-start sm:items-center gap-2 rounded-xl border border-[#D4A843]/40 bg-[#FDFBF5] px-5 py-3 text-sm text-[#6B5420]">
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 shrink-0 text-[#B8860B]" />
+                <span>Seu plano atual: <strong className="text-[#1a1a1a]">{myPlan.planName}</strong></span>
+              </div>
+              <span className="text-gray-500 sm:ml-2 text-xs">Mostrando apenas opções que somam ao seu plano.</span>
             </div>
           )}
         </div>

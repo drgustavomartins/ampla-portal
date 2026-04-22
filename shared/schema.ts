@@ -26,6 +26,7 @@ export const PLAN_KEYS = [
   "vip_online",
   "vip_presencial",
   "vip_completo",
+  "imersao_elite",
   "extensao_acompanhamento",
   "horas_clinicas_1",
   "horas_clinicas_2",

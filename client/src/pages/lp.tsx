@@ -20,6 +20,7 @@ import {
   FlaskConical,
   Gem,
   Clock,
+  ArrowRight,
 } from "lucide-react";
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -173,7 +174,7 @@ export default function LandingPage() {
           }}
         >
           <span className="inline-flex items-center gap-2 flex-wrap justify-center">
-            <span>🎓 Agora com Acesso Vitalício por R$197</span>
+            <span>🎓 Agora com Acesso Vitalício por R$ 397</span>
             <span className="hidden sm:inline">—</span>
             <span>
               oferta termina em{" "}
@@ -201,8 +202,8 @@ export default function LandingPage() {
           <div className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-[13px] text-white/80 flex-wrap justify-center">
             <Clock className="w-3.5 h-3.5 text-[#D4A843] shrink-0 hidden sm:block" />
             <span>
-              <span className="hidden sm:inline">Oferta de lançamento R$197 — Acesso Vitalício encerra em </span>
-              <span className="sm:hidden">R$197 encerra em </span>
+              <span className="hidden sm:inline">Oferta de lançamento R$ 397 — Acesso Vitalício encerra em </span>
+              <span className="sm:hidden">R$ 397 encerra em </span>
               <span className="font-bold text-[#D4A843]">
                 {countdown.days}d {String(countdown.hours).padStart(2,"0")}h {String(countdown.minutes).padStart(2,"0")}m {String(countdown.seconds).padStart(2,"0")}s
               </span>
@@ -602,12 +603,12 @@ export default function LandingPage() {
                 <div className="mb-2 relative">
                   {countdown.expired ? (
                     <>
-                      <p className="text-2xl font-bold text-white"><span className="text-white/30 line-through">R$ 197</span></p>
+                      <p className="text-2xl font-bold text-white"><span className="text-white/30 line-through">R$ 5.937,90</span></p>
                       <p className="text-sm font-semibold text-red-400 mt-1">Oferta encerrada</p>
                     </>
                   ) : (
                     <>
-                      <p className="text-2xl font-bold text-white"><span className="text-[#D4A843]">R$ 197</span></p>
+                      <p className="text-2xl font-bold text-white"><span className="text-[#D4A843]">R$ 397</span></p>
                       <p className="text-xs text-gray-500 mt-0.5">Pagamento único &middot; Sem mensalidade</p>
                     </>
                   )}
@@ -662,7 +663,7 @@ export default function LandingPage() {
                       style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
                       className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
                     >
-                      Garantir Acesso &mdash; R$ 197
+                      Garantir Acesso &mdash; R$ 397
                     </a>
                   )}
                 </div>
@@ -767,6 +768,64 @@ export default function LandingPage() {
               </div>
             </FadeIn>
           </div>
+
+          {/* ── Tier Elite: high-ticket âncora ─────────────────────────── */}
+          <FadeIn>
+            <div className="mt-8 rounded-2xl p-7 md:p-8 relative overflow-hidden"
+              style={{
+                background: "linear-gradient(145deg,#050810 0%,#0B1022 45%,#141B33 100%)",
+                border: "1px solid rgba(232,200,106,0.25)",
+                boxShadow: "0 8px 40px rgba(232,200,106,0.12)",
+              }}>
+              <div
+                className="absolute -top-24 -right-24 w-56 h-56 pointer-events-none"
+                style={{ background: "radial-gradient(circle, rgba(232,200,106,0.18) 0%, transparent 70%)" }}
+              />
+              <div className="relative flex flex-col md:flex-row items-start md:items-center gap-6">
+                <div className="flex-1">
+                  <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-[#0A0D14] bg-[#E8C86A] px-3 py-1 rounded-full mb-4">
+                    <Gem className="w-3 h-3" />
+                    Experiência definitiva · vagas limitadas
+                  </div>
+                  <h3 className="lp-serif text-2xl md:text-3xl font-bold text-white mb-2">
+                    Imersão Elite · Os Bastidores
+                  </h3>
+                  <p className="text-sm text-gray-300 mb-4 max-w-2xl leading-relaxed">
+                    Tudo da Mentoria Completa, mais 32h de prática em pacientes modelo e 7 dias clínicos
+                    completos ao meu lado. Você vive a rotina inteira: atendimento, burocracia,
+                    administração, gravação de vídeos, bastidores da Clínica Gustavo Martins.
+                  </p>
+                  <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm text-gray-300">
+                    {[
+                      "32h hands-on com pacientes modelo",
+                      "7 dias clínicos completos de acompanhamento",
+                      "Bastidores: gestão, filmagem, operação",
+                      "Mentoria individual por 12 meses",
+                    ].map((f, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-[#E8C86A] mt-0.5 shrink-0" />
+                        <span>{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="w-full md:w-auto md:text-right">
+                  <p className="text-xs text-gray-500 mb-0.5">Investimento</p>
+                  <p className="text-3xl font-bold text-[#E8C86A] mb-1">R$ 35.000</p>
+                  <p className="text-xs text-gray-400 mb-4">12x de R$ 2.916,67</p>
+                  <a
+                    href="https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20tenho%20interesse%20na%20Imers%C3%A3o%20Elite%20(bastidores%20%2B%2032h%20pr%C3%A1tica%20%2B%207%20dias%20cl%C3%ADnicos).%20Podemos%20conversar%3F"
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ backgroundColor: "#E8C86A", color: "#0A0D14" }}
+                    className="inline-flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3.5 rounded-xl font-semibold text-sm hover:brightness-110 transition whitespace-nowrap"
+                  >
+                    Quero a Imersão Elite
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
         </div>
       </section>
 

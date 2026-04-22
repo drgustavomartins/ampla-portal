@@ -9,7 +9,7 @@ export interface PlanConfig {
   description: string;
   price: number; // centavos à vista
   installments12x: number | null; // valor de cada parcela em centavos (null = não disponível)
-  group: "digital" | "observador" | "vip" | "horas";
+  group: "digital" | "observador" | "vip" | "horas" | "observacao_extra";
   features: string[];
   highlight?: string; // ex: "Mais popular"
   // Regras de acesso no portal
@@ -61,17 +61,22 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
   acesso_vitalicio: {
     key: "acesso_vitalicio",
     name: "Acesso Vitalício",
-    description: "Todas as aulas gravadas, materiais e vídeos de casos clínicos — para sempre",
-    price: 19700,
-    installments12x: null,
+    description: "Apenas aulas gravadas e materiais complementares — sem encontros ao vivo, sem mentoria, sem suporte",
+    price: 39700,
+    installments12x: 3308,
     group: "digital",
-    highlight: "Mais Popular",
+    highlight: "Promo até 30/04",
+    valorMercado: 593790,
     features: [
-      "Todas as aulas gravadas",
-      "Vídeos de casos clínicos reais",
-      "Materiais e artigos científicos",
-      "Acesso vitalício",
-      "Atualizações futuras incluídas",
+      "Todos os 4 módulos completos (60+ aulas gravadas)",
+      "Materiais científicos complementares",
+      "Acesso vitalício — assista no seu ritmo, sem prazo",
+      "Atualizações futuras das aulas incluídas",
+      "Sem participação em encontros quinzenais ao vivo",
+      "Sem canal direto, sem suporte a dúvidas",
+      "Sem acesso à comunidade do portal",
+      "Sem certificado",
+      "Apenas assistir as aulas — decisão clínica é responsabilidade do aluno",
     ],
     accessDays: 36500,
     includesModules: true,
@@ -83,7 +88,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
-    canUpgradeTo: ["vip_online", "vip_presencial", "vip_completo"],
+    canUpgradeTo: ["observador_essencial", "observador_avancado", "observador_intensivo", "imersao", "vip_online", "vip_presencial", "vip_completo", "imersao_elite"],
   },
   modulo_avulso: {
     key: "modulo_avulso",
@@ -141,7 +146,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
-    canUpgradeTo: ["observador_avancado", "observador_intensivo", "imersao", "vip_online", "vip_presencial", "vip_completo"],
+    canUpgradeTo: ["observador_avancado", "observador_intensivo", "imersao", "vip_online", "vip_presencial", "vip_completo", "imersao_elite"],
   },
 
   observador_essencial: {
@@ -169,7 +174,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
-    canUpgradeTo: ["observador_avancado", "observador_intensivo", "imersao", "vip_completo"],
+    canUpgradeTo: ["observador_avancado", "observador_intensivo", "imersao", "vip_completo", "imersao_elite"],
   },
 
   observador_avancado: {
@@ -197,7 +202,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
-    canUpgradeTo: ["observador_intensivo", "imersao", "vip_completo"],
+    canUpgradeTo: ["observador_intensivo", "imersao", "vip_completo", "imersao_elite"],
   },
 
   observador_intensivo: {
@@ -225,7 +230,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
-    canUpgradeTo: ["imersao", "vip_completo"],
+    canUpgradeTo: ["imersao", "vip_completo", "imersao_elite"],
   },
 
   imersao: {
@@ -259,7 +264,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 0,
     hasLiveEvents: false,
     hasNaturalUp: false,
-    canUpgradeTo: ["vip_completo"],
+    canUpgradeTo: ["vip_completo", "imersao_elite"],
   },
 
   vip_online: {
@@ -294,7 +299,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 3,
     hasLiveEvents: true,
     hasNaturalUp: true,
-    canUpgradeTo: ["vip_completo"],
+    canUpgradeTo: ["vip_completo", "imersao_elite"],
   },
 
   vip_presencial: {
@@ -327,7 +332,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     mentorshipMonths: 3,
     hasLiveEvents: false,
     hasNaturalUp: true,
-    canUpgradeTo: ["vip_completo"],
+    canUpgradeTo: ["vip_completo", "imersao_elite"],
   },
 
   vip_completo: {
@@ -362,6 +367,41 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     channelMonths: 6,
     hasMentorship: true,
     mentorshipMonths: 6,
+    hasLiveEvents: true,
+    hasNaturalUp: true,
+    canUpgradeTo: ["imersao_elite"],
+  },
+
+  // ─── IMERSÃO ELITE ─ Top tier, bastidores + 32h prática ──────────────────
+  imersao_elite: {
+    key: "imersao_elite",
+    name: "Imersão Elite",
+    description: "Os bastidores da Clínica Gustavo Martins — acompanhamento 360°",
+    price: 3500000,
+    installments12x: 291667,
+    group: "vip",
+    highlight: "Experiência definitiva",
+    valorMercado: 12000000,
+    features: [
+      "Tudo da Mentoria VIP Completa",
+      "32h de prática hands-on com pacientes modelo (o dobro da VIP)",
+      "7 dias clínicos completos de acompanhamento ao lado do Dr. Gustavo",
+      "Aprenda toda a rotina: atendimento, burocracia, administração e bastidores",
+      "Observe como filmamos vídeos e criamos conteúdo",
+      "Acesso aos processos internos da Clínica Gustavo Martins",
+      "Acompanhamento individual por 12 meses",
+      "Canal direto prioritário com Dr. Gustavo (12 meses)",
+      "Método NaturalUp® completo + protocolos exclusivos",
+      "Certificado premium com carga horária total",
+    ],
+    accessDays: 365,
+    includesModules: true,
+    clinicalHours: 56, // 7 dias × 8h = 56h de shadow clínico
+    practiceHours: 32,
+    hasDirectChannel: true,
+    channelMonths: 12,
+    hasMentorship: true,
+    mentorshipMonths: 12,
     hasLiveEvents: true,
     hasNaturalUp: true,
     canUpgradeTo: [],
@@ -618,6 +658,7 @@ export const CASHBACK_RATES: Record<PlanKey, number> = {
   vip_online: 0.08,
   vip_presencial: 0.10,
   vip_completo: 0.10,
+  imersao_elite: 0.10,
   extensao_acompanhamento: 0.05,
   horas_clinicas_1: 0.05,
   horas_clinicas_2: 0.05,
@@ -631,4 +672,64 @@ export const CASHBACK_RATES: Record<PlanKey, number> = {
 // ─── Formatar preço em BRL ───────────────────────────────────────────────────
 export function formatBRL(centavos: number): string {
   return (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+// ─── Filtros de viabilidade por plano atual do aluno ───────────────────────
+// Regra: o aluno só deve ver produtos que somam valor real ao plano atual dele.
+// - Não oferecer downgrade.
+// - Não oferecer add-ons que já estão inclusos no plano atual.
+// - Não oferecer módulos avulsos para quem já tem os módulos.
+export function isPlanVisibleForStudent(
+  targetKey: PlanKey,
+  currentKey: PlanKey | null,
+): boolean {
+  const target = PLANS[targetKey];
+  if (!target) return false;
+  if (target.hidden) return false;
+
+  // Aluno sem plano ou em trial: vê tudo.
+  if (!currentKey || currentKey === "tester" || currentKey === "workshop") return true;
+
+  const current = PLANS[currentKey];
+  if (!current) return true;
+
+  // O próprio plano atual não aparece como "compre de novo".
+  if (targetKey === currentKey) return false;
+
+  // Horas clínicas extras: Elite já tem 32h, não precisa.
+  if (targetKey === "horas_clinicas_1" || targetKey === "horas_clinicas_2" || targetKey === "horas_clinicas_3") {
+    if (currentKey === "imersao_elite") return false;
+    // Só faz sentido para quem já tem mentoria/observação ativa.
+    return current.hasMentorship || current.clinicalHours > 0 || current.practiceHours > 0;
+  }
+
+  // Observação extra: Elite tem shadow completo.
+  if (targetKey.startsWith("observacao_extra_")) {
+    if (currentKey === "imersao_elite") return false;
+    // Só faz sentido para quem já tem plano de observação/mentoria ativo.
+    return current.clinicalHours > 0 || current.hasMentorship;
+  }
+
+  // Extensão de acompanhamento: só para quem tem mentoria ativa.
+  if (targetKey === "extensao_acompanhamento") {
+    return current.hasMentorship;
+  }
+
+  // Módulo avulso: só para quem ainda não tem os módulos completos.
+  if (targetKey === "modulo_avulso") {
+    return !current.includesModules;
+  }
+
+  // Planos principais (digital/observador/vip): só aparecem se forem upgrade real.
+  // Regra: tem que estar em canUpgradeTo OU ser estritamente mais caro que o atual.
+  if (current.canUpgradeTo.includes(targetKey)) return true;
+  if (target.price <= current.price) return false;
+  return false;
+}
+
+export function filterVisiblePlans(
+  allKeys: PlanKey[],
+  currentKey: PlanKey | null,
+): PlanKey[] {
+  return allKeys.filter((k) => isPlanVisibleForStudent(k, currentKey));
 }
