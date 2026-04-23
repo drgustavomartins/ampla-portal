@@ -30,7 +30,8 @@ async function requireAdmin(req: Request, res: Response): Promise<{ userId: numb
   }
   const db = await getDb();
   const r: any = await db.execute(sql`SELECT role FROM users WHERE id = ${auth.userId}`);
-  if (r.rows?.[0]?.role !== "admin") {
+  const role = r.rows?.[0]?.role;
+  if (role !== "admin" && role !== "super_admin") {
     res.status(403).json({ message: "Apenas administradores" });
     return null;
   }
@@ -48,7 +49,7 @@ const PLANS_WITH_ACCESS = new Set([
 ]);
 
 function userHasAccess(userPlanKey: string | null | undefined, role?: string): boolean {
-  if (role === "admin") return true;
+  if (role === "admin" || role === "super_admin") return true;
   if (!userPlanKey) return false;
   return PLANS_WITH_ACCESS.has(userPlanKey);
 }
