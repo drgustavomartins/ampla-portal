@@ -103,6 +103,17 @@ function ProtectedPage({ component: Component }: { component: React.ComponentTyp
   );
 }
 
+// Página protegida que admin TAMBÉM pode ver normalmente (p/ preview).
+function ProtectedPageAdminOk({ component: Component }: { component: React.ComponentType }) {
+  const { user } = useAuth();
+  if (!user) return <LoginPage />;
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Component />
+    </Suspense>
+  );
+}
+
 function LazyRoute({ component: Component }: { component: React.ComponentType }) {
   return (
     <Suspense fallback={<PageLoader />}>
@@ -132,7 +143,7 @@ function App() {
             <Route path="/creditos" component={() => <ProtectedPage component={CreditsPage} />} />
             <Route path="/creditos/regras" component={() => <ProtectedPage component={CreditsRulesPage} />} />
             <Route path="/comunidade" component={() => <ProtectedPage component={ComunidadePage} />} />
-            <Route path="/acompanhamento" component={() => <ProtectedPage component={AcompanhamentoPage} />} />
+            <Route path="/acompanhamento" component={() => <ProtectedPageAdminOk component={AcompanhamentoPage} />} />
             <Route path="/termos" component={() => <LazyRoute component={TermosPage} />} />
             <Route path="/privacidade" component={() => <LazyRoute component={PrivacidadePage} />} />
             <Route component={NotFound} />
