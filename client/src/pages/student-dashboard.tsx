@@ -1,4 +1,4 @@
-import { useState, useRef, lazy, Suspense } from "react";
+import { useState, useRef, useEffect, lazy, Suspense } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
@@ -29,6 +29,11 @@ import { PhoneInput } from "@/components/PhoneInput";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 import { CreditsDashboardCard } from "@/components/CreditsDashboardCard";
 import { CreditsFullSection } from "@/components/CreditsFullSection";
+import { HeroContinue } from "@/components/netflix/HeroContinue";
+import { LessonRow } from "@/components/netflix/LessonRow";
+import { LessonCard } from "@/components/netflix/LessonCard";
+import { RowSkeleton } from "@/components/netflix/RowSkeleton";
+import { getAllVideoProgress, getVideoProgress } from "@/hooks/use-video-progress";
 
 // Lazy-load heavy components that are below the fold
 const MateriaisComplementares = lazy(() => import("./materiais-complementares"));
@@ -83,6 +88,14 @@ export default function StudentDashboard() {
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const materiaisRef = useRef<HTMLDivElement>(null);
   const shelfRef = useRef<HTMLDivElement>(null);
+
+  // Netflix theme: update meta theme-color to black
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    const original = meta?.getAttribute("content") || "#0A1628";
+    meta?.setAttribute("content", "#0a0a0a");
+    return () => { meta?.setAttribute("content", original); };
+  }, []);
 
   const scrollShelf = (direction: "left" | "right") => {
     if (!shelfRef.current) return;
@@ -261,7 +274,7 @@ export default function StudentDashboard() {
     const prevLesson = moduleLessons[currentIdx - 1];
 
     return (
-      <div className="min-h-screen bg-background overflow-x-hidden">
+      <div className="min-h-screen bg-background overflow-x-hidden netflix-theme">
         {/* Top bar */}
         <header className="border-b border-border/50 bg-card/60 backdrop-blur-sm sticky top-0 z-10">
           <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-2">
@@ -564,8 +577,83 @@ export default function StudentDashboard() {
 
   const whatsappTrialUrl = `https://wa.me/5521976263881?text=${encodeURIComponent(`Olá! Estou no período de teste gratuito da Ampla Facial e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
 
+  // ===== NETFLIX PHASE 1: Compute "Continue Watching" + "Next in Journey" =====
+  const videoProgressStore = getAllVideoProgress();
+
+  // Continue Watching: lessons with 0 < progress < 95%, sorted by lastWatchedAt desc, max 10
+  const continueWatchingLessons = lessons
+    .map((lesson) => {
+      const vp = videoProgressStore[String(lesson.id)];
+      if (!vp || vp.percentage <= 0 || vp.percentage >= 95) return null;
+      // Also skip if lesson is already marked completed server-side
+      if (completedIds.has(lesson.id)) return null;
+      return { lesson, progress: vp };
+    })
+    .filter(Boolean)
+    .sort((a, b) => new Date(b!.progress.lastWatchedAt).getTime() - new Date(a!.progress.lastWatchedAt).getTime())
+    .slice(0, 10) as { lesson: Lesson; progress: import("@/hooks/use-video-progress").VideoProgressEntry }[];
+
+  // Hero lesson: first from continueWatching, or fallback to lastLesson
+  const heroData = (() => {
+    if (continueWatchingLessons.length > 0) {
+      const first = continueWatchingLessons[0];
+      return {
+        lesson: first.lesson,
+        module: modules.find((m) => m.id === first.lesson.moduleId),
+        progress: first.progress,
+        isCompleted: false,
+      };
+    }
+    // Fallback: use the existing lastLesson logic
+    if (lastLesson) {
+      const vp = getVideoProgress(lastLesson.id);
+      return {
+        lesson: lastLesson,
+        module: modules.find((m) => m.id === lastLesson.moduleId),
+        progress: vp,
+        isCompleted: completedIds.has(lastLesson.id),
+      };
+    }
+    return null;
+  })();
+
+  // Next in Journey: next 5 lessons after the last completed one, in admin order
+  const nextInJourneyLessons = (() => {
+    // Flatten all lessons across modules in admin order
+    const sortedMods = [...modules].sort((a, b) => a.order - b.order);
+    const allOrdered: { lesson: Lesson; module: Module }[] = [];
+    for (const mod of sortedMods) {
+      const modLessons = lessons
+        .filter((l) => l.moduleId === mod.id)
+        .sort((a, b) => a.order - b.order);
+      for (const l of modLessons) {
+        allOrdered.push({ lesson: l, module: mod });
+      }
+    }
+
+    // Find the last completed lesson's index
+    let lastCompletedIdx = -1;
+    const completedWithDates = progress
+      .filter((p) => p.completed && p.completedAt)
+      .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
+    if (completedWithDates.length > 0) {
+      const lastCompletedId = completedWithDates[0].lessonId;
+      lastCompletedIdx = allOrdered.findIndex((o) => o.lesson.id === lastCompletedId);
+    }
+
+    // Take next 5 uncompleted lessons
+    const startIdx = lastCompletedIdx + 1;
+    const result: { lesson: Lesson; module: Module }[] = [];
+    for (let i = startIdx; i < allOrdered.length && result.length < 5; i++) {
+      if (!completedIds.has(allOrdered[i].lesson.id)) {
+        result.push(allOrdered[i]);
+      }
+    }
+    return result;
+  })();
+
   return (
-    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden netflix-theme">
       {/* ===== TRIAL BANNER ===== */}
       {isTrial && (() => {
         const days = trialDaysLeft ?? 0;
@@ -907,87 +995,104 @@ export default function StudentDashboard() {
             </div>
           )}
 
-          {/* ===== HERO WELCOME ===== */}
-          <section className="relative rounded-2xl overflow-hidden">
-            {/* Background image */}
-            <div className="absolute inset-0">
-              <img src="/images/hero-dashboard.png" alt="" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/50 sm:from-background/85 sm:via-background/60 sm:to-background/30" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/70 to-transparent sm:from-background/50" />
-            </div>
-            <div className="relative grid lg:grid-cols-[1fr_340px] gap-6 items-start p-6 sm:p-8 lg:p-10">
-            <div className="space-y-3">
-              <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-foreground leading-tight">
-                {isAccessExpired
-                  ? <>Olá, <span className="text-gold">{firstName}</span></>
-                  : <>Boas-vindas à sua mentoria, <span className="text-gold">{firstName}</span></>
-                }
+          {/* ===== NETFLIX HERO: "Continue de onde parou" ===== */}
+          {heroData && heroData.lesson && !isAccessExpired && (
+            <HeroContinue
+              lesson={heroData.lesson}
+              module={heroData.module}
+              progress={heroData.progress}
+              isCompleted={heroData.isCompleted}
+              firstName={firstName}
+              onContinue={() => setSelectedLesson(heroData.lesson)}
+              onDetails={() => {
+                if (heroData.module) setLocation(`/module/${heroData.module.id}`);
+              }}
+            />
+          )}
+
+          {/* Fallback hero for expired access */}
+          {isAccessExpired && (
+            <section className="relative rounded-2xl overflow-hidden bg-[#141414] p-6 sm:p-8 lg:p-10">
+              <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight">
+                Olá, <span className="text-[#D4AF37]">{firstName}</span>
               </h1>
-              <p className="text-muted-foreground text-sm sm:text-base max-w-lg leading-relaxed">
-                {isAccessExpired
-                  ? "Seu acesso expirou, mas seus créditos continuam aqui. Entre em contato para renovar e desbloquear todo o conteúdo."
-                  : <>Explore os cursos do Método NaturalUp&reg; e evolua sua prática clínica em harmonização facial com excelência e naturalidade.</>
-                }
+              <p className="text-[#b3b3b3] text-sm sm:text-base max-w-lg leading-relaxed mt-2">
+                Seu acesso expirou, mas seus créditos continuam aqui. Entre em contato para renovar e desbloquear todo o conteúdo.
               </p>
-              {totalLessons > 0 && !isAccessExpired && (
-                <div className="mt-6 rounded-xl bg-white/5 border border-white/10 p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-white">Seu progresso na plataforma</p>
-                    <span className="text-sm font-bold text-gold">{Math.round((completedCount / totalLessons) * 100)}%</span>
-                  </div>
-                  <div className="h-3 rounded-full bg-white/20 overflow-hidden">
-                    <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(progressPercent, 2)}%`, background: "linear-gradient(90deg, #B8860B, #D4A843, #E5C158)" }} />
-                  </div>
-                  <p className="text-xs text-white/50">{completedCount} de {totalLessons} aulas concluídas</p>
+              <a
+                href={whatsappRenewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#D4AF37] hover:bg-[#c9a432] text-black font-bold text-sm transition-colors"
+              >
+                <Star className="w-4 h-4" />
+                Quero Continuar Aprendendo
+              </a>
+            </section>
+          )}
+
+          {/* Plan summary card (compact) */}
+          {!isAccessExpired && (
+            <div className="rounded-xl border border-white/10 bg-[#1a1a1a] p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
+                <div>
+                  <span className="text-[10px] font-semibold text-[#D4AF37] uppercase tracking-wider">Seu Plano</span>
+                  <p className="text-sm font-semibold text-white">{userPlan?.name || "—"}</p>
                 </div>
-              )}
-            </div>
-            {/* Plan card */}
-            <div className="mt-4 lg:mt-0 rounded-2xl border border-border/40 bg-card/90 backdrop-blur-sm p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-gold-muted uppercase tracking-brand">Seu Plano</span>
-                <Badge variant="secondary" className="text-xs bg-gold/10 text-gold border-0">{userPlan?.name || "\u2014"}</Badge>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Progresso do plano</span>
-                  <span className="font-medium text-gold">{daysUsed}/{planDurationDays} dias</span>
-                </div>
-                <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : dayProgressPercent, 1)}%`, background: "linear-gradient(90deg, #B8860B, #D4A843)" }} />
+                <div className="h-8 w-px bg-white/10 hidden sm:block" />
+                <div className="flex items-center gap-6 text-xs text-[#b3b3b3]">
+                  <span>{completedCount}/{totalLessons} aulas</span>
+                  <span>{daysLeft} dias restantes</span>
+                  <span className="font-semibold text-[#D4AF37]">{progressPercent}%</span>
                 </div>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Dias restantes</span>
-                <span className="font-semibold text-foreground">{daysLeft}</span>
+              <div className="flex-1 max-w-xs w-full sm:w-auto">
+                <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.max(progressPercent, 2)}%`, background: "linear-gradient(90deg, #B8860B, #D4A843, #E5C158)" }} />
+                </div>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Aulas concluídas</span>
-                <span className="font-medium text-gold">{completedCount}/{totalLessons}</span>
-              </div>
-              {/* CTA de planos no card */}
-              {isAccessExpired ? (
-                <a
-                  href={whatsappRenewUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gold/90 hover:bg-gold px-3 py-2.5 text-xs font-semibold text-[#0A0D14] transition-colors"
-                >
-                  <Star className="w-3 h-3" />
-                  Quero Continuar Aprendendo
-                </a>
-              ) : (
               <Link
                 href="/planos"
-                className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-gold/30 bg-gold/5 hover:bg-gold/15 px-3 py-2 text-xs font-semibold text-gold transition-colors"
+                className="shrink-0 rounded-lg border border-[#D4AF37]/30 bg-[#D4AF37]/5 hover:bg-[#D4AF37]/15 px-4 py-2 text-xs font-semibold text-[#D4AF37] transition-colors"
               >
-                <Star className="w-3 h-3" />
-                {isTrial ? `Trial — ${trialDaysLeft} dia${trialDaysLeft !== 1 ? "s" : ""} restante${trialDaysLeft !== 1 ? "s" : ""}` : "Ver planos e upgrade"}
+                {isTrial ? `Trial — ${trialDaysLeft}d` : "Ver planos"}
               </Link>
-              )}
             </div>
-            </div>
-          </section>
+          )}
+
+          {/* ===== NETFLIX ROW: "Continue Assistindo" ===== */}
+          {continueWatchingLessons.length > 0 && (
+            <Suspense fallback={<RowSkeleton />}>
+              <LessonRow title="Continue Assistindo">
+                {continueWatchingLessons.map(({ lesson, progress: vp }) => (
+                  <LessonCard
+                    key={lesson.id}
+                    lesson={lesson}
+                    module={modules.find((m) => m.id === lesson.moduleId)}
+                    progress={vp}
+                    onClick={() => setSelectedLesson(lesson)}
+                  />
+                ))}
+              </LessonRow>
+            </Suspense>
+          )}
+
+          {/* ===== NETFLIX ROW: "Próxima na Sua Jornada" ===== */}
+          {nextInJourneyLessons.length > 0 && !isAccessExpired && (
+            <Suspense fallback={<RowSkeleton />}>
+              <LessonRow title="Próxima na Sua Jornada">
+                {nextInJourneyLessons.map(({ lesson, module: mod }, i) => (
+                  <LessonCard
+                    key={lesson.id}
+                    lesson={lesson}
+                    module={mod}
+                    isNext={i === 0}
+                    onClick={() => setSelectedLesson(lesson)}
+                  />
+                ))}
+              </LessonRow>
+            </Suspense>
+          )}
 
           {/* ===== BOAS VINDAS (Featured/Hero Section) ===== */}
           {introModule && introLessons.length > 0 && !isAccessExpired && (
