@@ -423,6 +423,32 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`ALTER TABLE lessons ADD COLUMN IF NOT EXISTS created_at TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE lessons ADD COLUMN IF NOT EXISTS updated_at TEXT`).catch(() => {});
 
+    // Auto-classify existing lessons that still have the default 'theoretical'
+    // Idempotent: only touches lessons with content_type = 'theoretical'
+    // case_study first (higher priority), then practical
+    await db.execute(`UPDATE lessons SET content_type = 'case_study'
+      WHERE content_type = 'theoretical' AND (
+        LOWER(title) LIKE '%caso clínico%' OR LOWER(title) LIKE '%caso clinico%'
+        OR LOWER(title) LIKE '%antes e depois%' OR LOWER(title) LIKE '%antes/depois%'
+        OR LOWER(title) LIKE '%case%' OR LOWER(title) LIKE '%resultado%'
+        OR LOWER(title) LIKE '%paciente real%'
+      )`).catch(() => {});
+    await db.execute(`UPDATE lessons SET content_type = 'practical'
+      WHERE content_type = 'theoretical' AND (
+        LOWER(title) LIKE '%aplicação%' OR LOWER(title) LIKE '%aplicacao%'
+        OR LOWER(title) LIKE '%aplicando%' OR LOWER(title) LIKE '%aplicar%'
+        OR LOWER(title) LIKE '%procedimento%'
+        OR LOWER(title) LIKE '%passo a passo%' OR LOWER(title) LIKE '%passo-a-passo%'
+        OR LOWER(title) LIKE '%demonstra%'
+        OR LOWER(title) LIKE '%ao vivo%'
+        OR LOWER(title) LIKE '%na paciente%' OR LOWER(title) LIKE '%em paciente%'
+        OR LOWER(title) LIKE '%atendimento%' OR LOWER(title) LIKE '%atendendo%'
+        OR LOWER(title) LIKE '%prática%' OR LOWER(title) LIKE '%pratica%'
+        OR LOWER(title) LIKE '%hands-on%' OR LOWER(title) LIKE '%hands on%'
+        OR LOWER(title) LIKE '%injeção%' OR LOWER(title) LIKE '%injecao%'
+        OR LOWER(title) LIKE '%infiltra%'
+      )`).catch(() => {});
+
     console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts, community, lead_events, invite_codes, site_visitors, page_visits, live_events, live_event_attendance, live_event_cases, lessons content_type/timestamps ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
@@ -2823,8 +2849,14 @@ export async function registerRoutes(server: Server, app: Express) {
     const auth = requireAdmin(req, res);
     if (!auth) return;
     try {
+      const { classifyLesson } = await import("./classify-lesson");
       const now = new Date().toISOString();
-      const data = insertLessonSchema.parse({ ...req.body, createdAt: now, updatedAt: now });
+      const body = { ...req.body, createdAt: now, updatedAt: now };
+      // Auto-classify if admin didn't provide an explicit contentType
+      if (!body.contentType) {
+        body.contentType = classifyLesson(body.title || "", body.description);
+      }
+      const data = insertLessonSchema.parse(body);
       const lesson = await storage.createLesson(data);
       const admin = await storage.getUser(auth.userId);
       await logAction(auth.userId, admin?.name || "Admin", "lesson_created", "lesson", lesson.id, lesson.title);
@@ -2848,7 +2880,17 @@ export async function registerRoutes(server: Server, app: Express) {
     }
     if (duration !== undefined) lessonUpdate.duration = duration ? sanitize(duration) : null;
     if (order !== undefined) lessonUpdate.order = order;
-    if (contentType !== undefined) lessonUpdate.contentType = contentType;
+    if (contentType !== undefined) {
+      // Admin explicitly set contentType — respect the override
+      lessonUpdate.contentType = contentType;
+    } else if (title !== undefined || description !== undefined) {
+      // Title or description changed without explicit contentType — auto-classify
+      const { classifyLesson } = await import("./classify-lesson");
+      const existing = await storage.getLesson(parseInt(req.params.id));
+      const effectiveTitle = title !== undefined ? sanitize(title) : (existing?.title || "");
+      const effectiveDesc = description !== undefined ? (description ? sanitize(description) : null) : (existing?.description || null);
+      lessonUpdate.contentType = classifyLesson(effectiveTitle, effectiveDesc);
+    }
     lessonUpdate.updatedAt = new Date().toISOString();
     const updated = await storage.updateLesson(parseInt(req.params.id), lessonUpdate);
     if (!updated) return res.status(404).json({ message: "Aula não encontrada" });
