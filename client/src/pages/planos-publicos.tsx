@@ -425,7 +425,6 @@ export default function PlanosPublicos() {
                   "8h de observação clínica",
                   "Aulas e materiais do tema",
                   "3 meses de canal direto com Dr. Gustavo para dúvidas",
-                  "Acompanhamento quinzenal ao vivo",
                   "Certificado do tema",
                   "Até 7 dias para desistência",
                 ].map((f) => (
