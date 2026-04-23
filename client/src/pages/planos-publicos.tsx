@@ -423,6 +423,7 @@ export default function PlanosPublicos() {
                   "Atendimento de 4 a 6 pacientes",
                   "8h de observação clínica",
                   "Aulas e materiais do tema",
+                  "3 meses de canal direto com Dr. Gustavo para dúvidas",
                   "Acompanhamento quinzenal ao vivo",
                   "Certificado do tema",
                 ].map((f) => (
@@ -487,6 +488,7 @@ export default function PlanosPublicos() {
                 {[
                   "Tudo da Plataforma Online",
                   "24h de observação clínica presencial",
+                  "3 meses de canal direto com Dr. Gustavo para dúvidas",
                   "Acompanhamento quinzenal ao vivo",
                   "Comunidade do portal + créditos",
                   "Certificado de participação",
