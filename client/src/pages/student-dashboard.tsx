@@ -34,6 +34,8 @@ import { CreditsFullSection } from "@/components/CreditsFullSection";
 import { HeroContinue } from "@/components/netflix/HeroContinue";
 import { LessonRow } from "@/components/netflix/LessonRow";
 import { LessonCard } from "@/components/netflix/LessonCard";
+import { PodcastCard } from "@/components/netflix/PodcastCard";
+import { CertificateCard } from "@/components/netflix/CertificateCard";
 import { RowSkeleton } from "@/components/netflix/RowSkeleton";
 import { getAllVideoProgress, getVideoProgress } from "@/hooks/use-video-progress";
 
@@ -83,6 +85,7 @@ export default function StudentDashboard() {
   const [, setLocation] = useLocation();
   const [selectedModule, setSelectedModule] = useState<number | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [selectedPodcast, setSelectedPodcast] = useState<{ title: string; videoUrl: string; description?: string | null } | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "", avatarUrl: "", username: "", instagram: "" });
@@ -117,6 +120,8 @@ export default function StudentDashboard() {
   const plans = initData?.plans ?? [];
   const myModules = initData?.myModules;
   const lessonAccess = initData?.lessonAccess;
+  const podcasts = initData?.podcasts ?? [];
+  const certificates = initData?.certificates ?? [];
 
   const [purchaseModule, setPurchaseModule] = useState<Module | null>(null);
   const [signingSessionId, setSigningSessionId] = useState<number | null>(null);
@@ -321,14 +326,19 @@ export default function StudentDashboard() {
                   </div>
                 </div>
               ) : embedUrl ? (
-                <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border/30">
-                  <iframe
-                    src={embedUrl}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    title={selectedLesson.title}
-                  />
+                <div className="space-y-1">
+                  <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border/30">
+                    <iframe
+                      src={embedUrl}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; remote-playback"
+                      allowFullScreen
+                      title={selectedLesson.title}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground/50 text-right">
+                    Assistir na TV? Use o Chromecast/AirPlay pelo botao do player YouTube
+                  </p>
                 </div>
               ) : (
                 <div className="aspect-video bg-card rounded-lg flex items-center justify-center ring-1 ring-border/30">
@@ -448,6 +458,41 @@ export default function StudentDashboard() {
                 );
               })}
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ========== PODCAST VIEW ==========
+  if (selectedPodcast) {
+    const podcastEmbedUrl = getEmbedUrl(selectedPodcast.videoUrl);
+    return (
+      <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
+        <div className="max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 space-y-4">
+          <button
+            onClick={() => setSelectedPodcast(null)}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Voltar ao dashboard
+          </button>
+          {podcastEmbedUrl && (
+            <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border/30">
+              <iframe
+                src={podcastEmbedUrl}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; remote-playback"
+                allowFullScreen
+                title={selectedPodcast.title}
+              />
+            </div>
+          )}
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">{selectedPodcast.title}</h2>
+            {selectedPodcast.description && (
+              <p className="text-sm text-muted-foreground mt-1">{selectedPodcast.description}</p>
+            )}
           </div>
         </div>
       </div>
@@ -1183,6 +1228,36 @@ export default function StudentDashboard() {
               </>
             );
           })()}
+
+          {/* ===== NETFLIX ROW: Podcasts e Áudios ===== */}
+          {podcasts.length > 0 && (
+            <Suspense fallback={<RowSkeleton />}>
+              <LessonRow title="Podcasts e Conteúdos Extras">
+                {podcasts.map((item) => (
+                  <PodcastCard
+                    key={item.id}
+                    item={item}
+                    onClick={() => {
+                      if (item.video_url) {
+                        setSelectedPodcast({ title: item.title, videoUrl: item.video_url, description: item.description });
+                      }
+                    }}
+                  />
+                ))}
+              </LessonRow>
+            </Suspense>
+          )}
+
+          {/* ===== NETFLIX ROW: Meus Certificados ===== */}
+          {certificates.length > 0 && (
+            <Suspense fallback={<RowSkeleton />}>
+              <LessonRow title="Meus Certificados">
+                {certificates.map((cert) => (
+                  <CertificateCard key={cert.id} certificate={cert} />
+                ))}
+              </LessonRow>
+            </Suspense>
+          )}
 
           {/* ===== BOAS VINDAS (Featured/Hero Section) ===== */}
           {introModule && introLessons.length > 0 && !isAccessExpired && (

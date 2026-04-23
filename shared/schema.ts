@@ -261,7 +261,39 @@ export const pageVisits = pgTable("page_visits", {
   createdAt: text("created_at").notNull(),
 });
 
+// Supplementary Content (podcasts, audio, extra videos)
+export const supplementaryContent = pgTable("supplementary_content", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull().default("podcast"), // 'podcast' | 'audio' | 'video' | 'article'
+  title: text("title").notNull(),
+  description: text("description"),
+  videoUrl: text("video_url"), // YouTube/Vimeo/Drive URL
+  audioUrl: text("audio_url"), // direct audio URL or null
+  thumbnailUrl: text("thumbnail_url"),
+  category: text("category"), // e.g. "Biorreguladores", "Toxina", etc.
+  duration: text("duration"),
+  order: integer("order").notNull().default(0),
+  visible: boolean("visible").notNull().default(true),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at"),
+});
+
+// Certificates (auto-issued on module completion)
+export const certificates = pgTable("certificates", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  moduleId: integer("module_id").notNull(),
+  issuedAt: text("issued_at").notNull(),
+  certificateNumber: text("certificate_number").notNull().unique(), // e.g. "AMPLA-2026-0042"
+  studentName: text("student_name").notNull(),
+  moduleName: text("module_name").notNull(),
+  completedLessons: integer("completed_lessons").notNull(),
+  totalLessons: integer("total_lessons").notNull(),
+});
+
 // Insert schemas
+export const insertSupplementaryContentSchema = createInsertSchema(supplementaryContent).omit({ id: true });
+export const insertCertificateSchema = createInsertSchema(certificates).omit({ id: true });
 export const insertInviteCodeSchema = createInsertSchema(inviteCodes).omit({ id: true, usedCount: true, usedBy: true });
 
 export const insertSiteVisitorSchema = createInsertSchema(siteVisitors).omit({ id: true });
@@ -352,3 +384,7 @@ export type SiteVisitor = typeof siteVisitors.$inferSelect;
 export type InsertSiteVisitor = z.infer<typeof insertSiteVisitorSchema>;
 export type PageVisit = typeof pageVisits.$inferSelect;
 export type InsertPageVisit = z.infer<typeof insertPageVisitSchema>;
+export type SupplementaryContent = typeof supplementaryContent.$inferSelect;
+export type InsertSupplementaryContent = z.infer<typeof insertSupplementaryContentSchema>;
+export type Certificate = typeof certificates.$inferSelect;
+export type InsertCertificate = z.infer<typeof insertCertificateSchema>;

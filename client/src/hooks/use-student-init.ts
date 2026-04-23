@@ -3,6 +3,34 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 
+export interface SupplementaryItem {
+  id: number;
+  type: string;
+  title: string;
+  description: string | null;
+  video_url: string | null;
+  audio_url: string | null;
+  thumbnail_url: string | null;
+  category: string | null;
+  duration: string | null;
+  order: number;
+  visible: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface CertificateItem {
+  id: number;
+  user_id: number;
+  module_id: number;
+  issued_at: string;
+  certificate_number: string;
+  student_name: string;
+  module_name: string;
+  completed_lessons: number;
+  total_lessons: number;
+}
+
 export interface StudentInitData {
   modules: Module[];
   lessons: Lesson[];
@@ -10,6 +38,8 @@ export interface StudentInitData {
   progress: LessonProgress[];
   myModules: { accessAll: boolean; moduleIds: number[]; selectedTheme?: string; needsThemeSelection?: boolean; isTrial?: boolean; expired?: boolean };
   lessonAccess: { accessType: string; allowedLessonIds: number[] };
+  podcasts: SupplementaryItem[];
+  certificates: CertificateItem[];
 }
 
 /**

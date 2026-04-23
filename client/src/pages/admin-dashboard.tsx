@@ -545,6 +545,182 @@ function CommunityAdminTab() {
   );
 }
 
+function SupplementaryAdminTab() {
+  const { toast } = useToast();
+  const [showForm, setShowForm] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [form, setForm] = useState({ type: "podcast", title: "", description: "", videoUrl: "", category: "", duration: "", order: 0, visible: true });
+
+  const { data: items = [], isLoading } = useQuery<any[]>({
+    queryKey: ["/api/admin/supplementary"],
+  });
+
+  const createMut = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/admin/supplementary", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/supplementary"] });
+      toast({ title: "Conteudo criado" });
+      setShowForm(false);
+      resetForm();
+    },
+  });
+
+  const updateMut = useMutation({
+    mutationFn: async ({ id, ...data }: any) => {
+      const res = await apiRequest("PATCH", `/api/admin/supplementary/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/supplementary"] });
+      toast({ title: "Conteudo atualizado" });
+      setEditingItem(null);
+      setShowForm(false);
+      resetForm();
+    },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/admin/supplementary/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/supplementary"] });
+      toast({ title: "Conteudo removido" });
+    },
+  });
+
+  const resetForm = () => setForm({ type: "podcast", title: "", description: "", videoUrl: "", category: "", duration: "", order: 0, visible: true });
+
+  const handleEdit = (item: any) => {
+    setEditingItem(item);
+    setForm({
+      type: item.type || "podcast",
+      title: item.title || "",
+      description: item.description || "",
+      videoUrl: item.video_url || "",
+      category: item.category || "",
+      duration: item.duration || "",
+      order: item.order || 0,
+      visible: item.visible !== false,
+    });
+    setShowForm(true);
+  };
+
+  const handleSubmit = () => {
+    if (!form.title.trim()) return toast({ title: "Titulo obrigatorio", variant: "destructive" });
+    const payload = { type: form.type, title: form.title, description: form.description || null, videoUrl: form.videoUrl || null, category: form.category || null, duration: form.duration || null, order: form.order, visible: form.visible };
+    if (editingItem) {
+      updateMut.mutate({ id: editingItem.id, ...payload });
+    } else {
+      createMut.mutate(payload);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Conteudos Extras ({items.length})</h3>
+          <p className="text-[11px] text-muted-foreground/60 mt-0.5">Podcasts, audios e videos suplementares exibidos no dashboard do aluno</p>
+        </div>
+        <Button size="sm" onClick={() => { resetForm(); setEditingItem(null); setShowForm(true); }} className="bg-gold hover:bg-gold/90 text-black font-semibold text-xs px-3 py-1 h-7">
+          + Novo
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card className="border-gold/30">
+          <CardContent className="p-4 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Titulo</Label>
+                <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className="h-8 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Tipo</Label>
+                <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="w-full h-8 rounded-md border border-input bg-background px-2 text-sm">
+                  <option value="podcast">Podcast</option>
+                  <option value="audio">Audio</option>
+                  <option value="video">Video</option>
+                  <option value="article">Artigo</option>
+                </select>
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs text-muted-foreground">Descricao</Label>
+                <Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="h-8 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">URL do Video (YouTube/Vimeo)</Label>
+                <Input value={form.videoUrl} onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))} className="h-8 text-sm" placeholder="https://youtu.be/..." />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Categoria</Label>
+                <Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className="h-8 text-sm" placeholder="Ex: Biorreguladores" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Duracao</Label>
+                <Input value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))} className="h-8 text-sm" placeholder="15:00" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Ordem</Label>
+                <Input type="number" value={form.order} onChange={e => setForm(f => ({ ...f, order: parseInt(e.target.value) || 0 }))} className="h-8 text-sm" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" checked={form.visible} onChange={e => setForm(f => ({ ...f, visible: e.target.checked }))} id="sup-visible" />
+              <Label htmlFor="sup-visible" className="text-xs text-muted-foreground cursor-pointer">Visivel para alunos</Label>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleSubmit} disabled={createMut.isPending || updateMut.isPending} className="bg-gold hover:bg-gold/90 text-black font-semibold text-xs">
+                {editingItem ? "Salvar" : "Criar"}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => { setShowForm(false); setEditingItem(null); resetForm(); }} className="text-xs">
+                Cancelar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading ? (
+        <div className="text-center py-8 text-muted-foreground text-sm">Carregando...</div>
+      ) : items.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground text-sm">Nenhum conteudo extra cadastrado</div>
+      ) : (
+        <div className="space-y-2">
+          {items.map((item: any) => (
+            <Card key={item.id} className="border-border/30">
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded bg-gold/10 flex items-center justify-center shrink-0">
+                  <Headphones className="w-4 h-4 text-gold" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    {item.type} {item.category ? `— ${item.category}` : ""} {item.duration ? `(${item.duration})` : ""}
+                    {!item.visible && " [oculto]"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button size="sm" variant="ghost" onClick={() => handleEdit(item)} className="h-7 px-2 text-xs">
+                    Editar
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => { if (confirm("Remover este conteudo?")) deleteMut.mutate(item.id); }} className="h-7 px-2 text-xs text-destructive hover:text-destructive">
+                    Excluir
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const { user, logout, isSuperAdmin } = useAuth();
   const { toast } = useToast();
@@ -1705,6 +1881,7 @@ export default function AdminDashboard() {
                 { value: "lessons", label: "Aulas", icon: Video, group: "Conteudo" },
                 { value: "materiais", label: "Materiais", icon: Library, group: "Conteudo" },
                 { value: "practices", label: "Praticas", icon: Stethoscope, group: "Conteudo" },
+                { value: "supplementary", label: "Extras", icon: Headphones, group: "Conteudo" },
                 { value: "community", label: "Comunidade", icon: MessageCircle, group: "Engajamento" },
                 { value: "credits", label: "Creditos", icon: Coins, group: "Engajamento" },
                 { value: "invites", label: "Convites", icon: KeyRound, group: "Engajamento" },
@@ -1871,6 +2048,14 @@ export default function AdminDashboard() {
                   >
                     <Stethoscope className="w-3.5 h-3.5" />
                     Praticas
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="supplementary"
+                    data-testid="tab-supplementary-d"
+                    className="data-[state=active]:bg-gold/15 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-[0_0_12px_rgba(212,168,67,0.1)] data-[state=active]:shadow-none border border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all"
+                  >
+                    <Headphones className="w-3.5 h-3.5" />
+                    Extras
                   </TabsTrigger>
                 </div>
 
@@ -4288,6 +4473,11 @@ export default function AdminDashboard() {
                 })}
               </div>
             )}
+          </TabsContent>
+
+          {/* ========== SUPPLEMENTARY CONTENT TAB ========== */}
+          <TabsContent value="supplementary" className="space-y-6 mt-0">
+            <SupplementaryAdminTab />
           </TabsContent>
 
           <TabsContent value="trial-legacy" className="space-y-6 mt-0">
