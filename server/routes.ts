@@ -9,6 +9,7 @@ import { registerSchema, trialRegisterSchema, loginSchema, insertModuleSchema, i
 import { Resend } from "resend";
 import multer from "multer";
 import { registerStripeRoutes, registerPublicStripeRoutes } from "./stripe-routes";
+import { registerLiveEventsRoutes } from "./live-events-routes";
 
 const avatarUpload = multer({
   storage: multer.memoryStorage(),
@@ -370,7 +371,53 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`CREATE INDEX IF NOT EXISTS idx_page_visits_visitor ON page_visits(visitor_id)`).catch(() => {});
     await db.execute(`CREATE INDEX IF NOT EXISTS idx_page_visits_created ON page_visits(created_at)`).catch(() => {});
     await db.execute(`CREATE INDEX IF NOT EXISTS idx_site_visitors_created ON site_visitors(created_at)`).catch(() => {});
-    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts, community, lead_events, invite_codes, site_visitors, page_visits tables ensured");
+    // Live events (Acompanhamento quinzenal) — aulona em grupo
+    await db.execute(`CREATE TABLE IF NOT EXISTS live_events (
+      id SERIAL PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT,
+      theme TEXT,
+      event_date TEXT NOT NULL,
+      duration_minutes INTEGER NOT NULL DEFAULT 90,
+      meet_link TEXT,
+      recording_url TEXT,
+      status TEXT NOT NULL DEFAULT 'scheduled',
+      created_by INTEGER NOT NULL,
+      created_at TEXT NOT NULL
+    )`).catch(() => {});
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_live_events_date ON live_events(event_date)`).catch(() => {});
+
+    // Presença em acompanhamento + créditos ganhos por participação
+    await db.execute(`CREATE TABLE IF NOT EXISTS live_event_attendance (
+      id SERIAL PRIMARY KEY,
+      event_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      attended BOOLEAN NOT NULL DEFAULT false,
+      camera_on BOOLEAN NOT NULL DEFAULT false,
+      active_participation BOOLEAN NOT NULL DEFAULT false,
+      credits_awarded INTEGER NOT NULL DEFAULT 0,
+      note TEXT,
+      marked_by INTEGER,
+      created_at TEXT NOT NULL,
+      UNIQUE(event_id, user_id)
+    )`).catch(() => {});
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_lea_user ON live_event_attendance(user_id)`).catch(() => {});
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_lea_event ON live_event_attendance(event_id)`).catch(() => {});
+
+    // Casos clínicos discutidos em cada encontro
+    await db.execute(`CREATE TABLE IF NOT EXISTS live_event_cases (
+      id SERIAL PRIMARY KEY,
+      event_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      summary TEXT,
+      presented_by INTEGER,
+      tags TEXT NOT NULL DEFAULT '[]',
+      "order" INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL
+    )`).catch(() => {});
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_lec_event ON live_event_cases(event_id)`).catch(() => {});
+
+    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts, community, lead_events, invite_codes, site_visitors, page_visits, live_events, live_event_attendance, live_event_cases tables ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
@@ -5844,6 +5891,9 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
   // ─── Rotas de pagamento Stripe ──────────────────────────────────────────────
   registerStripeRoutes(app);
   registerPublicStripeRoutes(app);
+
+  // ─── Rotas de Acompanhamento (encontros ao vivo em grupo) ──────────────
+  registerLiveEventsRoutes(app);
 }
 
 // Helper to get all progress (not in storage since it's a simple select-all)

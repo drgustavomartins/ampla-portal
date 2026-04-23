@@ -22,7 +22,7 @@ import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
   ChevronLeft, ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle, Star,
   Users, MessageCircle, Lock, ShoppingCart, ExternalLink, Paperclip, DollarSign,
-  Search, Bell, Camera, Instagram, Phone
+  Search, Bell, Camera, Instagram, Phone, Sparkles
 } from "lucide-react";
 import { stripPhone } from "@/lib/phone";
 import { PhoneInput } from "@/components/PhoneInput";
@@ -659,6 +659,13 @@ export default function StudentDashboard() {
               Comunidade
             </Link>
             <Link
+              href="/acompanhamento"
+              className="flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/5 hover:bg-emerald-400/15 px-3 py-1.5 text-xs font-semibold text-emerald-400 transition-colors"
+            >
+              <Sparkles className="w-3 h-3" />
+              Acompanhamento
+            </Link>
+            <Link
               href="/planos"
               className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/5 hover:bg-gold/15 px-3 py-1.5 text-xs font-semibold text-gold transition-colors"
             >
@@ -790,6 +797,14 @@ export default function StudentDashboard() {
             >
               <Users className="w-5 h-5 text-blue-400/70" />
               <span className="text-[20px] font-semibold text-white">Comunidade</span>
+            </button>
+
+            <button
+              onClick={() => { setMobileMenuOpen(false); setLocation("/acompanhamento"); }}
+              className="flex items-center gap-4 w-full text-left py-3.5 border-b border-white/5"
+            >
+              <Sparkles className="w-5 h-5 text-emerald-400/70" />
+              <span className="text-[20px] font-semibold text-white">Acompanhamento</span>
             </button>
 
             <button
