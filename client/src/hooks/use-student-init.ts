@@ -8,7 +8,7 @@ export interface StudentInitData {
   lessons: Lesson[];
   plans: Plan[];
   progress: LessonProgress[];
-  myModules: { accessAll: boolean; moduleIds: number[] };
+  myModules: { accessAll: boolean; moduleIds: number[]; selectedTheme?: string; needsThemeSelection?: boolean; isTrial?: boolean; expired?: boolean };
   lessonAccess: { accessType: string; allowedLessonIds: number[] };
 }
 

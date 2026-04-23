@@ -2012,9 +2012,68 @@ export async function registerRoutes(server: Server, app: Express) {
   });
 
   // ==================== MODULES ====================
+  // Mapa: tema do plano Modulo Avulso com Pratica -> IDs dos modulos
+  // [2] Toxina, [3] Preenchedores, [5] Bioestimuladores, [7] Biorregeneradores
+  // [6] Boas vindas = sempre liberado como módulo introdutório
+  const THEME_TO_MODULE_IDS: Record<string, number[]> = {
+    toxina: [6, 2],
+    preenchedores: [6, 3],
+    bioestimuladores: [6, 5],
+    biorregeneradores: [6, 7],
+  };
+
   app.get("/api/modules", async (_req, res) => {
     const m = await storage.getModules();
     res.json(m);
+  });
+
+  // Aluno escolhe/altera o tema do plano Modulo Avulso com Pratica
+  app.post("/api/select-theme", async (req, res) => {
+    try {
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+      const { theme } = req.body as { theme: string };
+      if (!theme || !THEME_TO_MODULE_IDS[theme]) {
+        return res.status(400).json({ message: "Tema inválido. Escolha: toxina, preenchedores, bioestimuladores ou biorregeneradores" });
+      }
+      const { db } = await import("./db");
+      const [user] = await db.select().from(users).where(eq(users.id, auth.userId));
+      if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
+      if (user.planKey !== "modulo_pratica") {
+        return res.status(403).json({ message: "Apenas alunos do plano Módulo Avulso com Prática podem escolher tema" });
+      }
+      // Uma vez escolhido, não permite trocar (admin pode alterar)
+      if (user.selectedTheme) {
+        return res.status(409).json({
+          message: "Você já escolheu o tema " + user.selectedTheme + ". Fale com o Dr. Gustavo se precisar trocar.",
+          currentTheme: user.selectedTheme,
+        });
+      }
+      await db.update(users).set({ selectedTheme: theme }).where(eq(users.id, auth.userId));
+      return res.json({ ok: true, selectedTheme: theme, moduleIds: THEME_TO_MODULE_IDS[theme] });
+    } catch (err: any) {
+      console.error("[POST /api/select-theme]", err.message);
+      return res.status(500).json({ message: "Erro ao salvar tema" });
+    }
+  });
+
+  // Admin altera tema de um aluno específico
+  app.post("/api/admin/users/:id/theme", async (req, res) => {
+    try {
+      const adm = requireAdmin(req, res);
+      if (!adm) return;
+      const { theme } = req.body as { theme: string | null };
+      if (theme !== null && (!theme || !THEME_TO_MODULE_IDS[theme])) {
+        return res.status(400).json({ message: "Tema inválido" });
+      }
+      const userId = Number(req.params.id);
+      const { db } = await import("./db");
+      await db.update(users).set({ selectedTheme: theme }).where(eq(users.id, userId));
+      return res.json({ ok: true, selectedTheme: theme });
+    } catch (err: any) {
+      console.error("[POST /api/admin/users/:id/theme]", err.message);
+      return res.status(500).json({ message: "Erro ao alterar tema" });
+    }
   });
 
   app.get("/api/modules/:id", async (req, res) => {
@@ -2054,6 +2113,16 @@ export async function registerRoutes(server: Server, app: Express) {
     // Workshop invite users get full access to all modules
     if ((user as any).planKey === "workshop" || (user as any).inviteCode) {
       return res.json({ accessAll: true, moduleIds: [] });
+    }
+
+    // PLANO MODULO AVULSO COM PRATICA: libera apenas o modulo do tema escolhido
+    if ((user as any).planKey === "modulo_pratica") {
+      const theme = (user as any).selectedTheme as string | null;
+      if (theme && THEME_TO_MODULE_IDS[theme]) {
+        return res.json({ accessAll: false, moduleIds: THEME_TO_MODULE_IDS[theme], selectedTheme: theme });
+      }
+      // Se ainda não escolheu tema, libera apenas Boas Vindas até escolher
+      return res.json({ accessAll: false, moduleIds: [6], needsThemeSelection: true });
     }
 
     // Check for per-user module overrides first

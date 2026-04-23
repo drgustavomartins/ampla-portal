@@ -25,6 +25,7 @@ import {
   Search, Bell, Camera, Instagram, Phone, Sparkles
 } from "lucide-react";
 import { stripPhone } from "@/lib/phone";
+import { SelectThemeModal } from "@/components/SelectThemeModal";
 import { PhoneInput } from "@/components/PhoneInput";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 import { CreditsDashboardCard } from "@/components/CreditsDashboardCard";
@@ -108,6 +109,7 @@ export default function StudentDashboard() {
 
   // Single combined request replaces 6 separate API calls
   const { data: initData, isLoading: initLoading } = useStudentInit();
+  const needsThemeSelection = initData?.myModules?.needsThemeSelection === true;
   const modules = initData?.modules ?? [];
   const lessons = initData?.lessons ?? [];
   const progress = initData?.progress ?? [];
@@ -654,6 +656,9 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden netflix-theme">
+      {/* ===== THEME SELECTION MODAL (Módulo Avulso com Prática) ===== */}
+      {needsThemeSelection && <SelectThemeModal />}
+
       {/* ===== TRIAL BANNER ===== */}
       {isTrial && (() => {
         const days = trialDaysLeft ?? 0;
