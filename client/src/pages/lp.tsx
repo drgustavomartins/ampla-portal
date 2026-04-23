@@ -279,7 +279,7 @@ export default function LandingPage() {
           </div>
 
           <p className="mt-5 text-xs md:text-sm text-gray-500">
-            Mais de 60 aulas gravadas com protocolos clínicos reais
+            Aulas gravadas com protocolos clínicos reais
           </p>
 
           {/* CTA below VSL */}
@@ -398,7 +398,7 @@ export default function LandingPage() {
                 {
                   icon: BookOpen,
                   title: "Conhecimento Técnico Profundo",
-                  desc: "Mais de 60 aulas com protocolos clínicos detalhados, do básico ao avançado",
+                  desc: "Aulas com protocolos clínicos detalhados, do básico ao avançado",
                 },
                 {
                   icon: Users,
@@ -632,7 +632,7 @@ export default function LandingPage() {
 
                 <ul className="space-y-3 mb-8 flex-1 relative">
                   {[
-                    "Todas as aulas gravadas (60+ aulas)",
+                    "Todas as aulas gravadas",
                     "Vídeos de casos clínicos reais",
                     "Materiais e artigos científicos",
                     "Acesso vitalício",

@@ -562,14 +562,14 @@ export default function PlanosPage() {
                   {
                     title: "Toxina Botulínica",
                     desc: "Teoria online + prática presencial",
-                    features: ["30 aulas teóricas online", "Casos clínicos gravados", "Materiais complementares", "Acompanhamento ao vivo com Dr. Gustavo", "10h de prática clínica presencial"],
+                    features: ["Aulas teóricas online", "Casos clínicos gravados", "Materiais complementares", "Acompanhamento ao vivo com Dr. Gustavo", "10h de prática clínica presencial"],
                     cta: "Quero Toxina",
                     url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20curso%20de%20Toxina%20Botul%C3%ADnica",
                   },
                   {
                     title: "Preenchedores Faciais",
                     desc: "Teoria online + prática presencial",
-                    features: ["17 aulas teóricas online", "Anatomia vascular e zonas de perigo", "Materiais complementares", "Acompanhamento ao vivo com Dr. Gustavo", "10h de prática clínica presencial"],
+                    features: ["Aulas teóricas online", "Anatomia vascular e zonas de perigo", "Materiais complementares", "Acompanhamento ao vivo com Dr. Gustavo", "10h de prática clínica presencial"],
                     cta: "Quero Preenchedores",
                     url: "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20curso%20de%20Preenchedores%20Faciais",
                   },

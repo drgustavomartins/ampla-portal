@@ -73,7 +73,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     promoUntil: "2026-05-01",
     valorMercado: 593790,
     features: [
-      "Todos os 4 módulos completos (60+ aulas gravadas)",
+      "Todos os 4 módulos completos com aulas gravadas",
       "Materiais científicos complementares",
       "Acesso vitalício — assista quantas vezes quiser",
       "Atualizações futuras das aulas incluídas",
@@ -267,7 +267,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     installments12x: 46700,
     group: "observador",
     features: [
-      "Todos os 4 módulos completos (60+ aulas gravadas)",
+      "Todos os 4 módulos completos com aulas gravadas",
       "Materiais científicos complementares",
       "24h de observação clínica presencial (~6 turnos de 4h)",
       "3 meses de canal direto com Dr. Gustavo para tirar dúvidas",
@@ -477,7 +477,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     highlight: "Formação completa",
     valorMercado: 6000000,
     features: [
-      "Todos os 4 módulos completos (60+ aulas gravadas)",
+      "Todos os 4 módulos completos com aulas gravadas",
       "Materiais científicos complementares",
       "16h de prática hands-on com pacientes modelo",
       "Supervisão direta do Dr. Gustavo em todos os atendimentos",
