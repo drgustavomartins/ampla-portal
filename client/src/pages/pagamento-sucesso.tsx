@@ -1,25 +1,37 @@
 import { useEffect } from "react";
 import { CheckCircle } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function PagamentoSucesso() {
-  const [location] = useLocation();
   const queryClient = useQueryClient();
 
-  const params = new URLSearchParams(location.split("?")[1] || "");
+  // Read query params from hash fragment (e.g. #/pagamento/sucesso?plan=xxx&session_id=yyy)
+  const hashPart = typeof window !== "undefined" ? window.location.hash : "";
+  const queryString = hashPart.includes("?") ? hashPart.split("?")[1] : "";
+  const params = new URLSearchParams(queryString);
   const planKey = params.get("plan") || "";
 
   const PLAN_NAMES: Record<string, string> = {
+    acesso_vitalicio: "Plataforma Online",
+    modulo_pratica: "Módulo Avulso com Prática",
+    observador_essencial: "Acompanhamento Observacional",
+    vip_completo: "Acompanhamento VIP",
+    imersao_elite: "Acompanhamento Elite",
     modulo_avulso: "Módulo Avulso",
     pacote_completo: "Pacote Completo",
-    observador_essencial: "Observador Essencial",
     observador_avancado: "Observador Avançado",
     observador_intensivo: "Observador Intensivo",
     imersao: "Imersão",
-    vip_online: "VIP Online",
-    vip_presencial: "VIP Presencial",
-    vip_completo: "VIP Completo",
+    vip_online: "VIP Econômico",
+    vip_presencial: "VIP Moderado",
+    extensao_acompanhamento: "Extensão de Acompanhamento",
+    horas_clinicas_1: "Horas Clínicas (1 encontro)",
+    horas_clinicas_2: "Horas Clínicas (2 encontros)",
+    horas_clinicas_3: "Horas Clínicas (3 encontros)",
+    observacao_extra_1: "Observação Extra (1 turno)",
+    observacao_extra_2: "Observação Extra (2 turnos)",
+    observacao_extra_3: "Observação Extra (3 turnos)",
   };
 
   useEffect(() => {
