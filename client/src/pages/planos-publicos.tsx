@@ -251,8 +251,8 @@ export default function PlanosPublicos() {
       </div>
 
       {/* ═══ CARDS ═══ */}
-      <main className="mx-auto max-w-6xl px-5 sm:px-8 pb-24">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5 items-stretch">
+      <main className="mx-auto max-w-7xl px-5 sm:px-6 xl:px-4 pb-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 xl:gap-3 items-stretch">
 
           {/* ── Card 1: Acesso Vitalicio ── */}
           <div ref={cardRef} className="relative rounded-[28px] overflow-hidden flex flex-col"
@@ -280,11 +280,11 @@ export default function PlanosPublicos() {
             {/* Gold accent line */}
             <div className="h-[3px] w-full" style={{ background: countdown.expired ? "rgba(255,255,255,0.1)" : "linear-gradient(90deg, #D4A843, #F0D78C, #D4A843)" }} />
 
-            <div className="relative p-7 sm:p-8 flex flex-col flex-1">
+            <div className="relative p-7 sm:p-8 xl:p-5 flex flex-col flex-1">
               {/* Header */}
               <div className="pt-6">
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A843] mb-2">Acesso Vitalício</p>
-                <h3 className="text-2xl sm:text-[28px] font-bold text-white leading-tight">Plataforma Online</h3>
+                <h3 className="text-2xl sm:text-[28px] xl:text-xl font-bold text-white leading-tight">Plataforma Online</h3>
                 <p className="mt-2 text-sm text-white/50 leading-relaxed">Todas as aulas gravadas, materiais e vídeos de casos clínicos — para sempre.</p>
               </div>
 
@@ -400,10 +400,10 @@ export default function PlanosPublicos() {
 
             <div className="h-[3px] w-full" style={{ background: "#FB923C" }} />
 
-            <div className="relative p-7 sm:p-8 flex flex-col flex-1">
+            <div className="relative p-7 sm:p-8 xl:p-5 flex flex-col flex-1">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-400 mb-2">Tema Único</p>
-                <h3 className="text-2xl font-bold text-white leading-tight">Módulo Avulso com Prática</h3>
+                <h3 className="text-2xl xl:text-xl font-bold text-white leading-tight">Módulo Avulso com Prática</h3>
                 <p className="mt-2 text-sm text-white/50 leading-relaxed">
                   Escolha 1 tema: Toxina, Preenchedores, Bioestimuladores ou Biorregeneradores — prática hands-on focada.
                 </p>
@@ -466,11 +466,11 @@ export default function PlanosPublicos() {
 
             <div className="h-[3px] w-full" style={{ background: "#34D399" }} />
 
-            <div className="relative p-7 sm:p-8 flex flex-col flex-1">
+            <div className="relative p-7 sm:p-8 xl:p-5 flex flex-col flex-1">
               {/* Header */}
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-400 mb-2">Observacional</p>
-                <h3 className="text-2xl font-bold text-white leading-tight">Acompanhamento Observacional</h3>
+                <h3 className="text-2xl xl:text-xl font-bold text-white leading-tight">Acompanhamento Observacional</h3>
                 <p className="mt-2 text-sm text-white/50 leading-relaxed">Aulas + 24h observando o Dr. Gustavo em atendimento + acompanhamento ao vivo.</p>
               </div>
 
@@ -538,11 +538,11 @@ export default function PlanosPublicos() {
 
             <div className="h-[3px] w-full" style={{ background: "linear-gradient(90deg, #8B5CF6, #C084FC, #8B5CF6)" }} />
 
-            <div className="relative p-7 sm:p-8 flex flex-col flex-1">
+            <div className="relative p-7 sm:p-8 xl:p-5 flex flex-col flex-1">
               {/* Header */}
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-purple-400 mb-2">Formação Completa</p>
-                <h3 className="text-2xl font-bold text-white leading-tight">Acompanhamento VIP</h3>
+                <h3 className="text-2xl xl:text-xl font-bold text-white leading-tight">Acompanhamento VIP</h3>
                 <p className="mt-2 text-sm text-white/50 leading-relaxed">Prática hands-on + mentoria individual + método NaturalUp®.</p>
               </div>
 
@@ -608,7 +608,7 @@ export default function PlanosPublicos() {
 
             <div className="h-[3px] w-full" style={{ background: "linear-gradient(90deg, #E8C86A, #FFD87A, #E8C86A)" }} />
 
-            <div className="relative p-7 sm:p-8 flex flex-col flex-1">
+            <div className="relative p-7 sm:p-8 xl:p-5 flex flex-col flex-1">
               <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.15em] bg-[#E8C86A] text-[#0A0D14] px-2.5 py-1 rounded-full self-start mb-4">
                 <Crown className="h-2.5 w-2.5" />
                 Experiência definitiva
@@ -616,7 +616,7 @@ export default function PlanosPublicos() {
 
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#E8C86A] mb-2">O Mais Alto Nível</p>
-                <h3 className="text-2xl sm:text-[28px] font-bold text-white leading-tight">Acompanhamento Elite</h3>
+                <h3 className="text-2xl sm:text-[28px] xl:text-xl font-bold text-white leading-tight">Acompanhamento Elite</h3>
                 <p className="mt-2 text-sm text-white/50 leading-relaxed">Os bastidores da Clínica + licença exclusiva da marca NaturalUp® — acompanhamento 360° por 12 meses.</p>
               </div>
 
