@@ -418,7 +418,12 @@ export async function registerRoutes(server: Server, app: Express) {
     )`).catch(() => {});
     await db.execute(`CREATE INDEX IF NOT EXISTS idx_lec_event ON live_event_cases(event_id)`).catch(() => {});
 
-    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts, community, lead_events, invite_codes, site_visitors, page_visits, live_events, live_event_attendance, live_event_cases tables ensured");
+    // Lessons: content_type, created_at, updated_at (Phase 2 Netflix redesign)
+    await db.execute(`ALTER TABLE lessons ADD COLUMN IF NOT EXISTS content_type TEXT NOT NULL DEFAULT 'theoretical'`).catch(() => {});
+    await db.execute(`ALTER TABLE lessons ADD COLUMN IF NOT EXISTS created_at TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE lessons ADD COLUMN IF NOT EXISTS updated_at TEXT`).catch(() => {});
+
+    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts, community, lead_events, invite_codes, site_visitors, page_visits, live_events, live_event_attendance, live_event_cases, lessons content_type/timestamps ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
@@ -2818,7 +2823,8 @@ export async function registerRoutes(server: Server, app: Express) {
     const auth = requireAdmin(req, res);
     if (!auth) return;
     try {
-      const data = insertLessonSchema.parse(req.body);
+      const now = new Date().toISOString();
+      const data = insertLessonSchema.parse({ ...req.body, createdAt: now, updatedAt: now });
       const lesson = await storage.createLesson(data);
       const admin = await storage.getUser(auth.userId);
       await logAction(auth.userId, admin?.name || "Admin", "lesson_created", "lesson", lesson.id, lesson.title);
@@ -2831,8 +2837,8 @@ export async function registerRoutes(server: Server, app: Express) {
   app.patch("/api/admin/lessons/:id", async (req, res) => {
     const auth = requireAdmin(req, res);
     if (!auth) return;
-    const { moduleId, title, description, videoUrl, duration, order } = req.body;
-    const lessonUpdate: Partial<{ moduleId: number; title: string; description: string | null; videoUrl: string | null; duration: string | null; order: number }> = {};
+    const { moduleId, title, description, videoUrl, duration, order, contentType } = req.body;
+    const lessonUpdate: Partial<{ moduleId: number; title: string; description: string | null; videoUrl: string | null; duration: string | null; order: number; contentType: string; updatedAt: string }> = {};
     if (moduleId !== undefined) lessonUpdate.moduleId = moduleId;
     if (title !== undefined) lessonUpdate.title = sanitize(title);
     if (description !== undefined) lessonUpdate.description = description ? sanitize(description) : null;
@@ -2842,6 +2848,8 @@ export async function registerRoutes(server: Server, app: Express) {
     }
     if (duration !== undefined) lessonUpdate.duration = duration ? sanitize(duration) : null;
     if (order !== undefined) lessonUpdate.order = order;
+    if (contentType !== undefined) lessonUpdate.contentType = contentType;
+    lessonUpdate.updatedAt = new Date().toISOString();
     const updated = await storage.updateLesson(parseInt(req.params.id), lessonUpdate);
     if (!updated) return res.status(404).json({ message: "Aula não encontrada" });
     const admin = await storage.getUser(auth.userId);

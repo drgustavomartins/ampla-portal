@@ -1097,6 +1097,94 @@ export default function StudentDashboard() {
             </Suspense>
           )}
 
+          {/* ===== NETFLIX ROWS: Category-based rows (Phase 2) ===== */}
+          {!isAccessExpired && (() => {
+            // "Assista os Procedimentos" — practical lessons across all modules
+            const practicalLessons = lessons.filter((l: any) => l.contentType === "practical");
+            // "Casos Clínicos" — case_study lessons across all modules
+            const caseStudyLessons = lessons.filter((l: any) => l.contentType === "case_study");
+
+            // Category rows based on module titles
+            const categoryConfig: { title: string; emoji: string; keywords: string[] }[] = [
+              { title: "Toxina Botulínica", emoji: "💉", keywords: ["toxina"] },
+              { title: "Preenchedores Faciais", emoji: "💧", keywords: ["preenchedores", "ácido", "acido", "preenchedor"] },
+              { title: "Bioestimuladores de Colágeno", emoji: "✨", keywords: ["bioestimulador"] },
+              { title: "Moduladores de Matriz Extracelular", emoji: "🔬", keywords: ["modulador", "regeneração", "regeneracao", "matriz", "biorregenerador"] },
+              { title: "Método NaturalUp", emoji: "📐", keywords: ["naturalup", "natural up", "método", "metodo", "protocolo"] },
+            ];
+
+            const categoryRows = categoryConfig
+              .map((cat) => {
+                const matchingModules = courseModules.filter((m) =>
+                  cat.keywords.some((kw) => m.title.toLowerCase().includes(kw)),
+                );
+                const catLessons = matchingModules.flatMap((m) =>
+                  getLessonsForModule(m.id).map((l) => ({ lesson: l, module: m })),
+                );
+                if (catLessons.length === 0) return null;
+                return { ...cat, lessons: catLessons };
+              })
+              .filter(Boolean) as { title: string; emoji: string; keywords: string[]; lessons: { lesson: Lesson; module: Module }[] }[];
+
+            return (
+              <>
+                {/* Practical procedures row */}
+                {practicalLessons.length > 0 && (
+                  <Suspense fallback={<RowSkeleton />}>
+                    <LessonRow title="🎬 Assista os Procedimentos">
+                      {practicalLessons.map((lesson) => (
+                        <LessonCard
+                          key={lesson.id}
+                          lesson={lesson}
+                          module={modules.find((m) => m.id === lesson.moduleId)}
+                          progress={videoProgressStore[String(lesson.id)] || undefined}
+                          isCompleted={completedIds.has(lesson.id)}
+                          onClick={() => setSelectedLesson(lesson)}
+                        />
+                      ))}
+                    </LessonRow>
+                  </Suspense>
+                )}
+
+                {/* Category-based module rows */}
+                {categoryRows.map((cat) => (
+                  <Suspense key={cat.title} fallback={<RowSkeleton />}>
+                    <LessonRow title={`${cat.emoji} ${cat.title}`}>
+                      {cat.lessons.map(({ lesson, module: mod }) => (
+                        <LessonCard
+                          key={lesson.id}
+                          lesson={lesson}
+                          module={mod}
+                          progress={videoProgressStore[String(lesson.id)] || undefined}
+                          isCompleted={completedIds.has(lesson.id)}
+                          onClick={() => setSelectedLesson(lesson)}
+                        />
+                      ))}
+                    </LessonRow>
+                  </Suspense>
+                ))}
+
+                {/* Case studies row */}
+                {caseStudyLessons.length > 0 && (
+                  <Suspense fallback={<RowSkeleton />}>
+                    <LessonRow title="📊 Casos Clínicos">
+                      {caseStudyLessons.map((lesson) => (
+                        <LessonCard
+                          key={lesson.id}
+                          lesson={lesson}
+                          module={modules.find((m) => m.id === lesson.moduleId)}
+                          progress={videoProgressStore[String(lesson.id)] || undefined}
+                          isCompleted={completedIds.has(lesson.id)}
+                          onClick={() => setSelectedLesson(lesson)}
+                        />
+                      ))}
+                    </LessonRow>
+                  </Suspense>
+                )}
+              </>
+            );
+          })()}
+
           {/* ===== BOAS VINDAS (Featured/Hero Section) ===== */}
           {introModule && introLessons.length > 0 && !isAccessExpired && (
             <section className="space-y-4">

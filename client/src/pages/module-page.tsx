@@ -13,6 +13,10 @@ import {
   ArrowRight, X as XIcon, Award
 } from "lucide-react";
 import type { Module, Lesson, LessonProgress } from "@shared/schema";
+import { ModuleHero } from "@/components/netflix/ModuleHero";
+import { LessonListItem } from "@/components/netflix/LessonListItem";
+import { LessonRow } from "@/components/netflix/LessonRow";
+import { LessonCard } from "@/components/netflix/LessonCard";
 
 function linkifyText(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -828,140 +832,118 @@ export default function ModulePage() {
     );
   }
 
-  // ========== MODULE PAGE (HERO + LESSON LIST) ==========
+  // ========== MODULE PAGE (NETFLIX-STYLE REDESIGN — PHASE 2) ==========
   const whatsappTrialUrl = `https://wa.me/5521976263881?text=${encodeURIComponent(`Olá! Estou no período de teste gratuito da Ampla Facial e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
 
+  // Compute total duration string from lesson durations (e.g. "25:00" → sum)
+  const totalDurationMinutes = moduleLessons.reduce((sum, l) => {
+    if (!l.duration) return sum;
+    const parts = l.duration.split(":");
+    return sum + (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
+  }, 0);
+  const totalDuration = totalDurationMinutes > 0
+    ? totalDurationMinutes >= 60
+      ? `${Math.floor(totalDurationMinutes / 60)}h ${totalDurationMinutes % 60}min`
+      : `${totalDurationMinutes}min`
+    : null;
+
+  // Find the first uncompleted lesson to "Continue" from
+  const continueLesson = moduleLessons.find(l => !completedIds.has(l.id)) || moduleLessons[0];
+
+  // Related lessons: pick 4-6 from other modules the student has access to
+  const relatedLessons = (() => {
+    if (!currentModule) return [];
+    const otherModules = courseModules.filter(m => m.id !== currentModule.id);
+    const result: { lesson: Lesson; module: Module }[] = [];
+    for (const m of otherModules) {
+      if (result.length >= 6) break;
+      const mLessons = allLessons.filter(l => l.moduleId === m.id).sort((a, b) => a.order - b.order);
+      for (const l of mLessons) {
+        if (result.length >= 6) break;
+        if (!completedIds.has(l.id)) {
+          result.push({ lesson: l, module: m });
+        }
+      }
+    }
+    return result;
+  })();
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-[#0a0a0a] flex flex-col netflix-theme">
       {/* Expired Access Banner */}
       {isAccessExpired && (
-        <div className="w-full bg-gold/10 border-b border-gold/20 px-4 py-2.5 flex items-center justify-between gap-4">
+        <div className="w-full bg-[#D4AF37]/10 border-b border-[#D4AF37]/20 px-4 py-2.5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm">
-            <Lock className="w-4 h-4 text-gold shrink-0" />
-            <span className="text-gold font-semibold">Seu acesso expirou. Renove para continuar aprendendo!</span>
+            <Lock className="w-4 h-4 text-[#D4AF37] shrink-0" />
+            <span className="text-[#D4AF37] font-semibold">Seu acesso expirou. Renove para continuar aprendendo!</span>
           </div>
-          <a
-            href={whatsappRenewUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"
-            style={{ backgroundColor: '#D4A843', color: '#0A0D14' }}
-          >
+          <a href={whatsappRenewUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full bg-[#D4AF37] text-black">
             Quero Continuar Aprendendo
           </a>
         </div>
       )}
       {/* Trial / Tester Banner */}
       {!isAccessExpired && (isTrial || isTesterAccess) && (
-        <div className="w-full bg-gold/10 border-b border-gold/20 px-4 py-2.5 flex items-center justify-between gap-4">
+        <div className="w-full bg-[#D4AF37]/10 border-b border-[#D4AF37]/20 px-4 py-2.5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-gold font-semibold">
+            <span className="text-[#D4AF37] font-semibold">
               {isTrial && trialDaysLeft !== null && trialDaysLeft > 0
                 ? `Teste gratuito — ${trialDaysLeft} dia${trialDaysLeft === 1 ? "" : "s"} restante${trialDaysLeft === 1 ? "" : "s"}`
                 : isTrial ? "Seu período de teste encerrou"
                 : "Modo teste"}
             </span>
-            <span className="text-white/50 hidden sm:inline">Primeiras 2 aulas de cada modulo liberadas</span>
+            <span className="text-white/50 hidden sm:inline">Primeiras 2 aulas de cada módulo liberadas</span>
           </div>
-          <a
-            href="/#/planos"
-            className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"
-            style={{ backgroundColor: '#D4A843', color: '#0A0D14' }}
-          >
+          <a href="/#/planos" className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full bg-[#D4AF37] text-black">
             Ver planos
           </a>
         </div>
       )}
 
-      {/* Hero Section */}
-      <div className="relative">
-        {/* Background image */}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={courseImage
-            ? { backgroundImage: `url(${courseImage})` }
-            : { background: "linear-gradient(135deg, hsl(200 45% 12%), hsl(200 55% 8%))" }
-          }
-        />
-        {/* Dark gradient overlay with module accent tint */}
-        <div className={`absolute inset-0 bg-gradient-to-b ${theme.gradient}`} />
-        <div className="absolute inset-0 bg-background/40" />
-
-        {/* Hero content */}
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pt-6 pb-10 sm:pb-14">
-          {/* Back button */}
-          <button
-            onClick={() => setLocation("/")}
-            className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white mb-8 transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Voltar
-          </button>
-
-          <div className="space-y-4">
-            <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-semibold text-white leading-tight">
-              {currentModule.title}
-            </h1>
-            {currentModule.description && (
-              <p className="text-white/70 text-sm sm:text-base max-w-2xl leading-relaxed">
-                {currentModule.description}
-              </p>
-            )}
-
-            <div className="flex items-center gap-4 pt-2">
-              <span className="flex items-center gap-1.5 text-sm text-white/60">
-                <BookOpen className="w-4 h-4" />
-                {moduleLessons.length} {moduleLessons.length === 1 ? "aula" : "aulas"}
-              </span>
-              <span className="flex items-center gap-1.5 text-sm text-white/60">
-                <CheckCircle2 className="w-4 h-4" />
-                {completedInModule} concluida{completedInModule !== 1 ? "s" : ""}
-              </span>
-            </div>
-
-            {/* Progress bar */}
-            {isUnlocked && !isLocked && (
-              <div className="max-w-md pt-1">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <span className="text-white/50">Progresso</span>
-                  <span className="font-medium" style={{ color: theme.accent }}>{moduleProgress}%</span>
-                </div>
-                <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${moduleProgress}%`, backgroundColor: theme.accent }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Back button floating */}
+      <div className="absolute top-4 left-4 z-20">
+        <button
+          onClick={() => setLocation("/")}
+          className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Voltar
+        </button>
       </div>
+
+      {/* Netflix-style Hero */}
+      <ModuleHero
+        module={currentModule}
+        totalLessons={moduleLessons.length}
+        completedLessons={completedInModule}
+        totalDuration={totalDuration}
+        progressPercent={moduleProgress}
+        hasProgress={completedInModule > 0}
+        onContinue={() => continueLesson && handleSelectLesson(continueLesson)}
+      />
 
       {/* Locked Module Banner */}
       {isLocked && (
         <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 pt-6">
-          <div className="rounded-xl border border-gold/30 bg-gold/5 p-5 sm:p-6 text-center space-y-4">
-            <div className="w-14 h-14 rounded-full bg-gold/10 flex items-center justify-center mx-auto">
-              <Lock className="w-7 h-7 text-gold" />
+          <div className="rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/5 p-5 sm:p-6 text-center space-y-4">
+            <div className="w-14 h-14 rounded-full bg-[#D4AF37]/10 flex items-center justify-center mx-auto">
+              <Lock className="w-7 h-7 text-[#D4AF37]" />
             </div>
             <div className="space-y-2">
-              <h3 className="font-semibold text-foreground text-lg">
-                {isAccessExpired
-                  ? "Seu acesso expirou"
-                  : "Este módulo não está incluso no seu plano atual"}
+              <h3 className="font-semibold text-white text-lg">
+                {isAccessExpired ? "Seu acesso expirou" : "Este módulo não está incluso no seu plano atual"}
               </h3>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              <p className="text-sm text-[#808080] max-w-md mx-auto">
                 {isAccessExpired
-                  ? "Renove seu plano para continuar aprendendo. Fale com Dr. Gustavo para desbloquear todo o conteúdo."
-                  : "Adquira um plano que inclui este conteúdo. Seus créditos serão aplicados como desconto."}
+                  ? "Renove seu plano para continuar aprendendo."
+                  : "Adquira um plano que inclui este conteúdo."}
               </p>
             </div>
             <a
               href={isAccessExpired ? whatsappRenewUrl : "/#/planos-publicos"}
               target={isAccessExpired ? "_blank" : undefined}
               rel={isAccessExpired ? "noopener noreferrer" : undefined}
-              className="inline-flex items-center gap-2 rounded-xl bg-gold/90 hover:bg-gold text-[#0A0D14] font-semibold px-6 py-3 text-sm transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#D4AF37] hover:bg-[#c9a432] text-black font-semibold px-6 py-3 text-sm transition-colors"
             >
               <ShoppingCart className="w-4 h-4" />
               {isAccessExpired ? "Quero Continuar Aprendendo" : "Adquirir este módulo"}
@@ -970,15 +952,16 @@ export default function ModulePage() {
         </div>
       )}
 
-      {/* Lesson List */}
+      {/* Episode-style Lesson List */}
       <div className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-8">
+        <h2 className="text-lg font-semibold text-white mb-6">
+          Aulas do Módulo
+        </h2>
         {!hasContent ? (
           <div className="text-center py-16 space-y-4">
-            <Lock className="w-12 h-12 text-gold/40 mx-auto" />
-            <p className="text-lg font-semibold text-foreground">Conteudo em breve</p>
-            <p className="text-sm text-muted-foreground">
-              Este modulo ainda esta sendo preparado. Fique atento para novidades!
-            </p>
+            <Lock className="w-12 h-12 text-[#D4AF37]/40 mx-auto" />
+            <p className="text-lg font-semibold text-white">Conteúdo em breve</p>
+            <p className="text-sm text-[#808080]">Este módulo ainda está sendo preparado.</p>
           </div>
         ) : (
           <div className="space-y-1">
@@ -987,98 +970,38 @@ export default function ModulePage() {
               const trialLocked = isLessonTrialLocked(lesson);
               const supportLink = getLessonSupportUrl(lesson);
               const descLine = lesson.description ? getFirstDescLine(lesson.description) : null;
-              const isDivider = lesson.title.startsWith("\u2501");
-              if (isDivider) return (
-                <div key={lesson.id} className="px-4 pt-8 pb-3">
-                  <p className="text-sm font-bold uppercase tracking-widest text-[#D4A843] border-b border-[#D4A843]/20 pb-2">{lesson.title.replace(/\u2501/g, "").trim()}</p>
-                </div>
-              );
               return (
-                <div
+                <LessonListItem
                   key={lesson.id}
+                  lesson={lesson}
+                  index={i}
+                  isCompleted={done}
+                  isActive={false}
+                  isLocked={isLocked || trialLocked}
+                  supportLink={supportLink}
+                  descLine={descLine}
                   onClick={() => !isLocked && handleSelectLesson(lesson)}
-                  className={`w-full text-left group ${isLocked ? "cursor-default" : trialLocked ? "cursor-pointer opacity-60" : "cursor-pointer"}`}
-                >
-                  <div
-                    className={`flex items-center gap-4 px-4 py-4 rounded-xl transition-all duration-200 border ${
-                      done && !isLocked && !trialLocked
-                        ? "border-transparent bg-card/40"
-                        : "border-transparent"
-                    } ${!isLocked ? "hover:bg-card/60 hover:border-border/30" : ""}`}
-                    style={done && !isLocked && !trialLocked ? { borderLeft: `3px solid ${theme.accent}` } : undefined}
-                  >
-                    {/* Lesson number */}
-                    <span className={`w-8 text-center text-sm font-medium shrink-0 ${trialLocked ? "text-muted-foreground/40" : done ? "" : "text-muted-foreground"}`} style={done && !trialLocked ? { color: theme.accent } : undefined}>
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-
-                    {/* Thumbnail or play icon */}
-                    <div className="shrink-0 relative">
-                      {isLocked || trialLocked ? (
-                        <div className="w-10 h-10 rounded-full bg-card border border-border/40 flex items-center justify-center">
-                          <Lock className="w-4 h-4 text-muted-foreground/50" />
-                        </div>
-                      ) : (
-                        <LessonThumb lesson={lesson} size="md" done={done} theme={theme} index={i} />
-                      )}
-                    </div>
-
-                    {/* Title, description and support link */}
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate ${trialLocked ? "text-muted-foreground" : done ? "text-foreground/70" : "text-foreground"}`}>
-                        {lesson.title}
-                      </p>
-                      {!isLocked && !trialLocked && descLine && (
-                        <p className="text-[11px] text-muted-foreground mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap">
-                          {descLine}
-                        </p>
-                      )}
-                      {!isLocked && !trialLocked && supportLink && (
-                        <a
-                          href={supportLink.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 text-[11px] mt-0.5 hover:underline"
-                          style={{ color: theme.accent }}
-                        >
-                          <Paperclip className="w-3 h-3" />
-                          {supportLink.label}
-                        </a>
-                      )}
-                    </div>
-
-                    {/* Duration */}
-                    {lesson.duration && (
-                      <span className="text-xs text-muted-foreground shrink-0">{lesson.duration}</span>
-                    )}
-
-                    {/* Chevron */}
-                    {!isLocked && !trialLocked && (
-                      <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    )}
-                  </div>
-                </div>
+                />
               );
             })}
 
             {/* CTA card for tester/expired users */}
             {(isAccessExpired || isTesterAccess || isTrial) && moduleLessons.some(l => isLessonTrialLocked(l)) && (
-              <div className="rounded-xl bg-gold/5 border border-gold/20 p-4 text-center mt-4">
-                <Lock className="w-5 h-5 text-gold mx-auto mb-2" />
-                <p className="text-sm font-medium">
+              <div className="rounded-xl bg-[#D4AF37]/5 border border-[#D4AF37]/20 p-4 text-center mt-4">
+                <Lock className="w-5 h-5 text-[#D4AF37] mx-auto mb-2" />
+                <p className="text-sm font-medium text-white">
                   {isAccessExpired ? "Seu acesso expirou" : "Quer assistir todas as aulas?"}
                 </p>
-                <p className="text-xs text-muted-foreground mb-3">
+                <p className="text-xs text-[#808080] mb-3">
                   {isAccessExpired
-                    ? "Renove seu plano para continuar aprendendo e ter acesso completo a todos os módulos."
-                    : "Adquira um plano e tenha acesso completo a todos os módulos e materiais."}
+                    ? "Renove seu plano para continuar aprendendo."
+                    : "Adquira um plano e tenha acesso completo a todos os módulos."}
                 </p>
                 <a
                   href={isAccessExpired ? whatsappRenewUrl : "/#/planos"}
                   target={isAccessExpired ? "_blank" : undefined}
                   rel={isAccessExpired ? "noopener noreferrer" : undefined}
-                  style={{ backgroundColor: '#D4A843', color: '#0A0D14', padding: '10px 24px', borderRadius: '10px', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}
+                  className="inline-block rounded-lg bg-[#D4AF37] text-black px-6 py-2.5 text-sm font-bold"
                 >
                   {isAccessExpired ? "Quero Continuar Aprendendo" : "Ver planos e preços"}
                 </a>
@@ -1088,11 +1011,27 @@ export default function ModulePage() {
         )}
       </div>
 
+      {/* Related lessons row */}
+      {relatedLessons.length > 0 && !isLocked && (
+        <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 pb-8">
+          <LessonRow title="Relacionados">
+            {relatedLessons.map(({ lesson, module: mod }) => (
+              <LessonCard
+                key={lesson.id}
+                lesson={lesson}
+                module={mod}
+                onClick={() => handleSelectLesson(lesson)}
+              />
+            ))}
+          </LessonRow>
+        </div>
+      )}
+
       {/* Footer */}
-      <footer className="border-t border-border/30 py-6 mt-4">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
+      <footer className="border-t border-white/5 py-6 mt-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[#808080]">
           <span>&copy; 2026 Ampla Facial &mdash; Todos os direitos reservados</span>
-          <span className="text-gold-muted font-semibold tracking-brand text-[10px]">NATURALUP&reg;</span>
+          <span className="text-[#D4AF37]/60 font-semibold tracking-[0.15em] text-[10px]">NATURALUP&reg;</span>
         </div>
       </footer>
     </div>
