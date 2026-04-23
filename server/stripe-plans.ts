@@ -876,8 +876,15 @@ export function isPlanVisibleForStudent(
   // Elite já tem shadow completo, não oferece extras.
   // Vitalício e Curso Completo: não têm observação no contrato.
   if (targetKey.startsWith("observacao_extra_")) {
-    // Observacional, VIP e Elite podem comprar turnos extras de observação.
-    return current.clinicalHours > 0;
+    // Observacional, Modulo Avulso com Pratica, VIP e Elite podem comprar turnos extras de observacao.
+    const OBS_ELIGIBLE: PlanKey[] = [
+      "observador_essencial", "observador_avancado", "observador_intensivo",
+      "observacional_economico", "observacional_moderado",
+      "modulo_pratica",
+      "vip_online", "vip_presencial", "vip_completo",
+      "imersao", "imersao_elite",
+    ];
+    return OBS_ELIGIBLE.includes(currentKey);
   }
 
   // Extensão de acompanhamento: só para quem tem mentoria ativa.
@@ -929,12 +936,19 @@ export function getPurchaseStatus(
     return { purchasable: true, lockReason: null };
   }
 
-  // Observação extra ─ só Observacional+ pode comprar.
+  // Observacao extra - Observacional+ pode comprar (incluindo VIP e Elite).
   if (targetKey.startsWith("observacao_extra_")) {
-    if (isTrial || !current) {
+    if (isTrial || !current || !currentKey) {
       return { purchasable: false, lockReason: "Disponível apenas para alunos a partir do Acompanhamento Observacional" };
     }
-    if (current.clinicalHours <= 0) {
+    const OBS_ELIGIBLE: PlanKey[] = [
+      "observador_essencial", "observador_avancado", "observador_intensivo",
+      "observacional_economico", "observacional_moderado",
+      "modulo_pratica",
+      "vip_online", "vip_presencial", "vip_completo",
+      "imersao", "imersao_elite",
+    ];
+    if (!OBS_ELIGIBLE.includes(currentKey)) {
       return { purchasable: false, lockReason: "Disponível apenas para alunos a partir do Acompanhamento Observacional" };
     }
     return { purchasable: true, lockReason: null };
