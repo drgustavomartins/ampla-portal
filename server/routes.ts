@@ -1294,7 +1294,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
       let sent = 0;
       for (const user of trials.rows) {
-        const startDate = new Date(user.trial_started_at || user.created_at);
+        const startDate = new Date(String(user.trial_started_at || user.created_at));
         const daysSinceStart = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
         
         if (daysSinceStart >= 5) {
@@ -2118,19 +2118,20 @@ export async function registerRoutes(server: Server, app: Express) {
         return res.status(400).json({ message: "Tema inválido. Escolha: toxina, preenchedores, bioestimuladores ou biorregeneradores" });
       }
       const { db } = await import("./db");
-      const [user] = await db.select().from(users).where(eq(users.id, auth.userId));
+      const userResult = await db.execute(sql`SELECT id, plan_key, selected_theme FROM users WHERE id = ${auth.userId} LIMIT 1`);
+      const user = (userResult as any).rows?.[0];
       if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
-      if (user.planKey !== "modulo_pratica") {
+      if (user.plan_key !== "modulo_pratica") {
         return res.status(403).json({ message: "Apenas alunos do plano Módulo Avulso com Prática podem escolher tema" });
       }
       // Uma vez escolhido, não permite trocar (admin pode alterar)
-      if (user.selectedTheme) {
+      if (user.selected_theme) {
         return res.status(409).json({
-          message: "Você já escolheu o tema " + user.selectedTheme + ". Fale com o Dr. Gustavo se precisar trocar.",
-          currentTheme: user.selectedTheme,
+          message: "Você já escolheu o tema " + user.selected_theme + ". Fale com o Dr. Gustavo se precisar trocar.",
+          currentTheme: user.selected_theme,
         });
       }
-      await db.update(users).set({ selectedTheme: theme }).where(eq(users.id, auth.userId));
+      await db.execute(sql`UPDATE users SET selected_theme = ${theme} WHERE id = ${auth.userId}`);
       return res.json({ ok: true, selectedTheme: theme, moduleIds: THEME_TO_MODULE_IDS[theme] });
     } catch (err: any) {
       console.error("[POST /api/select-theme]", err.message);
@@ -2149,7 +2150,7 @@ export async function registerRoutes(server: Server, app: Express) {
       }
       const userId = Number(req.params.id);
       const { db } = await import("./db");
-      await db.update(users).set({ selectedTheme: theme }).where(eq(users.id, userId));
+      await db.execute(sql`UPDATE users SET selected_theme = ${theme} WHERE id = ${userId}`);
       return res.json({ ok: true, selectedTheme: theme });
     } catch (err: any) {
       console.error("[POST /api/admin/users/:id/theme]", err.message);

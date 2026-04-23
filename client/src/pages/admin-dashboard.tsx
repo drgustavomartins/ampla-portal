@@ -3178,7 +3178,7 @@ export default function AdminDashboard() {
                             queryClient.invalidateQueries({ queryKey: ["/api/admin/clinical-sessions"] });
                             queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
                             setClinicalDialogOpen(false);
-                            setClinicalForm({ studentId: 0, sessionDate: "", startTime: "", endTime: "", durationHours: 0, procedures: [], notes: "", patientsCount: 0, patientsDetails: [] });
+                            setClinicalForm({ studentId: 0, sessionType: "pratica", sessionDate: "", startTime: "", endTime: "", durationHours: 0, procedures: [], notes: "", patientsCount: 0, patientsDetails: [] });
                             toast({ title: "Sessão registrada com sucesso!" });
                           } catch (err: any) {
                             toast({ title: "Erro ao registrar sessão", description: err.message, variant: "destructive" });
@@ -4369,7 +4369,7 @@ export default function AdminDashboard() {
                           queryClient.invalidateQueries({ queryKey: ["/api/admin/clinical-sessions"] });
                           queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
                           setClinicalDialogOpen(false);
-                          setClinicalForm({ studentId: 0, sessionDate: "", startTime: "", endTime: "", durationHours: 0, procedures: [], notes: "", patientsCount: 0, patientsDetails: [] });
+                          setClinicalForm({ studentId: 0, sessionType: "pratica", sessionDate: "", startTime: "", endTime: "", durationHours: 0, procedures: [], notes: "", patientsCount: 0, patientsDetails: [] });
                           toast({ title: "Sessao registrada com sucesso!" });
                         } catch (err: any) {
                           toast({ title: "Erro ao registrar sessao", description: err.message, variant: "destructive" });
