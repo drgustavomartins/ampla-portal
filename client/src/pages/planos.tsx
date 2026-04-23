@@ -383,7 +383,10 @@ export default function PlanosPage() {
             </button>
             
             {/* Logo */}
-            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-16 object-contain" />
+            <a href="/#/" className="flex items-center gap-2.5">
+              <img src="/logo-icon.png" alt="" className="h-9 w-9 object-contain" />
+              <span className="text-[15px] sm:text-[17px] font-bold uppercase tracking-[0.06em] text-[#1a1a1a] leading-tight">Ampla Facial</span>
+            </a>
             
             {/* Desktop: category tabs */}
             <nav className="hidden md:flex items-center gap-1">
@@ -420,7 +423,10 @@ export default function PlanosPage() {
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 bg-white animate-in fade-in duration-200">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-10 object-contain" />
+            <div className="flex items-center gap-2.5">
+              <img src="/logo-icon.png" alt="" className="h-8 w-8 object-contain" />
+              <span className="text-[15px] font-bold uppercase tracking-[0.06em] text-[#1a1a1a]">Ampla Facial</span>
+            </div>
             <button onClick={() => setMobileMenuOpen(false)} className="w-10 h-10 flex items-center justify-center" aria-label="Fechar">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <path d="M1 1l16 16M17 1L1 17" stroke="#1a1a1a" strokeWidth="1.5" strokeLinecap="round" />
