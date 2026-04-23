@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Check, X, ArrowRight, Loader2, Gift, Star, Tag, Shield, Crown, Sparkles, Clock } from "lucide-react";
 import { useCountdown } from "@/hooks/use-countdown";
+import { useQuery } from "@tanstack/react-query";
 
 function formatBRL(c: number) {
   return (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -34,6 +35,10 @@ export default function PlanosPublicos() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const countdown = useCountdown();
+  const { data: slots } = useQuery<{ sold: number; remaining: number; limit: number; soldOut: boolean }>({
+    queryKey: ["/api/vitalicio-slots"],
+    refetchInterval: 30000, // atualiza a cada 30s
+  });
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Referral code state
@@ -180,6 +185,17 @@ export default function PlanosPublicos() {
                 {countdown.days}d {String(countdown.hours).padStart(2,"0")}h {String(countdown.minutes).padStart(2,"0")}m {String(countdown.seconds).padStart(2,"0")}s
               </span>
             </span>
+            {slots && slots.remaining <= 200 && slots.remaining > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#D4A843]/15 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-[#D4A843]">
+                <span className="w-1.5 h-1.5 bg-[#D4A843] rounded-full animate-pulse" />
+                {slots.remaining === 1 ? "Apenas 1 vaga restante" : `Restam ${slots.remaining} vagas`}
+              </span>
+            )}
+            {slots?.soldOut && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-red-400">
+                Vagas esgotadas
+              </span>
+            )}
           </div>
           <button
             onClick={scrollToCard}
@@ -301,6 +317,31 @@ export default function PlanosPublicos() {
                 </div>
               )}
 
+              {/* Vagas disponiveis — barra de progresso */}
+              {!countdown.expired && slots && !slots.soldOut && (
+                <div className="mt-3">
+                  <div className="flex items-center justify-between text-[11px] mb-1.5">
+                    <span className="text-white/50">Vagas restantes</span>
+                    <span className="font-bold text-[#D4A843] tabular-nums">{slots.remaining} de {slots.limit}</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${Math.max(2, (slots.remaining / slots.limit) * 100)}%`,
+                        background: "linear-gradient(90deg, #D4A843, #F0D78C)",
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+              {slots?.soldOut && !countdown.expired && (
+                <div className="mt-3 rounded-lg bg-red-500/10 border border-red-500/30 px-3 py-2 text-center">
+                  <p className="text-[11px] font-semibold text-red-400">Todas as 200 vagas esgotadas</p>
+                  <p className="text-[10px] text-red-400/70">Oferta encerrada antes do prazo</p>
+                </div>
+              )}
+
               {/* Divider */}
               <div className="my-6 h-px bg-white/[0.07]" />
 
@@ -326,7 +367,7 @@ export default function PlanosPublicos() {
               {/* CTA */}
               <button
                 onClick={handleCheckout}
-                disabled={loadingCheckout || countdown.expired}
+                disabled={loadingCheckout || countdown.expired || slots?.soldOut}
                 className="mt-auto pt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-all duration-200 disabled:opacity-50 hover:brightness-110"
                 style={{
                   background: countdown.expired ? "rgba(255,255,255,0.1)" : "linear-gradient(135deg, #D4A843, #F0D78C)",

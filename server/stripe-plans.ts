@@ -70,6 +70,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     installments12x: 3308,
     group: "digital",
     highlight: "Promo até 30/04",
+    promoUntil: "2026-05-01",
     valorMercado: 593790,
     features: [
       "Todos os 4 módulos completos (60+ aulas gravadas)",

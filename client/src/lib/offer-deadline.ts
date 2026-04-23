@@ -1,6 +1,9 @@
 // April 30, 2026 at 23:59:59 BRT (UTC-3) = May 1, 2026 at 02:59:59 UTC
 export const OFFER_DEADLINE = new Date('2026-05-01T02:59:59Z');
 
+// Limite de vagas do lançamento
+export const OFFER_SLOTS_LIMIT = 200;
+
 export function isOfferExpired(): boolean {
   return Date.now() >= OFFER_DEADLINE.getTime();
 }

@@ -8,6 +8,9 @@ import type { PlanKey } from "@shared/schema";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
+
+// Limite de vagas do lançamento da Plataforma Online vitalícia
+export const VITALICIO_SLOTS_LIMIT = 200;
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 if (!STRIPE_WEBHOOK_SECRET) {
@@ -34,6 +37,26 @@ function authenticateRequest(req: Request): { userId: number; role: string } | n
 }
 
 export function registerStripeRoutes(app: Express) {
+  // ─── GET /api/vitalicio-slots ─── Vagas restantes do lançamento ─────
+  // Público — retorna quantas vagas de Plataforma Online (R$ 397) ainda existem.
+  app.get("/api/vitalicio-slots", async (_req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const r: any = await db.execute(sql`
+        SELECT COUNT(*)::int AS sold
+        FROM users
+        WHERE plan_key = 'acesso_vitalicio'
+          AND (role = 'student' OR plan_paid_at IS NOT NULL)
+      `);
+      const sold = r.rows?.[0]?.sold || 0;
+      const remaining = Math.max(0, VITALICIO_SLOTS_LIMIT - sold);
+      res.json({ sold, remaining, limit: VITALICIO_SLOTS_LIMIT, soldOut: remaining <= 0 });
+    } catch (err) {
+      console.error("[stripe] GET /vitalicio-slots error:", err);
+      res.json({ sold: 0, remaining: VITALICIO_SLOTS_LIMIT, limit: VITALICIO_SLOTS_LIMIT, soldOut: false });
+    }
+  });
+
   // ─── GET /api/stripe/plans ─────────────────────────────────────────────────
   // Se o aluno estiver logado, filtra planos que fazem sentido para o plano atual.
   // Se não estiver (página pública), retorna todos os não-hidden.
@@ -994,6 +1017,22 @@ export function registerPublicStripeRoutes(app: Express) {
     const { planKey, referralCode, email } = req.body as { planKey: PlanKey; referralCode?: string; email?: string };
     const plan = PLANS[planKey];
     if (!plan) return res.status(400).json({ message: "Plano inválido" });
+
+    // Bloqueia compra da Plataforma Online quando as 200 vagas esgotarem
+    if (planKey === "acesso_vitalicio") {
+      const slotsCheck: any = await db.execute(sql`
+        SELECT COUNT(*)::int AS sold FROM users
+        WHERE plan_key = 'acesso_vitalicio'
+          AND (role = 'student' OR plan_paid_at IS NOT NULL)
+      `);
+      const sold = slotsCheck.rows?.[0]?.sold || 0;
+      if (sold >= VITALICIO_SLOTS_LIMIT) {
+        return res.status(409).json({
+          message: "Vagas esgotadas. As 200 vagas promocionais da Plataforma Online já foram preenchidas.",
+          soldOut: true,
+        });
+      }
+    }
 
     // Desconto de 10% para quem usa codigo de indicacao valido
     let finalPrice = plan.price;
