@@ -316,6 +316,7 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_paid_at TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_amount_paid INTEGER DEFAULT 0`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_started_at TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_theme TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS lgpd_accepted_at TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT`).catch(() => {});

@@ -18,6 +18,7 @@ export const PLAN_KEYS = [
   "tester",
   "acesso_vitalicio",
   "modulo_avulso",
+  "modulo_pratica",
   "pacote_completo",
   "observacional_economico",
   "observacional_moderado",
@@ -72,6 +73,7 @@ export const users = pgTable("users", {
   planPaidAt: text("plan_paid_at"), // ISO date of last payment
   planAmountPaid: integer("plan_amount_paid").default(0), // in centavos
   trialStartedAt: text("trial_started_at"), // ISO date trial began
+  selectedTheme: text("selected_theme"), // tema escolhido no plano Modulo com Pratica (toxina/preenchedores/bioestimuladores/biorregeneradores)
   lgpdAcceptedAt: text("lgpd_accepted_at"), // ISO date user accepted LGPD terms
   avatarUrl: text("avatar_url"),
   username: text("username"),

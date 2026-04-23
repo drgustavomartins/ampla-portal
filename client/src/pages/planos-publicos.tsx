@@ -252,7 +252,7 @@ export default function PlanosPublicos() {
 
       {/* ═══ CARDS ═══ */}
       <main className="mx-auto max-w-6xl px-5 sm:px-8 pb-24">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5 items-stretch">
 
           {/* ── Card 1: Acesso Vitalicio ── */}
           <div ref={cardRef} className="relative rounded-[28px] overflow-hidden flex flex-col"
@@ -386,7 +386,73 @@ export default function PlanosPublicos() {
             </div>
           </div>
 
-          {/* ── Card 2: Acompanhamento Observacional ── */}
+          {/* ── Card 2: Módulo Avulso com Prática (tema único) ── */}
+          <div className="relative rounded-[28px] overflow-hidden flex flex-col"
+            style={{
+              background: "linear-gradient(145deg, #2A1A0A 0%, #1F1308 50%, #14090A 100%)",
+              boxShadow: "0 8px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(251,146,60,0.12)",
+            }}
+          >
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 600" fill="none" preserveAspectRatio="xMaxYMin slice">
+              <circle cx="350" cy="50" r="130" fill="#FB923C" fillOpacity="0.05"/>
+              <circle cx="30" cy="500" r="90" fill="#FB923C" fillOpacity="0.03"/>
+            </svg>
+
+            <div className="h-[3px] w-full" style={{ background: "#FB923C" }} />
+
+            <div className="relative p-7 sm:p-8 flex flex-col flex-1">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-400 mb-2">Tema Único</p>
+                <h3 className="text-2xl font-bold text-white leading-tight">Módulo Avulso com Prática</h3>
+                <p className="mt-2 text-sm text-white/50 leading-relaxed">
+                  Escolha 1 tema: Toxina, Preenchedores, Bioestimuladores ou Biorregeneradores — prática hands-on focada.
+                </p>
+              </div>
+
+              <div className="mt-6">
+                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-orange-400 whitespace-nowrap">R$ 5.997</span>
+                <p className="text-xs text-white/30 mt-1">ou 12x de R$ 560,00</p>
+              </div>
+
+              <div className="my-6 h-px bg-white/[0.07]" />
+
+              <ul className="space-y-3 flex-1">
+                {[
+                  "1 tema à escolha (4 opções)",
+                  "8h de prática hands-on (2 períodos de 4h)",
+                  "Atendimento de 4 a 6 pacientes",
+                  "8h de observação clínica",
+                  "Aulas e materiais do tema",
+                  "Acompanhamento quinzenal ao vivo",
+                  "Certificado do tema",
+                ].map((f) => (
+                  <li key={f} className="flex items-start gap-3">
+                    <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center bg-orange-500/15">
+                      <Check className="h-[10px] w-[10px] text-orange-400" />
+                    </div>
+                    <span className="text-[13px] text-white/70 leading-snug">{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-auto pt-6">
+                <a
+                  href={`${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse no Módulo Avulso com Prática. Quero saber mais sobre qual tema escolher.")}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-semibold tracking-wide transition-all hover:brightness-105"
+                  style={{
+                    background: "linear-gradient(135deg, #FB923C 0%, #FDBA74 100%)",
+                    color: "#14090A",
+                    boxShadow: "0 2px 12px rgba(251,146,60,0.25), inset 0 1px 0 rgba(255,255,255,0.3)",
+                  }}
+                >
+                  Escolher meu tema <ArrowRight className="h-4 w-4" />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Card 3: Acompanhamento Observacional ── */}
           <div className="relative rounded-[28px] overflow-hidden flex flex-col"
             style={{
               background: "linear-gradient(145deg, #0D2818 0%, #0A2015 50%, #071A10 100%)",

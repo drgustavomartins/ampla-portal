@@ -149,7 +149,48 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     hasLiveEvents: false,
     hasNaturalUp: false,
     naturalUpLicense: false,
-    canUpgradeTo: ["observacional_economico", "observacional_moderado", "observador_essencial", "vip_online", "vip_presencial", "vip_completo", "imersao_elite"],
+    canUpgradeTo: ["observacional_economico", "observacional_moderado", "observador_essencial", "modulo_pratica", "vip_online", "vip_presencial", "vip_completo", "imersao_elite"],
+  },
+
+  // ─── MÓDULO AVULSO COM PRÁTICA ─ 1 tema à escolha ─────────────────────
+  // Aluno escolhe 1 tema (toxina, preenchedores, bioestimuladores ou biorregeneradores)
+  // e só recebe acesso às aulas/materiais desse tema + prática hands-on focada.
+  modulo_pratica: {
+    key: "modulo_pratica",
+    name: "Módulo Avulso com Prática",
+    description: "Foco em 1 tema à escolha — 8h prática hands-on + 8h observação + aulas e materiais do tema",
+    price: 599700,
+    installments12x: 56000,
+    group: "vip",
+    highlight: "Tema único",
+    valorMercado: 1200000,
+    features: [
+      "Escolha 1 tema: Toxina, Preenchedores, Bioestimuladores ou Biorregeneradores",
+      "Aulas gravadas completas do tema escolhido",
+      "Materiais científicos complementares do tema",
+      "8h de prática hands-on com pacientes modelo (2 períodos de 4h)",
+      "Atendimento de 4 a 6 pacientes do tema escolhido",
+      "8h de observação clínica ao lado do Dr. Gustavo",
+      "Acompanhamento quinzenal ao vivo",
+      "Supervisão direta do Dr. Gustavo durante a prática",
+      "Comunidade do portal + créditos por participação",
+      "Certificado do tema com carga horária",
+      "Acesso ao portal por 12 meses",
+    ],
+    accessDays: 365,
+    includesModules: false, // não inclui TODOS os módulos — só o tema escolhido
+    clinicalHours: 8,
+    practiceHours: 8,
+    shadowDays: 0,
+    hasDirectChannel: false,
+    channelMonths: 0,
+    hasMentorship: false,
+    mentorshipMonths: 0,
+    hasLiveEvents: true,
+    hasNaturalUp: false,
+    hasCommunity: true,
+    naturalUpLicense: false,
+    canUpgradeTo: ["observador_essencial", "vip_online", "vip_presencial", "vip_completo", "imersao_elite"],
   },
 
   // ─── ACOMPANHAMENTO OBSERVACIONAL ─ Econômico (hidden, Amanda negocia) ───────────
@@ -758,6 +799,7 @@ export const CASHBACK_RATES: Record<PlanKey, number> = {
   acesso_vitalicio: 0.05,
   modulo_avulso: 0.03,
   pacote_completo: 0.05,
+  modulo_pratica: 0.07,
   observacional_economico: 0.05,
   observacional_moderado: 0.05,
   observador_essencial: 0.05,
