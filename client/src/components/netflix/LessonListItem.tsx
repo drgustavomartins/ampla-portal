@@ -109,11 +109,13 @@ export function LessonListItem({
               )}
             </>
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#0A1628] via-[#14213D] to-[#1C2E52]">
               {isCompleted ? (
                 <CheckCircle2 className="w-5 h-5 text-[#D4AF37]" />
               ) : (
-                <Play className="w-5 h-5 text-white/20" />
+                <span className="px-1 py-0.5 rounded text-[7px] font-bold uppercase tracking-wider bg-[#D4AF37] text-black">
+                  Em Breve
+                </span>
               )}
             </div>
           )}

@@ -10,13 +10,16 @@ import { useToast } from "@/hooks/use-toast";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, ChevronLeft,
   ChevronRight, Layers, Lock, Paperclip, ExternalLink, ShoppingCart,
-  ArrowRight, X as XIcon, Award
+  ArrowRight, X as XIcon, Award, Maximize2
 } from "lucide-react";
 import type { Module, Lesson, LessonProgress } from "@shared/schema";
 import { ModuleHero } from "@/components/netflix/ModuleHero";
 import { LessonListItem } from "@/components/netflix/LessonListItem";
 import { LessonRow } from "@/components/netflix/LessonRow";
 import { LessonCard } from "@/components/netflix/LessonCard";
+import { NetflixPlayer } from "@/components/netflix/NetflixPlayer";
+import { NextUpOverlay } from "@/components/netflix/NextUpOverlay";
+import { TheaterMode } from "@/components/netflix/TheaterMode";
 
 function linkifyText(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -247,6 +250,8 @@ export default function ModulePage() {
   const TRIAL_FREE_LESSONS = 2; // trial users can access first N lessons per module
 
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [showNextUp, setShowNextUp] = useState(false);
+  const [theaterMode, setTheaterMode] = useState(false);
 
   // Upsell state: show CTA after every N lessons viewed in session
   const [sessionLessonCount, setSessionLessonCount] = useState(0);
@@ -406,6 +411,8 @@ export default function ModulePage() {
   const leftPanelRef = useRef<HTMLDivElement>(null);
 
   const handleSelectLesson = useCallback((lesson: Lesson | null) => {
+    setShowNextUp(false);
+    setTheaterMode(false);
     if (lesson && isLessonTrialLocked(lesson)) {
       // Allow selecting so they can see the lock overlay
       setSelectedLesson(lesson);
@@ -469,7 +476,6 @@ export default function ModulePage() {
     const lessonLockedForExpiry = isAccessExpired;
     const lessonLockedForTester = isLessonTrialLocked(selectedLesson);
     const isLessonLocked = lessonLockedForExpiry || lessonLockedForTester;
-    const embedUrl = isLessonLocked ? null : getEmbedUrl(selectedLesson.videoUrl || "");
     const isCompleted = completedIds.has(selectedLesson.id);
     const currentIdx = moduleLessons.findIndex(l => l.id === selectedLesson.id);
     const nextLesson = moduleLessons[currentIdx + 1];
@@ -518,22 +524,33 @@ export default function ModulePage() {
                     </a>
                   </div>
                 </div>
-              ) : embedUrl ? (
-                <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border/30">
-                  <iframe
-                    src={embedUrl}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    title={selectedLesson.title}
-                  />
-                </div>
               ) : (
-                <div className="aspect-video bg-card rounded-lg flex items-center justify-center ring-1 ring-border/30">
-                  <div className="text-center space-y-2 text-muted-foreground">
-                    <Play className="w-12 h-12 mx-auto opacity-30" />
-                    <p className="text-sm">Video sera adicionado em breve</p>
-                  </div>
+                <div className="relative">
+                  {theaterMode ? (
+                    <TheaterMode onExit={() => setTheaterMode(false)}>
+                      <NetflixPlayer
+                        videoUrl={selectedLesson.videoUrl}
+                        lessonId={selectedLesson.id}
+                        lessonTitle={selectedLesson.title}
+                        onEnded={() => { if (nextLesson && !isLessonTrialLocked(nextLesson)) setShowNextUp(true); }}
+                        theaterMode
+                      />
+                    </TheaterMode>
+                  ) : (
+                    <NetflixPlayer
+                      videoUrl={selectedLesson.videoUrl}
+                      lessonId={selectedLesson.id}
+                      lessonTitle={selectedLesson.title}
+                      onEnded={() => { if (nextLesson && !isLessonTrialLocked(nextLesson)) setShowNextUp(true); }}
+                    />
+                  )}
+                  {showNextUp && nextLesson && (
+                    <NextUpOverlay
+                      nextLesson={nextLesson}
+                      onPlay={() => { setShowNextUp(false); handleSelectLesson(nextLesson); }}
+                      onCancel={() => setShowNextUp(false)}
+                    />
+                  )}
                 </div>
               )}
 
@@ -567,6 +584,18 @@ export default function ModulePage() {
                       <><Circle className="w-4 h-4 mr-1.5" />Marcar como concluida</>
                     )}
                   </Button>
+
+                  {!isLessonLocked && selectedLesson.videoUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-border/50 hidden lg:inline-flex"
+                      onClick={() => setTheaterMode(true)}
+                      title="Modo teatro"
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </Button>
+                  )}
 
                   <div className="flex-1" />
 
@@ -679,24 +708,24 @@ export default function ModulePage() {
                   </a>
                 </div>
               </div>
-            ) : embedUrl ? (
-              <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border/30">
-                <iframe
-                  src={embedUrl}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  title={selectedLesson.title}
-                />
-              </div>
             ) : (
-              <div className="aspect-video bg-card rounded-lg flex items-center justify-center ring-1 ring-border/30">
-                <div className="text-center space-y-2 text-muted-foreground">
-                  <Play className="w-12 h-12 mx-auto opacity-30" />
-                  <p className="text-sm">Video sera adicionado em breve</p>
-                </div>
+              <div className="relative">
+                <NetflixPlayer
+                  videoUrl={selectedLesson.videoUrl}
+                  lessonId={selectedLesson.id}
+                  lessonTitle={selectedLesson.title}
+                  onEnded={() => { if (nextLesson && !isLessonTrialLocked(nextLesson)) setShowNextUp(true); }}
+                />
+                {showNextUp && nextLesson && (
+                  <NextUpOverlay
+                    nextLesson={nextLesson}
+                    onPlay={() => { setShowNextUp(false); handleSelectLesson(nextLesson); }}
+                    onCancel={() => setShowNextUp(false)}
+                  />
+                )}
               </div>
             )}
+
 
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-4 min-w-0">

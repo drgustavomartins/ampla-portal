@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import { Play } from "lucide-react";
 import { getYouTubeThumbnail, getNextFallback, type ThumbnailSize } from "@/lib/youtube-thumbnail";
 
 interface YouTubeThumbnailProps {
@@ -12,13 +11,24 @@ interface YouTubeThumbnailProps {
   loading?: "eager" | "lazy";
   /** Placeholder when no thumbnail available — rendered inside the container */
   placeholder?: React.ReactNode;
+  /** Lesson/video title — shown in the "coming soon" placeholder when no video */
+  title?: string;
 }
 
-const DEFAULT_PLACEHOLDER = (
-  <div className="w-full h-full flex items-center justify-center bg-[#14213D]">
-    <Play className="w-10 h-10 text-white/20" />
-  </div>
-);
+function ComingSoonPlaceholder({ title }: { title?: string }) {
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#0A1628] via-[#14213D] to-[#1C2E52]">
+      <span className="px-3 py-1 rounded text-[10px] font-bold uppercase tracking-widest bg-[#D4AF37] text-black mb-3">
+        Em Breve
+      </span>
+      {title && (
+        <p className="text-xs text-white/50 text-center px-4 line-clamp-2 max-w-[200px]">
+          {title}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function YouTubeThumbnail({
   videoIdOrUrl,
@@ -28,6 +38,7 @@ export function YouTubeThumbnail({
   imgClassName = "w-full h-full object-cover",
   loading = "lazy",
   placeholder,
+  title,
 }: YouTubeThumbnailProps) {
   const initialSrc = getYouTubeThumbnail(videoIdOrUrl, startSize);
   const [src, setSrc] = useState<string | null>(initialSrc);
@@ -44,7 +55,7 @@ export function YouTubeThumbnail({
   }, [src]);
 
   if (!src || failed) {
-    return <>{placeholder ?? DEFAULT_PLACEHOLDER}</>;
+    return <>{placeholder ?? <ComingSoonPlaceholder title={title} />}</>;
   }
 
   return (
