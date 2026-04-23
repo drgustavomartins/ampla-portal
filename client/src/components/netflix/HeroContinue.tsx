@@ -55,11 +55,11 @@ export function HeroContinue({
             loading="eager"
           />
         ) : (
-          <div className="w-full h-full bg-[#141414]" />
+          <div className="w-full h-full bg-[#0A1628]" />
         )}
-        {/* Gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/30" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
+        {/* Gradient overlays (navy) */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0A1628]/90 via-[#0A1628]/70 to-[#0A1628]/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628]/80 via-transparent to-[#0A1628]/20" />
       </div>
 
       {/* Content */}
@@ -107,7 +107,7 @@ export function HeroContinue({
         <div className="flex items-center gap-3 mt-1">
           <button
             onClick={onContinue}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#D4AF37] hover:bg-[#c9a432] text-black font-bold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4AF37] focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#D4AF37] hover:bg-[#c9a432] text-black font-bold text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4AF37] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A1628]"
             aria-label={isWelcome ? "Começar primeira aula" : `Continuar ${lesson.title}`}
           >
             <Play className="w-4 h-4 fill-black" />
