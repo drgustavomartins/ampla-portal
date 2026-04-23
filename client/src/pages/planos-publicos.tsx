@@ -345,6 +345,7 @@ export default function PlanosPublicos() {
                   "Materiais e artigos científicos",
                   "Acesso vitalício",
                   "Atualizações futuras incluídas",
+                  "Até 7 dias para desistência",
                 ].map((f) => (
                   <li key={f} className="flex items-start gap-3">
                     <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center bg-[#D4A843]/15">
@@ -426,6 +427,7 @@ export default function PlanosPublicos() {
                   "3 meses de canal direto com Dr. Gustavo para dúvidas",
                   "Acompanhamento quinzenal ao vivo",
                   "Certificado do tema",
+                  "Até 7 dias para desistência",
                 ].map((f) => (
                   <li key={f} className="flex items-start gap-3">
                     <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center bg-orange-500/15">
@@ -493,6 +495,7 @@ export default function PlanosPublicos() {
                   "Comunidade do portal + créditos",
                   "Certificado de participação",
                   "Acesso ao portal por 12 meses",
+                  "Até 7 dias para desistência",
                 ].map((f, i) => (
                   <li key={f} className="flex items-start gap-3">
                     <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center bg-emerald-500/15">
@@ -567,6 +570,7 @@ export default function PlanosPublicos() {
                   "Método NaturalUp® (5º módulo)",
                   "Licença da marca NaturalUp® só no Elite",
                   "Certificado com carga horária",
+                  "Até 7 dias para desistência",
                 ].map((f, i) => (
                   <li key={f} className="flex items-start gap-3">
                     <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center bg-purple-500/15">
@@ -640,6 +644,7 @@ export default function PlanosPublicos() {
                   "Mentoria individual por 12 meses",
                   "Licença oficial da marca NaturalUp®",
                   "Único plano com direito à logo NaturalUp®",
+                  "Até 7 dias para desistência",
                 ].map((f) => (
                   <li key={f} className="flex items-start gap-3">
                     <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center" style={{ background: "rgba(232,200,106,0.15)" }}>
