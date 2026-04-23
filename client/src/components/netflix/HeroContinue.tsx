@@ -42,6 +42,7 @@ export function HeroContinue({
           videoIdOrUrl={lesson.videoUrl}
           startSize="maxresdefault"
           loading="eager"
+          title={lesson.title}
           placeholder={<div className="w-full h-full bg-[#0A1628]" />}
         />
         {/* Gradient overlays (navy) */}

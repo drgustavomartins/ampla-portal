@@ -3,6 +3,7 @@ import type { Lesson, Module } from "@shared/schema";
 import type { VideoProgressEntry } from "@/hooks/use-video-progress";
 import { minutesRemaining } from "@/hooks/use-video-progress";
 import { YouTubeThumbnail } from "@/components/YouTubeThumbnail";
+import { HoverPreview } from "./HoverPreview";
 
 interface LessonCardProps {
   lesson: Lesson;
@@ -49,11 +50,12 @@ export function LessonCard({
       className="nf-card group shrink-0 w-[260px] sm:w-[280px] rounded-lg overflow-hidden bg-[#14213D] transition-all duration-300 hover:scale-[1.05] hover:shadow-[0_8px_24px_rgba(212,175,55,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4AF37] text-left"
       aria-label={`${isNext ? "Próxima aula: " : ""}${lesson.title}${module ? ` — ${module.title}` : ""}${remaining ? `. ${remaining} min restantes` : ""}`}
     >
-      {/* Thumbnail */}
-      <div className="relative aspect-video bg-[#0A1628] overflow-hidden">
+      {/* Thumbnail with hover preview */}
+      <HoverPreview videoUrl={lesson.videoUrl} className="relative aspect-video bg-[#0A1628] overflow-hidden">
         <YouTubeThumbnail
           videoIdOrUrl={lesson.videoUrl}
           startSize="hqdefault"
+          title={lesson.title}
           imgClassName="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
 
@@ -91,7 +93,7 @@ export function LessonCard({
             />
           </div>
         )}
-      </div>
+      </HoverPreview>
 
       {/* Info */}
       <div className="p-3 space-y-1">
