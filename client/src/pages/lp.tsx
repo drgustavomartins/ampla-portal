@@ -567,11 +567,11 @@ export default function LandingPage() {
               Escolha o seu caminho
             </h2>
             <p className="text-gray-400 text-center max-w-lg mx-auto mb-14">
-              Três formas de aprender, do seu ritmo até imersão total
+              Cinco formas de aprender, do seu ritmo até imersão total
             </p>
           </FadeIn>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch">
             {/* ── Card 1: Acesso Vitalício (highlighted) ────────────── */}
             <FadeIn className="h-full">
               <div
@@ -637,6 +637,7 @@ export default function LandingPage() {
                     "Materiais e artigos científicos",
                     "Acesso vitalício",
                     "Atualizações futuras incluídas",
+                    "Até 7 dias para desistência",
                   ].map((f, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                       <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
@@ -670,7 +671,54 @@ export default function LandingPage() {
               </div>
             </FadeIn>
 
-            {/* ── Card 2: Curso com Prática Clínica ────────────────── */}
+            {/* Card 2: Modulo Avulso com Pratica */}
+            <FadeIn className="h-full">
+              <div className="bg-[#0F1A2E] border border-orange-500/30 rounded-2xl p-7 flex flex-col relative h-full">
+                <span className="inline-block text-[11px] font-semibold uppercase tracking-widest text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full self-start mb-5">
+                  Tema Único
+                </span>
+                <h3 className="lp-serif text-xl font-bold mb-1">Módulo Avulso com Prática</h3>
+                <p className="text-sm text-gray-400 mb-4">Foco em 1 tema + prática hands-on</p>
+
+                <div className="mb-6">
+                  <p className="text-2xl font-bold text-white"><span className="text-orange-400">R$ 5.997</span></p>
+                  <p className="text-xs text-gray-500 mt-0.5">ou 12x de R$ 560,00</p>
+                </div>
+
+                <ul className="space-y-3 mb-8 flex-1">
+                  {[
+                    "1 tema à escolha (Toxina, Preenchedores, Bioestimuladores ou Biorregeneradores)",
+                    "8h de prática hands-on com pacientes modelo",
+                    "8h de observação clínica ao lado do Dr. Gustavo",
+                    "3 meses de canal direto com Dr. Gustavo para dúvidas",
+                    "Aulas e materiais do tema escolhido",
+                    "Certificado do tema com carga horária",
+                    "Até 7 dias para desistência",
+                  ].map((f, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
+                      <Check className="w-4 h-4 text-orange-400 mt-0.5 shrink-0" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <p className="text-xs text-gray-500 mb-5">
+                  Ideal para quem quer dominar 1 tema a fundo antes de expandir
+                </p>
+
+                <div className="mt-auto pt-4 border-t border-white/10">
+                  <a
+                    href="/#/planos-publicos"
+                    style={{ background: "linear-gradient(135deg, #FB923C 0%, #FDBA74 100%)", color: "#14090A" }}
+                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
+                  >
+                    Escolher meu tema
+                  </a>
+                </div>
+              </div>
+            </FadeIn>
+
+            {/* Card 3: Acompanhamento Observacional */}
             <FadeIn className="h-full">
               <div className="bg-[#0F1A2E] border border-white/10 rounded-2xl p-7 flex flex-col relative h-full">
                 <span className="inline-block text-[11px] font-semibold uppercase tracking-widest text-[#D4A843] bg-[#D4A843]/10 px-3 py-1 rounded-full self-start mb-5">
@@ -688,9 +736,11 @@ export default function LandingPage() {
                   {[
                     "Tudo da Plataforma Online",
                     "24h de observação clínica presencial",
+                    "3 meses de canal direto com Dr. Gustavo para dúvidas",
                     "Acompanhamento quinzenal ao vivo",
                     "Comunidade do portal + créditos",
                     "Certificado de participação",
+                    "Até 7 dias para desistência",
                   ].map((f, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                       <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
@@ -717,7 +767,7 @@ export default function LandingPage() {
               </div>
             </FadeIn>
 
-            {/* ── Card 3: Mentoria Completa NaturalUp® ─────── */}
+            {/* Card 4: Acompanhamento VIP */}
             <FadeIn className="h-full">
               <div className="bg-[#0F1A2E] border border-white/10 rounded-2xl p-7 flex flex-col h-full">
                 <span className="inline-block text-[11px] font-semibold uppercase tracking-widest text-[#D4A843] bg-[#D4A843]/10 px-3 py-1 rounded-full self-start mb-5">
@@ -742,6 +792,7 @@ export default function LandingPage() {
                     "Acompanhamento quinzenal ao vivo",
                     "Método NaturalUp® (5º módulo)",
                     "Certificado completo Ampla Facial",
+                    "Até 7 dias para desistência",
                   ].map((f, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                       <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
@@ -803,6 +854,7 @@ export default function LandingPage() {
                       "Mentoria individual por 12 meses",
                       "Licença exclusiva da marca NaturalUp®",
                       "Único plano com direito à logo oficial",
+                      "Até 7 dias para desistência",
                     ].map((f, i) => (
                       <div key={i} className="flex items-start gap-2">
                         <Check className="w-4 h-4 text-[#E8C86A] mt-0.5 shrink-0" />
