@@ -288,3 +288,52 @@
 .btn-gold-forced:hover {
   opacity: 0.9;
 }
+
+/* ===== NETFLIX DARK THEME — scoped to student portal only ===== */
+.netflix-theme {
+  --nf-base: #0a0a0a;
+  --nf-surface: #1a1a1a;
+  --nf-surface-hover: #2a2a2a;
+  --nf-gold: #D4AF37;
+  --nf-red: #e50914;
+  --nf-text: #ffffff;
+  --nf-text-muted: #b3b3b3;
+  --nf-text-dim: #808080;
+
+  /* Override CSS custom properties for shadcn components inside */
+  --background: 0 0% 4%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 10%;
+  --card-foreground: 0 0% 100%;
+  --border: 0 0% 16%;
+  --muted: 0 0% 14%;
+  --muted-foreground: 0 0% 55%;
+  --accent: 0 0% 12%;
+  --accent-foreground: 0 0% 100%;
+  --popover: 0 0% 10%;
+  --popover-foreground: 0 0% 100%;
+
+  background-color: var(--nf-base) !important;
+  color: var(--nf-text);
+}
+
+/* Netflix custom scrollbar */
+.netflix-theme ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.netflix-theme ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.netflix-theme ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+.netflix-theme ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Netflix meta theme color */
+.netflix-theme-active {
+  color-scheme: dark;
+}
