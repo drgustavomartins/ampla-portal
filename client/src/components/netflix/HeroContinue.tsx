@@ -2,6 +2,7 @@ import { Play, Info } from "lucide-react";
 import type { Lesson, Module } from "@shared/schema";
 import type { VideoProgressEntry } from "@/hooks/use-video-progress";
 import { minutesRemaining } from "@/hooks/use-video-progress";
+import { YouTubeThumbnail } from "@/components/YouTubeThumbnail";
 
 interface HeroContinueProps {
   lesson: Lesson;
@@ -13,15 +14,6 @@ interface HeroContinueProps {
   onDetails: () => void;
 }
 
-function getYouTubeThumbnail(videoUrl: string | null): string | null {
-  if (!videoUrl) return null;
-  const match = videoUrl.match(
-    /(?:(?:www\.)?youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/,
-  );
-  // Use maxresdefault for hero (larger image)
-  return match ? `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg` : null;
-}
-
 export function HeroContinue({
   lesson,
   module,
@@ -31,7 +23,6 @@ export function HeroContinue({
   onContinue,
   onDetails,
 }: HeroContinueProps) {
-  const thumbnail = getYouTubeThumbnail(lesson.videoUrl);
   const hasProgress = progress && progress.percentage > 0 && progress.percentage < 95;
   const percentage = progress?.percentage ?? 0;
   const remaining = progress ? minutesRemaining(progress) : null;
@@ -47,16 +38,12 @@ export function HeroContinue({
     >
       {/* Background thumbnail + gradient overlay */}
       <div className="absolute inset-0">
-        {thumbnail ? (
-          <img
-            src={thumbnail}
-            alt=""
-            className="w-full h-full object-cover"
-            loading="eager"
-          />
-        ) : (
-          <div className="w-full h-full bg-[#0A1628]" />
-        )}
+        <YouTubeThumbnail
+          videoIdOrUrl={lesson.videoUrl}
+          startSize="maxresdefault"
+          loading="eager"
+          placeholder={<div className="w-full h-full bg-[#0A1628]" />}
+        />
         {/* Gradient overlays (navy) */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#0A1628]/90 via-[#0A1628]/70 to-[#0A1628]/30" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628]/80 via-transparent to-[#0A1628]/20" />

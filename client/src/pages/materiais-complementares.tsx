@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, FileText, FileIcon, Headphones, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink, Eye, X, Loader2, Lock, Play,
 } from "lucide-react";
+import { getYouTubeThumbnail, getNextFallback } from "@/lib/youtube-thumbnail";
 
 /* ───────── Types ───────── */
 
@@ -85,7 +86,7 @@ function TypeLabel({ type }: { type: FileEntry["type"] }) {
 
 function getFileThumbnail(file: FileEntry): string | null {
   if (file.type === "mp3" && file.youtubeId) {
-    return `https://img.youtube.com/vi/${file.youtubeId}/mqdefault.jpg`;
+    return getYouTubeThumbnail(file.youtubeId, "mqdefault");
   }
   if (file.type === "pdf") {
     if (isFullUrl(file.driveId)) return null; // No thumbnail for direct URLs
@@ -95,21 +96,31 @@ function getFileThumbnail(file: FileEntry): string | null {
 }
 
 function FileThumbnail({ file }: { file: FileEntry }) {
-  const thumb = getFileThumbnail(file);
-  const [imgError, setImgError] = useState(false);
+  const initialThumb = getFileThumbnail(file);
+  const [src, setSrc] = useState<string | null>(initialThumb);
+  const [failed, setFailed] = useState(false);
 
-  if (!thumb || imgError) {
+  const handleError = () => {
+    if (!src) { setFailed(true); return; }
+    if (src.includes("img.youtube.com")) {
+      const next = getNextFallback(src);
+      if (next) { setSrc(next); return; }
+    }
+    setFailed(true);
+  };
+
+  if (!src || failed) {
     return <FileTypeIcon type={file.type} />;
   }
 
   return (
     <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden ring-1 ring-border/20 bg-card/60 relative group/thumb">
       <img
-        src={thumb}
+        src={src}
         alt=""
         className="w-full h-full object-cover"
         loading="lazy"
-        onError={() => setImgError(true)}
+        onError={handleError}
       />
       {file.type === "mp3" && (
         <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity">

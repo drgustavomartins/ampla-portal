@@ -53,30 +53,30 @@ function getFirstDescLine(desc: string): string | null {
   return firstLine;
 }
 
-// Extract YouTube video ID from a URL for thumbnail generation
-function getYouTubeId(url: string | null | undefined): string | null {
-  if (!url) return null;
-  const match = url.match(/(?:(?:www\.)?youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/);
-  return match ? match[1] : null;
-}
+import { getYouTubeThumbnail, getNextFallback } from "@/lib/youtube-thumbnail";
 
 function getLessonThumbnail(lesson: Lesson): string | null {
-  const ytId = getYouTubeId(lesson.videoUrl);
-  if (ytId) return `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`;
-  return null;
+  return getYouTubeThumbnail(lesson.videoUrl, "mqdefault");
 }
 
-// Thumbnail component with error fallback
+// Thumbnail component with progressive fallback
 function LessonThumb({ lesson, size = "md", done, theme, index }: {
   lesson: Lesson; size?: "sm" | "md"; done: boolean;
   theme: { accent: string; accentRgb: string }; index: number;
 }) {
-  const [imgError, setImgError] = useState(false);
-  const thumb = getLessonThumbnail(lesson);
+  const initialThumb = getLessonThumbnail(lesson);
+  const [src, setSrc] = useState<string | null>(initialThumb);
+  const [failed, setFailed] = useState(false);
   const isMd = size === "md";
   const w = isMd ? "w-16 h-10" : "w-12 h-8";
 
-  if (!thumb || imgError) {
+  const handleError = useCallback(() => {
+    if (!src) { setFailed(true); return; }
+    const next = getNextFallback(src);
+    if (next) { setSrc(next); } else { setFailed(true); }
+  }, [src]);
+
+  if (!src || failed) {
     return (
       <div className={`shrink-0 ${isMd ? "w-10 h-10" : "w-8 h-8"} rounded-full flex items-center justify-center ${done ? "" : "bg-card border border-border/40"}`}
         style={done ? { backgroundColor: `rgba(${theme.accentRgb}, 0.15)` } : undefined}>
@@ -91,7 +91,7 @@ function LessonThumb({ lesson, size = "md", done, theme, index }: {
 
   return (
     <div className={`shrink-0 ${w} rounded-md overflow-hidden ring-1 ring-border/30 relative`}>
-      <img src={thumb} alt="" className="w-full h-full object-cover" loading="lazy" onError={() => setImgError(true)} />
+      <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" onError={handleError} />
       {done && (
         <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: `rgba(${theme.accentRgb}, 0.25)` }}>
           <CheckCircle2 className={`${isMd ? "w-5 h-5" : "w-3.5 h-3.5"} drop-shadow-md`} style={{ color: theme.accent }} />

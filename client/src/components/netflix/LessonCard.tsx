@@ -2,6 +2,7 @@ import { Play } from "lucide-react";
 import type { Lesson, Module } from "@shared/schema";
 import type { VideoProgressEntry } from "@/hooks/use-video-progress";
 import { minutesRemaining } from "@/hooks/use-video-progress";
+import { YouTubeThumbnail } from "@/components/YouTubeThumbnail";
 
 interface LessonCardProps {
   lesson: Lesson;
@@ -11,14 +12,6 @@ interface LessonCardProps {
   onClick: () => void;
 }
 
-function getYouTubeThumbnail(videoUrl: string | null): string | null {
-  if (!videoUrl) return null;
-  const match = videoUrl.match(
-    /(?:(?:www\.)?youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/,
-  );
-  return match ? `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg` : null;
-}
-
 export function LessonCard({
   lesson,
   module,
@@ -26,7 +19,6 @@ export function LessonCard({
   isNext,
   onClick,
 }: LessonCardProps) {
-  const thumbnail = getYouTubeThumbnail(lesson.videoUrl);
   const percentage = progress?.percentage ?? 0;
   const remaining = progress ? minutesRemaining(progress) : null;
 
@@ -38,18 +30,11 @@ export function LessonCard({
     >
       {/* Thumbnail */}
       <div className="relative aspect-video bg-[#0A1628] overflow-hidden">
-        {thumbnail ? (
-          <img
-            src={thumbnail}
-            alt=""
-            loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Play className="w-10 h-10 text-white/20" />
-          </div>
-        )}
+        <YouTubeThumbnail
+          videoIdOrUrl={lesson.videoUrl}
+          startSize="hqdefault"
+          imgClassName="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+        />
 
         {/* Overlay play icon on hover */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
