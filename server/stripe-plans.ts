@@ -819,7 +819,7 @@ export function isPlanVisibleForStudent(
   // Elite já tem 32h de prática — posição de topo, não oferece extras.
   // Vitalício, Curso Completo, Observador: não têm prática no contrato, então não compram extra.
   if (targetKey === "horas_clinicas_1" || targetKey === "horas_clinicas_2" || targetKey === "horas_clinicas_3") {
-    if (currentKey === "imersao_elite") return false;
+    // VIP e Elite podem comprar horas extras de prática quantas vezes quiserem.
     return current.practiceHours > 0;
   }
 
@@ -828,7 +828,7 @@ export function isPlanVisibleForStudent(
   // Elite já tem shadow completo, não oferece extras.
   // Vitalício e Curso Completo: não têm observação no contrato.
   if (targetKey.startsWith("observacao_extra_")) {
-    if (currentKey === "imersao_elite") return false;
+    // Observacional, VIP e Elite podem comprar turnos extras de observação.
     return current.clinicalHours > 0;
   }
 
