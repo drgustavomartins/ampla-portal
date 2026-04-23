@@ -910,7 +910,7 @@ export default function AdminDashboard() {
 
   // Lesson CRUD
   const [lessonForm, setLessonForm] = useState({
-    moduleId: 0, title: "", description: "", videoUrl: "", duration: "",
+    moduleId: 0, title: "", description: "", videoUrl: "", duration: "", contentType: "theoretical",
   });
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
 
@@ -925,7 +925,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/lessons"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/audit-logs"] });
-      setLessonForm({ moduleId: 0, title: "", description: "", videoUrl: "", duration: "" });
+      setLessonForm({ moduleId: 0, title: "", description: "", videoUrl: "", duration: "", contentType: "theoretical" });
       setLessonDialogOpen(false);
       toast({ title: "Aula criada" });
     },
@@ -1239,10 +1239,10 @@ export default function AdminDashboard() {
 
   // Edit lesson
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
-  const [editLessonForm, setEditLessonForm] = useState({ title: "", description: "", videoUrl: "", duration: "", moduleId: 0 });
+  const [editLessonForm, setEditLessonForm] = useState({ title: "", description: "", videoUrl: "", duration: "", moduleId: 0, contentType: "theoretical" });
 
   const updateLessonMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: { title: string; description: string; videoUrl: string; duration: string; moduleId: number } }) => {
+    mutationFn: async ({ id, data }: { id: number; data: { title: string; description: string; videoUrl: string; duration: string; moduleId: number; contentType: string } }) => {
       await apiRequest("PATCH", `/api/admin/lessons/${id}`, data);
     },
     onSuccess: () => {
@@ -3376,6 +3376,7 @@ export default function AdminDashboard() {
                     <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Descrição</Label><Textarea value={lessonForm.description} onChange={e => setLessonForm(f => ({ ...f, description: e.target.value }))} placeholder="Descrição da aula..." className="bg-background/50 border-border/40" data-testid="input-lesson-description" /></div>
                     <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">URL do vídeo</Label><Input value={lessonForm.videoUrl} onChange={e => setLessonForm(f => ({ ...f, videoUrl: e.target.value }))} placeholder="https://youtube.com/watch?v=..." className="bg-background/50 border-border/40" data-testid="input-lesson-video" /><p className="text-xs text-muted-foreground">YouTube, Vimeo ou Google Drive</p></div>
                     <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração</Label><Input value={lessonForm.duration} onChange={e => setLessonForm(f => ({ ...f, duration: e.target.value }))} placeholder="Ex: 25:00" className="bg-background/50 border-border/40" data-testid="input-lesson-duration" /></div>
+                    <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Tipo de conteúdo</Label><select value={lessonForm.contentType} onChange={e => setLessonForm(f => ({ ...f, contentType: e.target.value }))} className="w-full rounded-md bg-background/50 border border-border/40 px-3 py-2 text-sm" data-testid="select-lesson-content-type"><option value="theoretical">Teórico</option><option value="practical">Prático (Procedimento)</option><option value="case_study">Caso Clínico</option></select></div>
                     <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createLessonMutation.mutate()} disabled={!lessonForm.title || !lessonForm.moduleId || createLessonMutation.isPending} data-testid="button-save-lesson">{createLessonMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar aula</Button>
                   </div>
                 </DialogContent>
@@ -3409,7 +3410,7 @@ export default function AdminDashboard() {
                                 mod={mod}
                                 isSuperAdmin={isSuperAdmin}
                                 reorderPending={reorderLessonsMutation.isPending}
-                                onEdit={() => { setEditingLesson(lesson); setEditLessonForm({ title: lesson.title, description: lesson.description || "", videoUrl: lesson.videoUrl || "", duration: lesson.duration || "", moduleId: lesson.moduleId }); }}
+                                onEdit={() => { setEditingLesson(lesson); setEditLessonForm({ title: lesson.title, description: lesson.description || "", videoUrl: lesson.videoUrl || "", duration: lesson.duration || "", moduleId: lesson.moduleId, contentType: (lesson as any).contentType || "theoretical" }); }}
                                 onDelete={() => deleteLessonMutation.mutate(lesson.id)}
                               />
                             ))}
@@ -3432,6 +3433,7 @@ export default function AdminDashboard() {
                   <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">URL do vídeo</Label><Input value={editLessonForm.videoUrl} onChange={e => setEditLessonForm(f => ({ ...f, videoUrl: e.target.value }))} placeholder="https://youtube.com/watch?v=..." className="bg-background/50 border-border/40" /></div>
                   <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Duração</Label><Input value={editLessonForm.duration} onChange={e => setEditLessonForm(f => ({ ...f, duration: e.target.value }))} placeholder="Ex: 25:00" className="bg-background/50 border-border/40" /></div>
                   <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Módulo</Label><Select value={String(editLessonForm.moduleId)} onValueChange={(v) => setEditLessonForm(f => ({ ...f, moduleId: parseInt(v) }))}><SelectTrigger className="bg-background/50 border-border/40"><SelectValue placeholder="Selecione o módulo" /></SelectTrigger><SelectContent>{modules.map((m) => (<SelectItem key={m.id} value={String(m.id)}>{m.title}</SelectItem>))}</SelectContent></Select></div>
+                  <div className="space-y-2"><Label className="text-xs uppercase tracking-wider text-muted-foreground">Tipo de conteúdo</Label><select value={editLessonForm.contentType} onChange={e => setEditLessonForm(f => ({ ...f, contentType: e.target.value }))} className="w-full rounded-md bg-background/50 border border-border/40 px-3 py-2 text-sm"><option value="theoretical">Teórico</option><option value="practical">Prático (Procedimento)</option><option value="case_study">Caso Clínico</option></select></div>
                   <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => editingLesson && updateLessonMutation.mutate({ id: editingLesson.id, data: editLessonForm })} disabled={!editLessonForm.title || !editLessonForm.moduleId || updateLessonMutation.isPending}>{updateLessonMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Salvar alterações</Button>
                 </div>
               </DialogContent>

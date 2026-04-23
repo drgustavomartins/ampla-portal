@@ -109,6 +109,9 @@ export const lessons = pgTable("lessons", {
   videoUrl: text("video_url"),
   duration: text("duration"),
   order: integer("order").notNull().default(0),
+  contentType: text("content_type").notNull().default("theoretical"), // 'theoretical' | 'practical' | 'case_study'
+  createdAt: text("created_at"),
+  updatedAt: text("updated_at"),
 });
 
 // Password Resets

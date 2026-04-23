@@ -1097,6 +1097,94 @@ export default function StudentDashboard() {
             </Suspense>
           )}
 
+          {/* ===== NETFLIX ROWS: Category-based rows (Phase 2) ===== */}
+          {!isAccessExpired && (() => {
+            // "Assista os Procedimentos" — practical lessons across all modules
+            const practicalLessons = lessons.filter((l: any) => l.contentType === "practical");
+            // "Casos Clínicos" — case_study lessons across all modules
+            const caseStudyLessons = lessons.filter((l: any) => l.contentType === "case_study");
+
+            // Category rows based on module titles
+            const categoryConfig: { title: string; emoji: string; keywords: string[] }[] = [
+              { title: "Toxina Botulínica", emoji: "💉", keywords: ["toxina"] },
+              { title: "Preenchedores Faciais", emoji: "💧", keywords: ["preenchedores", "ácido", "acido", "preenchedor"] },
+              { title: "Bioestimuladores de Colágeno", emoji: "✨", keywords: ["bioestimulador"] },
+              { title: "Moduladores de Matriz Extracelular", emoji: "🔬", keywords: ["modulador", "regeneração", "regeneracao", "matriz", "biorregenerador"] },
+              { title: "Método NaturalUp", emoji: "📐", keywords: ["naturalup", "natural up", "método", "metodo", "protocolo"] },
+            ];
+
+            const categoryRows = categoryConfig
+              .map((cat) => {
+                const matchingModules = courseModules.filter((m) =>
+                  cat.keywords.some((kw) => m.title.toLowerCase().includes(kw)),
+                );
+                const catLessons = matchingModules.flatMap((m) =>
+                  getLessonsForModule(m.id).map((l) => ({ lesson: l, module: m })),
+                );
+                if (catLessons.length === 0) return null;
+                return { ...cat, lessons: catLessons };
+              })
+              .filter(Boolean) as { title: string; emoji: string; keywords: string[]; lessons: { lesson: Lesson; module: Module }[] }[];
+
+            return (
+              <>
+                {/* Practical procedures row */}
+                {practicalLessons.length > 0 && (
+                  <Suspense fallback={<RowSkeleton />}>
+                    <LessonRow title="🎬 Assista os Procedimentos">
+                      {practicalLessons.map((lesson) => (
+                        <LessonCard
+                          key={lesson.id}
+                          lesson={lesson}
+                          module={modules.find((m) => m.id === lesson.moduleId)}
+                          progress={videoProgressStore[String(lesson.id)] || undefined}
+                          isCompleted={completedIds.has(lesson.id)}
+                          onClick={() => setSelectedLesson(lesson)}
+                        />
+                      ))}
+                    </LessonRow>
+                  </Suspense>
+                )}
+
+                {/* Category-based module rows */}
+                {categoryRows.map((cat) => (
+                  <Suspense key={cat.title} fallback={<RowSkeleton />}>
+                    <LessonRow title={`${cat.emoji} ${cat.title}`}>
+                      {cat.lessons.map(({ lesson, module: mod }) => (
+                        <LessonCard
+                          key={lesson.id}
+                          lesson={lesson}
+                          module={mod}
+                          progress={videoProgressStore[String(lesson.id)] || undefined}
+                          isCompleted={completedIds.has(lesson.id)}
+                          onClick={() => setSelectedLesson(lesson)}
+                        />
+                      ))}
+                    </LessonRow>
+                  </Suspense>
+                ))}
+
+                {/* Case studies row */}
+                {caseStudyLessons.length > 0 && (
+                  <Suspense fallback={<RowSkeleton />}>
+                    <LessonRow title="📊 Casos Clínicos">
+                      {caseStudyLessons.map((lesson) => (
+                        <LessonCard
+                          key={lesson.id}
+                          lesson={lesson}
+                          module={modules.find((m) => m.id === lesson.moduleId)}
+                          progress={videoProgressStore[String(lesson.id)] || undefined}
+                          isCompleted={completedIds.has(lesson.id)}
+                          onClick={() => setSelectedLesson(lesson)}
+                        />
+                      ))}
+                    </LessonRow>
+                  </Suspense>
+                )}
+              </>
+            );
+          })()}
+
           {/* ===== BOAS VINDAS (Featured/Hero Section) ===== */}
           {introModule && introLessons.length > 0 && !isAccessExpired && (
             <section className="space-y-4">
@@ -1159,7 +1247,7 @@ export default function StudentDashboard() {
               {/* Left arrow */}
               <button
                 onClick={() => scrollShelf("left")}
-                className="hidden sm:flex absolute left-0 top-[35%] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-300 opacity-0 group-hover/shelf:opacity-100 -translate-x-1/2"
+                className="hidden sm:flex absolute left-0 top-[35%] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-[#0A1628]/60 backdrop-blur-sm border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-[#0A1628]/80 transition-all duration-300 opacity-0 group-hover/shelf:opacity-100 -translate-x-1/2"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -1167,7 +1255,7 @@ export default function StudentDashboard() {
               {/* Right arrow */}
               <button
                 onClick={() => scrollShelf("right")}
-                className="hidden sm:flex absolute right-0 top-[35%] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-300 opacity-0 group-hover/shelf:opacity-100 translate-x-1/2"
+                className="hidden sm:flex absolute right-0 top-[35%] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-[#0A1628]/60 backdrop-blur-sm border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-[#0A1628]/80 transition-all duration-300 opacity-0 group-hover/shelf:opacity-100 translate-x-1/2"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -1232,13 +1320,13 @@ export default function StudentDashboard() {
 
                       {/* Frosted lock overlay */}
                       {isAccessExpired && (
-                        <div className="absolute inset-0 bg-black/50 backdrop-blur-[3px] flex flex-col items-center justify-center gap-2">
+                        <div className="absolute inset-0 bg-[#0A1628]/50 backdrop-blur-[3px] flex flex-col items-center justify-center gap-2">
                           <Lock className="w-5 h-5 text-gold/60" />
-                          <span className="text-xs font-semibold text-gold/80 bg-black/40 px-3 py-1 rounded-full">Renovar acesso</span>
+                          <span className="text-xs font-semibold text-gold/80 bg-[#0A1628]/40 px-3 py-1 rounded-full">Renovar acesso</span>
                         </div>
                       )}
                       {!isAccessExpired && (isPurchasable || isLocked) && (
-                        <div className="absolute inset-0 bg-black/40 backdrop-blur-[3px] flex items-center justify-center">
+                        <div className="absolute inset-0 bg-[#0A1628]/40 backdrop-blur-[3px] flex items-center justify-center">
                           <Lock className={`w-5 h-5 ${isPurchasable ? "text-white/40" : "text-white/20"}`} />
                         </div>
                       )}
@@ -1746,7 +1834,7 @@ export default function StudentDashboard() {
                 ) : (
                   <span className="text-lg font-semibold text-[#0A1628]">{(profileForm.name || user?.name)?.[0]?.toUpperCase() || "?"}</span>
                 )}
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute inset-0 bg-[#0A1628]/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   {avatarUploading ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Camera className="w-5 h-5 text-white" />}
                 </div>
               </div>
