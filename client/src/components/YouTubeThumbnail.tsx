@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { getYouTubeThumbnail, getNextFallback, type ThumbnailSize } from "@/lib/youtube-thumbnail";
+import { useState, useEffect } from "react";
+import { getYouTubeThumbnail, getNextFallback, extractYouTubeId, type ThumbnailSize } from "@/lib/youtube-thumbnail";
 
 interface YouTubeThumbnailProps {
   videoIdOrUrl: string | null | undefined;
@@ -40,31 +40,50 @@ export function YouTubeThumbnail({
   placeholder,
   title,
 }: YouTubeThumbnailProps) {
-  const initialSrc = getYouTubeThumbnail(videoIdOrUrl, startSize);
-  const [src, setSrc] = useState<string | null>(initialSrc);
-  const [failed, setFailed] = useState(false);
+  const videoId = extractYouTubeId(videoIdOrUrl);
 
-  const handleError = useCallback(() => {
-    if (!src) { setFailed(true); return; }
-    const next = getNextFallback(src);
-    if (next) {
-      setSrc(next);
-    } else {
-      setFailed(true);
-    }
-  }, [src]);
+  const [currentSize, setCurrentSize] = useState<ThumbnailSize>(startSize);
+  const [hasError, setHasError] = useState(false);
 
-  if (!src || failed) {
+  // Reset state when videoId or startSize changes (handles prop updates, Suspense remounts, etc.)
+  useEffect(() => {
+    setCurrentSize(startSize);
+    setHasError(false);
+  }, [videoId, startSize]);
+
+  // No videoId extractable → show placeholder immediately
+  if (!videoId) {
     return <>{placeholder ?? <ComingSoonPlaceholder title={title} />}</>;
   }
 
+  // All fallbacks exhausted → show placeholder
+  if (hasError) {
+    return <>{placeholder ?? <ComingSoonPlaceholder title={title} />}</>;
+  }
+
+  const thumbUrl = `https://img.youtube.com/vi/${videoId}/${currentSize}.jpg`;
+
   return (
     <img
-      src={src}
+      key={`${videoId}-${currentSize}`}
+      src={thumbUrl}
       alt={alt}
       loading={loading}
       className={`${imgClassName} ${className}`}
-      onError={handleError}
+      onError={() => {
+        const next = getNextFallback(thumbUrl);
+        if (next) {
+          // Extract the size from the next URL
+          const match = next.match(/(maxresdefault|hqdefault|mqdefault|sddefault)/);
+          if (match) {
+            setCurrentSize(match[1] as ThumbnailSize);
+          } else {
+            setHasError(true);
+          }
+        } else {
+          setHasError(true);
+        }
+      }}
     />
   );
 }
