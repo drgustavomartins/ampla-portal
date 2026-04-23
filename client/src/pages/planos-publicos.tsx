@@ -8,8 +8,8 @@ function formatBRL(c: number) {
 }
 
 const WHATSAPP_URL = "https://wa.me/5521976263881";
-const WHATSAPP_PRATICA = `${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse no Curso com Prática Clínica da Ampla Facial.")}`;
-const WHATSAPP_MENTORIA = `${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse na Mentoria Completa NaturalUp® da Ampla Facial.")}`;
+const WHATSAPP_PRATICA = `${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse no Acompanhamento Observacional da Ampla Facial.")}`;
+const WHATSAPP_MENTORIA = `${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse no Acompanhamento VIP da Ampla Facial.")}`;
 
 function CountdownDigit({ value, label }: { value: number; label: string }) {
   return (
@@ -174,7 +174,7 @@ export default function PlanosPublicos() {
           <div className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-[13px] text-white/80 flex-wrap justify-center">
             <Clock className="w-3.5 h-3.5 text-[#D4A843] shrink-0 hidden sm:block" />
             <span>
-              <span className="hidden sm:inline">Oferta de lançamento R$ 397 — Acesso Vitalício encerra em </span>
+              <span className="hidden sm:inline">Oferta de lançamento R$ 397 — Plataforma Online vitalícia encerra em </span>
               <span className="sm:hidden">R$ 397 encerra em </span>
               <span className="font-bold text-[#D4A843]">
                 {countdown.days}d {String(countdown.hours).padStart(2,"0")}h {String(countdown.minutes).padStart(2,"0")}m {String(countdown.seconds).padStart(2,"0")}s
@@ -267,8 +267,8 @@ export default function PlanosPublicos() {
             <div className="relative p-7 sm:p-8 flex flex-col flex-1">
               {/* Header */}
               <div className="pt-6">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A843] mb-2">Conteúdo Online</p>
-                <h3 className="text-2xl sm:text-[28px] font-bold text-white leading-tight">Acesso Vitalício</h3>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A843] mb-2">Acesso Vitalício</p>
+                <h3 className="text-2xl sm:text-[28px] font-bold text-white leading-tight">Plataforma Online</h3>
                 <p className="mt-2 text-sm text-white/50 leading-relaxed">Todas as aulas gravadas, materiais e vídeos de casos clínicos — para sempre.</p>
               </div>
 
@@ -346,7 +346,7 @@ export default function PlanosPublicos() {
             </div>
           </div>
 
-          {/* ── Card 2: Curso com Prática Clínica ── */}
+          {/* ── Card 2: Acompanhamento Observacional ── */}
           <div className="relative rounded-[28px] overflow-hidden flex flex-col"
             style={{
               background: "linear-gradient(145deg, #0D2818 0%, #0A2015 50%, #071A10 100%)",
@@ -363,28 +363,28 @@ export default function PlanosPublicos() {
             <div className="relative p-7 sm:p-8 flex flex-col flex-1">
               {/* Header */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-400 mb-2">Presencial</p>
-                <h3 className="text-2xl font-bold text-white leading-tight">Curso com Prática Clínica</h3>
-                <p className="mt-2 text-sm text-white/50 leading-relaxed">Teoria + 10h de prática supervisionada com pacientes reais. Por tema.</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-400 mb-2">Observacional</p>
+                <h3 className="text-2xl font-bold text-white leading-tight">Acompanhamento Observacional</h3>
+                <p className="mt-2 text-sm text-white/50 leading-relaxed">Aulas + 24h observando o Dr. Gustavo em atendimento + acompanhamento ao vivo.</p>
               </div>
 
               {/* Price */}
               <div className="mt-6">
                 <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-emerald-400 whitespace-nowrap">R$ 4.997</span>
-                <p className="text-xs text-white/30 mt-1">Por tema &middot; Toxina, Preenchedores, Bioestimuladores ou Biorregeneradores</p>
+                <p className="text-xs text-white/30 mt-1">Parcelamento disponível</p>
               </div>
 
               <div className="my-6 h-px bg-white/[0.07]" />
 
               {/* Features */}
-              <ul className="space-y-3">
+              <ul className="space-y-3 flex-1">
                 {[
-                  "Tudo do Acesso Vitalício",
-                  "10h prática clínica supervisionada",
-                  "Pacientes modelo reais",
-                  "1 tema à escolha",
-                  "Grupo WhatsApp de mentorados",
-                  "Certificado do tema",
+                  "Tudo da Plataforma Online",
+                  "24h de observação clínica presencial",
+                  "Acompanhamento quinzenal ao vivo",
+                  "Comunidade do portal + créditos",
+                  "Certificado de participação",
+                  "Acesso ao portal por 12 meses",
                 ].map((f, i) => (
                   <li key={f} className="flex items-start gap-3">
                     <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center bg-emerald-500/15">
@@ -394,24 +394,6 @@ export default function PlanosPublicos() {
                   </li>
                 ))}
               </ul>
-
-              {/* Not included */}
-              <div className="mt-5 pt-4 border-t border-white/[0.05]">
-                <p className="text-[10px] uppercase tracking-wider text-white/25 mb-2">Não incluso</p>
-                <ul className="space-y-2">
-                  {[
-                    "Mentoria completa",
-                    "Todos os temas",
-                  ].map((f) => (
-                    <li key={f} className="flex items-start gap-3">
-                      <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center bg-white/[0.04]">
-                        <X className="h-[10px] w-[10px] text-white/20" />
-                      </div>
-                      <span className="text-[13px] text-white/30 leading-snug">{f}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
 
               {/* CTA */}
               <a
@@ -424,12 +406,12 @@ export default function PlanosPublicos() {
                 <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                 </svg>
-                Quero Praticar <ArrowRight className="h-4 w-4" />
+                Quero Acompanhar <ArrowRight className="h-4 w-4" />
               </a>
             </div>
           </div>
 
-          {/* ── Card 3: Mentoria Completa NaturalUp (premium) ── */}
+          {/* ── Card 3: Acompanhamento VIP (premium) ── */}
           <div className="relative rounded-[28px] overflow-hidden flex flex-col"
             style={{
               background: "linear-gradient(145deg, #1A103A 0%, #12082E 50%, #0D0622 100%)",
@@ -454,8 +436,8 @@ export default function PlanosPublicos() {
               {/* Header */}
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-purple-400 mb-2">Formação Completa</p>
-                <h3 className="text-2xl font-bold text-white leading-tight">Mentoria Completa NaturalUp&reg;</h3>
-                <p className="mt-2 text-sm text-white/50 leading-relaxed">A formação mais completa — teoria, prática em todos os temas e mentoria com Dr. Gustavo.</p>
+                <h3 className="text-2xl font-bold text-white leading-tight">Acompanhamento VIP</h3>
+                <p className="mt-2 text-sm text-white/50 leading-relaxed">Prática hands-on + mentoria individual + método NaturalUp®.</p>
               </div>
 
               {/* Price */}
@@ -467,15 +449,16 @@ export default function PlanosPublicos() {
               <div className="my-6 h-px bg-white/[0.07]" />
 
               {/* Features */}
-              <ul className="space-y-3">
+              <ul className="space-y-3 flex-1">
                 {[
-                  "Tudo do Acesso Vitalício",
-                  "Prática em TODOS os temas",
-                  "Acompanhamento quinzenal ao vivo — aulona em grupo + tira-dúvidas",
-                  "Ganhe créditos na plataforma por participação no acompanhamento",
-                  "Suporte direto ilimitado",
-                  "Acompanhamento individualizado",
-                  "Certificado completo Ampla Facial",
+                  "Tudo do Acompanhamento Observacional",
+                  "16h de prática hands-on em pacientes modelo",
+                  "Mentoria individual por 6 meses",
+                  "Canal direto com Dr. Gustavo",
+                  "Acompanhamento quinzenal ao vivo",
+                  "Método NaturalUp® (5º módulo)",
+                  "Licença da marca NaturalUp® só no Elite",
+                  "Certificado com carga horária",
                 ].map((f, i) => (
                   <li key={f} className="flex items-start gap-3">
                     <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center bg-purple-500/15">
@@ -505,7 +488,7 @@ export default function PlanosPublicos() {
             </div>
           </div>
 
-          {/* ── Card 4: Imersão Elite ── */}
+          {/* ── Card 4: Acompanhamento Elite ── */}
           <div className="relative rounded-[28px] overflow-hidden flex flex-col"
             style={{
               background: "linear-gradient(145deg, #050810 0%, #0B1022 50%, #141B33 100%)",
@@ -526,9 +509,9 @@ export default function PlanosPublicos() {
               </span>
 
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#E8C86A] mb-2">Os Bastidores</p>
-                <h3 className="text-2xl sm:text-[28px] font-bold text-white leading-tight">Imersão Elite</h3>
-                <p className="mt-2 text-sm text-white/50 leading-relaxed">Os bastidores da Clínica Gustavo Martins — acompanhamento 360° por 12 meses.</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#E8C86A] mb-2">O Mais Alto Nível</p>
+                <h3 className="text-2xl sm:text-[28px] font-bold text-white leading-tight">Acompanhamento Elite</h3>
+                <p className="mt-2 text-sm text-white/50 leading-relaxed">Os bastidores da Clínica + licença exclusiva da marca NaturalUp® — acompanhamento 360° por 12 meses.</p>
               </div>
 
               <div className="mt-6">
@@ -542,12 +525,13 @@ export default function PlanosPublicos() {
 
               <ul className="space-y-3 flex-1">
                 {[
-                  "Tudo da Mentoria Completa",
+                  "Tudo do Acompanhamento VIP",
                   "32h de prática com pacientes modelo",
                   "7 dias clínicos completos ao lado do Dr.",
                   "Bastidores: gestão e operação da clínica",
                   "Mentoria individual por 12 meses",
-                  "Licença exclusiva da marca NaturalUp®",
+                  "Licença oficial da marca NaturalUp®",
+                  "Único plano com direito à logo NaturalUp®",
                 ].map((f) => (
                   <li key={f} className="flex items-start gap-3">
                     <div className="mt-[2px] h-[18px] w-[18px] shrink-0 rounded-full flex items-center justify-center" style={{ background: "rgba(232,200,106,0.15)" }}>
@@ -559,7 +543,7 @@ export default function PlanosPublicos() {
               </ul>
 
               <a
-                href={`${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse na Imersão Elite (bastidores + 32h prática + 7 dias clínicos). Podemos conversar?")}`}
+                href={`${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse no Acompanhamento Elite (bastidores + 32h prática + 7 dias clínicos + licença NaturalUp). Podemos conversar?")}`}
                 target="_blank" rel="noopener noreferrer"
                 className="mt-auto pt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-all duration-200 hover:brightness-110"
                 style={{ background: "linear-gradient(135deg, #E8C86A, #FFD87A)", color: "#0A0D14", boxShadow: "0 4px 24px rgba(232,200,106,0.35)" }}
@@ -567,7 +551,7 @@ export default function PlanosPublicos() {
                 <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                 </svg>
-                Quero a Imersão Elite <ArrowRight className="h-4 w-4" />
+                Quero o Acompanhamento Elite <ArrowRight className="h-4 w-4" />
               </a>
             </div>
           </div>

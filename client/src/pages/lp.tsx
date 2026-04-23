@@ -674,24 +674,23 @@ export default function LandingPage() {
             <FadeIn className="h-full">
               <div className="bg-[#0F1A2E] border border-white/10 rounded-2xl p-7 flex flex-col relative h-full">
                 <span className="inline-block text-[11px] font-semibold uppercase tracking-widest text-[#D4A843] bg-[#D4A843]/10 px-3 py-1 rounded-full self-start mb-5">
-                  Presencial
+                  Observacional
                 </span>
-                <h3 className="lp-serif text-xl font-bold mb-1">Curso com Prática Clínica</h3>
-                <p className="text-sm text-gray-400 mb-4">Teoria + prática com pacientes reais</p>
+                <h3 className="lp-serif text-xl font-bold mb-1">Acompanhamento Observacional</h3>
+                <p className="text-sm text-gray-400 mb-4">Observe o Dr. Gustavo em atendimento</p>
 
                 <div className="mb-6">
                   <p className="text-2xl font-bold text-white"><span className="text-[#D4A843]">R$ 4.997</span></p>
-                  <p className="text-xs text-gray-500 mt-0.5">Por tema &middot; Parcelamento disponível</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Parcelamento disponível</p>
                 </div>
 
                 <ul className="space-y-3 mb-8 flex-1">
                   {[
-                    "Tudo do Acesso Vitalício",
-                    "10h prática clínica supervisionada",
-                    "Pacientes modelo reais",
-                    "1 tema à escolha",
-                    "Grupo WhatsApp de mentorados",
-                    "Certificado do tema",
+                    "Tudo da Plataforma Online",
+                    "24h de observação clínica presencial",
+                    "Acompanhamento quinzenal ao vivo",
+                    "Comunidade do portal + créditos",
+                    "Certificado de participação",
                   ].map((f, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
                       <Check className="w-4 h-4 text-[#D4A843] mt-0.5 shrink-0" />
@@ -701,18 +700,18 @@ export default function LandingPage() {
                 </ul>
 
                 <p className="text-xs text-gray-500 mb-5">
-                  Ideal para quem quer praticar com supervisão
+                  Ideal para quem quer ver como é a rotina clínica
                 </p>
 
                 <div className="mt-auto pt-4 border-t border-white/10">
                   <a
-                    href="https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20no%20Curso%20com%20Pr%C3%A1tica%20Cl%C3%ADnica.%20Podemos%20conversar%3F"
+                    href="https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20vim%20pela%20p%C3%A1gina%20e%20tenho%20interesse%20no%20Acompanhamento%20Observacional.%20Podemos%20conversar%3F"
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
                     className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
                   >
-                    Quero Praticar
+                    Quero Acompanhar
                   </a>
                 </div>
               </div>
@@ -724,9 +723,9 @@ export default function LandingPage() {
                 <span className="inline-block text-[11px] font-semibold uppercase tracking-widest text-[#D4A843] bg-[#D4A843]/10 px-3 py-1 rounded-full self-start mb-5">
                   Formação Completa
                 </span>
-                <h3 className="lp-serif text-xl font-bold mb-1">Mentoria Completa NaturalUp&reg;</h3>
+                <h3 className="lp-serif text-xl font-bold mb-1">Acompanhamento VIP</h3>
                 <p className="text-sm text-gray-400 mb-4">
-                  Teoria, prática em todos os temas e mentoria
+                  Prática hands-on + mentoria + método NaturalUp®
                 </p>
 
                 <div className="mb-6">
@@ -736,12 +735,12 @@ export default function LandingPage() {
 
                 <ul className="space-y-3 mb-8 flex-1">
                   {[
-                    "Tudo do Acesso Vitalício",
-                    "Prática em TODOS os temas",
-                    "Acompanhamento quinzenal ao vivo — aulona em grupo + tira-dúvidas",
-                    "Créditos na plataforma por participação ativa",
-                    "Suporte direto ilimitado",
-                    "Acompanhamento individualizado",
+                    "Tudo do Acompanhamento Observacional",
+                    "16h de prática hands-on com pacientes modelo",
+                    "Mentoria individual por 6 meses",
+                    "Canal direto com Dr. Gustavo",
+                    "Acompanhamento quinzenal ao vivo",
+                    "Método NaturalUp® (5º módulo)",
                     "Certificado completo Ampla Facial",
                   ].map((f, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-gray-300">
@@ -789,10 +788,10 @@ export default function LandingPage() {
                     Experiência definitiva · vagas limitadas
                   </div>
                   <h3 className="lp-serif text-2xl md:text-3xl font-bold text-white mb-2">
-                    Imersão Elite · Os Bastidores
+                    Acompanhamento Elite
                   </h3>
                   <p className="text-sm text-gray-300 mb-4 max-w-2xl leading-relaxed">
-                    Tudo da Mentoria Completa, mais 32h de prática em pacientes modelo e 7 dias clínicos
+                    Tudo do Acompanhamento VIP, mais 32h de prática em pacientes modelo e 7 dias clínicos
                     completos ao meu lado. Você vive a rotina inteira: atendimento, burocracia,
                     administração, gravação de vídeos, bastidores da Clínica Gustavo Martins.
                   </p>
@@ -817,12 +816,12 @@ export default function LandingPage() {
                   <p className="text-3xl font-bold text-[#E8C86A] mb-1">R$ 35.000</p>
                   <p className="text-xs text-gray-400 mb-4">12x de R$ 2.916,67</p>
                   <a
-                    href="https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20tenho%20interesse%20na%20Imers%C3%A3o%20Elite%20(bastidores%20%2B%2032h%20pr%C3%A1tica%20%2B%207%20dias%20cl%C3%ADnicos).%20Podemos%20conversar%3F"
+                    href="https://wa.me/5521976263881?text=Oi%20Dr.%20Gustavo%2C%20tenho%20interesse%20no%20Acompanhamento%20Elite%20(bastidores%20%2B%2032h%20pr%C3%A1tica%20%2B%207%20dias%20cl%C3%ADnicos).%20Podemos%20conversar%3F"
                     target="_blank" rel="noopener noreferrer"
                     style={{ backgroundColor: "#E8C86A", color: "#0A0D14" }}
                     className="inline-flex items-center justify-center gap-2 w-full md:w-auto px-6 py-3.5 rounded-xl font-semibold text-sm hover:brightness-110 transition whitespace-nowrap"
                   >
-                    Quero a Imersão Elite
+                    Quero o Acompanhamento Elite
                     <ArrowRight className="w-4 h-4" />
                   </a>
                 </div>

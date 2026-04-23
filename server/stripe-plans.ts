@@ -25,7 +25,9 @@ export interface PlanConfig {
   hasNaturalUp: boolean; // aprende o método NaturalUp®
   naturalUpLicense: boolean; // licença para USAR a marca NaturalUp® (logo + nome) — só Elite
   // Visibilidade
-  hidden?: boolean; // true = não exibir em páginas públicas de planos (ex: workshop invite-only)
+  hidden?: boolean; // true = não exibir em páginas públicas de planos (mas aparece para aluno logado se for upgrade válido — ex.: VIP Econômico)
+  deprecated?: boolean; // true = nunca exibe, nem para alunos logados (planos legados que ainda existem só para compatibilidade)
+  promoUntil?: string; // ISO date — se presente, plano expira nessa data
   // Upgrade — planos que este plano pode ser destino
   canUpgradeTo: PlanKey[];
   // Valor de mercado equivalente (para mostrar valor percebido)
@@ -62,8 +64,8 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
   },
   acesso_vitalicio: {
     key: "acesso_vitalicio",
-    name: "Acesso Vitalício",
-    description: "Apenas aulas gravadas e materiais complementares — sem encontros ao vivo, sem mentoria, sem suporte",
+    name: "Plataforma Online",
+    description: "Acesso vitalício às aulas e materiais — estude no seu ritmo, sem interações ao vivo",
     price: 39700,
     installments12x: 3308,
     group: "digital",
@@ -72,13 +74,8 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     features: [
       "Todos os 4 módulos completos (60+ aulas gravadas)",
       "Materiais científicos complementares",
-      "Acesso vitalício — assista no seu ritmo, sem prazo",
+      "Acesso vitalício — assista quantas vezes quiser",
       "Atualizações futuras das aulas incluídas",
-      "Sem acompanhamento ao vivo (apenas aulas gravadas)",
-      "Sem canal direto, sem suporte a dúvidas",
-      "Sem acesso à comunidade do portal",
-      "Sem certificado",
-      "Apenas assistir as aulas — decisão clínica é responsabilidade do aluno",
     ],
     accessDays: 36500,
     includesModules: true,
@@ -151,25 +148,93 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     hasLiveEvents: false,
     hasNaturalUp: false,
     naturalUpLicense: false,
-    canUpgradeTo: ["observador_avancado", "observador_intensivo", "imersao", "vip_online", "vip_presencial", "vip_completo", "imersao_elite"],
+    canUpgradeTo: ["observacional_economico", "observacional_moderado", "observador_essencial", "vip_online", "vip_presencial", "vip_completo", "imersao_elite"],
+  },
+
+  // ─── ACOMPANHAMENTO OBSERVACIONAL ─ Econômico (hidden, Amanda negocia) ───────────
+  observacional_economico: {
+    key: "observacional_economico",
+    hidden: true,
+    name: "Acompanhamento Observacional (Econômico)",
+    description: "Versão enxuta para negociação — 8h de observação + acompanhamento ao vivo",
+    price: 299700,
+    installments12x: 27970,
+    group: "observador",
+    features: [
+      "Todos os 4 módulos completos",
+      "Materiais científicos complementares",
+      "8h de observação clínica presencial (2 turnos)",
+      "Acompanhamento quinzenal ao vivo",
+      "Comunidade do portal + créditos",
+      "Certificado de participação",
+      "Acesso ao portal por 12 meses",
+      "Horas extras de observação compráveis dentro da plataforma",
+    ],
+    accessDays: 365,
+    includesModules: true,
+    clinicalHours: 8,
+    practiceHours: 0,
+    hasDirectChannel: false,
+    channelMonths: 0,
+    hasMentorship: false,
+    mentorshipMonths: 0,
+    hasLiveEvents: true,
+    hasNaturalUp: false,
+    naturalUpLicense: false,
+    canUpgradeTo: ["observacional_moderado", "observador_essencial", "vip_online", "vip_presencial", "vip_completo", "imersao_elite"],
+  },
+
+  // ─── ACOMPANHAMENTO OBSERVACIONAL ─ Moderado (hidden) ─────────────────────
+  observacional_moderado: {
+    key: "observacional_moderado",
+    hidden: true,
+    name: "Acompanhamento Observacional (Moderado)",
+    description: "Versão intermediária — 16h de observação + acompanhamento ao vivo",
+    price: 399700,
+    installments12x: 37320,
+    group: "observador",
+    features: [
+      "Todos os 4 módulos completos",
+      "Materiais científicos complementares",
+      "16h de observação clínica presencial (4 turnos)",
+      "Acompanhamento quinzenal ao vivo",
+      "Comunidade do portal + créditos",
+      "Certificado de participação",
+      "Acesso ao portal por 12 meses",
+      "Horas extras de observação compráveis dentro da plataforma",
+    ],
+    accessDays: 365,
+    includesModules: true,
+    clinicalHours: 16,
+    practiceHours: 0,
+    hasDirectChannel: false,
+    channelMonths: 0,
+    hasMentorship: false,
+    mentorshipMonths: 0,
+    hasLiveEvents: true,
+    hasNaturalUp: false,
+    naturalUpLicense: false,
+    canUpgradeTo: ["observador_essencial", "vip_online", "vip_presencial", "vip_completo", "imersao_elite"],
   },
 
   observador_essencial: {
     key: "observador_essencial",
-    name: "Observador Essencial",
-    description: "24h de observação clínica presencial + 4 módulos",
+    name: "Acompanhamento Observacional",
+    description: "Aulas + 24h de observação clínica ao lado do Dr. Gustavo + acompanhamento quinzenal ao vivo",
     price: 499700,
     installments12x: 46700,
     group: "observador",
-    hidden: true,
     features: [
-      "4 módulos gravados",
-      "Acesso ao portal por 6 meses",
+      "Todos os 4 módulos completos (60+ aulas gravadas)",
+      "Materiais científicos complementares",
       "24h de observação clínica presencial (~6 turnos de 4h)",
-      "Dimensão comercial e gestão",
+      "Acompanhamento quinzenal ao vivo — aulona em grupo + tira-dúvidas",
+      "Ganhe créditos na plataforma por participação ativa",
+      "Acesso à comunidade do portal com créditos",
       "Certificado de participação",
+      "Acesso ao portal por 12 meses",
     ],
-    accessDays: 180,
+    accessDays: 365,
     includesModules: true,
     clinicalHours: 24,
     practiceHours: 0,
@@ -180,17 +245,21 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     hasLiveEvents: true,
     hasNaturalUp: false,
     naturalUpLicense: false,
-    canUpgradeTo: ["observador_avancado", "observador_intensivo", "imersao", "vip_completo", "imersao_elite"],
+    canUpgradeTo: ["vip_completo", "imersao_elite"],
   },
 
   observador_avancado: {
     key: "observador_avancado",
+    hidden: true,
+    deprecated: true,
     name: "Observador Avançado",
+    // DEPRECATED — existe apenas para suportar alunos antigos. Não aparece mais na vitrine.
+    // Novos clientes compram "Acompanhamento Observacional" (24h) + horas extras se quiserem.
+
     description: "48h de observação clínica presencial + 4 módulos",
     price: 699700,
     installments12x: 64700,
     group: "observador",
-    hidden: true,
     features: [
       "4 módulos gravados",
       "Acesso ao portal por 6 meses",
@@ -214,12 +283,15 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
 
   observador_intensivo: {
     key: "observador_intensivo",
+    hidden: true,
+    deprecated: true,
     name: "Observador Intensivo",
+    // DEPRECATED — existe apenas para suportar alunos antigos. Não aparece mais na vitrine.
+
     description: "96h de observação clínica presencial + 4 módulos",
     price: 999700,
     installments12x: 91700,
     group: "observador",
-    hidden: true,
     features: [
       "4 módulos gravados",
       "Acesso ao portal por 6 meses",
@@ -249,6 +321,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     installments12x: null,
     group: "observador",
     hidden: true,
+    deprecated: true,
     highlight: "Mais completo para iniciantes",
     valorMercado: 4000000,
     features: [
@@ -276,71 +349,72 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     canUpgradeTo: ["vip_completo", "imersao_elite"],
   },
 
+  // ─── ACOMPANHAMENTO VIP ─ Econômico (hidden, Amanda negocia) ──────────────────
+  // Repurposed from antigo vip_online (mantém a chave para compatibilidade).
   vip_online: {
     key: "vip_online",
-    name: "VIP Online",
-    description: "Mentoria remota de 3 meses com o Dr. Gustavo",
-    price: 743000,
+    name: "Acompanhamento VIP (Econômico)",
+    description: "Versão enxuta para negociação — 10h de prática hands-on + mentoria 6 meses",
+    price: 1399700,
     installments12x: null,
     group: "vip",
     hidden: true,
     valorMercado: 2800000,
     features: [
-      "Acompanhamento individual por 3 meses",
-      "Canal exclusivo direto com Dr. Gustavo (3 meses)",
-      "Suporte a dúvidas clínicas (3 meses)",
-      "Acompanhamento quinzenal ao vivo — aulona em grupo + tira-dúvidas (3 meses)",
-      "Ganhe créditos na plataforma por participação ativa no acompanhamento",
-      "Gravações dos encontros",
-      "Networking com a turma",
-      "4 módulos gravados: Toxina, Preenchedores, Bioestimuladores, Regeneradores",
-      "Acesso ao portal por 12 meses",
-      "Método NaturalUp® completo (5º módulo exclusivo)",
-      "Análise de casos clínicos em grupo",
-      "Certificado de conclusão com carga horária",
+      "Tudo do Acompanhamento Observacional (24h)",
+      "10h de prática hands-on com pacientes modelo",
+      "Supervisão direta do Dr. Gustavo",
+      "Mentoria individual por 6 meses",
+      "Canal direto com Dr. Gustavo (6 meses)",
+      "Acompanhamento quinzenal ao vivo",
+      "Método NaturalUp® (5º módulo) — aprende mas não usa a marca",
+      "Certificado com carga horária",
+      "Horas extras de prática compráveis dentro da plataforma",
     ],
     accessDays: 365,
     includesModules: true,
-    clinicalHours: 0,
-    practiceHours: 0,
+    clinicalHours: 24,
+    practiceHours: 10,
     hasDirectChannel: true,
-    channelMonths: 3,
+    channelMonths: 6,
     hasMentorship: true,
-    mentorshipMonths: 3,
+    mentorshipMonths: 6,
     hasLiveEvents: true,
     hasNaturalUp: true,
     naturalUpLicense: false,
-    canUpgradeTo: ["vip_completo", "imersao_elite"],
+    canUpgradeTo: ["vip_presencial", "vip_completo", "imersao_elite"],
   },
 
+  // ─── ACOMPANHAMENTO VIP ─ Moderado (hidden, Amanda negocia) ─────────────────
+  // Repurposed from antigo vip_presencial.
   vip_presencial: {
     key: "vip_presencial",
-    name: "VIP Presencial",
-    description: "16h de prática supervisionada com pacientes modelo",
-    price: 1239000,
+    name: "Acompanhamento VIP (Moderado)",
+    description: "Versão intermediária — 13h de prática hands-on + mentoria 6 meses",
+    price: 1549700,
     installments12x: null,
     group: "vip",
     hidden: true,
     valorMercado: 3500000,
     features: [
-      "16h de atendimento presencial com pacientes modelo (4 encontros de 4h)",
-      "Supervisão direta do Dr. Gustavo em todos os atendimentos",
-      "4 módulos gravados: Toxina, Preenchedores, Bioestimuladores, Regeneradores",
-      "Acesso ao portal por 12 meses",
-      "Acompanhamento individual por 3 meses",
-      "Canal exclusivo direto com Dr. Gustavo (3 meses)",
-      "Suporte a dúvidas clínicas por 3 meses",
-      "Método NaturalUp® completo (5º módulo exclusivo)",
-      "Certificado de conclusão com carga horária",
+      "Tudo do Acompanhamento Observacional (24h)",
+      "13h de prática hands-on com pacientes modelo",
+      "Supervisão direta do Dr. Gustavo",
+      "Mentoria individual por 6 meses",
+      "Canal direto com Dr. Gustavo (6 meses)",
+      "Acompanhamento quinzenal ao vivo",
+      "Método NaturalUp® (5º módulo) — aprende mas não usa a marca",
+      "Certificado com carga horária",
+      "Horas extras de prática compráveis dentro da plataforma",
     ],
     accessDays: 365,
     includesModules: true,
-    clinicalHours: 0,
-    practiceHours: 16,
+    clinicalHours: 24,
+    practiceHours: 13,
     hasDirectChannel: true,
-    channelMonths: 3,
+    channelMonths: 6,
     hasMentorship: true,
-    mentorshipMonths: 3,
+    mentorshipMonths: 6,
     hasLiveEvents: true,
     hasNaturalUp: true,
     naturalUpLicense: false,
@@ -351,29 +425,29 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
   // para usar a marca/logo. Direitos de uso da marca só no plano Imersão Elite.
   vip_completo: {
     key: "vip_completo",
-    name: "VIP Completo",
-    description: "A formação mais completa — Online + Presencial",
+    name: "Acompanhamento VIP",
+    description: "A formação completa — prática hands-on + mentoria individual + método NaturalUp®",
     price: 1735000,
     installments12x: null,
     group: "vip",
     highlight: "Formação completa",
     valorMercado: 6000000,
     features: [
-      "Tudo do VIP Online (6 meses)",
-      "16h de prática presencial com pacientes modelo (4 encontros de 4h)",
+      "Todos os 4 módulos completos (60+ aulas gravadas)",
+      "Materiais científicos complementares",
+      "16h de prática hands-on com pacientes modelo",
       "Supervisão direta do Dr. Gustavo em todos os atendimentos",
-      "4 módulos gravados: Toxina, Preenchedores, Bioestimuladores, Regeneradores",
-      "Acesso ao portal por 12 meses",
-      "Acompanhamento individual por 6 meses",
-      "Canal exclusivo direto com Dr. Gustavo (6 meses)",
+      "Mentoria individual por 6 meses",
+      "Canal direto com Dr. Gustavo (6 meses)",
       "Acompanhamento quinzenal ao vivo — aulona em grupo + tira-dúvidas",
-      "Ganhe créditos na plataforma por participação ativa no acompanhamento",
+      "Ganhe créditos na plataforma por participação ativa",
       "Gravações de todos os encontros",
       "Networking com a turma",
-      "Aprende o método NaturalUp® completo (5º módulo exclusivo)",
-      "Licença de uso da marca NaturalUp® não inclusa — exclusiva da Imersão Elite",
+      "Aprende o método NaturalUp® (5º módulo exclusivo)",
+      "Licença de uso da marca NaturalUp® NÃO inclusa — exclusiva do Elite",
       "Análise de casos clínicos em grupo",
       "Certificado de conclusão com carga horária",
+      "Acesso ao portal por 12 meses",
     ],
     accessDays: 365,
     includesModules: true,
@@ -392,25 +466,24 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
   // ─── IMERSÃO ELITE ─ Top tier, bastidores + 32h prática ──────────────────
   imersao_elite: {
     key: "imersao_elite",
-    name: "Imersão Elite",
-    description: "Os bastidores da Clínica Gustavo Martins — acompanhamento 360°",
+    name: "Acompanhamento Elite",
+    description: "O mais alto nível — bastidores da Clínica + licença exclusiva da marca NaturalUp®",
     price: 3500000,
     installments12x: 291667,
     group: "vip",
     highlight: "Experiência definitiva",
     valorMercado: 12000000,
     features: [
-      "Tudo da Mentoria VIP Completa, acumulativo",
+      "Tudo do Acompanhamento VIP, acumulativo",
       "32h de prática hands-on com pacientes modelo (o dobro da VIP)",
       "7 dias clínicos completos de acompanhamento ao lado do Dr. Gustavo",
       "1 ANO de acompanhamento direto — tudo que surgir no caminho, você vive",
       "Aprenda toda a rotina: atendimento, burocracia, administração e bastidores",
       "Observe como filmamos vídeos e criamos conteúdo",
       "Acesso aos processos internos da Clínica Gustavo Martins",
-      "Acompanhamento individual por 12 meses",
+      "Mentoria individual por 12 meses",
       "Canal direto prioritário com Dr. Gustavo (12 meses)",
-      "Acompanhamento quinzenal ao vivo por 12 meses — aulona em grupo + tira-dúvidas",
-      "Ganhe créditos na plataforma por participação ativa no acompanhamento",
+      "Acompanhamento quinzenal ao vivo por 12 meses",
       "Acesso VIP à comunidade do portal com créditos",
       "Método NaturalUp® completo + protocolos exclusivos",
       "Licença oficial de uso da marca e logo NaturalUp® em seu consultório",
@@ -651,13 +724,14 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
 };
 
 // ─── Cálculo de crédito de upgrade ──────────────────────────────────────────
-// Regra: até 60 dias = 100% do que pagou; depois = 70%
+// Regra: até 60 dias = 100% · 61–180 dias = 70% · após 180 dias = 50%
 export function calculateUpgradeCredit(
   amountPaid: number, // centavos
   daysSincePurchase: number,
 ): number {
   if (daysSincePurchase <= 60) return amountPaid;
-  return Math.floor(amountPaid * 0.7);
+  if (daysSincePurchase <= 180) return Math.floor(amountPaid * 0.7);
+  return Math.floor(amountPaid * 0.5);
 }
 
 export function calculateUpgradePrice(
@@ -683,6 +757,8 @@ export const CASHBACK_RATES: Record<PlanKey, number> = {
   acesso_vitalicio: 0.05,
   modulo_avulso: 0.03,
   pacote_completo: 0.05,
+  observacional_economico: 0.05,
+  observacional_moderado: 0.05,
   observador_essencial: 0.05,
   observador_avancado: 0.07,
   observador_intensivo: 0.08,
@@ -717,13 +793,23 @@ export function isPlanVisibleForStudent(
 ): boolean {
   const target = PLANS[targetKey];
   if (!target) return false;
-  if (target.hidden) return false;
 
-  // Aluno sem plano ou em trial: vê tudo.
-  if (!currentKey || currentKey === "tester" || currentKey === "workshop") return true;
+  // Aluno sem plano ou em trial (visitante da LP pública): só vê os planos públicos.
+  // Essa é a vitrine pública — apenas 1 modalidade de cada (a cheia).
+  if (!currentKey || currentKey === "tester" || currentKey === "workshop") {
+    return !target.hidden;
+  }
+
+  // A partir daqui: aluno logado com plano ativo. Pode ver opções "hidden" se
+  // forem upgrade válido (ex.: VIP Econômico para aluno atualmente no Observacional).
+  // Os hidden "deprecated" (observador_avancado/intensivo, imersao) continuam sem
+  // aparecer porque não estão em canUpgradeTo de nenhum plano novo.
 
   const current = PLANS[currentKey];
   if (!current) return true;
+
+  // Planos deprecated nunca aparecem (nem para alunos logados).
+  if (target.deprecated) return false;
 
   // O próprio plano atual não aparece como "compre de novo".
   if (targetKey === currentKey) return false;

@@ -19,6 +19,8 @@ export const PLAN_KEYS = [
   "acesso_vitalicio",
   "modulo_avulso",
   "pacote_completo",
+  "observacional_economico",
+  "observacional_moderado",
   "observador_essencial",
   "observador_avancado",
   "observador_intensivo",
