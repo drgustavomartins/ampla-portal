@@ -358,7 +358,7 @@ export default function PlanosPublicos() {
 
               {/* Not included */}
               {/* CTA */}
-              <div className="mt-auto pt-4 sm:pt-6">
+              <div className="mt-auto pt-7 sm:pt-6">
                 <button
                   onClick={handleCheckout}
                   disabled={loadingCheckout || countdown.expired || slots?.soldOut}
@@ -437,7 +437,7 @@ export default function PlanosPublicos() {
                 ))}
               </ul>
 
-              <div className="mt-auto pt-4 sm:pt-6">
+              <div className="mt-auto pt-7 sm:pt-6">
                 <a
                   href={`${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse no Módulo Avulso com Prática. Quero saber mais sobre qual tema escolher.")}`}
                   target="_blank" rel="noopener noreferrer"
@@ -510,7 +510,7 @@ export default function PlanosPublicos() {
                 href={WHATSAPP_PRATICA}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-auto pt-4 sm:pt-8 flex w-full items-center justify-center gap-1.5 rounded-lg sm:rounded-2xl py-2 sm:py-4 text-[12px] sm:text-[15px] font-semibold sm:font-bold transition-all duration-200 hover:brightness-110"
+                className="mt-auto pt-7 sm:pt-8 flex w-full items-center justify-center gap-1.5 rounded-lg sm:rounded-2xl py-2 sm:py-4 text-[12px] sm:text-[15px] font-semibold sm:font-bold transition-all duration-200 hover:brightness-110"
                 style={{ background: "#34D399", color: "#071A10", boxShadow: "0 4px 24px rgba(52,211,153,0.25)" }}
               >
                 <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -588,7 +588,7 @@ export default function PlanosPublicos() {
                 href={WHATSAPP_MENTORIA}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-auto pt-4 sm:pt-8 flex w-full items-center justify-center gap-1.5 rounded-lg sm:rounded-2xl py-2 sm:py-4 text-[12px] sm:text-[15px] font-semibold sm:font-bold transition-all duration-200 hover:brightness-110"
+                className="mt-auto pt-7 sm:pt-8 flex w-full items-center justify-center gap-1.5 rounded-lg sm:rounded-2xl py-2 sm:py-4 text-[12px] sm:text-[15px] font-semibold sm:font-bold transition-all duration-200 hover:brightness-110"
                 style={{ background: "linear-gradient(135deg, #8B5CF6, #C084FC)", color: "#fff", boxShadow: "0 4px 24px rgba(139,92,246,0.3)" }}
               >
                 <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -657,7 +657,7 @@ export default function PlanosPublicos() {
               <a
                 href={`${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse no Acompanhamento Elite (bastidores + 32h prática + 7 dias clínicos + licença NaturalUp). Podemos conversar?")}`}
                 target="_blank" rel="noopener noreferrer"
-                className="mt-auto pt-4 sm:pt-8 flex w-full items-center justify-center gap-1.5 rounded-lg sm:rounded-2xl py-2 sm:py-4 text-[12px] sm:text-[15px] font-semibold sm:font-bold transition-all duration-200 hover:brightness-110"
+                className="mt-auto pt-7 sm:pt-8 flex w-full items-center justify-center gap-1.5 rounded-lg sm:rounded-2xl py-2 sm:py-4 text-[12px] sm:text-[15px] font-semibold sm:font-bold transition-all duration-200 hover:brightness-110"
                 style={{ background: "linear-gradient(135deg, #E8C86A, #FFD87A)", color: "#0A0D14", boxShadow: "0 4px 24px rgba(232,200,106,0.35)" }}
               >
                 <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
