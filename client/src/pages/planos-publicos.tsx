@@ -185,10 +185,10 @@ export default function PlanosPublicos() {
                 {countdown.days}d {String(countdown.hours).padStart(2,"0")}h {String(countdown.minutes).padStart(2,"0")}m {String(countdown.seconds).padStart(2,"0")}s
               </span>
             </span>
-            {slots && slots.remaining <= 200 && slots.remaining > 0 && (
+            {slots && !slots.soldOut && (
               <span className="inline-flex items-center gap-1 rounded-full bg-[#D4A843]/15 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-[#D4A843]">
                 <span className="w-1.5 h-1.5 bg-[#D4A843] rounded-full animate-pulse" />
-                {slots.remaining === 1 ? "Apenas 1 vaga restante" : `Restam ${slots.remaining} vagas`}
+                Vagas limitadas
               </span>
             )}
             {slots?.soldOut && (
@@ -299,10 +299,13 @@ export default function PlanosPublicos() {
                   </>
                 ) : (
                   <>
-                    <div className="flex items-baseline gap-2">
+                    <div className="flex items-baseline gap-3 flex-wrap">
                       <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#D4A843] whitespace-nowrap">R$ 397</span>
+                      <span className="text-base sm:text-lg text-white/30 line-through tabular-nums whitespace-nowrap">R$ 5.937,90</span>
                     </div>
-                    <p className="text-xs text-white/30 mt-1">Pagamento único &middot; Sem mensalidade</p>
+                    <p className="text-xs text-white/40 mt-1">
+                      <span className="text-[#D4A843] font-semibold">93% OFF</span> · Pagamento único · Sem mensalidade
+                    </p>
                   </>
                 )}
               </div>
@@ -317,27 +320,16 @@ export default function PlanosPublicos() {
                 </div>
               )}
 
-              {/* Vagas disponiveis — barra de progresso */}
+              {/* Aviso de vagas limitadas */}
               {!countdown.expired && slots && !slots.soldOut && (
-                <div className="mt-3">
-                  <div className="flex items-center justify-between text-[11px] mb-1.5">
-                    <span className="text-white/50">Vagas restantes</span>
-                    <span className="font-bold text-[#D4A843] tabular-nums">{slots.remaining} de {slots.limit}</span>
-                  </div>
-                  <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${Math.max(2, (slots.remaining / slots.limit) * 100)}%`,
-                        background: "linear-gradient(90deg, #D4A843, #F0D78C)",
-                      }}
-                    />
-                  </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-[#D4A843] rounded-full animate-pulse shrink-0" />
+                  <span className="text-[11px] font-semibold text-[#D4A843]">Vagas limitadas</span>
                 </div>
               )}
               {slots?.soldOut && !countdown.expired && (
                 <div className="mt-3 rounded-lg bg-red-500/10 border border-red-500/30 px-3 py-2 text-center">
-                  <p className="text-[11px] font-semibold text-red-400">Todas as 200 vagas esgotadas</p>
+                  <p className="text-[11px] font-semibold text-red-400">Vagas esgotadas</p>
                   <p className="text-[10px] text-red-400/70">Oferta encerrada antes do prazo</p>
                 </div>
               )}
@@ -365,25 +357,32 @@ export default function PlanosPublicos() {
 
               {/* Not included */}
               {/* CTA */}
-              <button
-                onClick={handleCheckout}
-                disabled={loadingCheckout || countdown.expired || slots?.soldOut}
-                className="mt-auto pt-8 flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-[15px] font-bold transition-all duration-200 disabled:opacity-50 hover:brightness-110"
-                style={{
-                  background: countdown.expired ? "rgba(255,255,255,0.1)" : "linear-gradient(135deg, #D4A843, #F0D78C)",
-                  color: countdown.expired ? "rgba(255,255,255,0.3)" : "#0A0D14",
-                  boxShadow: countdown.expired ? "none" : "0 4px 24px rgba(212,168,67,0.35)",
-                  cursor: countdown.expired ? "not-allowed" : undefined,
-                }}
-              >
-                {countdown.expired ? (
-                  "Oferta encerrada"
-                ) : loadingCheckout ? (
-                  <><Loader2 className="h-5 w-5 animate-spin" /> Aguarde...</>
-                ) : (
-                  <>Garantir Acesso — R$ 397 <ArrowRight className="h-4 w-4" /></>
-                )}
-              </button>
+              <div className="mt-auto pt-6">
+                <button
+                  onClick={handleCheckout}
+                  disabled={loadingCheckout || countdown.expired || slots?.soldOut}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-semibold tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-105"
+                  style={{
+                    background: countdown.expired || slots?.soldOut
+                      ? "rgba(255,255,255,0.08)"
+                      : "linear-gradient(135deg, #D4A843 0%, #E8C86A 100%)",
+                    color: countdown.expired || slots?.soldOut ? "rgba(255,255,255,0.3)" : "#0A0D14",
+                    boxShadow: countdown.expired || slots?.soldOut
+                      ? "none"
+                      : "0 2px 12px rgba(212,168,67,0.25), inset 0 1px 0 rgba(255,255,255,0.3)",
+                  }}
+                >
+                  {countdown.expired ? (
+                    "Oferta encerrada"
+                  ) : slots?.soldOut ? (
+                    "Vagas esgotadas"
+                  ) : loadingCheckout ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Aguarde...</>
+                  ) : (
+                    <>Garantir meu acesso <ArrowRight className="h-4 w-4" /></>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
