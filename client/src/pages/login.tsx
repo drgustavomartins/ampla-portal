@@ -189,7 +189,6 @@ export default function LoginPage() {
           <div className="flex items-center gap-2 justify-start pl-1">
             <img src="/logo-icon.png" alt="" className="h-20 w-20 object-contain shrink-0 -mt-3" />
             <div>
-              <p className="text-[10px] uppercase tracking-[0.35em] text-[#D4A843]/70 font-light mb-0.5">Portal de Aulas</p>
               <h1 className="text-[2rem] font-extrabold tracking-wide text-white leading-none">AMPLA FACIAL</h1>
               <p className="text-sm text-[#D4A843] mt-1 font-light tracking-wide">Dr. Gustavo Martins</p>
             </div>
@@ -201,7 +200,7 @@ export default function LoginPage() {
             <div>
               <h1 className="text-2xl font-semibold tracking-widest text-gold uppercase">Ampla Facial</h1>
               <div className="w-10 h-px bg-gold mx-auto mt-3 mb-2 opacity-50" />
-              <p className="text-xs tracking-widest uppercase text-white/40">Portal de Aulas — Dr. Gustavo Martins</p>
+              <p className="text-xs tracking-widest uppercase text-white/40">Dr. Gustavo Martins</p>
             </div>
           </div>
 

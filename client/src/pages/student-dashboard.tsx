@@ -711,7 +711,6 @@ export default function StudentDashboard() {
           <div className="flex items-center gap-2.5">
             <img src="/logo-icon.png" alt="Ampla Facial" className="w-10 h-10 object-contain shrink-0 -mt-1" />
             <div className="leading-none">
-              <p className="text-[8px] uppercase tracking-[0.3em] text-gold/50 font-light mb-0.5">Portal de Aulas</p>
               <p className="text-sm font-extrabold tracking-wide text-white">AMPLA FACIAL</p>
               <p className="text-[9px] text-gold/70 tracking-wide font-light">Dr. Gustavo Martins</p>
             </div>
