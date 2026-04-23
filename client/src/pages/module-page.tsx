@@ -102,7 +102,7 @@ function LessonThumb({ lesson, size = "md", done, theme, index }: {
         </div>
       )}
       {!done && isMd && (
-        <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute inset-0 bg-[#0A1628]/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
           <Play className="w-4 h-4 text-white ml-0.5 drop-shadow-md" />
         </div>
       )}
@@ -204,7 +204,7 @@ function MentoriaCTABanner({ onDismiss }: { onDismiss: () => void }) {
 // ─── Module Completion Congratulations ─────
 function ModuleCompletionCard({ moduleName, onDismiss }: { moduleName: string; onDismiss: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A1628]/60 backdrop-blur-sm p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onDismiss(); }}>
       <div className="relative w-full max-w-md rounded-2xl p-8 text-center"
         style={{ background: "linear-gradient(145deg, #12244A 0%, #0F2040 50%, #0A1628 100%)", boxShadow: "0 8px 56px rgba(212,168,67,0.15), 0 0 0 1px rgba(212,168,67,0.12)" }}>
@@ -869,7 +869,7 @@ export default function ModulePage() {
   })();
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex flex-col netflix-theme">
+    <div className="min-h-screen bg-[#0A1628] flex flex-col netflix-theme">
       {/* Expired Access Banner */}
       {isAccessExpired && (
         <div className="w-full bg-[#D4AF37]/10 border-b border-[#D4AF37]/20 px-4 py-2.5 flex items-center justify-between gap-4">
@@ -904,7 +904,7 @@ export default function ModulePage() {
       <div className="absolute top-4 left-4 z-20">
         <button
           onClick={() => setLocation("/")}
-          className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors bg-black/40 backdrop-blur-sm px-3 py-1.5 rounded-full"
+          className="inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition-colors bg-[#0A1628]/40 backdrop-blur-sm px-3 py-1.5 rounded-full"
         >
           <ChevronLeft className="w-4 h-4" />
           Voltar

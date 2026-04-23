@@ -1247,7 +1247,7 @@ export default function StudentDashboard() {
               {/* Left arrow */}
               <button
                 onClick={() => scrollShelf("left")}
-                className="hidden sm:flex absolute left-0 top-[35%] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-300 opacity-0 group-hover/shelf:opacity-100 -translate-x-1/2"
+                className="hidden sm:flex absolute left-0 top-[35%] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-[#0A1628]/60 backdrop-blur-sm border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-[#0A1628]/80 transition-all duration-300 opacity-0 group-hover/shelf:opacity-100 -translate-x-1/2"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -1255,7 +1255,7 @@ export default function StudentDashboard() {
               {/* Right arrow */}
               <button
                 onClick={() => scrollShelf("right")}
-                className="hidden sm:flex absolute right-0 top-[35%] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/80 transition-all duration-300 opacity-0 group-hover/shelf:opacity-100 translate-x-1/2"
+                className="hidden sm:flex absolute right-0 top-[35%] -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-[#0A1628]/60 backdrop-blur-sm border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-[#0A1628]/80 transition-all duration-300 opacity-0 group-hover/shelf:opacity-100 translate-x-1/2"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -1320,13 +1320,13 @@ export default function StudentDashboard() {
 
                       {/* Frosted lock overlay */}
                       {isAccessExpired && (
-                        <div className="absolute inset-0 bg-black/50 backdrop-blur-[3px] flex flex-col items-center justify-center gap-2">
+                        <div className="absolute inset-0 bg-[#0A1628]/50 backdrop-blur-[3px] flex flex-col items-center justify-center gap-2">
                           <Lock className="w-5 h-5 text-gold/60" />
-                          <span className="text-xs font-semibold text-gold/80 bg-black/40 px-3 py-1 rounded-full">Renovar acesso</span>
+                          <span className="text-xs font-semibold text-gold/80 bg-[#0A1628]/40 px-3 py-1 rounded-full">Renovar acesso</span>
                         </div>
                       )}
                       {!isAccessExpired && (isPurchasable || isLocked) && (
-                        <div className="absolute inset-0 bg-black/40 backdrop-blur-[3px] flex items-center justify-center">
+                        <div className="absolute inset-0 bg-[#0A1628]/40 backdrop-blur-[3px] flex items-center justify-center">
                           <Lock className={`w-5 h-5 ${isPurchasable ? "text-white/40" : "text-white/20"}`} />
                         </div>
                       )}
@@ -1834,7 +1834,7 @@ export default function StudentDashboard() {
                 ) : (
                   <span className="text-lg font-semibold text-[#0A1628]">{(profileForm.name || user?.name)?.[0]?.toUpperCase() || "?"}</span>
                 )}
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute inset-0 bg-[#0A1628]/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   {avatarUploading ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Camera className="w-5 h-5 text-white" />}
                 </div>
               </div>

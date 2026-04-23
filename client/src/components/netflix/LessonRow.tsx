@@ -51,7 +51,7 @@ export function LessonRow({ title, children }: LessonRowProps) {
           <button
             onClick={() => scroll("left")}
             aria-label="Rolar para a esquerda"
-            className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/70 border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/90 transition-all opacity-0 group-hover/row:opacity-100 -translate-x-1/2"
+            className="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-[#0A1628]/70 border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-[#0A1628]/90 transition-all opacity-0 group-hover/row:opacity-100 -translate-x-1/2"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -62,7 +62,7 @@ export function LessonRow({ title, children }: LessonRowProps) {
           <button
             onClick={() => scroll("right")}
             aria-label="Rolar para a direita"
-            className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/70 border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-black/90 transition-all opacity-0 group-hover/row:opacity-100 translate-x-1/2"
+            className="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-[#0A1628]/70 border border-white/10 items-center justify-center text-white/70 hover:text-white hover:bg-[#0A1628]/90 transition-all opacity-0 group-hover/row:opacity-100 translate-x-1/2"
           >
             <ChevronRight className="w-5 h-5" />
           </button>

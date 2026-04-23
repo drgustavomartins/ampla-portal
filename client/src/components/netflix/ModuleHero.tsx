@@ -50,8 +50,8 @@ export function ModuleHero({
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460]" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/75 to-black/40" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-black/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0A1628]/90 via-[#0A1628]/75 to-[#0A1628]/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628] via-transparent to-[#0A1628]/30" />
       </div>
 
       {/* Content */}

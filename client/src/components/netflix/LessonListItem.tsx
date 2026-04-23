@@ -69,8 +69,8 @@ export function LessonListItem({
           isActive
             ? "border-[#D4AF37]/30 bg-[#D4AF37]/5"
             : isCompleted
-              ? "border-transparent bg-[#1a1a1a]/60"
-              : "border-transparent hover:bg-[#1a1a1a]/80"
+              ? "border-transparent bg-[#14213D]/60"
+              : "border-transparent hover:bg-[#14213D]/80"
         }`}
       >
         {/* Lesson number */}
@@ -92,7 +92,7 @@ export function LessonListItem({
             <>
               <img src={thumbnail} alt="" className="w-full h-full object-cover" loading="lazy" />
               {/* Play icon overlay on hover */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-[#0A1628]/40">
                 <Play className="w-5 h-5 text-white fill-white ml-0.5" />
               </div>
               {/* Completed overlay */}

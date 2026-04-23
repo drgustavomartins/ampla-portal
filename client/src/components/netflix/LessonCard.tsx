@@ -58,7 +58,7 @@ export function LessonCard({
         />
 
         {/* Overlay play icon on hover */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-[#0A1628]/30">
           <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
             <Play className="w-5 h-5 text-black fill-black ml-0.5" />
           </div>
