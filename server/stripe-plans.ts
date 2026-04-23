@@ -794,9 +794,18 @@ export function isPlanVisibleForStudent(
   const target = PLANS[targetKey];
   if (!target) return false;
 
-  // Aluno sem plano ou em trial (visitante da LP pública): só vê os planos públicos.
-  // Essa é a vitrine pública — apenas 1 modalidade de cada (a cheia).
+  // Visitante sem login, aluno em trial (sem plano ativo), tester ou workshop:
+  // só vê a vitrine pública (1 modalidade de cada plano principal).
+  // IMPORTANTE: alunos em trial NUNCA podem comprar horas extras — só VIP+ pode.
   if (!currentKey || currentKey === "tester" || currentKey === "workshop") {
+    // Horas extras de prática ou observação não aparecem para trial/visitante.
+    if (targetKey === "horas_clinicas_1" || targetKey === "horas_clinicas_2" || targetKey === "horas_clinicas_3") {
+      return false;
+    }
+    if (targetKey.startsWith("observacao_extra_")) {
+      return false;
+    }
+    // Demais planos: aparece se não for hidden (ou seja, os 4 principais).
     return !target.hidden;
   }
 

@@ -45,11 +45,16 @@ export function registerStripeRoutes(app: Express) {
       const auth = authenticateRequest(req);
       if (auth) {
         const [u] = await db.select().from(users).where(eq(users.id, auth.userId));
-        if (u?.planKey) currentKey = u.planKey as PlanKey;
+        // Aluno em trial (role='trial') é tratado como visitante mesmo que tenha
+        // algum plan_key residual — não vê opções de compra que exigem plano pago.
+        if (u?.planKey && u.role !== "trial") {
+          currentKey = u.planKey as PlanKey;
+        }
       }
 
+      // A função isPlanVisibleForStudent já trata o filtro 'hidden' internamente
+      // (mostra hidden apenas para alunos pagantes quando faz sentido como upgrade).
       const plans = Object.values(PLANS)
-        .filter((p) => !p.hidden)
         .filter((p) => isPlanVisibleForStudent(p.key, currentKey))
         .map((p) => ({
           key: p.key,
