@@ -250,17 +250,9 @@ export default function PlanosPublicos() {
           >
             {/* Top badge */}
             <div className="absolute top-4 right-4 z-10 flex gap-2">
-              <span className="rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide bg-[#D4A843] text-[#0A0D14]">
-                Mais Popular
+              <span className="rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-wide bg-[#D4A843] text-[#0A0D14]">
+                Promoção
               </span>
-            </div>
-            <div className="absolute top-4 left-4 z-10 flex flex-col gap-1">
-              <span className="rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                Oferta de Lançamento
-              </span>
-              {!countdown.expired && (
-                <span className="text-[9px] text-emerald-400/60 pl-1">Válida até 30/04</span>
-              )}
             </div>
 
             {/* SVG background */}
@@ -292,7 +284,7 @@ export default function PlanosPublicos() {
                 ) : (
                   <>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-4xl sm:text-[42px] font-bold tabular-nums text-[#D4A843]">R$ 397</span>
+                      <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#D4A843] whitespace-nowrap">R$ 397</span>
                     </div>
                     <p className="text-xs text-white/30 mt-1">Pagamento único &middot; Sem mensalidade</p>
                   </>
@@ -378,7 +370,7 @@ export default function PlanosPublicos() {
 
               {/* Price */}
               <div className="mt-6">
-                <span className="text-4xl font-bold tabular-nums text-emerald-400">R$ 4.997</span>
+                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-emerald-400 whitespace-nowrap">R$ 4.997</span>
                 <p className="text-xs text-white/30 mt-1">Por tema &middot; Toxina, Preenchedores, Bioestimuladores ou Biorregeneradores</p>
               </div>
 
@@ -468,7 +460,7 @@ export default function PlanosPublicos() {
 
               {/* Price */}
               <div className="mt-6">
-                <span className="text-4xl font-bold tabular-nums text-purple-400">R$ 17.350</span>
+                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-purple-400 whitespace-nowrap">R$ 17.350</span>
                 <p className="text-xs text-white/30 mt-1">Parcelamento disponível</p>
               </div>
 
@@ -541,7 +533,7 @@ export default function PlanosPublicos() {
 
               <div className="mt-6">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl sm:text-[42px] font-bold tabular-nums text-[#E8C86A]">R$ 35.000</span>
+                  <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#E8C86A] whitespace-nowrap">R$ 35.000</span>
                 </div>
                 <p className="text-xs text-white/40 mt-1">12x de R$ 2.916,67 · Vagas limitadas</p>
               </div>
