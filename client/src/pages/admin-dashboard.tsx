@@ -1030,6 +1030,7 @@ export default function AdminDashboard() {
     materialsAccess: false,
     mentorshipStartDate: "", mentorshipEndDate: "",
     planKey: "",
+    selectedTheme: "",
   });
   // Per-user module permissions state: { [moduleId]: { enabled, startDate, endDate } }
   const [editUserModules, setEditUserModules] = useState<Record<number, { enabled: boolean; startDate: string; endDate: string }>>({});
@@ -1121,6 +1122,7 @@ export default function AdminDashboard() {
       mentorshipStartDate: (s as any).mentorshipStartDate ? (s as any).mentorshipStartDate.slice(0, 10) : "",
       mentorshipEndDate: (s as any).mentorshipEndDate ? (s as any).mentorshipEndDate.slice(0, 10) : "",
       planKey: (s as any).planKey || "",
+      selectedTheme: (s as any).selectedTheme || "",
     });
     // Load user module permissions
     try {
@@ -2420,15 +2422,18 @@ export default function AdminDashboard() {
                         <SelectTrigger className="bg-background/50 border-gold/30 border"><SelectValue placeholder="Selecione o plano" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">Sem plano</SelectItem>
-                          <SelectItem value="modulo_avulso">Modulo Avulso</SelectItem>
-                          <SelectItem value="pacote_completo">Pacote Completo</SelectItem>
-                          <SelectItem value="observador_essencial">Observador Essencial</SelectItem>
-                          <SelectItem value="observador_avancado">Observador Avancado</SelectItem>
-                          <SelectItem value="observador_intensivo">Observador Intensivo</SelectItem>
-                          <SelectItem value="imersao">Imersao</SelectItem>
-                          <SelectItem value="vip_online">VIP Online</SelectItem>
-                          <SelectItem value="vip_presencial">VIP Presencial</SelectItem>
-                          <SelectItem value="vip_completo">VIP Completo</SelectItem>
+                          <SelectItem value="acesso_vitalicio">Plataforma Online (Vitalicio)</SelectItem>
+                          <SelectItem value="modulo_pratica">Modulo Avulso com Pratica</SelectItem>
+                          <SelectItem value="observador_essencial">Acompanhamento Observacional</SelectItem>
+                          <SelectItem value="vip_completo">Acompanhamento VIP</SelectItem>
+                          <SelectItem value="imersao_elite">Acompanhamento Elite</SelectItem>
+                          <SelectItem value="vip_online">VIP Economico (negociacao)</SelectItem>
+                          <SelectItem value="vip_presencial">VIP Moderado (negociacao)</SelectItem>
+                          <SelectItem value="modulo_avulso">Modulo Avulso (legado)</SelectItem>
+                          <SelectItem value="pacote_completo">Pacote Completo (legado)</SelectItem>
+                          <SelectItem value="observador_avancado">Observador Avancado (legado)</SelectItem>
+                          <SelectItem value="observador_intensivo">Observador Intensivo (legado)</SelectItem>
+                          <SelectItem value="imersao">Imersao (legado)</SelectItem>
                           <SelectItem value="extensao_acompanhamento">Extensao de Acompanhamento (+3 meses)</SelectItem>
                           <SelectItem value="horas_clinicas_1">Horas Clinicas (1 encontro)</SelectItem>
                           <SelectItem value="horas_clinicas_2">Horas Clinicas (2 encontros)</SelectItem>
@@ -2437,6 +2442,35 @@ export default function AdminDashboard() {
                       </Select>
                       <p className="text-[10px] text-muted-foreground">Ao salvar com um plano diferente, modulos e materiais serao provisionados automaticamente</p>
                     </div>
+
+                    {/* Theme selector (only for modulo_pratica plan) */}
+                    {editStudentForm.planKey === "modulo_pratica" && (
+                      <div className="space-y-1.5 rounded-lg border border-orange-500/30 bg-orange-500/5 p-3">
+                        <Label className="text-xs uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
+                          <Sparkles className="w-3 h-3" /> Tema do Modulo Avulso
+                        </Label>
+                        <Select
+                          value={editStudentForm.selectedTheme || "none"}
+                          onValueChange={(v) => setEditStudentForm(f => ({ ...f, selectedTheme: v === "none" ? "" : v }))}
+                        >
+                          <SelectTrigger className="bg-background/50 border-orange-500/40 border">
+                            <SelectValue placeholder="Aluno ainda nao escolheu" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Aluno escolhe (mostra modal no dashboard)</SelectItem>
+                            <SelectItem value="toxina">Toxina Botulinica</SelectItem>
+                            <SelectItem value="preenchedores">Preenchedores Faciais</SelectItem>
+                            <SelectItem value="bioestimuladores">Bioestimuladores de Colageno</SelectItem>
+                            <SelectItem value="biorregeneradores">Biorregeneradores</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-[10px] text-orange-300/70">
+                          {editStudentForm.selectedTheme
+                            ? `Aluno ve apenas conteudo de ${editStudentForm.selectedTheme}.`
+                            : "Se nenhum tema for definido, o aluno escolhera no primeiro login."}
+                        </p>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
                         <Label className="text-xs uppercase tracking-wider text-muted-foreground">Data de Inicio da Mentoria</Label>
@@ -2766,6 +2800,15 @@ export default function AdminDashboard() {
                       const currentPlanKey = (editingStudent as any).planKey || "";
                       const newPlanKey = editStudentForm.planKey && editStudentForm.planKey !== "none" ? editStudentForm.planKey : "";
                       const planKeyChanged = newPlanKey && newPlanKey !== currentPlanKey;
+
+                      // If theme changed for modulo_pratica plan, persist via dedicated endpoint
+                      const currentTheme = (editingStudent as any).selectedTheme || "";
+                      const newTheme = editStudentForm.selectedTheme || "";
+                      const themeChanged = newPlanKey === "modulo_pratica" && newTheme !== currentTheme;
+                      if (themeChanged) {
+                        apiRequest("POST", `/api/admin/users/${editingStudent.id}/theme`, { theme: newTheme || null })
+                          .catch(() => toast({ title: "Erro ao salvar tema", variant: "destructive" }));
+                      }
 
                       updateStudentMutation.mutate({
                         id: editingStudent.id,
