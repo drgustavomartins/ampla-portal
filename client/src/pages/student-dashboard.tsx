@@ -90,11 +90,11 @@ export default function StudentDashboard() {
   const materiaisRef = useRef<HTMLDivElement>(null);
   const shelfRef = useRef<HTMLDivElement>(null);
 
-  // Netflix theme: update meta theme-color to black
+  // Netflix theme: update meta theme-color to navy
   useEffect(() => {
     const meta = document.querySelector('meta[name="theme-color"]');
     const original = meta?.getAttribute("content") || "#0A1628";
-    meta?.setAttribute("content", "#0a0a0a");
+    meta?.setAttribute("content", "#0A1628");
     return () => { meta?.setAttribute("content", original); };
   }, []);
 
@@ -1017,7 +1017,7 @@ export default function StudentDashboard() {
 
           {/* Fallback hero for expired access */}
           {isAccessExpired && (
-            <section className="relative rounded-2xl overflow-hidden bg-[#141414] p-6 sm:p-8 lg:p-10">
+            <section className="relative rounded-2xl overflow-hidden bg-[#0A1628] p-6 sm:p-8 lg:p-10">
               <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight">
                 Olá, <span className="text-[#D4AF37]">{firstName}</span>
               </h1>
@@ -1038,7 +1038,7 @@ export default function StudentDashboard() {
 
           {/* Plan summary card (compact) */}
           {!isAccessExpired && (
-            <div className="rounded-xl border border-white/10 bg-[#1a1a1a] p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="rounded-xl border border-white/10 bg-[#14213D] p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4 flex-wrap">
                 <div>
                   <span className="text-[10px] font-semibold text-[#D4AF37] uppercase tracking-wider">Seu Plano</span>

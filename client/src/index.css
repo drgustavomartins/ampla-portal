@@ -291,26 +291,26 @@
 
 /* ===== NETFLIX DARK THEME — scoped to student portal only ===== */
 .netflix-theme {
-  --nf-base: #0a0a0a;
-  --nf-surface: #1a1a1a;
-  --nf-surface-hover: #2a2a2a;
+  --nf-base: #0A1628;
+  --nf-surface: #14213D;
+  --nf-surface-hover: #1C2E52;
   --nf-gold: #D4AF37;
   --nf-red: #e50914;
   --nf-text: #ffffff;
   --nf-text-muted: #b3b3b3;
   --nf-text-dim: #808080;
 
-  /* Override CSS custom properties for shadcn components inside */
-  --background: 0 0% 4%;
+  /* Override CSS custom properties for shadcn components inside (navy base) */
+  --background: 216 53% 10%;
   --foreground: 0 0% 100%;
-  --card: 0 0% 10%;
+  --card: 222 50% 16%;
   --card-foreground: 0 0% 100%;
-  --border: 0 0% 16%;
-  --muted: 0 0% 14%;
+  --border: 220 40% 22%;
+  --muted: 222 50% 16%;
   --muted-foreground: 0 0% 55%;
-  --accent: 0 0% 12%;
+  --accent: 220 44% 19%;
   --accent-foreground: 0 0% 100%;
-  --popover: 0 0% 10%;
+  --popover: 222 50% 16%;
   --popover-foreground: 0 0% 100%;
 
   background-color: var(--nf-base) !important;

@@ -33,11 +33,11 @@ export function LessonCard({
   return (
     <button
       onClick={onClick}
-      className="nf-card group shrink-0 w-[260px] sm:w-[280px] rounded-lg overflow-hidden bg-[#1a1a1a] transition-all duration-300 hover:scale-[1.05] hover:shadow-[0_8px_24px_rgba(212,175,55,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4AF37] text-left"
+      className="nf-card group shrink-0 w-[260px] sm:w-[280px] rounded-lg overflow-hidden bg-[#14213D] transition-all duration-300 hover:scale-[1.05] hover:shadow-[0_8px_24px_rgba(212,175,55,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4AF37] text-left"
       aria-label={`${isNext ? "Próxima aula: " : ""}${lesson.title}${module ? ` — ${module.title}` : ""}${remaining ? `. ${remaining} min restantes` : ""}`}
     >
       {/* Thumbnail */}
-      <div className="relative aspect-video bg-[#141414] overflow-hidden">
+      <div className="relative aspect-video bg-[#0A1628] overflow-hidden">
         {thumbnail ? (
           <img
             src={thumbnail}
