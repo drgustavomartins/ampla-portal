@@ -794,18 +794,10 @@ export function isPlanVisibleForStudent(
   const target = PLANS[targetKey];
   if (!target) return false;
 
-  // Visitante sem login, aluno em trial (sem plano ativo), tester ou workshop:
-  // só vê a vitrine pública (1 modalidade de cada plano principal).
-  // IMPORTANTE: alunos em trial NUNCA podem comprar horas extras — só VIP+ pode.
+  // Visitante sem login, trial, tester e workshop: vêem TUDO que não é hidden.
+  // Horas extras aparecem como teaser para consultar valores — o botão de compra
+  // fica desabilitado com mensagem "disponível a partir de..." (getPurchaseStatus).
   if (!currentKey || currentKey === "tester" || currentKey === "workshop") {
-    // Horas extras de prática ou observação não aparecem para trial/visitante.
-    if (targetKey === "horas_clinicas_1" || targetKey === "horas_clinicas_2" || targetKey === "horas_clinicas_3") {
-      return false;
-    }
-    if (targetKey.startsWith("observacao_extra_")) {
-      return false;
-    }
-    // Demais planos: aparece se não for hidden (ou seja, os 4 principais).
     return !target.hidden;
   }
 
@@ -863,4 +855,52 @@ export function filterVisiblePlans(
   currentKey: PlanKey | null,
 ): PlanKey[] {
   return allKeys.filter((k) => isPlanVisibleForStudent(k, currentKey));
+}
+
+// ─── Checagem de "pode comprar" (separada da visibilidade) ──────────────
+// Retorna se o plano está disponível para checkout OU se está apenas visível
+// como teaser de upsell (com mensagem de bloqueio).
+export function getPurchaseStatus(
+  targetKey: PlanKey,
+  currentKey: PlanKey | null,
+  userRole: string | null = null,
+): { purchasable: boolean; lockReason: string | null } {
+  const target = PLANS[targetKey];
+  if (!target) return { purchasable: false, lockReason: "Plano não encontrado" };
+
+  const isTrial = userRole === "trial" || !currentKey || currentKey === "tester";
+  const current = currentKey ? PLANS[currentKey] : null;
+
+  // Horas extras de PRÁTICA CLÍNICA ─ só VIP+ pode comprar.
+  if (targetKey === "horas_clinicas_1" || targetKey === "horas_clinicas_2" || targetKey === "horas_clinicas_3") {
+    if (isTrial || !current) {
+      return { purchasable: false, lockReason: "Disponível apenas para alunos a partir do Acompanhamento VIP" };
+    }
+    if (current.practiceHours <= 0) {
+      return { purchasable: false, lockReason: "Disponível apenas para alunos a partir do Acompanhamento VIP" };
+    }
+    return { purchasable: true, lockReason: null };
+  }
+
+  // Observação extra ─ só Observacional+ pode comprar.
+  if (targetKey.startsWith("observacao_extra_")) {
+    if (isTrial || !current) {
+      return { purchasable: false, lockReason: "Disponível apenas para alunos a partir do Acompanhamento Observacional" };
+    }
+    if (current.clinicalHours <= 0) {
+      return { purchasable: false, lockReason: "Disponível apenas para alunos a partir do Acompanhamento Observacional" };
+    }
+    return { purchasable: true, lockReason: null };
+  }
+
+  // Extensão de mentoria ─ só quem tem mentoria ativa.
+  if (targetKey === "extensao_acompanhamento") {
+    if (!current?.hasMentorship) {
+      return { purchasable: false, lockReason: "Disponível apenas para alunos com mentoria ativa" };
+    }
+    return { purchasable: true, lockReason: null };
+  }
+
+  // Demais planos: se passou pela visibilidade, pode comprar.
+  return { purchasable: true, lockReason: null };
 }

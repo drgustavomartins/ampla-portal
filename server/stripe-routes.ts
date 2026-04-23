@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
-import { PLANS, calculateUpgradePrice, formatBRL, isPlanVisibleForStudent } from "./stripe-plans";
+import { PLANS, calculateUpgradePrice, formatBRL, isPlanVisibleForStudent, getPurchaseStatus } from "./stripe-plans";
 import type { PlanKey } from "@shared/schema";
 import jwt from "jsonwebtoken";
 
@@ -41,19 +41,21 @@ export function registerStripeRoutes(app: Express) {
     try {
       const { db } = await import("./db");
       let currentKey: PlanKey | null = null;
+      let userRole: string | null = null;
 
       const auth = authenticateRequest(req);
       if (auth) {
         const [u] = await db.select().from(users).where(eq(users.id, auth.userId));
-        // Aluno em trial (role='trial') é tratado como visitante mesmo que tenha
-        // algum plan_key residual — não vê opções de compra que exigem plano pago.
+        userRole = u?.role || null;
+        // Aluno em trial (role='trial') vai ver cards mas sem botão de checkout.
+        // Passa currentKey só se não for trial (trial não conta como plano pago).
         if (u?.planKey && u.role !== "trial") {
           currentKey = u.planKey as PlanKey;
         }
       }
 
-      // A função isPlanVisibleForStudent já trata o filtro 'hidden' internamente
-      // (mostra hidden apenas para alunos pagantes quando faz sentido como upgrade).
+      // Visibilidade: todos veem todos os planos não-hidden (incluindo horas extras como teaser).
+      // Compra: getPurchaseStatus determina se o botão fica ativo ou bloqueado com mensagem.
       const plans = Object.values(PLANS)
         .filter((p) => isPlanVisibleForStudent(p.key, currentKey))
         .map((p) => ({
@@ -76,6 +78,8 @@ export function registerStripeRoutes(app: Express) {
           naturalUpLicense: p.naturalUpLicense,
           canUpgradeTo: p.canUpgradeTo,
           valorMercado: p.valorMercado ?? null,
+          // purchasable: true se pode clicar em checkout; false = card visible mas botão bloqueado com lockReason
+          ...getPurchaseStatus(p.key, currentKey, userRole),
         }));
 
       res.json({ plans, currentPlanKey: currentKey });

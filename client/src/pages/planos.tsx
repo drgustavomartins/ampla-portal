@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
-  Check, Star, Clock, Zap, Users, Video,
+  Check, Star, Clock, Zap, Users, Video, Lock,
   ChevronDown, ChevronUp, ArrowRight, Loader2,
   TrendingUp, MessageCircle, FileSignature, ChevronLeft, Info, MapPin,} from "lucide-react";
 
@@ -38,6 +38,8 @@ interface PlanData {
   naturalUpLicense?: boolean;
   canUpgradeTo: string[];
   valorMercado: number | null;
+  purchasable?: boolean;
+  lockReason?: string | null;
 }
 
 const GROUP_LABELS: Record<string, string> = {
@@ -203,6 +205,21 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
             </svg>
             Solicitar vaga
           </a>
+        </div>
+      ) : plan.purchasable === false ? (
+        <div className="mt-auto space-y-2">
+          <button
+            disabled
+            className="flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold border border-gray-300 bg-gray-50 text-gray-400 cursor-not-allowed"
+          >
+            <Lock className="h-4 w-4 shrink-0" />
+            Indisponível no seu plano
+          </button>
+          {plan.lockReason && (
+            <p className="text-center text-[11px] text-gray-500 leading-snug px-2">
+              {plan.lockReason}
+            </p>
+          )}
         </div>
       ) : (
         <button
