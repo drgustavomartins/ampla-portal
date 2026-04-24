@@ -281,7 +281,7 @@ export default function PlanosPublicos() {
 
             <div className="relative p-7 sm:p-8 xl:p-5 flex flex-col flex-1">
               {/* Header */}
-              <div className="pt-6">
+              <div className="pt-6 min-h-[160px]">
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A843] mb-2">Acesso Vitalício</p>
                 <h3 className="text-2xl sm:text-[28px] xl:text-xl font-bold text-white leading-tight">Plataforma Online</h3>
                 <p className="mt-2 text-sm text-white/50 leading-relaxed">Todo o conteúdo gravado do método para estudar no seu ritmo. Ideal antes de entrar em um acompanhamento.</p>
@@ -399,7 +399,7 @@ export default function PlanosPublicos() {
             <div className="h-[3px] w-full" style={{ background: "#FB923C" }} />
 
             <div className="relative p-7 sm:p-8 xl:p-5 flex flex-col flex-1">
-              <div>
+              <div className="min-h-[160px]">
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-400 mb-2">Tema Único</p>
                 <h3 className="text-2xl xl:text-xl font-bold text-white leading-tight">Módulo Avulso com Prática</h3>
                 <p className="mt-2 text-sm text-white/60 leading-relaxed">
@@ -407,7 +407,7 @@ export default function PlanosPublicos() {
                 </p>
               </div>
 
-              <div className="mt-6">
+              <div className="mt-6 min-h-[140px]">
                 <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-orange-400 whitespace-nowrap">R$ 5.997</span>
                 <p className="text-xs text-white/30 mt-1">ou 12x de R$ 560,00</p>
               </div>
@@ -465,7 +465,7 @@ export default function PlanosPublicos() {
 
             <div className="relative p-7 sm:p-8 xl:p-5 flex flex-col flex-1">
               {/* Header */}
-              <div>
+              <div className="min-h-[160px]">
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-400 mb-2">Observacional</p>
                 <h3 className="text-2xl xl:text-xl font-bold text-white leading-tight">Acompanhamento Observacional</h3>
                 <p className="mt-2 text-sm text-white/60 leading-relaxed">Observe o Dr. Gustavo atendendo ao vivo por 24h presenciais — aprenda cada decisão clínica em tempo real.</p>
@@ -542,7 +542,7 @@ export default function PlanosPublicos() {
 
             <div className="relative p-7 sm:p-8 xl:p-5 flex flex-col flex-1">
               {/* Header */}
-              <div>
+              <div className="min-h-[160px]">
                 <div className="h-[28px]"></div>
                 <h3 className="text-2xl xl:text-xl font-bold text-white leading-tight">Acompanhamento VIP</h3>
                 <p className="mt-2 text-sm text-white/60 leading-relaxed">6 meses de mentoria individual com Dr. Gustavo, prática hands-on supervisionada e domínio do método NaturalUp®.</p>
@@ -617,7 +617,7 @@ export default function PlanosPublicos() {
                 Experiência definitiva
               </span>
 
-              <div>
+              <div className="min-h-[160px]">
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#E8C86A] mb-2">O Mais Alto Nível</p>
                 <h3 className="text-2xl sm:text-[28px] xl:text-xl font-bold text-white leading-tight">Acompanhamento Elite</h3>
                 <p className="mt-2 text-sm text-white/60 leading-relaxed">12 meses ao lado do Dr. Gustavo: 7 dias clínicos completos, bastidores da clínica e licença exclusiva da marca NaturalUp®.</p>
