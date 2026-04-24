@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Play, Lock, CheckCircle2, Clock, Paperclip } from "lucide-react";
 import type { Lesson } from "@shared/schema";
 import type { VideoProgressEntry } from "@/hooks/use-video-progress";
@@ -33,7 +34,7 @@ function getLessonBadge(lesson: Lesson): string | null {
   return null;
 }
 
-export function LessonListItem({
+export const LessonListItem = memo(function LessonListItem({
   lesson,
   index,
   isCompleted,
@@ -90,7 +91,7 @@ export function LessonListItem({
             </div>
           ) : thumbnail ? (
             <>
-              <img src={thumbnail} alt="" className="w-full h-full object-cover" loading="lazy" />
+              <img src={thumbnail} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
               {/* Play icon overlay on hover */}
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-[#0A1628]/40">
                 <Play className="w-5 h-5 text-white fill-white ml-0.5" />
@@ -164,4 +165,4 @@ export function LessonListItem({
       </div>
     </button>
   );
-}
+});

@@ -250,7 +250,7 @@ export default function QuizPage() {
   if (etapa === "intro") {
     return (
       <div className="min-h-screen bg-[#0A1628] flex flex-col items-center justify-center px-4 py-10">
-        <img src="/logo-transparent.png" alt="Ampla Facial" className="h-16 mb-8 object-contain" />
+        <img src="/logo-transparent.png" alt="Ampla Facial" className="h-16 mb-8 object-contain" loading="lazy" decoding="async" />
 
         <div className="max-w-lg w-full text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#D4A843]/10 border border-[#D4A843]/30 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-[#D4A843]">
@@ -380,7 +380,7 @@ export default function QuizPage() {
         <div className="max-w-md w-full">
 
           <div className="text-center mb-8">
-            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-12 mx-auto mb-4 object-contain" />
+            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-12 mx-auto mb-4 object-contain" loading="lazy" decoding="async" />
             <div className="text-4xl mb-3">🏆</div>
             <h2 className="text-2xl font-bold text-white mb-2">Antes de começar</h2>
             <p className="text-gray-400 text-sm">
@@ -534,7 +534,7 @@ export default function QuizPage() {
           </a>
 
           <div className="mt-6 flex justify-center">
-            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-8 object-contain opacity-40" />
+            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-8 object-contain opacity-40" loading="lazy" decoding="async" />
           </div>
         </div>
       </div>

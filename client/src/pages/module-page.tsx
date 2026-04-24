@@ -98,7 +98,7 @@ function LessonThumb({ lesson, size = "md", done, theme, index }: {
 
   return (
     <div className={`shrink-0 ${w} rounded-md overflow-hidden ring-1 ring-border/30 relative`}>
-      <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" onError={handleError} />
+      <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" onError={handleError} />
       {done && (
         <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: `rgba(${theme.accentRgb}, 0.25)` }}>
           <CheckCircle2 className={`${isMd ? "w-5 h-5" : "w-3.5 h-3.5"} drop-shadow-md`} style={{ color: theme.accent }} />
@@ -268,7 +268,7 @@ export default function ModulePage() {
   // Falls back to individual queries if cache is empty (e.g. direct navigation)
   const { data: modules = [] } = useQuery<Module[]>({
     queryKey: ["/api/modules"],
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
   // Fetch only lessons for THIS module instead of all lessons
   const { data: moduleLessonsData = [] } = useQuery<Lesson[]>({
@@ -278,12 +278,12 @@ export default function ModulePage() {
       return res.json();
     },
     enabled: !!moduleId && !!user?.id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
   // Also keep full lessons cache in sync for dashboard navigation
   const { data: allLessons = [] } = useQuery<Lesson[]>({
     queryKey: ["/api/lessons"],
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
   // Merge: use module-specific lessons if available, else filter from all
   const lessons = moduleLessonsData.length > 0 ? allLessons : allLessons;
@@ -294,7 +294,7 @@ export default function ModulePage() {
       return res.json();
     },
     enabled: !!user?.id,
-    staleTime: 60 * 1000,
+    staleTime: 60 * 1000, // progress muda frequentemente — manter 60s
   });
   const { data: myModules } = useQuery<{ accessAll: boolean; moduleIds: number[] }>({
     queryKey: ["/api/my-modules"],
@@ -303,13 +303,13 @@ export default function ModulePage() {
       return res.json();
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
   const { data: lessonAccess } = useQuery<{ accessType: string; allowedLessonIds: number[] }>({
     queryKey: ["/api/lessons/access"],
     queryFn: async () => { const res = await apiRequest("GET", "/api/lessons/access"); return res.json(); },
     enabled: !!user,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
   const accessType = lessonAccess?.accessType || "full";
   const allowedLessonIds = new Set(lessonAccess?.allowedLessonIds || []);

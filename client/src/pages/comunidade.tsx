@@ -540,7 +540,7 @@ export default function ComunidadePage() {
                   <div className="grid grid-cols-4 gap-2">
                     {imageUrls.map((url, i) => (
                       <div key={i} className="relative group rounded-lg overflow-hidden border border-white/10 aspect-square">
-                        <img src={url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = ""; }} />
+                        <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" onError={(e) => { (e.target as HTMLImageElement).src = ""; }} />
                         <button
                           onClick={() => removeImage(i)}
                           className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -639,7 +639,7 @@ export default function ComunidadePage() {
                   <div className={`px-5 pb-3 grid gap-1.5 ${post.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
                     {post.imageUrls.map((url, i) => (
                       <div key={i} className={`rounded-xl overflow-hidden border border-white/5 ${post.imageUrls.length === 1 ? "aspect-video" : "aspect-square"}`}>
-                        <img src={url} alt="" className="w-full h-full object-cover" />
+                        <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       </div>
                     ))}
                   </div>

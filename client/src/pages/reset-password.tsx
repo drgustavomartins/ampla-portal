@@ -62,7 +62,7 @@ export default function ResetPasswordPage() {
     >
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-4">
-          <img src="/logo-icon.png" alt="Ampla Facial" className="mx-auto h-16 w-16 object-contain" />
+          <img src="/logo-icon.png" alt="Ampla Facial" className="mx-auto h-16 w-16 object-contain" loading="lazy" decoding="async" />
           <div>
             <h1 className="text-2xl font-semibold tracking-brand text-gold uppercase">Ampla Facial</h1>
             <div className="w-12 h-px bg-gold mx-auto mt-3 mb-2 opacity-60" />

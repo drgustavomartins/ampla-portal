@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Play } from "lucide-react";
 import type { Lesson, Module } from "@shared/schema";
 import type { VideoProgressEntry } from "@/hooks/use-video-progress";
@@ -32,7 +33,7 @@ function getLessonBadge(lesson: Lesson): { label: string; style: string } | null
 
   return null;
 }
-export function LessonCard({
+export const LessonCard = memo(function LessonCard({
   lesson,
   module,
   progress,
@@ -54,7 +55,7 @@ export function LessonCard({
       <HoverPreview videoUrl={lesson.videoUrl} className="relative aspect-video bg-[#0A1628] overflow-hidden">
         <YouTubeThumbnail
           videoIdOrUrl={lesson.videoUrl}
-          startSize="hqdefault"
+          startSize="mqdefault"
           title={lesson.title}
           imgClassName="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
@@ -109,4 +110,4 @@ export function LessonCard({
       </div>
     </button>
   );
-}
+});

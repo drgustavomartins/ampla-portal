@@ -400,7 +400,7 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
       }
     },
     enabled: !!user,
-    staleTime: 5 * 60 * 1000, // Materials catalog rarely changes
+    staleTime: 10 * 60 * 1000, // Materials catalog rarely changes
   });
 
   // All users have access to all materials — no filtering needed

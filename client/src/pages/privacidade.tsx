@@ -11,7 +11,7 @@ export default function PrivacidadePage() {
       >
         <ChevronLeft className="w-4 h-4" /> Voltar
       </button>
-      <img src="/logo-icon.png" alt="Ampla Facial" className="w-12 h-12 object-contain mb-6" />
+      <img src="/logo-icon.png" alt="Ampla Facial" className="w-12 h-12 object-contain mb-6" loading="lazy" decoding="async" />
       <h1 className="text-2xl font-semibold text-gold mb-1">Política de Privacidade</h1>
       <p className="text-xs text-muted-foreground mb-8">Última atualização: abril de 2026 · Versão 1.0</p>
 
