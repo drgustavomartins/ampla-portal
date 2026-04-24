@@ -197,6 +197,58 @@ export default function StudentDashboard() {
   };
 
   const completedIds = useMemo(() => new Set(progress.filter(p => p.completed).map(p => p.lessonId)), [progress]);
+
+  // All useMemo hooks MUST be before any early returns to avoid React error #310
+  const sortedModules = useMemo(() => [...modules].sort((a, b) => a.order - b.order), [modules]);
+  const introModule = useMemo(() => sortedModules.find(m => m.order === 1 || m.title.toLowerCase().includes("boas vindas") || m.title.toLowerCase().includes("boas-vindas")), [sortedModules]);
+  const courseModules = useMemo(() => sortedModules.filter(m => m !== introModule), [sortedModules, introModule]);
+
+  const videoProgressStore = getAllVideoProgress();
+
+  // Continue Watching: lessons with 0 < progress < 95%, sorted by lastWatchedAt desc, max 10
+  const continueWatchingLessons = useMemo(() => lessons
+    .map((lesson) => {
+      const vp = videoProgressStore[String(lesson.id)];
+      if (!vp || vp.percentage <= 0 || vp.percentage >= 95) return null;
+      if (completedIds.has(lesson.id)) return null;
+      return { lesson, progress: vp };
+    })
+    .filter(Boolean)
+    .sort((a, b) => new Date(b!.progress.lastWatchedAt).getTime() - new Date(a!.progress.lastWatchedAt).getTime())
+    .slice(0, 10) as { lesson: Lesson; progress: import("@/hooks/use-video-progress").VideoProgressEntry }[],
+  [lessons, videoProgressStore, completedIds]);
+
+  // Next in Journey: next 5 lessons after the last completed one, in admin order
+  const nextInJourneyLessons = useMemo(() => {
+    const allOrdered: { lesson: Lesson; module: Module }[] = [];
+    for (const mod of sortedModules) {
+      const modLessons = lessons
+        .filter((l) => l.moduleId === mod.id)
+        .sort((a, b) => a.order - b.order);
+      for (const l of modLessons) {
+        allOrdered.push({ lesson: l, module: mod });
+      }
+    }
+
+    let lastCompletedIdx = -1;
+    const completedWithDates = progress
+      .filter((p) => p.completed && p.completedAt)
+      .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
+    if (completedWithDates.length > 0) {
+      const lastCompletedId = completedWithDates[0].lessonId;
+      lastCompletedIdx = allOrdered.findIndex((o) => o.lesson.id === lastCompletedId);
+    }
+
+    const startIdx = lastCompletedIdx + 1;
+    const result: { lesson: Lesson; module: Module }[] = [];
+    for (let i = startIdx; i < allOrdered.length && result.length < 5; i++) {
+      if (!completedIds.has(allOrdered[i].lesson.id)) {
+        result.push(allOrdered[i]);
+      }
+    }
+    return result;
+  }, [sortedModules, lessons, progress, completedIds]);
+
   const totalLessons = lessons.length;
   const completedCount = completedIds.size;
   const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
@@ -556,11 +608,6 @@ export default function StudentDashboard() {
     ? user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
     : "?";
 
-  // Filter: skip "Boas vindas" / intro module (order 1), show the rest as course cards
-  const sortedModules = useMemo(() => [...modules].sort((a, b) => a.order - b.order), [modules]);
-  const introModule = useMemo(() => sortedModules.find(m => m.order === 1 || m.title.toLowerCase().includes("boas vindas") || m.title.toLowerCase().includes("boas-vindas")), [sortedModules]);
-  const courseModules = useMemo(() => sortedModules.filter(m => m !== introModule), [sortedModules, introModule]);
-
   // Intro lessons get merged into the first course module for display
   const introLessons = introModule ? getLessonsForModule(introModule.id) : [];
 
@@ -618,21 +665,7 @@ export default function StudentDashboard() {
 
   const whatsappTrialUrl = `https://wa.me/5521976263881?text=${encodeURIComponent(`Olá! Estou no período de teste gratuito da Ampla Facial e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
 
-  // ===== NETFLIX PHASE 1: Compute "Continue Watching" + "Next in Journey" =====
-  const videoProgressStore = getAllVideoProgress();
-
-  // Continue Watching: lessons with 0 < progress < 95%, sorted by lastWatchedAt desc, max 10
-  const continueWatchingLessons = useMemo(() => lessons
-    .map((lesson) => {
-      const vp = videoProgressStore[String(lesson.id)];
-      if (!vp || vp.percentage <= 0 || vp.percentage >= 95) return null;
-      if (completedIds.has(lesson.id)) return null;
-      return { lesson, progress: vp };
-    })
-    .filter(Boolean)
-    .sort((a, b) => new Date(b!.progress.lastWatchedAt).getTime() - new Date(a!.progress.lastWatchedAt).getTime())
-    .slice(0, 10) as { lesson: Lesson; progress: import("@/hooks/use-video-progress").VideoProgressEntry }[],
-  [lessons, videoProgressStore, completedIds]);
+  // ===== NETFLIX PHASE 1: Hero + Rows =====
 
   // Hero lesson: 3-tier logic
   // 1. Has in-progress video (0 < progress < 95%) → "Continue de onde parou"
@@ -703,37 +736,6 @@ export default function StudentDashboard() {
     }
     return null;
   })();
-
-  // Next in Journey: next 5 lessons after the last completed one, in admin order
-  const nextInJourneyLessons = useMemo(() => {
-    const allOrdered: { lesson: Lesson; module: Module }[] = [];
-    for (const mod of sortedModules) {
-      const modLessons = lessons
-        .filter((l) => l.moduleId === mod.id)
-        .sort((a, b) => a.order - b.order);
-      for (const l of modLessons) {
-        allOrdered.push({ lesson: l, module: mod });
-      }
-    }
-
-    let lastCompletedIdx = -1;
-    const completedWithDates = progress
-      .filter((p) => p.completed && p.completedAt)
-      .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
-    if (completedWithDates.length > 0) {
-      const lastCompletedId = completedWithDates[0].lessonId;
-      lastCompletedIdx = allOrdered.findIndex((o) => o.lesson.id === lastCompletedId);
-    }
-
-    const startIdx = lastCompletedIdx + 1;
-    const result: { lesson: Lesson; module: Module }[] = [];
-    for (let i = startIdx; i < allOrdered.length && result.length < 5; i++) {
-      if (!completedIds.has(allOrdered[i].lesson.id)) {
-        result.push(allOrdered[i]);
-      }
-    }
-    return result;
-  }, [sortedModules, lessons, progress, completedIds]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden netflix-theme">
