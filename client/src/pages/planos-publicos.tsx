@@ -337,7 +337,7 @@ export default function PlanosPublicos() {
               <div className="my-6 h-px bg-white/[0.07]" />
 
               {/* Features */}
-              <ul className="space-y-3">
+              <ul className="space-y-3 flex-1">
                 {[
                   "Todas as aulas gravadas",
                   "Vídeos de casos clínicos reais",
