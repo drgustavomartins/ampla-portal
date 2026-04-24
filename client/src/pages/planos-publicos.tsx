@@ -227,18 +227,18 @@ export default function PlanosPublicos() {
           )}
 
           <h1 className="text-3xl sm:text-5xl lg:text-[56px] font-bold tracking-tight text-white leading-[1.07]">
-            Domine a Harmonização Facial
+            Aprenda harmonização<br className="hidden sm:inline" /> ao lado do Dr. Gustavo
           </h1>
-          <p className="mt-4 text-base sm:text-lg text-white/50 leading-relaxed max-w-2xl mx-auto">
-            Escolha o nível certo para você — do conteúdo online à mentoria completa com o Dr. Gustavo Martins.
+          <p className="mt-4 text-base sm:text-lg text-white/60 leading-relaxed max-w-2xl mx-auto">
+            Acompanhamento real, prática supervisionada e mentoria individual — o caminho para atender full face com confiança.
           </p>
 
           {/* Trust badges */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-6">
             {[
-              { icon: Shield, text: "Pagamento seguro via Stripe" },
-              { icon: Star,   text: "Acesso vitalício ao conteúdo" },
-              { icon: Check,  text: "Satisfação garantida" },
+              { icon: Star,   text: "Mentoria direta com o Dr. Gustavo" },
+              { icon: Check,  text: "Prática hands-on supervisionada" },
+              { icon: Shield, text: "7 dias de garantia de desistência" },
             ].map(({ icon: Ic, text }) => (
               <div key={text} className="flex items-center gap-2 text-[13px] text-white/35">
                 <Ic className="h-3.5 w-3.5 text-[#D4A843]/60" />
@@ -284,7 +284,7 @@ export default function PlanosPublicos() {
               <div className="pt-6">
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A843] mb-2">Acesso Vitalício</p>
                 <h3 className="text-2xl sm:text-[28px] xl:text-xl font-bold text-white leading-tight">Plataforma Online</h3>
-                <p className="mt-2 text-sm text-white/50 leading-relaxed">Todas as aulas gravadas, materiais e vídeos de casos clínicos — para sempre.</p>
+                <p className="mt-2 text-sm text-white/50 leading-relaxed">Todo o conteúdo gravado do método para estudar no seu ritmo. Ideal antes de entrar em um acompanhamento.</p>
               </div>
 
               {/* Price */}
@@ -404,8 +404,8 @@ export default function PlanosPublicos() {
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-orange-400 mb-2">Tema Único</p>
                 <h3 className="text-2xl xl:text-xl font-bold text-white leading-tight">Módulo Avulso com Prática</h3>
-                <p className="mt-2 text-sm text-white/50 leading-relaxed">
-                  Escolha 1 tema: Toxina, Preenchedores, Bioestimuladores ou Biorregeneradores — prática hands-on focada.
+                <p className="mt-2 text-sm text-white/60 leading-relaxed">
+                  Escolha 1 tema e saia atendendo: 8h de prática hands-on com pacientes modelo + supervisão direta do Dr. Gustavo.
                 </p>
               </div>
 
@@ -472,7 +472,7 @@ export default function PlanosPublicos() {
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-400 mb-2">Observacional</p>
                 <h3 className="text-2xl xl:text-xl font-bold text-white leading-tight">Acompanhamento Observacional</h3>
-                <p className="mt-2 text-sm text-white/50 leading-relaxed">Aulas + 24h observando o Dr. Gustavo em atendimento + acompanhamento ao vivo.</p>
+                <p className="mt-2 text-sm text-white/60 leading-relaxed">Observe o Dr. Gustavo atendendo ao vivo por 24h presenciais — aprenda cada decisão clínica em tempo real.</p>
               </div>
 
               {/* Price */}
@@ -520,17 +520,20 @@ export default function PlanosPublicos() {
             </div>
           </div>
 
-          {/* ── Card 3: Acompanhamento VIP (premium) ── */}
-          <div className="relative rounded-[28px] overflow-hidden flex flex-col"
+          {/* ── Card 3: Acompanhamento VIP (recomendado) ── */}
+          <div className="relative rounded-[28px] overflow-hidden flex flex-col xl:scale-[1.03] xl:z-10"
             style={{
               background: "linear-gradient(145deg, #1A103A 0%, #12082E 50%, #0D0622 100%)",
-              boxShadow: "0 8px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(147,130,220,0.12)",
+              boxShadow: "0 12px 64px rgba(139,92,246,0.25), 0 0 0 2px rgba(192,132,252,0.35)",
             }}
           >
-            {/* Premium badge */}
-            <div className="absolute top-4 right-4 z-10">
-              <span className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                <Crown className="h-3 w-3" /> Premium
+            {/* Recomendado ribbon */}
+            <div className="absolute -top-[2px] left-1/2 -translate-x-1/2 z-20">
+              <span
+                className="inline-flex items-center gap-1 rounded-b-lg px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white"
+                style={{ background: "linear-gradient(135deg, #8B5CF6, #C084FC)", boxShadow: "0 2px 12px rgba(139,92,246,0.5)" }}
+              >
+                <Crown className="h-3 w-3" /> Mais Escolhido
               </span>
             </div>
 
@@ -546,7 +549,7 @@ export default function PlanosPublicos() {
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-purple-400 mb-2">Formação Completa</p>
                 <h3 className="text-2xl xl:text-xl font-bold text-white leading-tight">Acompanhamento VIP</h3>
-                <p className="mt-2 text-sm text-white/50 leading-relaxed">Prática hands-on + mentoria individual + método NaturalUp®.</p>
+                <p className="mt-2 text-sm text-white/60 leading-relaxed">6 meses de mentoria individual com Dr. Gustavo, prática hands-on supervisionada e domínio do método NaturalUp®.</p>
               </div>
 
               {/* Price */}
@@ -621,7 +624,7 @@ export default function PlanosPublicos() {
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#E8C86A] mb-2">O Mais Alto Nível</p>
                 <h3 className="text-2xl sm:text-[28px] xl:text-xl font-bold text-white leading-tight">Acompanhamento Elite</h3>
-                <p className="mt-2 text-sm text-white/50 leading-relaxed">Os bastidores da Clínica + licença exclusiva da marca NaturalUp® — acompanhamento 360° por 12 meses.</p>
+                <p className="mt-2 text-sm text-white/60 leading-relaxed">12 meses ao lado do Dr. Gustavo: 7 dias clínicos completos, bastidores da clínica e licença exclusiva da marca NaturalUp®.</p>
               </div>
 
               <div className="mt-6">
@@ -667,6 +670,42 @@ export default function PlanosPublicos() {
             </div>
           </div>
 
+        </div>
+
+        {/* ═══ Por que acompanhamento ═══ */}
+        <div className="mt-20 sm:mt-24 max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#D4A843] mb-3">O diferencial da Ampla Facial</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white leading-tight">Aqui você não compra um curso. Você ganha um mentor.</h2>
+            <p className="mt-3 text-sm sm:text-base text-white/50 max-w-2xl mx-auto">
+              Aulas gravadas qualquer um faz. O que transforma é ter o Dr. Gustavo ao seu lado enquanto você atende seus primeiros pacientes.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              {
+                title: "Prática com paciente real",
+                text: "Pacientes modelo agendados na Clínica Gustavo Martins. Você aplica, o Dr. Gustavo corrige em tempo real.",
+              },
+              {
+                title: "Canal direto para dúvidas",
+                text: "Durante o acompanhamento, você manda caso, foto, complicação — e recebe resposta direta do mentor.",
+              },
+              {
+                title: "Método NaturalUp®",
+                text: "O protocolo estruturado que o Dr. Gustavo criou para atender full face de forma previsível e segura.",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="rounded-2xl p-6 text-left"
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+              >
+                <h3 className="text-base font-semibold text-white mb-2">{item.title}</h3>
+                <p className="text-sm text-white/50 leading-relaxed">{item.text}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* ═══ Trial CTA ═══ */}
