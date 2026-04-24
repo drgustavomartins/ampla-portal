@@ -361,7 +361,7 @@ export default function PlanosPublicos() {
                 <button
                   onClick={handleCheckout}
                   disabled={loadingCheckout || countdown.expired || slots?.soldOut}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-lg sm:rounded-xl py-[9px] sm:py-3.5 text-[12px] sm:text-[14px] font-semibold tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-105"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-lg sm:rounded-xl py-[10px] sm:py-[13px] text-[12px] sm:text-[14px] font-semibold tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-105"
                   style={{
                     background: countdown.expired || slots?.soldOut
                       ? "rgba(255,255,255,0.08)"
@@ -440,7 +440,7 @@ export default function PlanosPublicos() {
                 <a
                   href={`${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse no Módulo Avulso com Prática. Quero saber mais sobre qual tema escolher.")}`}
                   target="_blank" rel="noopener noreferrer"
-                  className="flex w-full items-center justify-center gap-1.5 rounded-lg sm:rounded-xl py-[9px] sm:py-3.5 text-[12px] sm:text-[14px] font-semibold tracking-wide transition-all hover:brightness-105"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-lg sm:rounded-xl py-[10px] sm:py-[13px] text-[12px] sm:text-[14px] font-semibold tracking-wide transition-all hover:brightness-105"
                   style={{
                     background: "rgba(255,255,255,0.06)",
                     color: "#FFFFFF",
@@ -509,7 +509,7 @@ export default function PlanosPublicos() {
                 href={WHATSAPP_PRATICA}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-auto pt-5 sm:pt-8 flex w-full items-center justify-center gap-1.5 rounded-lg sm:rounded-2xl py-[9px] sm:py-4 text-[12px] sm:text-[15px] font-semibold sm:font-bold transition-all duration-200 hover:brightness-110"
+                className="mt-auto pt-5 sm:pt-8 flex w-full items-center justify-center gap-1.5 rounded-lg sm:rounded-xl py-[10px] sm:py-[13px] text-[12px] sm:text-[14px] font-semibold transition-all duration-200 hover:brightness-110"
                 style={{ background: "rgba(255,255,255,0.06)", color: "#FFFFFF", border: "1px solid rgba(52,211,153,0.45)" }}
               >
                 <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -521,19 +521,19 @@ export default function PlanosPublicos() {
           </div>
 
           {/* ── Card 3: Acompanhamento VIP (recomendado) ── */}
-          <div className="relative rounded-[28px] overflow-hidden flex flex-col xl:scale-[1.03] xl:z-10"
+          <div className="relative rounded-[28px] overflow-hidden flex flex-col"
             style={{
               background: "linear-gradient(145deg, #1A103A 0%, #12082E 50%, #0D0622 100%)",
               boxShadow: "0 12px 64px rgba(139,92,246,0.25), 0 0 0 2px rgba(192,132,252,0.35)",
             }}
           >
             {/* Recomendado ribbon */}
-            <div className="absolute -top-[2px] left-1/2 -translate-x-1/2 z-20">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 z-20">
               <span
-                className="inline-flex items-center gap-1 rounded-b-lg px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white"
+                className="inline-flex items-center gap-1 rounded-b-lg px-3 py-1 text-[9px] font-bold uppercase tracking-[0.16em] text-white whitespace-nowrap"
                 style={{ background: "linear-gradient(135deg, #8B5CF6, #C084FC)", boxShadow: "0 2px 12px rgba(139,92,246,0.5)" }}
               >
-                <Crown className="h-3 w-3" /> Mais Escolhido
+                <Crown className="h-2.5 w-2.5" /> Mais Escolhido
               </span>
             </div>
 
@@ -547,7 +547,7 @@ export default function PlanosPublicos() {
             <div className="relative p-7 sm:p-8 xl:p-5 flex flex-col flex-1">
               {/* Header */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-purple-400 mb-2">Formação Completa</p>
+                <div className="h-[28px]"></div>
                 <h3 className="text-2xl xl:text-xl font-bold text-white leading-tight">Acompanhamento VIP</h3>
                 <p className="mt-2 text-sm text-white/60 leading-relaxed">6 meses de mentoria individual com Dr. Gustavo, prática hands-on supervisionada e domínio do método NaturalUp®.</p>
               </div>
@@ -590,7 +590,7 @@ export default function PlanosPublicos() {
                 href={WHATSAPP_MENTORIA}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-auto pt-5 sm:pt-8 flex w-full items-center justify-center gap-1.5 rounded-lg sm:rounded-2xl py-[9px] sm:py-4 text-[12px] sm:text-[15px] font-semibold sm:font-bold transition-all duration-200 hover:brightness-110"
+                className="mt-auto pt-5 sm:pt-8 flex w-full items-center justify-center gap-1.5 rounded-lg sm:rounded-xl py-[10px] sm:py-[13px] text-[12px] sm:text-[14px] font-semibold transition-all duration-200 hover:brightness-110"
                 style={{ background: "linear-gradient(135deg, #8B5CF6, #C084FC)", color: "#fff", boxShadow: "0 4px 24px rgba(139,92,246,0.3)" }}
               >
                 <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -659,7 +659,7 @@ export default function PlanosPublicos() {
               <a
                 href={`${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse no Acompanhamento Elite (bastidores + 32h prática + 7 dias clínicos + licença NaturalUp). Podemos conversar?")}`}
                 target="_blank" rel="noopener noreferrer"
-                className="mt-auto pt-5 sm:pt-8 flex w-full items-center justify-center gap-1.5 rounded-lg sm:rounded-2xl py-[9px] sm:py-4 text-[12px] sm:text-[15px] font-semibold sm:font-bold transition-all duration-200 hover:brightness-110"
+                className="mt-auto pt-5 sm:pt-8 flex w-full items-center justify-center gap-1.5 rounded-lg sm:rounded-xl py-[10px] sm:py-[13px] text-[12px] sm:text-[14px] font-semibold transition-all duration-200 hover:brightness-110"
                 style={{ background: "rgba(255,255,255,0.06)", color: "#FFFFFF", border: "1px solid rgba(232,200,106,0.55)" }}
               >
                 <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
