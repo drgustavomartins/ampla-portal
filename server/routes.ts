@@ -1000,6 +1000,22 @@ export async function registerRoutes(server: Server, app: Express) {
     console.error("[auto-migrate] supplementary_certificates failed:", e.message);
   }
 
+  // Migration: seed neocolagenese podcast
+  try {
+    const { db } = await import("./db");
+    const migName = 'seed_neocolagenese_podcast_2026_04';
+    const alreadyApplied = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migName} LIMIT 1`);
+    if (!((alreadyApplied as any).rows?.length > 0)) {
+      await db.execute(sql`INSERT INTO supplementary_content (type, title, description, video_url, category, duration, "order", visible, created_at)
+        VALUES ('podcast', 'Falha de Bioestimuladores por Canetas Emagrecedoras', 'Dr. Gustavo Martins fala sobre como GLP-1 (canetas emagrecedoras) interferem na neocolagênese e causam falhas em bioestimuladores', 'https://youtu.be/MVIAIYZNjD4', 'Neocolagênese', '20:00', 2, true, ${new Date().toISOString()})
+        ON CONFLICT DO NOTHING`);
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migName}, ${new Date().toISOString()})`);
+      console.log("[auto-migrate] neocolagenese podcast seeded");
+    }
+  } catch (e: any) {
+    console.error("[auto-migrate] seed_neocolagenese_podcast failed:", e.message);
+  }
+
   // POST /api/funnel/event — registrar evento do funil
   app.post("/api/funnel/event", async (req, res) => {
     try {
