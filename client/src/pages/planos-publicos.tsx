@@ -357,11 +357,10 @@ export default function PlanosPublicos() {
 
               {/* Not included */}
               {/* CTA */}
-              <div className="mt-auto pt-5 sm:pt-6">
                 <button
                   onClick={handleCheckout}
                   disabled={loadingCheckout || countdown.expired || slots?.soldOut}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-lg py-[10px] text-[12px] sm:text-[13px] font-semibold tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-105"
+                  className="mt-auto pt-5 sm:pt-6 flex w-full items-center justify-center gap-1.5 rounded-lg py-[10px] text-[12px] sm:text-[13px] font-semibold tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-105"
                   style={{
                     background: countdown.expired || slots?.soldOut
                       ? "rgba(255,255,255,0.08)"
@@ -382,7 +381,6 @@ export default function PlanosPublicos() {
                     <>Garantir meu acesso <ArrowRight className="h-4 w-4" /></>
                   )}
                 </button>
-              </div>
             </div>
           </div>
 
@@ -436,11 +434,10 @@ export default function PlanosPublicos() {
                 ))}
               </ul>
 
-              <div className="mt-auto pt-5 sm:pt-6">
                 <a
                   href={`${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse no Módulo Avulso com Prática. Quero saber mais sobre qual tema escolher.")}`}
                   target="_blank" rel="noopener noreferrer"
-                  className="flex w-full items-center justify-center gap-1.5 rounded-lg py-[10px] text-[12px] sm:text-[13px] font-semibold tracking-wide transition-all hover:brightness-105"
+                  className="mt-auto pt-5 sm:pt-6 flex w-full items-center justify-center gap-1.5 rounded-lg py-[10px] text-[12px] sm:text-[13px] font-semibold tracking-wide transition-all hover:brightness-105"
                   style={{
                     background: "rgba(255,255,255,0.06)",
                     color: "#FFFFFF",
@@ -449,7 +446,6 @@ export default function PlanosPublicos() {
                 >
                   <span className="whitespace-nowrap">Escolher meu tema</span> <ArrowRight className="hidden sm:block h-4 w-4" />
                 </a>
-              </div>
             </div>
           </div>
 
