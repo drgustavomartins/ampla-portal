@@ -198,6 +198,12 @@ export default function StudentDashboard() {
 
   const completedIds = useMemo(() => new Set(progress.filter(p => p.completed).map(p => p.lessonId)), [progress]);
 
+  // Helper: a lesson is "published" (has video) and not a separator (━━ TÍTULO ━━)
+  const isPublishedLesson = useCallback((l: Lesson) => {
+    if (l.title.includes('\u2501')) return false;
+    return !!(l.videoUrl && l.videoUrl.trim().length > 0);
+  }, []);
+
   // All useMemo hooks MUST be before any early returns to avoid React error #310
   const sortedModules = useMemo(() => [...modules].sort((a, b) => a.order - b.order), [modules]);
   const introModule = useMemo(() => sortedModules.find(m => m.order === 1 || m.title.toLowerCase().includes("boas vindas") || m.title.toLowerCase().includes("boas-vindas")), [sortedModules]);
@@ -242,12 +248,12 @@ export default function StudentDashboard() {
     const startIdx = lastCompletedIdx + 1;
     const result: { lesson: Lesson; module: Module }[] = [];
     for (let i = startIdx; i < allOrdered.length && result.length < 5; i++) {
-      if (!completedIds.has(allOrdered[i].lesson.id)) {
+      if (!completedIds.has(allOrdered[i].lesson.id) && isPublishedLesson(allOrdered[i].lesson)) {
         result.push(allOrdered[i]);
       }
     }
     return result;
-  }, [sortedModules, lessons, progress, completedIds]);
+  }, [sortedModules, lessons, progress, completedIds, isPublishedLesson]);
 
   const totalLessons = lessons.length;
   const completedCount = completedIds.size;
@@ -621,18 +627,18 @@ export default function StudentDashboard() {
       const lastDone = completed[0];
       const lastLesson = lessons.find(l => l.id === lastDone.lessonId);
       if (lastLesson) {
-        // Tenta encontrar a próxima aula do mesmo módulo
+        // Tenta encontrar a próxima aula publicada do mesmo módulo
         const modLessons = getLessonsForModule(lastLesson.moduleId);
         const idx = modLessons.findIndex(l => l.id === lastLesson.id);
-        const next = modLessons[idx + 1];
-        return next || lastLesson; // se não tem próxima, repete a última
+        const next = modLessons.slice(idx + 1).find(isPublishedLesson);
+        return next || (isPublishedLesson(lastLesson) ? lastLesson : null);
       }
     }
-    // Nenhum progresso: começa pela primeira aula do primeiro módulo de curso (não Boas-Vindas)
+    // Nenhum progresso: começa pela primeira aula publicada do primeiro módulo de curso (não Boas-Vindas)
     const firstMod = sortedModules.find(m => m !== introModule) || sortedModules[0];
     if (firstMod) {
       const modLessons = getLessonsForModule(firstMod.id);
-      return modLessons[0] || null;
+      return modLessons.find(isPublishedLesson) || null;
     }
     return null;
   })();
@@ -704,7 +710,7 @@ export default function StudentDashboard() {
         const lastCompletedId = completedWithDates[0].lessonId;
         const lastIdx = allOrdered.findIndex((o) => o.lesson.id === lastCompletedId);
         for (let i = lastIdx + 1; i < allOrdered.length; i++) {
-          if (!completedIds.has(allOrdered[i].lesson.id)) {
+          if (!completedIds.has(allOrdered[i].lesson.id) && isPublishedLesson(allOrdered[i].lesson)) {
             nextLesson = allOrdered[i];
             break;
           }
@@ -712,7 +718,7 @@ export default function StudentDashboard() {
       }
       // If we couldn't find a next lesson after the last completed, find the first uncompleted
       if (!nextLesson) {
-        nextLesson = allOrdered.find((o) => !completedIds.has(o.lesson.id)) ?? null;
+        nextLesson = allOrdered.find((o) => !completedIds.has(o.lesson.id) && isPublishedLesson(o.lesson)) ?? null;
       }
       if (nextLesson) {
         return {
@@ -1185,9 +1191,9 @@ export default function StudentDashboard() {
           {/* ===== NETFLIX ROWS: Category-based rows (Phase 2) ===== */}
           {!isAccessExpired && (() => {
             // "Assista os Procedimentos" — practical lessons across all modules
-            const practicalLessons = lessons.filter((l: any) => l.contentType === "practical");
+            const practicalLessons = lessons.filter((l: any) => l.contentType === "practical" && isPublishedLesson(l));
             // "Casos Clínicos" — case_study lessons across all modules
-            const caseStudyLessons = lessons.filter((l: any) => l.contentType === "case_study");
+            const caseStudyLessons = lessons.filter((l: any) => l.contentType === "case_study" && isPublishedLesson(l));
 
             // Category rows based on module titles
             const categoryConfig: { title: string; emoji: string; keywords: string[] }[] = [
@@ -1204,7 +1210,7 @@ export default function StudentDashboard() {
                   cat.keywords.some((kw) => m.title.toLowerCase().includes(kw)),
                 );
                 const catLessons = matchingModules.flatMap((m) =>
-                  getLessonsForModule(m.id).map((l) => ({ lesson: l, module: m })),
+                  getLessonsForModule(m.id).filter(isPublishedLesson).map((l) => ({ lesson: l, module: m })),
                 );
                 if (catLessons.length === 0) return null;
                 return { ...cat, lessons: catLessons };
