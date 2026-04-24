@@ -449,7 +449,19 @@ export async function registerRoutes(server: Server, app: Express) {
         OR LOWER(title) LIKE '%infiltra%'
       )`).catch(() => {});
 
-    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts, community, lead_events, invite_codes, site_visitors, page_visits, live_events, live_event_attendance, live_event_cases, lessons content_type/timestamps ensured");
+    // Video watch progress (partial position synced to DB)
+    await db.execute(`CREATE TABLE IF NOT EXISTS user_video_progress (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      lesson_id INTEGER NOT NULL,
+      current_seconds INTEGER NOT NULL DEFAULT 0,
+      duration_seconds INTEGER,
+      last_watched_at TEXT NOT NULL,
+      UNIQUE(user_id, lesson_id)
+    )`).catch(() => {});
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_user_video_progress_user ON user_video_progress(user_id)`).catch(() => {});
+
+    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts, community, lead_events, invite_codes, site_visitors, page_visits, live_events, live_event_attendance, live_event_cases, user_video_progress, lessons content_type/timestamps ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
@@ -2021,13 +2033,14 @@ export async function registerRoutes(server: Server, app: Express) {
     try {
       // Fire all independent DB queries in parallel
       const { db: initDb } = await import("./db");
-      const [allModules, allLessons, allPlans, userProgress, podcastsResult, userCertificates] = await Promise.all([
+      const [allModules, allLessons, allPlans, userProgress, podcastsResult, userCertificates, userVideoProgressRows] = await Promise.all([
         storage.getModules(),
         storage.getLessons(),
         storage.getPlans(),
         storage.getProgress(auth.userId),
         initDb.execute(`SELECT * FROM supplementary_content WHERE visible = true ORDER BY "order" ASC`).catch(() => ({ rows: [] })),
         initDb.execute(sql`SELECT * FROM certificates WHERE user_id = ${auth.userId} ORDER BY issued_at DESC`).catch(() => ({ rows: [] })),
+        storage.getVideoProgress(auth.userId).catch(() => [] as any[]),
       ]);
 
       // Compute my-modules access (inlined from /api/my-modules logic)
@@ -2085,9 +2098,37 @@ export async function registerRoutes(server: Server, app: Express) {
         lessonAccess,
         podcasts: (podcastsResult as any).rows || [],
         certificates: (userCertificates as any).rows || [],
+        videoProgress: userVideoProgressRows,
       });
     } catch (e: any) {
       console.error("[GET /api/student/init]", e?.message || e);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ==================== VIDEO PROGRESS (partial watch position) ====================
+  app.post("/api/student/video-progress", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const { lessonId, currentSeconds, durationSeconds } = req.body;
+      if (!lessonId || currentSeconds == null) return res.status(400).json({ message: "lessonId e currentSeconds são obrigatórios" });
+      const row = await storage.upsertVideoProgress(auth.userId, lessonId, Math.round(currentSeconds), durationSeconds != null ? Math.round(durationSeconds) : null);
+      res.json(row);
+    } catch (e: any) {
+      console.error("[POST /api/student/video-progress]", e?.message || e);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  app.get("/api/student/video-progress", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const rows = await storage.getVideoProgress(auth.userId);
+      res.json(rows);
+    } catch (e: any) {
+      console.error("[GET /api/student/video-progress]", e?.message || e);
       res.status(500).json({ message: "Erro interno" });
     }
   });

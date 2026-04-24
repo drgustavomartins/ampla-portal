@@ -4,12 +4,15 @@ import type { VideoProgressEntry } from "@/hooks/use-video-progress";
 import { minutesRemaining } from "@/hooks/use-video-progress";
 import { YouTubeThumbnail } from "@/components/YouTubeThumbnail";
 
+export type HeroMode = "continue-watching" | "continue-journey" | "welcome";
+
 interface HeroContinueProps {
   lesson: Lesson;
   module: Module | undefined;
   progress: VideoProgressEntry | null;
   isCompleted: boolean;
   firstName: string;
+  heroMode: HeroMode;
   onContinue: () => void;
   onDetails: () => void;
 }
@@ -20,6 +23,7 @@ export function HeroContinue({
   progress,
   isCompleted,
   firstName,
+  heroMode,
   onContinue,
   onDetails,
 }: HeroContinueProps) {
@@ -27,8 +31,30 @@ export function HeroContinue({
   const percentage = progress?.percentage ?? 0;
   const remaining = progress ? minutesRemaining(progress) : null;
 
-  // If student has no in-progress lesson, show a welcome hero
-  const isWelcome = !hasProgress && isCompleted === false && percentage === 0;
+  const isWelcome = heroMode === "welcome";
+  const isContinueJourney = heroMode === "continue-journey";
+
+  const badgeText = isWelcome
+    ? "Comece sua jornada"
+    : isContinueJourney
+      ? "Continue sua jornada"
+      : "Continue de onde parou";
+
+  const titleText = isWelcome
+    ? `Boas-vindas, ${firstName}!`
+    : lesson.title;
+
+  const subtitleText = isWelcome
+    ? "Comece pelo primeiro módulo da sua formação"
+    : isContinueJourney
+      ? `Próxima aula: ${module?.title ?? ""}`
+      : module?.title ?? "";
+
+  const buttonLabel = isWelcome
+    ? "Começar"
+    : isContinueJourney
+      ? "Assistir"
+      : "Continuar";
 
   return (
     <section
@@ -54,27 +80,23 @@ export function HeroContinue({
       <div className="relative flex flex-col justify-end h-full p-6 sm:p-8 lg:p-10" style={{ minHeight: "clamp(280px, 50vh, 480px)" }}>
         {/* Badge */}
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-[#D4AF37] text-black w-fit mb-4">
-          {isWelcome ? "Comece sua jornada" : "Continue de onde parou"}
+          {badgeText}
         </span>
 
         {/* Title */}
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight max-w-2xl mb-1">
-          {isWelcome
-            ? `Boas-vindas, ${firstName}!`
-            : lesson.title}
+          {titleText}
         </h1>
 
         {/* Subtitle (module name) */}
-        {module && (
+        {(module || isWelcome) && (
           <p className="text-sm sm:text-base text-[#b3b3b3] mb-4 max-w-xl">
-            {isWelcome
-              ? "Comece pelo primeiro módulo da sua formação"
-              : module.title}
+            {subtitleText}
           </p>
         )}
 
-        {/* Progress bar + remaining */}
-        {hasProgress && (
+        {/* Progress bar + remaining (only for continue-watching mode) */}
+        {hasProgress && heroMode === "continue-watching" && (
           <div className="max-w-md mb-4 space-y-1.5">
             <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
               <div
@@ -99,7 +121,7 @@ export function HeroContinue({
             aria-label={isWelcome ? "Começar primeira aula" : `Continuar ${lesson.title}`}
           >
             <Play className="w-4 h-4 fill-black" />
-            {isWelcome ? "Começar" : "Continuar"}
+            {buttonLabel}
           </button>
           <button
             onClick={onDetails}

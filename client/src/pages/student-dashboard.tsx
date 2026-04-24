@@ -31,7 +31,7 @@ import { PhoneInput } from "@/components/PhoneInput";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 import { CreditsDashboardCard } from "@/components/CreditsDashboardCard";
 import { CreditsFullSection } from "@/components/CreditsFullSection";
-import { HeroContinue } from "@/components/netflix/HeroContinue";
+import { HeroContinue, type HeroMode } from "@/components/netflix/HeroContinue";
 import { LessonRow } from "@/components/netflix/LessonRow";
 import { LessonCard } from "@/components/netflix/LessonCard";
 import { PodcastCard } from "@/components/netflix/PodcastCard";
@@ -638,8 +638,12 @@ export default function StudentDashboard() {
     .sort((a, b) => new Date(b!.progress.lastWatchedAt).getTime() - new Date(a!.progress.lastWatchedAt).getTime())
     .slice(0, 10) as { lesson: Lesson; progress: import("@/hooks/use-video-progress").VideoProgressEntry }[];
 
-  // Hero lesson: first from continueWatching, or fallback to lastLesson
+  // Hero lesson: 3-tier logic
+  // 1. Has in-progress video (0 < progress < 95%) → "Continue de onde parou"
+  // 2. Has completed lessons but no in-progress video → "Continue sua jornada" + next recommended lesson
+  // 3. No progress at all → "Boas-vindas" + first lesson
   const heroData = (() => {
+    // Tier 1: in-progress video from continueWatching
     if (continueWatchingLessons.length > 0) {
       const first = continueWatchingLessons[0];
       return {
@@ -647,16 +651,58 @@ export default function StudentDashboard() {
         module: modules.find((m) => m.id === first.lesson.moduleId),
         progress: first.progress,
         isCompleted: false,
+        heroMode: "continue-watching" as HeroMode,
       };
     }
-    // Fallback: use the existing lastLesson logic
+    // Tier 2: has completed lessons → show next recommended
+    if (completedIds.size > 0) {
+      // Find the next uncompleted lesson after the most recently completed one
+      const sortedMods = [...modules].sort((a, b) => a.order - b.order);
+      const allOrdered: { lesson: Lesson; module: Module }[] = [];
+      for (const mod of sortedMods) {
+        const modLessons = lessons
+          .filter((l) => l.moduleId === mod.id)
+          .sort((a, b) => a.order - b.order);
+        for (const l of modLessons) {
+          allOrdered.push({ lesson: l, module: mod });
+        }
+      }
+      const completedWithDates = progress
+        .filter((p) => p.completed && p.completedAt)
+        .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
+      let nextLesson: { lesson: Lesson; module: Module } | null = null;
+      if (completedWithDates.length > 0) {
+        const lastCompletedId = completedWithDates[0].lessonId;
+        const lastIdx = allOrdered.findIndex((o) => o.lesson.id === lastCompletedId);
+        for (let i = lastIdx + 1; i < allOrdered.length; i++) {
+          if (!completedIds.has(allOrdered[i].lesson.id)) {
+            nextLesson = allOrdered[i];
+            break;
+          }
+        }
+      }
+      // If we couldn't find a next lesson after the last completed, find the first uncompleted
+      if (!nextLesson) {
+        nextLesson = allOrdered.find((o) => !completedIds.has(o.lesson.id)) ?? null;
+      }
+      if (nextLesson) {
+        return {
+          lesson: nextLesson.lesson,
+          module: nextLesson.module,
+          progress: getVideoProgress(nextLesson.lesson.id),
+          isCompleted: false,
+          heroMode: "continue-journey" as HeroMode,
+        };
+      }
+    }
+    // Tier 3: no progress → welcome with first lesson
     if (lastLesson) {
-      const vp = getVideoProgress(lastLesson.id);
       return {
         lesson: lastLesson,
         module: modules.find((m) => m.id === lastLesson.moduleId),
-        progress: vp,
+        progress: getVideoProgress(lastLesson.id),
         isCompleted: completedIds.has(lastLesson.id),
+        heroMode: "welcome" as HeroMode,
       };
     }
     return null;
@@ -1050,6 +1096,7 @@ export default function StudentDashboard() {
               progress={heroData.progress}
               isCompleted={heroData.isCompleted}
               firstName={firstName}
+              heroMode={heroData.heroMode}
               onContinue={() => setSelectedLesson(heroData.lesson)}
               onDetails={() => {
                 if (heroData.module) setLocation(`/module/${heroData.module.id}`);

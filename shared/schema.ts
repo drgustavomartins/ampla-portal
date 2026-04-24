@@ -278,6 +278,16 @@ export const supplementaryContent = pgTable("supplementary_content", {
   updatedAt: text("updated_at"),
 });
 
+// Video Watch Progress (partial progress synced to DB)
+export const userVideoProgress = pgTable("user_video_progress", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  lessonId: integer("lesson_id").notNull(),
+  currentSeconds: integer("current_seconds").notNull().default(0),
+  durationSeconds: integer("duration_seconds"),
+  lastWatchedAt: text("last_watched_at").notNull(),
+});
+
 // Certificates (auto-issued on module completion)
 export const certificates = pgTable("certificates", {
   id: serial("id").primaryKey(),
@@ -294,6 +304,7 @@ export const certificates = pgTable("certificates", {
 // Insert schemas
 export const insertSupplementaryContentSchema = createInsertSchema(supplementaryContent).omit({ id: true });
 export const insertCertificateSchema = createInsertSchema(certificates).omit({ id: true });
+export const insertUserVideoProgressSchema = createInsertSchema(userVideoProgress).omit({ id: true });
 export const insertInviteCodeSchema = createInsertSchema(inviteCodes).omit({ id: true, usedCount: true, usedBy: true });
 
 export const insertSiteVisitorSchema = createInsertSchema(siteVisitors).omit({ id: true });
@@ -388,3 +399,5 @@ export type SupplementaryContent = typeof supplementaryContent.$inferSelect;
 export type InsertSupplementaryContent = z.infer<typeof insertSupplementaryContentSchema>;
 export type Certificate = typeof certificates.$inferSelect;
 export type InsertCertificate = z.infer<typeof insertCertificateSchema>;
+export type UserVideoProgress = typeof userVideoProgress.$inferSelect;
+export type InsertUserVideoProgress = z.infer<typeof insertUserVideoProgressSchema>;

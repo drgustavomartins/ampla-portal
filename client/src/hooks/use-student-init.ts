@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
-import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
+import type { Module, Lesson, LessonProgress, Plan, UserVideoProgress } from "@shared/schema";
+import { mergeServerProgress } from "@/hooks/use-video-progress";
 
 export interface SupplementaryItem {
   id: number;
@@ -40,6 +41,7 @@ export interface StudentInitData {
   lessonAccess: { accessType: string; allowedLessonIds: number[] };
   podcasts: SupplementaryItem[];
   certificates: CertificateItem[];
+  videoProgress: UserVideoProgress[];
 }
 
 /**
@@ -66,6 +68,11 @@ export function useStudentInit() {
       queryClient.setQueryData(["/api/progress", user?.id], data.progress);
       queryClient.setQueryData(["/api/my-modules"], data.myModules);
       queryClient.setQueryData(["/api/lessons/access"], data.lessonAccess);
+
+      // Merge server video progress into localStorage (server wins if newer)
+      if (data.videoProgress) {
+        mergeServerProgress(data.videoProgress);
+      }
 
       return data;
     },
