@@ -910,7 +910,7 @@ export default function ModulePage() {
       const mLessons = allLessons.filter(l => l.moduleId === m.id).sort((a, b) => a.order - b.order);
       for (const l of mLessons) {
         if (result.length >= 6) break;
-        if (!completedIds.has(l.id)) {
+        if (!completedIds.has(l.id) && l.videoUrl && l.videoUrl.trim().length > 0 && !l.title.includes('\u2501')) {
           result.push({ lesson: l, module: m });
         }
       }
@@ -1016,6 +1016,16 @@ export default function ModulePage() {
         ) : (
           <div className="space-y-1">
             {moduleLessons.map((lesson, i) => {
+              if (lesson.title.includes('\u2501')) {
+                const cleanTitle = lesson.title.replace(/\u2501+/g, '').trim();
+                return (
+                  <div key={lesson.id} className="mt-8 mb-4 flex items-center gap-3">
+                    <div className="h-px bg-yellow-500/40 flex-1" />
+                    <h3 className="text-yellow-400 text-xs font-bold tracking-[0.2em] uppercase whitespace-nowrap">{cleanTitle}</h3>
+                    <div className="h-px bg-yellow-500/40 flex-1" />
+                  </div>
+                );
+              }
               const done = completedIds.has(lesson.id);
               const trialLocked = isLessonTrialLocked(lesson);
               const supportLink = getLessonSupportUrl(lesson);
