@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft, FileText, FileIcon, Headphones, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink, Eye, X, Loader2, Lock, Play,
+  ArrowLeft, FileText, FileIcon, Headphones, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink, Eye, X, Loader2, Lock, Play, BookOpen,
 } from "lucide-react";
 import { YouTubeThumbnail } from "@/components/YouTubeThumbnail";
 
@@ -14,9 +14,12 @@ import { YouTubeThumbnail } from "@/components/YouTubeThumbnail";
 type FileEntry = {
   id: number;
   name: string;
-  type: "pdf" | "docx" | "mp3" | "video";
+  type: "pdf" | "docx" | "mp3" | "video" | "article";
   driveId: string;
   youtubeId?: string | null;
+  externalUrl?: string | null;
+  authorsYear?: string | null;
+  journal?: string | null;
   order: number;
 };
 
@@ -64,16 +67,19 @@ function FileTypeIcon({ type }: { type: FileEntry["type"] }) {
       return <FileIcon className="w-4 h-4 text-purple-400 shrink-0" />;
     case "docx":
       return <FileIcon className="w-4 h-4 text-blue-400 shrink-0" />;
+    case "article":
+      return <BookOpen className="w-4 h-4 text-cyan-400 shrink-0" />;
   }
 }
 
 function TypeLabel({ type }: { type: FileEntry["type"] }) {
-  const labels: Record<FileEntry["type"], string> = { pdf: "PDF", mp3: "MP3", video: "V\u00eddeo", docx: "DOCX" };
+  const labels: Record<FileEntry["type"], string> = { pdf: "PDF", mp3: "MP3", video: "V\u00eddeo", docx: "DOCX", article: "Artigo" };
   const colors: Record<FileEntry["type"], string> = {
     pdf: "bg-red-500/15 text-red-400 border-red-500/20",
     mp3: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
     video: "bg-purple-500/15 text-purple-400 border-purple-500/20",
     docx: "bg-blue-500/15 text-blue-400 border-blue-500/20",
+    article: "bg-cyan-500/15 text-cyan-400 border-cyan-500/20",
   };
   return (
     <Badge variant="outline" className={`text-[10px] px-1.5 py-0 font-medium ${colors[type]}`}>
@@ -137,7 +143,7 @@ const isIOS = typeof navigator !== "undefined" &&
 function FileRow({ file, trialLocked = false }: { file: FileEntry; trialLocked?: boolean }) {
   const [pdfOpen, setPdfOpen] = useState(false);
   const [mp3Error, setMp3Error] = useState(false);
-  const showDownload = file.type !== "mp3";
+  const showDownload = file.type !== "mp3" && file.type !== "article";
 
   if (trialLocked) {
     return (
@@ -171,6 +177,13 @@ function FileRow({ file, trialLocked = false }: { file: FileEntry; trialLocked?:
             <span className="text-sm text-foreground/90 leading-snug">{file.name}</span>
             <TypeLabel type={file.type} />
           </div>
+          {file.type === "article" && (file.authorsYear || file.journal) && (
+            <div className="text-[11px] text-muted-foreground/80 leading-snug">
+              {file.authorsYear && <span>{file.authorsYear}</span>}
+              {file.authorsYear && file.journal && <span className="mx-1">·</span>}
+              {file.journal && <span className="italic">{file.journal}</span>}
+            </div>
+          )}
           {file.type === "mp3" && file.youtubeId ? (
             <div className="relative w-full mt-1 rounded-lg overflow-hidden border border-border/20" style={{ paddingBottom: "56.25%", maxWidth: "28rem" }}>
               <iframe
@@ -207,6 +220,18 @@ function FileRow({ file, trialLocked = false }: { file: FileEntry; trialLocked?:
           ) : null}
         </div>
         <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+          {file.type === "article" && file.externalUrl && (
+            <a
+              href={file.externalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 text-xs font-medium border border-cyan-500/30 transition-colors"
+              title={"Ler artigo no " + (file.externalUrl.includes('pubmed') ? 'PubMed' : file.externalUrl.includes('doi.org') ? 'DOI.org' : 'editora')}
+            >
+              <ExternalLink className="w-3 h-3" />
+              <span>{file.externalUrl.includes('pubmed') ? 'PubMed' : file.externalUrl.includes('doi.org') ? 'DOI' : 'Ler'}</span>
+            </a>
+          )}
           {file.type === "pdf" && (
             // #40 — Em iOS, abrir no Drive diretamente; no desktop, toggle iframe inline
             isIOS ? (
@@ -229,25 +254,29 @@ function FileRow({ file, trialLocked = false }: { file: FileEntry; trialLocked?:
               </button>
             )
           )}
-          <a
-            href={driveViewUrl(file.driveId)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-muted-foreground hover:text-gold transition-colors"
-            title="Abrir no Google Drive"
-          >
-            <ExternalLink className="w-4 h-4" />
-          </a>
-          {showDownload && (
-            <a
-              href={driveDownloadUrl(file.driveId)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-gold transition-colors"
-              title="Baixar"
-            >
-              <Download className="w-4 h-4" />
-            </a>
+          {file.type !== "article" && (
+            <>
+              <a
+                href={driveViewUrl(file.driveId)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-gold transition-colors"
+                title="Abrir no Google Drive"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+              {showDownload && (
+                <a
+                  href={driveDownloadUrl(file.driveId)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-gold transition-colors"
+                  title="Baixar"
+                >
+                  <Download className="w-4 h-4" />
+                </a>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -366,7 +395,7 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
       }
     },
     enabled: !!user,
-    staleTime: 5 * 60 * 1000, // Materials catalog rarely changes
+    staleTime: 10 * 60 * 1000, // Materials catalog rarely changes
   });
 
   // All users have access to all materials — no filtering needed

@@ -308,6 +308,9 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`CREATE TABLE IF NOT EXISTS material_subcategories (id SERIAL PRIMARY KEY, theme_id INTEGER NOT NULL, name TEXT NOT NULL, "order" INTEGER NOT NULL DEFAULT 0)`);
     await db.execute(`CREATE TABLE IF NOT EXISTS material_files (id SERIAL PRIMARY KEY, subcategory_id INTEGER NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, drive_id TEXT NOT NULL, "order" INTEGER NOT NULL DEFAULT 0)`);
     await db.execute(`ALTER TABLE material_files ADD COLUMN IF NOT EXISTS youtube_id TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE material_files ADD COLUMN IF NOT EXISTS external_url TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE material_files ADD COLUMN IF NOT EXISTS authors_year TEXT`).catch(() => {});
+    await db.execute(`ALTER TABLE material_files ADD COLUMN IF NOT EXISTS journal TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE material_themes ADD COLUMN IF NOT EXISTS visible BOOLEAN NOT NULL DEFAULT true`).catch(() => {});
     // Stripe payment columns
     await db.execute(`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`).catch(() => {});
@@ -3499,7 +3502,7 @@ export async function registerRoutes(server: Server, app: Express) {
           const files = filesMap.get(sub.id) || [];
           const sanitizedFiles = hasActiveAccess
             ? files
-            : files.map(({ driveId: _d, youtubeId: _y, ...rest }) => rest);
+            : files.map(({ driveId: _d, youtubeId: _y, externalUrl: _e, ...rest }: any) => rest);
           return { ...sub, files: sanitizedFiles };
         });
         const fileCount = subsWithFiles.reduce((acc, sub) => acc + sub.files.length, 0);

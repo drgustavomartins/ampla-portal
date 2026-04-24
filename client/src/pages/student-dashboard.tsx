@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, lazy, Suspense } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
@@ -196,7 +196,7 @@ export default function StudentDashboard() {
     }
   };
 
-  const completedIds = new Set(progress.filter(p => p.completed).map(p => p.lessonId));
+  const completedIds = useMemo(() => new Set(progress.filter(p => p.completed).map(p => p.lessonId)), [progress]);
   const totalLessons = lessons.length;
   const completedCount = completedIds.size;
   const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
@@ -557,9 +557,9 @@ export default function StudentDashboard() {
     : "?";
 
   // Filter: skip "Boas vindas" / intro module (order 1), show the rest as course cards
-  const sortedModules = [...modules].sort((a, b) => a.order - b.order);
-  const introModule = sortedModules.find(m => m.order === 1 || m.title.toLowerCase().includes("boas vindas") || m.title.toLowerCase().includes("boas-vindas"));
-  const courseModules = sortedModules.filter(m => m !== introModule);
+  const sortedModules = useMemo(() => [...modules].sort((a, b) => a.order - b.order), [modules]);
+  const introModule = useMemo(() => sortedModules.find(m => m.order === 1 || m.title.toLowerCase().includes("boas vindas") || m.title.toLowerCase().includes("boas-vindas")), [sortedModules]);
+  const courseModules = useMemo(() => sortedModules.filter(m => m !== introModule), [sortedModules, introModule]);
 
   // Intro lessons get merged into the first course module for display
   const introLessons = introModule ? getLessonsForModule(introModule.id) : [];
@@ -622,17 +622,17 @@ export default function StudentDashboard() {
   const videoProgressStore = getAllVideoProgress();
 
   // Continue Watching: lessons with 0 < progress < 95%, sorted by lastWatchedAt desc, max 10
-  const continueWatchingLessons = lessons
+  const continueWatchingLessons = useMemo(() => lessons
     .map((lesson) => {
       const vp = videoProgressStore[String(lesson.id)];
       if (!vp || vp.percentage <= 0 || vp.percentage >= 95) return null;
-      // Also skip if lesson is already marked completed server-side
       if (completedIds.has(lesson.id)) return null;
       return { lesson, progress: vp };
     })
     .filter(Boolean)
     .sort((a, b) => new Date(b!.progress.lastWatchedAt).getTime() - new Date(a!.progress.lastWatchedAt).getTime())
-    .slice(0, 10) as { lesson: Lesson; progress: import("@/hooks/use-video-progress").VideoProgressEntry }[];
+    .slice(0, 10) as { lesson: Lesson; progress: import("@/hooks/use-video-progress").VideoProgressEntry }[],
+  [lessons, videoProgressStore, completedIds]);
 
   // Hero lesson: 3-tier logic
   // 1. Has in-progress video (0 < progress < 95%) → "Continue de onde parou"
@@ -705,11 +705,9 @@ export default function StudentDashboard() {
   })();
 
   // Next in Journey: next 5 lessons after the last completed one, in admin order
-  const nextInJourneyLessons = (() => {
-    // Flatten all lessons across modules in admin order
-    const sortedMods = [...modules].sort((a, b) => a.order - b.order);
+  const nextInJourneyLessons = useMemo(() => {
     const allOrdered: { lesson: Lesson; module: Module }[] = [];
-    for (const mod of sortedMods) {
+    for (const mod of sortedModules) {
       const modLessons = lessons
         .filter((l) => l.moduleId === mod.id)
         .sort((a, b) => a.order - b.order);
@@ -718,7 +716,6 @@ export default function StudentDashboard() {
       }
     }
 
-    // Find the last completed lesson's index
     let lastCompletedIdx = -1;
     const completedWithDates = progress
       .filter((p) => p.completed && p.completedAt)
@@ -728,7 +725,6 @@ export default function StudentDashboard() {
       lastCompletedIdx = allOrdered.findIndex((o) => o.lesson.id === lastCompletedId);
     }
 
-    // Take next 5 uncompleted lessons
     const startIdx = lastCompletedIdx + 1;
     const result: { lesson: Lesson; module: Module }[] = [];
     for (let i = startIdx; i < allOrdered.length && result.length < 5; i++) {
@@ -737,7 +733,7 @@ export default function StudentDashboard() {
       }
     }
     return result;
-  })();
+  }, [sortedModules, lessons, progress, completedIds]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden netflix-theme">
@@ -796,7 +792,7 @@ export default function StudentDashboard() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           {/* Left: Logo */}
           <div className="flex items-center gap-2.5">
-            <img src="/logo-icon.png" alt="Ampla Facial" className="w-10 h-10 object-contain shrink-0 -mt-1" />
+            <img src="/logo-icon.png" alt="Ampla Facial" className="w-10 h-10 object-contain shrink-0 -mt-1" loading="eager" decoding="async" />
             <div className="leading-none">
               <p className="text-sm font-extrabold tracking-wide text-white">AMPLA FACIAL</p>
               <p className="text-[9px] text-gold/70 tracking-wide font-light">Dr. Gustavo Martins</p>
@@ -907,7 +903,7 @@ export default function StudentDashboard() {
         <div className="fixed inset-0 z-50 bg-[#0A0D14] animate-in fade-in duration-200">
           <div className="flex items-center justify-between px-5 py-4">
             <div className="flex items-center gap-2.5">
-              <img src="/logo-icon.png" alt="Ampla Facial" className="w-8 h-8 object-contain" />
+              <img src="/logo-icon.png" alt="Ampla Facial" className="w-8 h-8 object-contain" loading="eager" decoding="async" />
               <span className="text-sm font-extrabold tracking-wide text-white">AMPLA FACIAL</span>
             </div>
             <button
@@ -1312,7 +1308,7 @@ export default function StudentDashboard() {
               >
                 {/* Background image */}
                 <div className="absolute inset-0">
-                  <img src="/images/boas-vindas-v2.png" alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <img src="/images/boas-vindas-v2.png" alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" />
                   <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-background/30" />
                 </div>
                 <div className="relative flex items-center gap-6 p-6 sm:p-8">
@@ -1947,7 +1943,7 @@ export default function StudentDashboard() {
                 onClick={() => avatarFileRef.current?.click()}
               >
                 {profileForm.avatarUrl ? (
-                  <img src={profileForm.avatarUrl} alt="" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  <img src={profileForm.avatarUrl} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 ) : (
                   <span className="text-lg font-semibold text-[#0A1628]">{(profileForm.name || user?.name)?.[0]?.toUpperCase() || "?"}</span>
                 )}

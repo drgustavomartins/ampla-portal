@@ -263,7 +263,7 @@ export default function ModulePage() {
   // Falls back to individual queries if cache is empty (e.g. direct navigation)
   const { data: modules = [] } = useQuery<Module[]>({
     queryKey: ["/api/modules"],
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
   // Fetch only lessons for THIS module instead of all lessons
   const { data: moduleLessonsData = [] } = useQuery<Lesson[]>({
@@ -273,12 +273,12 @@ export default function ModulePage() {
       return res.json();
     },
     enabled: !!moduleId && !!user?.id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
   // Also keep full lessons cache in sync for dashboard navigation
   const { data: allLessons = [] } = useQuery<Lesson[]>({
     queryKey: ["/api/lessons"],
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
   // Merge: use module-specific lessons if available, else filter from all
   const lessons = moduleLessonsData.length > 0 ? allLessons : allLessons;
@@ -289,7 +289,7 @@ export default function ModulePage() {
       return res.json();
     },
     enabled: !!user?.id,
-    staleTime: 60 * 1000,
+    staleTime: 60 * 1000, // progress muda frequentemente — manter 60s
   });
   const { data: myModules } = useQuery<{ accessAll: boolean; moduleIds: number[] }>({
     queryKey: ["/api/my-modules"],
@@ -298,13 +298,13 @@ export default function ModulePage() {
       return res.json();
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
   const { data: lessonAccess } = useQuery<{ accessType: string; allowedLessonIds: number[] }>({
     queryKey: ["/api/lessons/access"],
     queryFn: async () => { const res = await apiRequest("GET", "/api/lessons/access"); return res.json(); },
     enabled: !!user,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
   });
   const accessType = lessonAccess?.accessType || "full";
   const allowedLessonIds = new Set(lessonAccess?.allowedLessonIds || []);
@@ -316,9 +316,35 @@ export default function ModulePage() {
         ? `/api/progress/${user?.id}/lesson/${lessonId}/complete`
         : `/api/progress/${user?.id}/lesson/${lessonId}/incomplete`;
       await apiRequest("POST", endpoint);
+      return { lessonId, complete };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/progress", user?.id] });
+    // Optimistic update: atualiza UI imediatamente
+    onMutate: async ({ lessonId, complete }) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/progress", user?.id] });
+      const previous = queryClient.getQueryData<LessonProgress[]>(["/api/progress", user?.id]) || [];
+      if (complete) {
+        const optimistic = [
+          ...previous.filter((p: LessonProgress) => p.lessonId !== lessonId),
+          { id: -1, userId: user?.id || 0, lessonId, completed: true, completedAt: new Date().toISOString() } as LessonProgress,
+        ];
+        queryClient.setQueryData(["/api/progress", user?.id], optimistic);
+      } else {
+        queryClient.setQueryData(
+          ["/api/progress", user?.id],
+          previous.filter((p: LessonProgress) => p.lessonId !== lessonId)
+        );
+      }
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["/api/progress", user?.id], context.previous);
+      }
+    },
+    onSettled: () => {
+      // Refetch real do servidor (garante consistência)
+      queryClient.invalidateQueries({ queryKey: ["/api/progress", user?.id], refetchType: "active" });
+      queryClient.invalidateQueries({ queryKey: ["/api/student/init"], refetchType: "active" });
     },
   });
 

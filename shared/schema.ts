@@ -180,9 +180,13 @@ export const materialFiles = pgTable("material_files", {
   id: serial("id").primaryKey(),
   subcategoryId: integer("subcategory_id").notNull(),
   name: text("name").notNull(),
-  type: text("type").notNull(), // 'pdf', 'docx', or 'mp3'
+  type: text("type").notNull(), // 'pdf' | 'docx' | 'mp3' | 'video' | 'article'
   driveId: text("drive_id").notNull(),
   youtubeId: text("youtube_id"),
+  // Para type='article': link externo (PubMed/DOI/editora) — substitui drive_id na renderização
+  externalUrl: text("external_url"),
+  authorsYear: text("authors_year"),
+  journal: text("journal"),
   order: integer("order").notNull().default(0),
 });
 

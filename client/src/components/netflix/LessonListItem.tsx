@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Play, Lock, CheckCircle2, Clock, Paperclip } from "lucide-react";
 import type { Lesson } from "@shared/schema";
 import type { VideoProgressEntry } from "@/hooks/use-video-progress";
@@ -26,7 +27,7 @@ function getLessonBadge(lesson: Lesson): string | null {
   return null;
 }
 
-export function LessonListItem({
+export const LessonListItem = memo(function LessonListItem({
   lesson,
   index,
   isCompleted,
@@ -164,4 +165,4 @@ export function LessonListItem({
       </div>
     </button>
   );
-}
+});

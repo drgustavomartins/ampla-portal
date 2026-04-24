@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Play, Plus, BookOpen, CheckCircle2, Clock } from "lucide-react";
 import type { Module } from "@shared/schema";
 
@@ -22,7 +23,7 @@ function getCourseImage(mod: Module): string | null {
   return null;
 }
 
-export function ModuleHero({
+export const ModuleHero = memo(function ModuleHero({
   module: mod,
   totalLessons,
   completedLessons,
@@ -46,6 +47,7 @@ export function ModuleHero({
             alt=""
             className="w-full h-full object-cover object-[30%_center] sm:object-center"
             loading="eager"
+            decoding="async"
             fetchPriority="high"
           />
         ) : (
@@ -121,4 +123,4 @@ export function ModuleHero({
       </div>
     </section>
   );
-}
+});

@@ -7,6 +7,15 @@ import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, useAuth } from "./lib/auth";
 import { VisitorTracker } from "./components/VisitorTracker";
 
+// Custom hash-location hook that strips query string before matching routes,
+// so that Stripe redirects like /#/pagamento/sucesso?plan=xxx&session_id=yyy
+// still match Route path="/pagamento/sucesso".
+function useHashLocationWithoutQuery(): [string, (to: string) => void] {
+  const [loc, nav] = useHashLocation();
+  const pathOnly = loc.split("?")[0];
+  return [pathOnly, nav];
+}
+
 // ─── Critical path (kept in main bundle) ──────────────────────────────────
 import LoginPage from "./pages/login";
 import NotFound from "./pages/not-found";
@@ -126,7 +135,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router hook={useHashLocation}>
+        <Router hook={useHashLocationWithoutQuery}>
           <VisitorTracker />
           <Switch>
             <Route path="/" component={AppContent} />
