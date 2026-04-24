@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, FileText, FileIcon, Headphones, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink, Eye, X, Loader2, Lock, Play, BookOpen,
 } from "lucide-react";
-import { getYouTubeThumbnail, getNextFallback } from "@/lib/youtube-thumbnail";
+import { YouTubeThumbnail } from "@/components/YouTubeThumbnail";
 
 /* ───────── Types ───────── */
 
@@ -90,51 +90,46 @@ function TypeLabel({ type }: { type: FileEntry["type"] }) {
 
 /* ───────── Thumbnail helper ───────── */
 
-function getFileThumbnail(file: FileEntry): string | null {
-  if (file.type === "mp3" && file.youtubeId) {
-    return getYouTubeThumbnail(file.youtubeId, "mqdefault");
-  }
-  if (file.type === "pdf") {
-    if (isFullUrl(file.driveId)) return null; // No thumbnail for direct URLs
-    return `https://lh3.googleusercontent.com/d/${file.driveId}=w200`;
-  }
-  return null;
-}
-
 function FileThumbnail({ file }: { file: FileEntry }) {
-  const initialThumb = getFileThumbnail(file);
-  const [src, setSrc] = useState<string | null>(initialThumb);
-  const [failed, setFailed] = useState(false);
+  const isYouTube = file.type === "mp3" && !!file.youtubeId;
+  const driveThumb = file.type === "pdf" && !isFullUrl(file.driveId)
+    ? `https://lh3.googleusercontent.com/d/${file.driveId}=w200`
+    : null;
+  const [driveSrc, setDriveSrc] = useState<string | null>(driveThumb);
 
-  const handleError = () => {
-    if (!src) { setFailed(true); return; }
-    if (src.includes("img.youtube.com")) {
-      const next = getNextFallback(src);
-      if (next) { setSrc(next); return; }
-    }
-    setFailed(true);
-  };
-
-  if (!src || failed) {
-    return <FileTypeIcon type={file.type} />;
-  }
-
-  return (
-    <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden ring-1 ring-border/20 bg-card/60 relative group/thumb">
-      <img
-        src={src}
-        alt=""
-        className="w-full h-full object-cover"
-        loading="lazy"
-        onError={handleError}
-      />
-      {file.type === "mp3" && (
+  if (isYouTube) {
+    return (
+      <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden ring-1 ring-border/20 bg-card/60 relative group/thumb">
+        <YouTubeThumbnail
+          videoIdOrUrl={file.youtubeId!}
+          startSize="mqdefault"
+          alt=""
+          imgClassName="w-full h-full object-cover"
+          loading="lazy"
+          placeholder={<FileTypeIcon type={file.type} />}
+        />
         <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity">
           <Play className="w-3.5 h-3.5 text-white ml-0.5 drop-shadow-md" />
         </div>
-      )}
-    </div>
-  );
+      </div>
+    );
+  }
+
+  if (driveSrc) {
+    return (
+      <div className="shrink-0 w-12 h-12 rounded-lg overflow-hidden ring-1 ring-border/20 bg-card/60 relative group/thumb">
+        <img
+          src={driveSrc}
+          alt=""
+          className="w-full h-full object-cover"
+          loading="lazy"
+          onError={() => setDriveSrc(null)}
+        />
+      </div>
+    );
+  }
+
+  return <FileTypeIcon type={file.type} />;
 }
 
 /* ───────── Components ───────── */

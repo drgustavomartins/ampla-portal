@@ -4,6 +4,7 @@ import {
   plans, users, modules, lessons, lessonProgress, passwordResets, auditLogs, planModules,
   userModules, userMaterialCategories,
   materialThemes, materialSubcategories, materialFiles,
+  userVideoProgress,
   type Plan, type InsertPlan,
   type User, type InsertUser,
   type Module, type InsertModule,
@@ -16,6 +17,7 @@ import {
   type MaterialTheme, type InsertMaterialTheme,
   type MaterialSubcategory, type InsertMaterialSubcategory,
   type MaterialFile, type InsertMaterialFile,
+  type UserVideoProgress,
 } from "@shared/schema";
 
 export const storage = {
@@ -309,5 +311,26 @@ export const storage = {
   async deleteMaterialFile(id: number): Promise<boolean> {
     await db.delete(materialFiles).where(eq(materialFiles.id, id));
     return true;
+  },
+
+  // ===== VIDEO PROGRESS =====
+  async getVideoProgress(userId: number): Promise<UserVideoProgress[]> {
+    return db.select().from(userVideoProgress).where(eq(userVideoProgress.userId, userId));
+  },
+  async upsertVideoProgress(userId: number, lessonId: number, currentSeconds: number, durationSeconds: number | null): Promise<UserVideoProgress> {
+    const [existing] = await db.select().from(userVideoProgress)
+      .where(and(eq(userVideoProgress.userId, userId), eq(userVideoProgress.lessonId, lessonId)));
+    const now = new Date().toISOString();
+    if (existing) {
+      const [updated] = await db.update(userVideoProgress)
+        .set({ currentSeconds, durationSeconds, lastWatchedAt: now })
+        .where(eq(userVideoProgress.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await db.insert(userVideoProgress).values({
+      userId, lessonId, currentSeconds, durationSeconds, lastWatchedAt: now,
+    }).returning();
+    return created;
   },
 };

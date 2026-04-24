@@ -18,7 +18,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { getYouTubeThumbnail } from "@/lib/youtube-thumbnail";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
   ChevronLeft, ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle, Star,
@@ -31,9 +30,11 @@ import { PhoneInput } from "@/components/PhoneInput";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 import { CreditsDashboardCard } from "@/components/CreditsDashboardCard";
 import { CreditsFullSection } from "@/components/CreditsFullSection";
-import { HeroContinue } from "@/components/netflix/HeroContinue";
+import { HeroContinue, type HeroMode } from "@/components/netflix/HeroContinue";
 import { LessonRow } from "@/components/netflix/LessonRow";
 import { LessonCard } from "@/components/netflix/LessonCard";
+import { PodcastCard } from "@/components/netflix/PodcastCard";
+import { CertificateCard } from "@/components/netflix/CertificateCard";
 import { RowSkeleton } from "@/components/netflix/RowSkeleton";
 import { getAllVideoProgress, getVideoProgress } from "@/hooks/use-video-progress";
 
@@ -83,6 +84,7 @@ export default function StudentDashboard() {
   const [, setLocation] = useLocation();
   const [selectedModule, setSelectedModule] = useState<number | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [selectedPodcast, setSelectedPodcast] = useState<{ title: string; videoUrl: string; description?: string | null } | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "", avatarUrl: "", username: "", instagram: "" });
@@ -117,6 +119,8 @@ export default function StudentDashboard() {
   const plans = initData?.plans ?? [];
   const myModules = initData?.myModules;
   const lessonAccess = initData?.lessonAccess;
+  const podcasts = initData?.podcasts ?? [];
+  const certificates = initData?.certificates ?? [];
 
   const [purchaseModule, setPurchaseModule] = useState<Module | null>(null);
   const [signingSessionId, setSigningSessionId] = useState<number | null>(null);
@@ -321,14 +325,19 @@ export default function StudentDashboard() {
                   </div>
                 </div>
               ) : embedUrl ? (
-                <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border/30">
-                  <iframe
-                    src={embedUrl}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    title={selectedLesson.title}
-                  />
+                <div className="space-y-1">
+                  <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border/30">
+                    <iframe
+                      src={embedUrl}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; remote-playback"
+                      allowFullScreen
+                      title={selectedLesson.title}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground/50 text-right">
+                    Assistir na TV? Use o Chromecast/AirPlay pelo botao do player YouTube
+                  </p>
                 </div>
               ) : (
                 <div className="aspect-video bg-card rounded-lg flex items-center justify-center ring-1 ring-border/30">
@@ -454,6 +463,41 @@ export default function StudentDashboard() {
     );
   }
 
+  // ========== PODCAST VIEW ==========
+  if (selectedPodcast) {
+    const podcastEmbedUrl = getEmbedUrl(selectedPodcast.videoUrl);
+    return (
+      <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
+        <div className="max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 space-y-4">
+          <button
+            onClick={() => setSelectedPodcast(null)}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Voltar ao dashboard
+          </button>
+          {podcastEmbedUrl && (
+            <div className="aspect-video bg-black rounded-lg overflow-hidden ring-1 ring-border/30">
+              <iframe
+                src={podcastEmbedUrl}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; remote-playback"
+                allowFullScreen
+                title={selectedPodcast.title}
+              />
+            </div>
+          )}
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">{selectedPodcast.title}</h2>
+            {selectedPodcast.description && (
+              <p className="text-sm text-muted-foreground mt-1">{selectedPodcast.description}</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ========== MAIN DASHBOARD ==========
 
   // Show loading skeleton while init data is being fetched
@@ -546,9 +590,6 @@ export default function StudentDashboard() {
     return null;
   })();
   const lastLessonModule = lastLesson ? modules.find(m => m.id === lastLesson.moduleId) : null;
-  const lastLessonThumb = lastLesson?.videoUrl
-    ? getYouTubeThumbnail(lastLesson.videoUrl, "mqdefault")
-    : null;
   const isLastLessonDone = lastLesson ? completedIds.has(lastLesson.id) : false;
   const continueLabel = progress.filter(p => p.completed).length === 0
     ? "Comece por aqui"
@@ -593,8 +634,12 @@ export default function StudentDashboard() {
     .slice(0, 10) as { lesson: Lesson; progress: import("@/hooks/use-video-progress").VideoProgressEntry }[],
   [lessons, videoProgressStore, completedIds]);
 
-  // Hero lesson: first from continueWatching, or fallback to lastLesson
+  // Hero lesson: 3-tier logic
+  // 1. Has in-progress video (0 < progress < 95%) → "Continue de onde parou"
+  // 2. Has completed lessons but no in-progress video → "Continue sua jornada" + next recommended lesson
+  // 3. No progress at all → "Boas-vindas" + first lesson
   const heroData = (() => {
+    // Tier 1: in-progress video from continueWatching
     if (continueWatchingLessons.length > 0) {
       const first = continueWatchingLessons[0];
       return {
@@ -602,16 +647,58 @@ export default function StudentDashboard() {
         module: modules.find((m) => m.id === first.lesson.moduleId),
         progress: first.progress,
         isCompleted: false,
+        heroMode: "continue-watching" as HeroMode,
       };
     }
-    // Fallback: use the existing lastLesson logic
+    // Tier 2: has completed lessons → show next recommended
+    if (completedIds.size > 0) {
+      // Find the next uncompleted lesson after the most recently completed one
+      const sortedMods = [...modules].sort((a, b) => a.order - b.order);
+      const allOrdered: { lesson: Lesson; module: Module }[] = [];
+      for (const mod of sortedMods) {
+        const modLessons = lessons
+          .filter((l) => l.moduleId === mod.id)
+          .sort((a, b) => a.order - b.order);
+        for (const l of modLessons) {
+          allOrdered.push({ lesson: l, module: mod });
+        }
+      }
+      const completedWithDates = progress
+        .filter((p) => p.completed && p.completedAt)
+        .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime());
+      let nextLesson: { lesson: Lesson; module: Module } | null = null;
+      if (completedWithDates.length > 0) {
+        const lastCompletedId = completedWithDates[0].lessonId;
+        const lastIdx = allOrdered.findIndex((o) => o.lesson.id === lastCompletedId);
+        for (let i = lastIdx + 1; i < allOrdered.length; i++) {
+          if (!completedIds.has(allOrdered[i].lesson.id)) {
+            nextLesson = allOrdered[i];
+            break;
+          }
+        }
+      }
+      // If we couldn't find a next lesson after the last completed, find the first uncompleted
+      if (!nextLesson) {
+        nextLesson = allOrdered.find((o) => !completedIds.has(o.lesson.id)) ?? null;
+      }
+      if (nextLesson) {
+        return {
+          lesson: nextLesson.lesson,
+          module: nextLesson.module,
+          progress: getVideoProgress(nextLesson.lesson.id),
+          isCompleted: false,
+          heroMode: "continue-journey" as HeroMode,
+        };
+      }
+    }
+    // Tier 3: no progress → welcome with first lesson
     if (lastLesson) {
-      const vp = getVideoProgress(lastLesson.id);
       return {
         lesson: lastLesson,
         module: modules.find((m) => m.id === lastLesson.moduleId),
-        progress: vp,
+        progress: getVideoProgress(lastLesson.id),
         isCompleted: completedIds.has(lastLesson.id),
+        heroMode: "welcome" as HeroMode,
       };
     }
     return null;
@@ -1001,6 +1088,7 @@ export default function StudentDashboard() {
               progress={heroData.progress}
               isCompleted={heroData.isCompleted}
               firstName={firstName}
+              heroMode={heroData.heroMode}
               onContinue={() => setSelectedLesson(heroData.lesson)}
               onDetails={() => {
                 if (heroData.module) setLocation(`/module/${heroData.module.id}`);
@@ -1179,6 +1267,36 @@ export default function StudentDashboard() {
               </>
             );
           })()}
+
+          {/* ===== NETFLIX ROW: Podcasts e Áudios ===== */}
+          {podcasts.length > 0 && (
+            <Suspense fallback={<RowSkeleton />}>
+              <LessonRow title="Podcasts e Conteúdos Extras">
+                {podcasts.map((item) => (
+                  <PodcastCard
+                    key={item.id}
+                    item={item}
+                    onClick={() => {
+                      if (item.video_url) {
+                        setSelectedPodcast({ title: item.title, videoUrl: item.video_url, description: item.description });
+                      }
+                    }}
+                  />
+                ))}
+              </LessonRow>
+            </Suspense>
+          )}
+
+          {/* ===== NETFLIX ROW: Meus Certificados ===== */}
+          {certificates.length > 0 && (
+            <Suspense fallback={<RowSkeleton />}>
+              <LessonRow title="Meus Certificados">
+                {certificates.map((cert) => (
+                  <CertificateCard key={cert.id} certificate={cert} />
+                ))}
+              </LessonRow>
+            </Suspense>
+          )}
 
           {/* ===== BOAS VINDAS (Featured/Hero Section) ===== */}
           {introModule && introLessons.length > 0 && !isAccessExpired && (

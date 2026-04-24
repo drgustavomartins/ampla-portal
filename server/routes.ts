@@ -452,7 +452,19 @@ export async function registerRoutes(server: Server, app: Express) {
         OR LOWER(title) LIKE '%infiltra%'
       )`).catch(() => {});
 
-    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts, community, lead_events, invite_codes, site_visitors, page_visits, live_events, live_event_attendance, live_event_cases, lessons content_type/timestamps ensured");
+    // Video watch progress (partial position synced to DB)
+    await db.execute(`CREATE TABLE IF NOT EXISTS user_video_progress (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      lesson_id INTEGER NOT NULL,
+      current_seconds INTEGER NOT NULL DEFAULT 0,
+      duration_seconds INTEGER,
+      last_watched_at TEXT NOT NULL,
+      UNIQUE(user_id, lesson_id)
+    )`).catch(() => {});
+    await db.execute(`CREATE INDEX IF NOT EXISTS idx_user_video_progress_user ON user_video_progress(user_id)`).catch(() => {});
+
+    console.log("[auto-migrate] quiz_leads, quiz_clicks, funnel_events, referral_codes, credit_transactions, clinical_sessions, contracts, community, lead_events, invite_codes, site_visitors, page_visits, live_events, live_event_attendance, live_event_cases, user_video_progress, lessons content_type/timestamps ensured");
   } catch (e: any) {
     console.error("[auto-migrate] Failed to ensure columns:", e.message);
   }
@@ -946,6 +958,67 @@ export async function registerRoutes(server: Server, app: Express) {
     console.error("[auto-migrate] cleanup_orphaned_contracts failed:", e.message);
   }
 
+  // Migration: supplementary_content + certificates tables (Netflix Phase 4)
+  try {
+    const { db } = await import("./db");
+    const migName = 'create_supplementary_certificates_tables_2026_04';
+    const alreadyApplied = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migName} LIMIT 1`);
+    if (!((alreadyApplied as any).rows?.length > 0)) {
+      await db.execute(`CREATE TABLE IF NOT EXISTS supplementary_content (
+        id SERIAL PRIMARY KEY,
+        type TEXT NOT NULL DEFAULT 'podcast',
+        title TEXT NOT NULL,
+        description TEXT,
+        video_url TEXT,
+        audio_url TEXT,
+        thumbnail_url TEXT,
+        category TEXT,
+        duration TEXT,
+        "order" INTEGER NOT NULL DEFAULT 0,
+        visible BOOLEAN NOT NULL DEFAULT true,
+        created_at TEXT NOT NULL,
+        updated_at TEXT
+      )`);
+      await db.execute(`CREATE TABLE IF NOT EXISTS certificates (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        module_id INTEGER NOT NULL,
+        issued_at TEXT NOT NULL,
+        certificate_number TEXT NOT NULL UNIQUE,
+        student_name TEXT NOT NULL,
+        module_name TEXT NOT NULL,
+        completed_lessons INTEGER NOT NULL,
+        total_lessons INTEGER NOT NULL
+      )`);
+      await db.execute(`CREATE INDEX IF NOT EXISTS idx_certificates_user ON certificates(user_id)`);
+      await db.execute(`CREATE INDEX IF NOT EXISTS idx_certificates_module ON certificates(module_id)`);
+      await db.execute(`CREATE UNIQUE INDEX IF NOT EXISTS idx_certificates_user_module ON certificates(user_id, module_id)`);
+      // Seed first podcast
+      await db.execute(sql`INSERT INTO supplementary_content (type, title, description, video_url, category, duration, "order", visible, created_at)
+        VALUES ('podcast', 'iPRF: A Verdade Sobre a Fibrina Rica em Plaquetas Injetável', 'Descubra o que é iPRF, como funciona, e por que está revolucionando os tratamentos em harmonização facial e medicina regenerativa.', 'https://youtu.be/CFIrBQIOHJ0', 'Biorreguladores', '15:00', 1, true, ${new Date().toISOString()})`);
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migName}, ${new Date().toISOString()})`);
+      console.log("[auto-migrate] supplementary_content + certificates tables created, first podcast seeded");
+    }
+  } catch (e: any) {
+    console.error("[auto-migrate] supplementary_certificates failed:", e.message);
+  }
+
+  // Migration: seed neocolagenese podcast
+  try {
+    const { db } = await import("./db");
+    const migName = 'seed_neocolagenese_podcast_2026_04';
+    const alreadyApplied = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migName} LIMIT 1`);
+    if (!((alreadyApplied as any).rows?.length > 0)) {
+      await db.execute(sql`INSERT INTO supplementary_content (type, title, description, video_url, category, duration, "order", visible, created_at)
+        VALUES ('podcast', 'Falha de Bioestimuladores por Canetas Emagrecedoras', 'Dr. Gustavo Martins fala sobre como GLP-1 (canetas emagrecedoras) interferem na neocolagênese e causam falhas em bioestimuladores', 'https://youtu.be/MVIAIYZNjD4', 'Neocolagênese', '20:00', 2, true, ${new Date().toISOString()})
+        ON CONFLICT DO NOTHING`);
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migName}, ${new Date().toISOString()})`);
+      console.log("[auto-migrate] neocolagenese podcast seeded");
+    }
+  } catch (e: any) {
+    console.error("[auto-migrate] seed_neocolagenese_podcast failed:", e.message);
+  }
+
   // POST /api/funnel/event — registrar evento do funil
   app.post("/api/funnel/event", async (req, res) => {
     try {
@@ -1252,7 +1325,7 @@ export async function registerRoutes(server: Server, app: Express) {
 
       let sent = 0;
       for (const user of trials.rows) {
-        const startDate = new Date(user.trial_started_at || user.created_at);
+        const startDate = new Date(String(user.trial_started_at || user.created_at));
         const daysSinceStart = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
         
         if (daysSinceStart >= 5) {
@@ -1978,11 +2051,15 @@ export async function registerRoutes(server: Server, app: Express) {
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
     try {
       // Fire all independent DB queries in parallel
-      const [allModules, allLessons, allPlans, userProgress] = await Promise.all([
+      const { db: initDb } = await import("./db");
+      const [allModules, allLessons, allPlans, userProgress, podcastsResult, userCertificates, userVideoProgressRows] = await Promise.all([
         storage.getModules(),
         storage.getLessons(),
         storage.getPlans(),
         storage.getProgress(auth.userId),
+        initDb.execute(`SELECT * FROM supplementary_content WHERE visible = true ORDER BY "order" ASC`).catch(() => ({ rows: [] })),
+        initDb.execute(sql`SELECT * FROM certificates WHERE user_id = ${auth.userId} ORDER BY issued_at DESC`).catch(() => ({ rows: [] })),
+        storage.getVideoProgress(auth.userId).catch(() => [] as any[]),
       ]);
 
       // Compute my-modules access (inlined from /api/my-modules logic)
@@ -2038,9 +2115,39 @@ export async function registerRoutes(server: Server, app: Express) {
         progress: userProgress,
         myModules,
         lessonAccess,
+        podcasts: (podcastsResult as any).rows || [],
+        certificates: (userCertificates as any).rows || [],
+        videoProgress: userVideoProgressRows,
       });
     } catch (e: any) {
       console.error("[GET /api/student/init]", e?.message || e);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ==================== VIDEO PROGRESS (partial watch position) ====================
+  app.post("/api/student/video-progress", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const { lessonId, currentSeconds, durationSeconds } = req.body;
+      if (!lessonId || currentSeconds == null) return res.status(400).json({ message: "lessonId e currentSeconds são obrigatórios" });
+      const row = await storage.upsertVideoProgress(auth.userId, lessonId, Math.round(currentSeconds), durationSeconds != null ? Math.round(durationSeconds) : null);
+      res.json(row);
+    } catch (e: any) {
+      console.error("[POST /api/student/video-progress]", e?.message || e);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  app.get("/api/student/video-progress", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const rows = await storage.getVideoProgress(auth.userId);
+      res.json(rows);
+    } catch (e: any) {
+      console.error("[GET /api/student/video-progress]", e?.message || e);
       res.status(500).json({ message: "Erro interno" });
     }
   });
@@ -2071,19 +2178,20 @@ export async function registerRoutes(server: Server, app: Express) {
         return res.status(400).json({ message: "Tema inválido. Escolha: toxina, preenchedores, bioestimuladores ou biorregeneradores" });
       }
       const { db } = await import("./db");
-      const [user] = await db.select().from(users).where(eq(users.id, auth.userId));
+      const userResult = await db.execute(sql`SELECT id, plan_key, selected_theme FROM users WHERE id = ${auth.userId} LIMIT 1`);
+      const user = (userResult as any).rows?.[0];
       if (!user) return res.status(404).json({ message: "Usuário não encontrado" });
-      if (user.planKey !== "modulo_pratica") {
+      if (user.plan_key !== "modulo_pratica") {
         return res.status(403).json({ message: "Apenas alunos do plano Módulo Avulso com Prática podem escolher tema" });
       }
       // Uma vez escolhido, não permite trocar (admin pode alterar)
-      if (user.selectedTheme) {
+      if (user.selected_theme) {
         return res.status(409).json({
-          message: "Você já escolheu o tema " + user.selectedTheme + ". Fale com o Dr. Gustavo se precisar trocar.",
-          currentTheme: user.selectedTheme,
+          message: "Você já escolheu o tema " + user.selected_theme + ". Fale com o Dr. Gustavo se precisar trocar.",
+          currentTheme: user.selected_theme,
         });
       }
-      await db.update(users).set({ selectedTheme: theme }).where(eq(users.id, auth.userId));
+      await db.execute(sql`UPDATE users SET selected_theme = ${theme} WHERE id = ${auth.userId}`);
       return res.json({ ok: true, selectedTheme: theme, moduleIds: THEME_TO_MODULE_IDS[theme] });
     } catch (err: any) {
       console.error("[POST /api/select-theme]", err.message);
@@ -2102,7 +2210,7 @@ export async function registerRoutes(server: Server, app: Express) {
       }
       const userId = Number(req.params.id);
       const { db } = await import("./db");
-      await db.update(users).set({ selectedTheme: theme }).where(eq(users.id, userId));
+      await db.execute(sql`UPDATE users SET selected_theme = ${theme} WHERE id = ${userId}`);
       return res.json({ ok: true, selectedTheme: theme });
     } catch (err: any) {
       console.error("[POST /api/admin/users/:id/theme]", err.message);
@@ -2393,6 +2501,37 @@ export async function registerRoutes(server: Server, app: Express) {
       return res.status(403).json({ message: "Acesso negado" });
     }
     const p = await storage.markLessonComplete(targetUserId, parseInt(req.params.lessonId));
+
+    // Auto-issue certificate if all lessons in the module are now complete
+    try {
+      const { db: certDb } = await import("./db");
+      const completedLesson = await storage.getLesson(parseInt(req.params.lessonId));
+      if (completedLesson) {
+        const moduleId = completedLesson.moduleId;
+        const moduleLessons = (await storage.getLessons()).filter(l => l.moduleId === moduleId);
+        const userProgress = await storage.getProgress(targetUserId);
+        const completedIds = new Set(userProgress.filter(pr => pr.completed).map(pr => pr.lessonId));
+        const allDone = moduleLessons.every(l => completedIds.has(l.id));
+        if (allDone && moduleLessons.length > 0) {
+          // Check if certificate already exists
+          const existing = await certDb.execute(sql`SELECT 1 FROM certificates WHERE user_id = ${targetUserId} AND module_id = ${moduleId} LIMIT 1`);
+          if (!((existing as any).rows?.length > 0)) {
+            const mod = await storage.getModule(moduleId);
+            const user = await storage.getUser(targetUserId);
+            // Generate certificate number: AMPLA-YYYY-NNNN
+            const countResult = await certDb.execute(`SELECT COUNT(*) as cnt FROM certificates`);
+            const nextNum = (parseInt((countResult as any).rows[0]?.cnt || "0") + 1).toString().padStart(4, "0");
+            const certNumber = `AMPLA-${new Date().getFullYear()}-${nextNum}`;
+            await certDb.execute(sql`INSERT INTO certificates (user_id, module_id, issued_at, certificate_number, student_name, module_name, completed_lessons, total_lessons)
+              VALUES (${targetUserId}, ${moduleId}, ${new Date().toISOString()}, ${certNumber}, ${user?.name || "Aluno"}, ${mod?.title || "Módulo"}, ${moduleLessons.length}, ${moduleLessons.length})`);
+            console.log(`[certificate] Auto-issued ${certNumber} for user ${targetUserId}, module ${moduleId}`);
+          }
+        }
+      }
+    } catch (certErr: any) {
+      console.error("[certificate] Auto-issue error:", certErr.message);
+    }
+
     res.json(p);
   });
 
@@ -2405,6 +2544,131 @@ export async function registerRoutes(server: Server, app: Express) {
     }
     await storage.markLessonIncomplete(targetUserId, parseInt(req.params.lessonId));
     res.json({ success: true });
+  });
+
+  // ==================== SUPPLEMENTARY CONTENT ====================
+  app.get("/api/student/supplementary", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const { db: supDb } = await import("./db");
+      const typeFilter = req.query.type as string | undefined;
+      let result;
+      if (typeFilter) {
+        result = await supDb.execute(sql`SELECT * FROM supplementary_content WHERE visible = true AND type = ${typeFilter} ORDER BY "order" ASC`);
+      } else {
+        result = await supDb.execute(`SELECT * FROM supplementary_content WHERE visible = true ORDER BY "order" ASC`);
+      }
+      res.json((result as any).rows || []);
+    } catch (e: any) {
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ==================== CERTIFICATES ====================
+  app.get("/api/student/certificates", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const { db: certDb } = await import("./db");
+      const result = await certDb.execute(sql`SELECT * FROM certificates WHERE user_id = ${auth.userId} ORDER BY issued_at DESC`);
+      res.json((result as any).rows || []);
+    } catch (e: any) {
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  app.get("/api/student/certificate/:moduleId/pdf", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const { db: certDb } = await import("./db");
+      const moduleId = parseInt(req.params.moduleId);
+      const certResult = await certDb.execute(sql`SELECT * FROM certificates WHERE user_id = ${auth.userId} AND module_id = ${moduleId} LIMIT 1`);
+      const cert = (certResult as any).rows?.[0];
+      if (!cert) return res.status(404).json({ message: "Certificado não encontrado" });
+
+      const { PDFDocument, rgb, StandardFonts } = await import("pdf-lib");
+      const pdfDoc = await PDFDocument.create();
+      const page = pdfDoc.addPage([842, 595]); // A4 landscape
+      const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+      const navy = rgb(10/255, 22/255, 40/255); // #0A1628
+      const gold = rgb(212/255, 175/255, 55/255); // #D4AF37
+      const white = rgb(1, 1, 1);
+      const gray = rgb(0.4, 0.4, 0.4);
+
+      // Background
+      page.drawRectangle({ x: 0, y: 0, width: 842, height: 595, color: navy });
+
+      // Gold border
+      page.drawRectangle({ x: 20, y: 20, width: 802, height: 555, borderColor: gold, borderWidth: 2, color: rgb(0, 0, 0), opacity: 0 });
+      page.drawRectangle({ x: 30, y: 30, width: 782, height: 535, borderColor: gold, borderWidth: 1, color: rgb(0, 0, 0), opacity: 0 });
+
+      // Title
+      const titleText = "CERTIFICADO DE CONCLUSÃO";
+      const titleWidth = helveticaBold.widthOfTextAtSize(titleText, 28);
+      page.drawText(titleText, { x: (842 - titleWidth) / 2, y: 490, size: 28, font: helveticaBold, color: gold });
+
+      // Subtitle
+      const subText = "AMPLA FACIAL";
+      const subWidth = helveticaBold.widthOfTextAtSize(subText, 14);
+      page.drawText(subText, { x: (842 - subWidth) / 2, y: 460, size: 14, font: helveticaBold, color: gold });
+
+      // "Certificamos que" line
+      const certiText = "Certificamos que";
+      const certiWidth = helvetica.widthOfTextAtSize(certiText, 14);
+      page.drawText(certiText, { x: (842 - certiWidth) / 2, y: 410, size: 14, font: helvetica, color: white });
+
+      // Student name
+      const studentName = cert.student_name || "Aluno";
+      const nameWidth = helveticaBold.widthOfTextAtSize(studentName, 32);
+      page.drawText(studentName, { x: (842 - nameWidth) / 2, y: 370, size: 32, font: helveticaBold, color: gold });
+
+      // Gold line under name
+      page.drawLine({ start: { x: 200, y: 360 }, end: { x: 642, y: 360 }, color: gold, thickness: 1 });
+
+      // Completion text
+      const completionText = `concluiu com sucesso o módulo`;
+      const compWidth = helvetica.widthOfTextAtSize(completionText, 14);
+      page.drawText(completionText, { x: (842 - compWidth) / 2, y: 330, size: 14, font: helvetica, color: white });
+
+      // Module name
+      const modName = cert.module_name || "Módulo";
+      const modWidth = helveticaBold.widthOfTextAtSize(modName, 22);
+      page.drawText(modName, { x: (842 - modWidth) / 2, y: 295, size: 22, font: helveticaBold, color: gold });
+
+      // Lessons info
+      const lessonsText = `${cert.completed_lessons} de ${cert.total_lessons} aulas concluídas`;
+      const lessonsWidth = helvetica.widthOfTextAtSize(lessonsText, 12);
+      page.drawText(lessonsText, { x: (842 - lessonsWidth) / 2, y: 265, size: 12, font: helvetica, color: gray });
+
+      // Date
+      const issuedDate = new Date(cert.issued_at).toLocaleDateString("pt-BR", { year: "numeric", month: "long", day: "numeric" });
+      const dateText = `Emitido em ${issuedDate}`;
+      const dateWidth = helvetica.widthOfTextAtSize(dateText, 11);
+      page.drawText(dateText, { x: (842 - dateWidth) / 2, y: 110, size: 11, font: helvetica, color: gray });
+
+      // Certificate number
+      const numText = `Certificado nº ${cert.certificate_number}`;
+      const numWidth = helvetica.widthOfTextAtSize(numText, 10);
+      page.drawText(numText, { x: (842 - numWidth) / 2, y: 90, size: 10, font: helvetica, color: gray });
+
+      // Signature line
+      page.drawLine({ start: { x: 300, y: 155 }, end: { x: 542, y: 155 }, color: gold, thickness: 1 });
+      const sigText = "Dra. Flávia Mitiko — Diretora Ampla Facial";
+      const sigWidth = helvetica.widthOfTextAtSize(sigText, 10);
+      page.drawText(sigText, { x: (842 - sigWidth) / 2, y: 140, size: 10, font: helvetica, color: white });
+
+      const pdfBytes = await pdfDoc.save();
+      res.set("Content-Type", "application/pdf");
+      res.set("Content-Disposition", `attachment; filename="certificado-${cert.certificate_number}.pdf"`);
+      res.send(Buffer.from(pdfBytes));
+    } catch (e: any) {
+      console.error("[certificate/pdf]", e?.message || e);
+      res.status(500).json({ message: "Erro ao gerar certificado" });
+    }
   });
 
   // ==================== ADMIN: Students ====================
@@ -2911,6 +3175,89 @@ export async function registerRoutes(server: Server, app: Express) {
     const admin = await storage.getUser(auth.userId);
     await logAction(auth.userId, admin?.name || "Admin", "lesson_deleted", "lesson", parseInt(req.params.id), lesson?.title || "?");
     res.json({ success: ok });
+  });
+
+  // ==================== ADMIN: Supplementary Content ====================
+  app.get("/api/admin/supplementary", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db: supDb } = await import("./db");
+      const result = await supDb.execute(`SELECT * FROM supplementary_content ORDER BY "order" ASC`);
+      res.json((result as any).rows || []);
+    } catch (e: any) {
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  app.post("/api/admin/supplementary", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db: supDb } = await import("./db");
+      const { type, title, description, videoUrl, audioUrl, thumbnailUrl, category, duration, order, visible } = req.body;
+      if (!title) return res.status(400).json({ message: "Título é obrigatório" });
+      const now = new Date().toISOString();
+      const result = await supDb.execute(sql`INSERT INTO supplementary_content (type, title, description, video_url, audio_url, thumbnail_url, category, duration, "order", visible, created_at, updated_at)
+        VALUES (${type || 'podcast'}, ${sanitize(title)}, ${description ? sanitize(description) : null}, ${videoUrl || null}, ${audioUrl || null}, ${thumbnailUrl || null}, ${category || null}, ${duration || null}, ${order || 0}, ${visible !== false}, ${now}, ${now})
+        RETURNING *`);
+      const created = (result as any).rows?.[0];
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || "Admin", "supplementary_created", "supplementary", created?.id, title);
+      res.json(created);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.patch("/api/admin/supplementary/:id", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db: supDb } = await import("./db");
+      const id = parseInt(req.params.id);
+      const { type, title, description, videoUrl, audioUrl, thumbnailUrl, category, duration, order, visible } = req.body;
+      const now = new Date().toISOString();
+      // Full update approach — read existing, merge with request body, write back
+      const existingResult = await supDb.execute(sql`SELECT * FROM supplementary_content WHERE id = ${id} LIMIT 1`);
+      const existing = (existingResult as any).rows?.[0];
+      if (!existing) return res.status(404).json({ message: "Conteúdo não encontrado" });
+      const result = await supDb.execute(sql`UPDATE supplementary_content SET
+        type = ${type !== undefined ? type : existing.type},
+        title = ${title !== undefined ? sanitize(title) : existing.title},
+        description = ${description !== undefined ? (description ? sanitize(description) : null) : existing.description},
+        video_url = ${videoUrl !== undefined ? videoUrl : existing.video_url},
+        audio_url = ${audioUrl !== undefined ? audioUrl : existing.audio_url},
+        thumbnail_url = ${thumbnailUrl !== undefined ? thumbnailUrl : existing.thumbnail_url},
+        category = ${category !== undefined ? category : existing.category},
+        duration = ${duration !== undefined ? duration : existing.duration},
+        "order" = ${order !== undefined ? order : existing.order},
+        visible = ${visible !== undefined ? visible : existing.visible},
+        updated_at = ${now}
+        WHERE id = ${id} RETURNING *`);
+      const updated = (result as any).rows?.[0];
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || "Admin", "supplementary_updated", "supplementary", id, updated?.title || "?");
+      res.json(updated);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message });
+    }
+  });
+
+  app.delete("/api/admin/supplementary/:id", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db: supDb } = await import("./db");
+      const id = parseInt(req.params.id);
+      const existing = await supDb.execute(sql`SELECT title FROM supplementary_content WHERE id = ${id} LIMIT 1`);
+      const title = (existing as any).rows?.[0]?.title || "?";
+      await supDb.execute(sql`DELETE FROM supplementary_content WHERE id = ${id}`);
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || "Admin", "supplementary_deleted", "supplementary", id, title);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ message: "Erro interno" });
+    }
   });
 
   // ==================== ADMIN: Password Reset ====================

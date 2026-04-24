@@ -45,7 +45,7 @@ export const ModuleHero = memo(function ModuleHero({
           <img
             src={courseImage}
             alt=""
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-[30%_center] sm:object-center"
             loading="eager"
             decoding="async"
             fetchPriority="high"

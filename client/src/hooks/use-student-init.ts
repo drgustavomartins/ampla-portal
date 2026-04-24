@@ -1,7 +1,36 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
-import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
+import type { Module, Lesson, LessonProgress, Plan, UserVideoProgress } from "@shared/schema";
+import { mergeServerProgress } from "@/hooks/use-video-progress";
+
+export interface SupplementaryItem {
+  id: number;
+  type: string;
+  title: string;
+  description: string | null;
+  video_url: string | null;
+  audio_url: string | null;
+  thumbnail_url: string | null;
+  category: string | null;
+  duration: string | null;
+  order: number;
+  visible: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface CertificateItem {
+  id: number;
+  user_id: number;
+  module_id: number;
+  issued_at: string;
+  certificate_number: string;
+  student_name: string;
+  module_name: string;
+  completed_lessons: number;
+  total_lessons: number;
+}
 
 export interface StudentInitData {
   modules: Module[];
@@ -10,6 +39,9 @@ export interface StudentInitData {
   progress: LessonProgress[];
   myModules: { accessAll: boolean; moduleIds: number[]; selectedTheme?: string; needsThemeSelection?: boolean; isTrial?: boolean; expired?: boolean };
   lessonAccess: { accessType: string; allowedLessonIds: number[] };
+  podcasts: SupplementaryItem[];
+  certificates: CertificateItem[];
+  videoProgress: UserVideoProgress[];
 }
 
 /**
@@ -36,6 +68,11 @@ export function useStudentInit() {
       queryClient.setQueryData(["/api/progress", user?.id], data.progress);
       queryClient.setQueryData(["/api/my-modules"], data.myModules);
       queryClient.setQueryData(["/api/lessons/access"], data.lessonAccess);
+
+      // Merge server video progress into localStorage (server wins if newer)
+      if (data.videoProgress) {
+        mergeServerProgress(data.videoProgress);
+      }
 
       return data;
     },
