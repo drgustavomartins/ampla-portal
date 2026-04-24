@@ -321,9 +321,35 @@ export default function ModulePage() {
         ? `/api/progress/${user?.id}/lesson/${lessonId}/complete`
         : `/api/progress/${user?.id}/lesson/${lessonId}/incomplete`;
       await apiRequest("POST", endpoint);
+      return { lessonId, complete };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/progress", user?.id] });
+    // Optimistic update: atualiza UI imediatamente
+    onMutate: async ({ lessonId, complete }) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/progress", user?.id] });
+      const previous = queryClient.getQueryData<LessonProgress[]>(["/api/progress", user?.id]) || [];
+      if (complete) {
+        const optimistic = [
+          ...previous.filter((p: LessonProgress) => p.lessonId !== lessonId),
+          { id: -1, userId: user?.id || 0, lessonId, completed: true, completedAt: new Date().toISOString() } as LessonProgress,
+        ];
+        queryClient.setQueryData(["/api/progress", user?.id], optimistic);
+      } else {
+        queryClient.setQueryData(
+          ["/api/progress", user?.id],
+          previous.filter((p: LessonProgress) => p.lessonId !== lessonId)
+        );
+      }
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["/api/progress", user?.id], context.previous);
+      }
+    },
+    onSettled: () => {
+      // Refetch real do servidor (garante consistência)
+      queryClient.invalidateQueries({ queryKey: ["/api/progress", user?.id], refetchType: "active" });
+      queryClient.invalidateQueries({ queryKey: ["/api/student/init"], refetchType: "active" });
     },
   });
 
