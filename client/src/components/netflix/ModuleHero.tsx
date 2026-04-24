@@ -44,8 +44,9 @@ export function ModuleHero({
           <img
             src={courseImage}
             alt=""
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-[30%_center] sm:object-center"
             loading="eager"
+            fetchPriority="high"
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460]" />
