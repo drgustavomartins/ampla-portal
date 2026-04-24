@@ -360,7 +360,7 @@ export default function PlanosPublicos() {
                 <button
                   onClick={handleCheckout}
                   disabled={loadingCheckout || countdown.expired || slots?.soldOut}
-                  className="mt-auto pt-5 sm:pt-6 flex w-full items-center justify-center gap-1.5 rounded-lg py-[10px] text-[12px] sm:text-[13px] font-semibold tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-105"
+                  className="mt-auto pt-4 sm:pt-5 flex w-full items-center justify-center gap-1.5 rounded-lg py-[8px] text-[12px] font-semibold tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-105"
                   style={{
                     background: countdown.expired || slots?.soldOut
                       ? "rgba(255,255,255,0.08)"
@@ -437,7 +437,7 @@ export default function PlanosPublicos() {
                 <a
                   href={`${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse no Módulo Avulso com Prática. Quero saber mais sobre qual tema escolher.")}`}
                   target="_blank" rel="noopener noreferrer"
-                  className="mt-auto pt-5 sm:pt-6 flex w-full items-center justify-center gap-1.5 rounded-lg py-[10px] text-[12px] sm:text-[13px] font-semibold tracking-wide transition-all hover:brightness-105"
+                  className="mt-auto pt-4 sm:pt-5 flex w-full items-center justify-center gap-1.5 rounded-lg py-[8px] text-[12px] font-semibold tracking-wide transition-all hover:brightness-105"
                   style={{
                     background: "rgba(255,255,255,0.06)",
                     color: "#FFFFFF",
@@ -505,7 +505,7 @@ export default function PlanosPublicos() {
                 href={WHATSAPP_PRATICA}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-auto pt-5 sm:pt-6 flex w-full items-center justify-center gap-1.5 rounded-lg py-[10px] text-[12px] sm:text-[13px] font-semibold transition-all duration-200 hover:brightness-110"
+                className="mt-auto pt-4 sm:pt-5 flex w-full items-center justify-center gap-1.5 rounded-lg py-[8px] text-[12px] font-semibold transition-all duration-200 hover:brightness-110"
                 style={{ background: "rgba(255,255,255,0.06)", color: "#FFFFFF", border: "1px solid rgba(52,211,153,0.45)" }}
               >
                 <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -586,7 +586,7 @@ export default function PlanosPublicos() {
                 href={WHATSAPP_MENTORIA}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-auto pt-5 sm:pt-6 flex w-full items-center justify-center gap-1.5 rounded-lg py-[10px] text-[12px] sm:text-[13px] font-semibold transition-all duration-200 hover:brightness-110"
+                className="mt-auto pt-4 sm:pt-5 flex w-full items-center justify-center gap-1.5 rounded-lg py-[8px] text-[12px] font-semibold transition-all duration-200 hover:brightness-110"
                 style={{ background: "linear-gradient(135deg, #8B5CF6, #C084FC)", color: "#fff", boxShadow: "0 4px 24px rgba(139,92,246,0.3)" }}
               >
                 <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -655,7 +655,7 @@ export default function PlanosPublicos() {
               <a
                 href={`${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse no Acompanhamento Elite (bastidores + 32h prática + 7 dias clínicos + licença NaturalUp). Podemos conversar?")}`}
                 target="_blank" rel="noopener noreferrer"
-                className="mt-auto pt-5 sm:pt-6 flex w-full items-center justify-center gap-1.5 rounded-lg py-[10px] text-[12px] sm:text-[13px] font-semibold transition-all duration-200 hover:brightness-110"
+                className="mt-auto pt-4 sm:pt-5 flex w-full items-center justify-center gap-1.5 rounded-lg py-[8px] text-[12px] font-semibold transition-all duration-200 hover:brightness-110"
                 style={{ background: "rgba(255,255,255,0.06)", color: "#FFFFFF", border: "1px solid rgba(232,200,106,0.55)" }}
               >
                 <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
