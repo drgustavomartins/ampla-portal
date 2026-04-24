@@ -18,7 +18,6 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { getYouTubeThumbnail } from "@/lib/youtube-thumbnail";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
   ChevronLeft, ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle, Star,
@@ -591,9 +590,6 @@ export default function StudentDashboard() {
     return null;
   })();
   const lastLessonModule = lastLesson ? modules.find(m => m.id === lastLesson.moduleId) : null;
-  const lastLessonThumb = lastLesson?.videoUrl
-    ? getYouTubeThumbnail(lastLesson.videoUrl, "mqdefault")
-    : null;
   const isLastLessonDone = lastLesson ? completedIds.has(lastLesson.id) : false;
   const continueLabel = progress.filter(p => p.completed).length === 0
     ? "Comece por aqui"

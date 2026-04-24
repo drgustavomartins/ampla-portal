@@ -1,6 +1,7 @@
 import { Play, Lock, CheckCircle2, Clock, Paperclip } from "lucide-react";
 import type { Lesson } from "@shared/schema";
 import type { VideoProgressEntry } from "@/hooks/use-video-progress";
+import { YouTubeThumbnail } from "@/components/YouTubeThumbnail";
 
 interface LessonListItemProps {
   lesson: Lesson;
@@ -12,14 +13,6 @@ interface LessonListItemProps {
   supportLink?: { url: string; label: string } | null;
   descLine?: string | null;
   onClick: () => void;
-}
-
-function getYouTubeThumbnail(videoUrl: string | null): string | null {
-  if (!videoUrl) return null;
-  const match = videoUrl.match(
-    /(?:(?:www\.)?youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]+)/,
-  );
-  return match ? `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg` : null;
 }
 
 function getLessonBadge(lesson: Lesson): string | null {
@@ -44,7 +37,7 @@ export function LessonListItem({
   descLine,
   onClick,
 }: LessonListItemProps) {
-  const thumbnail = getYouTubeThumbnail(lesson.videoUrl);
+  const hasVideo = !!lesson.videoUrl;
   const percentage = progress?.percentage ?? 0;
   const badge = getLessonBadge(lesson);
   const isDivider = lesson.title.startsWith("\u2501");
@@ -88,9 +81,16 @@ export function LessonListItem({
             <div className="w-full h-full flex items-center justify-center bg-[#141414]">
               <Lock className="w-4 h-4 text-white/20" />
             </div>
-          ) : thumbnail ? (
+          ) : hasVideo ? (
             <>
-              <img src={thumbnail} alt="" className="w-full h-full object-cover" loading="lazy" />
+              <YouTubeThumbnail
+                videoIdOrUrl={lesson.videoUrl}
+                startSize="mqdefault"
+                alt=""
+                imgClassName="w-full h-full object-cover"
+                loading="lazy"
+                title={lesson.title}
+              />
               {/* Play icon overlay on hover */}
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-[#0A1628]/40">
                 <Play className="w-5 h-5 text-white fill-white ml-0.5" />

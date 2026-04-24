@@ -60,45 +60,40 @@ function getFirstDescLine(desc: string): string | null {
   return firstLine;
 }
 
-import { getYouTubeThumbnail, getNextFallback } from "@/lib/youtube-thumbnail";
+import { YouTubeThumbnail } from "@/components/YouTubeThumbnail";
 
-function getLessonThumbnail(lesson: Lesson): string | null {
-  return getYouTubeThumbnail(lesson.videoUrl, "mqdefault");
-}
-
-// Thumbnail component with progressive fallback
+// Thumbnail component with progressive fallback via YouTubeThumbnail
 function LessonThumb({ lesson, size = "md", done, theme, index }: {
   lesson: Lesson; size?: "sm" | "md"; done: boolean;
   theme: { accent: string; accentRgb: string }; index: number;
 }) {
-  const initialThumb = getLessonThumbnail(lesson);
-  const [src, setSrc] = useState<string | null>(initialThumb);
-  const [failed, setFailed] = useState(false);
   const isMd = size === "md";
   const w = isMd ? "w-16 h-10" : "w-12 h-8";
 
-  const handleError = useCallback(() => {
-    if (!src) { setFailed(true); return; }
-    const next = getNextFallback(src);
-    if (next) { setSrc(next); } else { setFailed(true); }
-  }, [src]);
+  const fallbackPlaceholder = (
+    <div className={`shrink-0 ${isMd ? "w-10 h-10" : "w-8 h-8"} rounded-full flex items-center justify-center ${done ? "" : "bg-card border border-border/40"}`}
+      style={done ? { backgroundColor: `rgba(${theme.accentRgb}, 0.15)` } : undefined}>
+      {done ? (
+        <CheckCircle2 className={`${isMd ? "w-5 h-5" : "w-4 h-4"}`} style={{ color: theme.accent }} />
+      ) : (
+        <span className={`${isMd ? "text-xs" : "text-[10px]"} text-muted-foreground font-medium`}>{index + 1}</span>
+      )}
+    </div>
+  );
 
-  if (!src || failed) {
-    return (
-      <div className={`shrink-0 ${isMd ? "w-10 h-10" : "w-8 h-8"} rounded-full flex items-center justify-center ${done ? "" : "bg-card border border-border/40"}`}
-        style={done ? { backgroundColor: `rgba(${theme.accentRgb}, 0.15)` } : undefined}>
-        {done ? (
-          <CheckCircle2 className={`${isMd ? "w-5 h-5" : "w-4 h-4"}`} style={{ color: theme.accent }} />
-        ) : (
-          <span className={`${isMd ? "text-xs" : "text-[10px]"} text-muted-foreground font-medium`}>{index + 1}</span>
-        )}
-      </div>
-    );
-  }
+  if (!lesson.videoUrl) return fallbackPlaceholder;
 
   return (
     <div className={`shrink-0 ${w} rounded-md overflow-hidden ring-1 ring-border/30 relative`}>
-      <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" onError={handleError} />
+      <YouTubeThumbnail
+        videoIdOrUrl={lesson.videoUrl}
+        startSize="mqdefault"
+        alt=""
+        imgClassName="w-full h-full object-cover"
+        loading="lazy"
+        placeholder={fallbackPlaceholder}
+        title={lesson.title}
+      />
       {done && (
         <div className="absolute inset-0 flex items-center justify-center" style={{ backgroundColor: `rgba(${theme.accentRgb}, 0.25)` }}>
           <CheckCircle2 className={`${isMd ? "w-5 h-5" : "w-3.5 h-3.5"} drop-shadow-md`} style={{ color: theme.accent }} />

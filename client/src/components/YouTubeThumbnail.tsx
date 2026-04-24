@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { getYouTubeThumbnail, getNextFallback, extractYouTubeId, type ThumbnailSize } from "@/lib/youtube-thumbnail";
+import { Play } from "lucide-react";
+import { getNextFallback, extractYouTubeId, type ThumbnailSize } from "@/lib/youtube-thumbnail";
 
 interface YouTubeThumbnailProps {
   videoIdOrUrl: string | null | undefined;
@@ -9,10 +10,27 @@ interface YouTubeThumbnailProps {
   className?: string;
   imgClassName?: string;
   loading?: "eager" | "lazy";
+  /** Mark as high priority (fetchPriority="high") — use for hero/above-fold images */
+  priority?: boolean;
   /** Placeholder when no thumbnail available — rendered inside the container */
   placeholder?: React.ReactNode;
   /** Lesson/video title — shown in the "coming soon" placeholder when no video */
   title?: string;
+}
+
+function GradientPlayPlaceholder({ title }: { title?: string }) {
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#0A1628] via-[#14213D] to-[#1C2E52]">
+      <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 flex items-center justify-center mb-2">
+        <Play className="w-5 h-5 text-[#D4AF37] ml-0.5" />
+      </div>
+      {title && (
+        <p className="text-xs text-white/50 text-center px-4 line-clamp-2 max-w-[200px]">
+          {title}
+        </p>
+      )}
+    </div>
+  );
 }
 
 function ComingSoonPlaceholder({ title }: { title?: string }) {
@@ -37,6 +55,7 @@ export function YouTubeThumbnail({
   className = "",
   imgClassName = "w-full h-full object-cover",
   loading = "lazy",
+  priority,
   placeholder,
   title,
 }: YouTubeThumbnailProps) {
@@ -45,7 +64,6 @@ export function YouTubeThumbnail({
   const [currentSize, setCurrentSize] = useState<ThumbnailSize>(startSize);
   const [hasError, setHasError] = useState(false);
 
-  // Reset state when videoId or startSize changes (handles prop updates, Suspense remounts, etc.)
   useEffect(() => {
     setCurrentSize(startSize);
     setHasError(false);
@@ -56,9 +74,9 @@ export function YouTubeThumbnail({
     return <>{placeholder ?? <ComingSoonPlaceholder title={title} />}</>;
   }
 
-  // All fallbacks exhausted → show placeholder
+  // All fallbacks exhausted → show gradient play placeholder
   if (hasError) {
-    return <>{placeholder ?? <ComingSoonPlaceholder title={title} />}</>;
+    return <>{placeholder ?? <GradientPlayPlaceholder title={title} />}</>;
   }
 
   const thumbUrl = `https://img.youtube.com/vi/${videoId}/${currentSize}.jpg`;
@@ -69,12 +87,14 @@ export function YouTubeThumbnail({
       src={thumbUrl}
       alt={alt}
       loading={loading}
+      decoding="async"
+      referrerPolicy="no-referrer"
+      {...(priority ? { fetchPriority: "high" as const } : {})}
       className={`${imgClassName} ${className}`}
       onError={() => {
         const next = getNextFallback(thumbUrl);
         if (next) {
-          // Extract the size from the next URL
-          const match = next.match(/(maxresdefault|hqdefault|mqdefault|sddefault)/);
+          const match = next.match(/\/(maxresdefault|hqdefault|mqdefault|sddefault|0)\.jpg/);
           if (match) {
             setCurrentSize(match[1] as ThumbnailSize);
           } else {

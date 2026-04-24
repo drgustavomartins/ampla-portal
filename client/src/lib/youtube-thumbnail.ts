@@ -23,7 +23,7 @@ export function extractYouTubeId(url: string | null | undefined): string | null 
   return null;
 }
 
-export type ThumbnailSize = "maxresdefault" | "hqdefault" | "mqdefault" | "sddefault";
+export type ThumbnailSize = "maxresdefault" | "hqdefault" | "mqdefault" | "sddefault" | "0";
 
 export function getYouTubeThumbnail(
   videoIdOrUrl: string | null | undefined,
@@ -34,8 +34,8 @@ export function getYouTubeThumbnail(
   return `https://img.youtube.com/vi/${id}/${size}.jpg`;
 }
 
-/** Fallback chain: maxresdefault → hqdefault → mqdefault → null */
-const FALLBACK_ORDER: ThumbnailSize[] = ["maxresdefault", "hqdefault", "mqdefault"];
+/** Fallback chain: maxresdefault → hqdefault → mqdefault → 0 → null */
+const FALLBACK_ORDER: ThumbnailSize[] = ["maxresdefault", "hqdefault", "mqdefault", "0"];
 
 /**
  * Get the next fallback size after the current one fails.
@@ -43,8 +43,8 @@ const FALLBACK_ORDER: ThumbnailSize[] = ["maxresdefault", "hqdefault", "mqdefaul
  */
 export function getNextFallback(currentSrc: string): string | null {
   for (let i = 0; i < FALLBACK_ORDER.length - 1; i++) {
-    if (currentSrc.includes(FALLBACK_ORDER[i])) {
-      return currentSrc.replace(FALLBACK_ORDER[i], FALLBACK_ORDER[i + 1]);
+    if (currentSrc.includes(`/${FALLBACK_ORDER[i]}.jpg`)) {
+      return currentSrc.replace(`/${FALLBACK_ORDER[i]}.jpg`, `/${FALLBACK_ORDER[i + 1]}.jpg`);
     }
   }
   return null;
