@@ -3,12 +3,14 @@ import { getYouTubeThumbnail, getNextFallback, extractYouTubeId, type ThumbnailS
 
 interface YouTubeThumbnailProps {
   videoIdOrUrl: string | null | undefined;
-  /** Starting resolution. Hero uses "maxresdefault", cards use "hqdefault". */
+  /** Starting resolution. Hero uses "maxresdefault", cards use "mqdefault". */
   startSize?: ThumbnailSize;
   alt?: string;
   className?: string;
   imgClassName?: string;
   loading?: "eager" | "lazy";
+  /** fetchpriority hint — use "high" for hero/above-the-fold images */
+  fetchPriority?: "high" | "low" | "auto";
   /** Placeholder when no thumbnail available — rendered inside the container */
   placeholder?: React.ReactNode;
   /** Lesson/video title — shown in the "coming soon" placeholder when no video */
@@ -32,11 +34,12 @@ function ComingSoonPlaceholder({ title }: { title?: string }) {
 
 export function YouTubeThumbnail({
   videoIdOrUrl,
-  startSize = "hqdefault",
+  startSize = "mqdefault",
   alt = "",
   className = "",
   imgClassName = "w-full h-full object-cover",
   loading = "lazy",
+  fetchPriority,
   placeholder,
   title,
 }: YouTubeThumbnailProps) {
@@ -69,6 +72,8 @@ export function YouTubeThumbnail({
       src={thumbUrl}
       alt={alt}
       loading={loading}
+      decoding="async"
+      {...(fetchPriority ? { fetchPriority } : {})}
       className={`${imgClassName} ${className}`}
       onError={() => {
         const next = getNextFallback(thumbUrl);

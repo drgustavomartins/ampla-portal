@@ -1,7 +1,9 @@
+import { memo } from "react";
+
 /**
  * Skeleton loading state for a LessonRow — shown via Suspense fallback.
  */
-export function RowSkeleton() {
+export const RowSkeleton = memo(function RowSkeleton() {
   return (
     <div className="space-y-3">
       <div className="h-6 w-48 rounded bg-white/5 animate-pulse" />
@@ -18,4 +20,4 @@ export function RowSkeleton() {
       </div>
     </div>
   );
-}
+});

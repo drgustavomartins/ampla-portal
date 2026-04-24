@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Play, Info } from "lucide-react";
 import type { Lesson, Module } from "@shared/schema";
 import type { VideoProgressEntry } from "@/hooks/use-video-progress";
@@ -14,7 +15,7 @@ interface HeroContinueProps {
   onDetails: () => void;
 }
 
-export function HeroContinue({
+export const HeroContinue = memo(function HeroContinue({
   lesson,
   module,
   progress,
@@ -42,6 +43,7 @@ export function HeroContinue({
           videoIdOrUrl={lesson.videoUrl}
           startSize="maxresdefault"
           loading="eager"
+          fetchPriority="high"
           title={lesson.title}
           placeholder={<div className="w-full h-full bg-[#0A1628]" />}
         />
@@ -113,4 +115,4 @@ export function HeroContinue({
       </div>
     </section>
   );
-}
+});

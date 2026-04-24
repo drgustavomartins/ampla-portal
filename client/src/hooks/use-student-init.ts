@@ -40,6 +40,6 @@ export function useStudentInit() {
       return data;
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes — modules/plans rarely change
+    staleTime: 10 * 60 * 1000, // 10 minutes — modules/plans rarely change
   });
 }

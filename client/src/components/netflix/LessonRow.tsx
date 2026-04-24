@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, memo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface LessonRowProps {
@@ -6,7 +6,7 @@ interface LessonRowProps {
   children: React.ReactNode;
 }
 
-export function LessonRow({ title, children }: LessonRowProps) {
+export const LessonRow = memo(function LessonRow({ title, children }: LessonRowProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -78,4 +78,4 @@ export function LessonRow({ title, children }: LessonRowProps) {
       </div>
     </section>
   );
-}
+});
