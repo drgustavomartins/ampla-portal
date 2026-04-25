@@ -27,6 +27,7 @@ const ModulePage = lazy(() => import("./pages/module-page"));
 const ResetPasswordPage = lazy(() => import("./pages/reset-password"));
 const UpgradePage = lazy(() => import("./pages/upgrade"));
 const PagamentoSucesso = lazy(() => import("./pages/pagamento-sucesso"));
+const TrialCartao = lazy(() => import("./pages/trial-cartao"));
 const PlanosPublicos = lazy(() => import("./pages/planos-publicos"));
 const PlanosAuth = lazy(() => import("./pages/planos"));
 const QuizPage = lazy(() => import("./pages/quiz"));
@@ -145,6 +146,8 @@ function App() {
             <Route path="/upgrade" component={() => <ProtectedPage component={UpgradePage} />} />
             <Route path="/pagamento/sucesso" component={() => <ProtectedPage component={PagamentoSucesso} />} />
             <Route path="/trial/ativo" component={() => <ProtectedPage component={PagamentoSucesso} />} />
+            <Route path="/trial/cartao" component={() => <ProtectedPage component={TrialCartao} />} />
+            <Route path="/trial/cartao-confirmado" component={() => <ProtectedPage component={TrialCartao} />} />
             <Route path="/comecar" component={() => <LazyRoute component={PlanosPublicos} />} />
             <Route path="/planos-publicos" component={() => <LazyRoute component={PlanosPublicos} />} />
             <Route path="/lp" component={() => <LazyRoute component={LandingPage} />} />

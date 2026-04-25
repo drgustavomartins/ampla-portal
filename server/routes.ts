@@ -6362,6 +6362,9 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
   registerStripeRoutes(app);
   registerPublicStripeRoutes(app);
 
+  // Rotas de Trial com cartão
+  registerTrialRoutes(app);
+
   // ─── Rotas de Acompanhamento (encontros ao vivo em grupo) ──────────────
   registerLiveEventsRoutes(app);
 }

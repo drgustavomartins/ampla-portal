@@ -74,6 +74,13 @@ export const users = pgTable("users", {
   planAmountPaid: integer("plan_amount_paid").default(0), // in centavos
   trialStartedAt: text("trial_started_at"), // ISO date trial began
   selectedTheme: text("selected_theme"), // tema escolhido no plano Modulo com Pratica (toxina/preenchedores/bioestimuladores/biorregeneradores)
+  // Trial com cartão
+  stripeCustomerId: text("stripe_customer_id"),
+  stripePaymentMethodId: text("stripe_payment_method_id"),
+  trialPendingChargeAt: text("trial_pending_charge_at"), // ISO data em que será cobrado automaticamente
+  trialChargeWarningSentAt: text("trial_charge_warning_sent_at"), // quando foi enviado o aviso
+  trialChargedAt: text("trial_charged_at"), // quando foi efetivamente cobrado
+  trialCancelledAt: text("trial_cancelled_at"), // quando o aluno cancelou antes da cobrança
   lgpdAcceptedAt: text("lgpd_accepted_at"), // ISO date user accepted LGPD terms
   avatarUrl: text("avatar_url"),
   username: text("username"),
