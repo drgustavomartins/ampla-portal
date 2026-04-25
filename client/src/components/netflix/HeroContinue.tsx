@@ -3,6 +3,7 @@ import { Play, Info } from "lucide-react";
 import type { Lesson, Module } from "@shared/schema";
 import type { VideoProgressEntry } from "@/hooks/use-video-progress";
 import { minutesRemaining } from "@/hooks/use-video-progress";
+import { YouTubeThumbnail } from "@/components/YouTubeThumbnail";
 
 export type HeroMode = "continue-watching" | "continue-journey" | "welcome";
 
@@ -62,19 +63,20 @@ export const HeroContinue = memo(function HeroContinue({
       style={{ minHeight: "clamp(280px, 50vh, 480px)" }}
       aria-label={isWelcome ? "Boas-vindas" : `Continue de onde parou: ${lesson.title}`}
     >
-      {/* Background module cover image */}
-      {module?.imageUrl && (
-        <img
-          src={module.imageUrl}
-          alt=""
+      {/* Background thumbnail + gradient overlay */}
+      <div className="absolute inset-0">
+        <YouTubeThumbnail
+          videoIdOrUrl={lesson.videoUrl}
+          startSize="maxresdefault"
           loading="eager"
           fetchPriority="high"
-          decoding="async"
-          className="absolute inset-0 w-full h-full object-cover object-[70%_center] sm:object-center"
+          title={lesson.title}
+          placeholder={<div className="w-full h-full bg-[#0A1628]" />}
         />
-      )}
-      {/* Gradient overlay for text legibility */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628] via-[#0A1628]/80 to-[#0A1628]/40" />
+        {/* Gradient overlays (navy) */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0A1628]/90 via-[#0A1628]/70 to-[#0A1628]/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628]/80 via-transparent to-[#0A1628]/20" />
+      </div>
 
       {/* Content */}
       <div className="relative flex flex-col justify-end h-full p-6 sm:p-8 lg:p-10" style={{ minHeight: "clamp(280px, 50vh, 480px)" }}>

@@ -143,10 +143,6 @@ export default function LoginPage() {
       clearInviteCode();
       // Backend já retorna o token — login imediato, sem segunda requisição
       login(data.user, data.token);
-      // Trial novo → cobra cartão antes de liberar acesso
-      try {
-        window.location.hash = "#/trial/cartao";
-      } catch {}
     },
     onError: (error: any) => {
       setFormError(humanizeError(error));
