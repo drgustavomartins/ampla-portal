@@ -1059,6 +1059,830 @@ export async function registerRoutes(server: Server, app: Express) {
     console.error("[auto-migrate] seed_podcast_18_episodes failed:", e.message);
   }
 
+  // Migration v2: re-seed 18 podcast episodes com categorias por tema (Toxina, Preenchedores, Bioestimuladores, Biorreguladores, NaturalUp, IA para Estudar)
+  try {
+    const { db } = await import("./db");
+    const migName = 'reseed_podcast_18_episodes_themes_v2_2026_04';
+    const alreadyApplied = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migName} LIMIT 1`);
+    if (!((alreadyApplied as any).rows?.length > 0)) {
+      const now = new Date().toISOString();
+
+      // 1) Oculta o iPRF antigo (CFIrBQIOHJ0) — substituído pelo EP 07
+      await db.execute(sql`UPDATE supplementary_content SET visible = false, updated_at = ${now} WHERE video_url LIKE '%CFIrBQIOHJ0%'`);
+
+      // 2) Remove os 18 podcasts seedados pela v1 para re-seed com categorias e descrição completa
+      const v1VideoIds = [
+        'https://youtu.be/Gr4p_Nq6G7w',
+        'https://youtu.be/Fg0DuDOMPLA',
+        'https://youtu.be/zqv9-f8M5tQ',
+        'https://youtu.be/4KXDp2HGZRU',
+        'https://youtu.be/29oPrndO2Xs',
+        'https://youtu.be/ViYmlahbehY',
+        'https://youtu.be/3NrTwvaOLag',
+        'https://youtu.be/F3d_gytBQoE',
+        'https://youtu.be/DKP4-xsJjic',
+        'https://youtu.be/YMPOCQNEPLw',
+        'https://youtu.be/wzy0OKgPAh0',
+        'https://youtu.be/NCcVgxjSMQA',
+        'https://youtu.be/n2xUaeQWeAE',
+        'https://youtu.be/nNAM5O27xok',
+        'https://youtu.be/3qtpv4JYKYA',
+        'https://youtu.be/Vx3zOAJogC0',
+        'https://youtu.be/ATg1hazzFeU',
+        'https://youtu.be/nvaZVon1-78',
+      ];
+      for (const url of v1VideoIds) {
+        await db.execute(sql`DELETE FROM supplementary_content WHERE video_url = ${url}`);
+      }
+
+      // 3) Re-insere os 18 episódios com categorias por tema e ordem agrupada
+      const podcasts = [
+        { ep:  8, title: `Toxina Botulínica Muito Além das Rugas | Novas Aplicações Clínicas`, description: `🎙️ Toxina Botulínica Muito Além das Rugas
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins mostra que toxina botulínica é muito mais do que rugas dinâmicas. Vamos passar pelas indicações estéticas e funcionais que mudaram a prática clínica nos últimos anos.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ Mecanismo de ação: onde a SNAP-25 entra na história
+✅ Toxina e pele: poros, oleosidade e qualidade do tegumento
+✅ Bruxismo, hipertrofia masseterina e dor miofascial
+✅ Hiperidrose: técnica e durabilidade reais
+✅ Microbotox e mesobotox — quando fazem sentido
+✅ Toxina em rosácea, flushing e neuromodulação cutânea
+✅ Diluições e unidades por indicação: tabela prática
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/F3d_gytBQoE`, category: `Toxina`, duration: `16:30`, order: 1 },
+        { ep:  9, title: `Toxina Botulínica Além do Músculo | Ações na Pele, Vasos e Inflamação`, description: `🎙️ Toxina Botulínica Além do Músculo
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins aprofunda os efeitos não-musculares da toxina botulínica. Pele, vasos, glândulas e inflamação local — o que a literatura mostra sobre BoNT-A além da junção neuromuscular.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ Por que a toxina age fora do músculo
+✅ Receptores SV2 e a entrada em outros tipos celulares
+✅ Vasoatividade: como a BoNT-A modula o flushing
+✅ Sebostase: o efeito real na produção sebácea
+✅ Toxina e cicatrização — o que é hype e o que é evidência
+✅ Inflamação neurogênica e o papel da CGRP
+✅ Implicações clínicas para microbotox e técnicas intradérmicas
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/DKP4-xsJjic`, category: `Toxina`, duration: `25:00`, order: 2 },
+        { ep:  2, title: `Como 27 Seringas Garantem um Rosto Natural | Full Face e Hierarquia Facial`, description: `🎙️ Como 27 Seringas Garantem um Rosto Natural
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins explica por que tratamentos pontuais quase sempre entregam resultados artificiais — e como o planejamento integral com hierarquia anatômica gera o rosto natural que todo paciente quer. Vamos abrir o raciocínio por trás de uma harmonização full face de verdade.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ Por que tratar "só o sulco" cria a face de plástico
+✅ A hierarquia facial: osso → ligamento → gordura → pele
+✅ Mapeamento de vetores e zonas de suporte estrutural
+✅ Como dividir 27 seringas em sessões sem perder o todo
+✅ Diluição, profundidade e cânula vs. agulha por região
+✅ O segredo do resultado "discreto": equilíbrio, não quantidade
+✅ Como conduzir a expectativa do paciente desde a 1ª consulta
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/Fg0DuDOMPLA`, category: `Preenchedores`, duration: `33:13`, order: 3 },
+        { ep:  3, title: `Belotero e a Engenharia da Invisibilidade Biológica | Tecnologia CPM`, description: `🎙️ Belotero e a Engenharia da Invisibilidade Biológica
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins abre o capô do Belotero e mostra por que ele é considerado o preenchedor da "invisibilidade biológica". Vamos entender a tecnologia CPM (Cohesive Polydensified Matrix), como ela permite integração tecidual incomparável e em quais indicações o produto realmente brilha.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ O que é a tecnologia CPM e por que ela muda tudo
+✅ Diferença entre crosslink monofásico, bifásico e polidensificado
+✅ Por que o Belotero "some" no tecido (e quando isso é desejável)
+✅ Indicações soberanas: olheiras, lábios, linhas finas
+✅ Coeficiente G' e por que ele importa nessa família
+✅ Erros comuns ao trocar Belotero por outras marcas
+✅ Como combinar Belotero com bioestimuladores no mesmo paciente
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/zqv9-f8M5tQ`, category: `Preenchedores`, duration: `16:29`, order: 4 },
+        { ep:  4, title: `A Ciência dos Preenchedores Além do Rótulo | G', Viscosidade e Reologia`, description: `🎙️ A Ciência dos Preenchedores Além do Rótulo
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins vai além das fichas técnicas das embalagens e mostra como ler um preenchedor pela reologia. Você vai aprender o que é G', G'', tan delta e viscosidade — e como esses números traduzem o comportamento real do produto no tecido.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ O que cada parâmetro reológico realmente significa
+✅ G' (módulo elástico): firmeza, sustentação e escolha do plano
+✅ G'' e tan delta: o lado "viscoso" que ninguém ensina
+✅ Viscosidade x extrusão: por que algumas seringas "travam"
+✅ Como cruzar reologia com região anatômica
+✅ Por que o rótulo da indústria não conta a história toda
+✅ Mapa prático: produto certo para cada plano facial
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/4KXDp2HGZRU`, category: `Preenchedores`, duration: `14:45`, order: 5 },
+        { ep: 10, title: `Arquitetura Molecular dos Preenchedores | BDDE, PEG e DVS Sob o Microscópio`, description: `🎙️ Arquitetura Molecular dos Preenchedores
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins coloca os preenchedores debaixo do microscópio molecular. Você vai entender exatamente o que diferencia BDDE, PEG e DVS, e por que isso impacta diretamente o resultado clínico que você entrega.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ O que é crosslink e por que ele existe
+✅ BDDE: o padrão de mercado e seus limites
+✅ PEG: a busca por integração e biocompatibilidade
+✅ DVS: química diferente, comportamento diferente
+✅ Crosslink residual: o que é e por que importa
+✅ Tecnologias proprietárias: Vycross, NASHA, OBT, CPM
+✅ Como ler uma ficha técnica de preenchedor de verdade
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/YMPOCQNEPLw`, category: `Preenchedores`, duration: `12:30`, order: 6 },
+        { ep: 11, title: `A Arquitetura Invisível dos Preenchedores | Integração Tecidual de Verdade`, description: `🎙️ A Arquitetura Invisível dos Preenchedores
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins fala sobre o que acontece com o preenchedor depois que a agulha sai. A integração tecidual define se o resultado vai durar, se vai ficar natural e se o paciente vai voltar para você.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ O que é integração tecidual — e o que NÃO é
+✅ A interface preenchedor-tecido nas primeiras 72h
+✅ Migração x integração: a diferença prática
+✅ O papel do plano de injeção na invisibilidade clínica
+✅ Por que alguns produtos formam nódulos e outros não
+✅ Sinais clínicos de boa integração no follow-up
+✅ Como escolher produto pela integração esperada, não pela marca
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/wzy0OKgPAh0`, category: `Preenchedores`, duration: `29:55`, order: 7 },
+        { ep: 12, title: `Ácido Hialurônico Dura Mais de 5 Anos? | Longevidade, Degradação e Mito`, description: `🎙️ Ácido Hialurônico Dura Mais de 5 Anos?
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins encara de frente uma das maiores polêmicas atuais: ácido hialurônico realmente dura mais de 5 anos? Vamos revisar as evidências de imagem e o que isso muda na sua prática.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ O que estudos de imagem (RM e USG) realmente mostram
+✅ Diferença entre "ainda presente" e "ainda funcional"
+✅ Por que o produto antigo não age mais como produto novo
+✅ Acúmulo, deslocamento e o conceito de filler creep
+✅ Implicações para retoque, hialuronidase e replanejamento
+✅ Como conversar com o paciente sobre durabilidade real
+✅ Documentação que protege o profissional juridicamente
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/NCcVgxjSMQA`, category: `Preenchedores`, duration: `19:50`, order: 8 },
+        { ep: 13, title: `Como Reverter Oclusões Vasculares e Biofilmes | Protocolos de Emergência`, description: `🎙️ Como Reverter Oclusões Vasculares e Biofilmes
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins entrega os protocolos que todo profissional de harmonização precisa saber DE COR: oclusão vascular e biofilme. Reconhecimento precoce, manejo correto e o que fazer nos primeiros minutos.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ Sinais precoces de oclusão vascular: o que olhar nos 30s pós-injeção
+✅ Anatomia de risco: glabela, nariz, sulco nasolabial e periocular
+✅ Hialuronidase: dose, técnica e timing — o que a literatura recomenda
+✅ Massagem, calor e vasodilatador: o que ajuda e o que atrapalha
+✅ Quando encaminhar para emergência hospitalar
+✅ Biofilme: diagnóstico clínico e tratamento escalonado
+✅ Documentação, comunicação com o paciente e plano de acompanhamento
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/n2xUaeQWeAE`, category: `Preenchedores`, duration: `18:21`, order: 9 },
+        { ep: 14, title: `O Preenchedor Como Controle Remoto Biológico | Mecanotransdução e Sinalização`, description: `🎙️ O Preenchedor Como Controle Remoto Biológico
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins propõe uma virada de chave: e se o preenchedor não fosse só volume, mas sim um "controle remoto" que aciona vias celulares específicas? Spoiler: a ciência já mostra que ele é.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ Mecanotransdução: do estímulo físico ao sinal molecular
+✅ Vias YAP/TAZ e a resposta fibroblástica ao preenchedor
+✅ Por que diferentes G' acionam respostas diferentes
+✅ O preenchedor como gatilho de neocolagênese tipo I e III
+✅ Implicações para escolha de produto e plano de injeção
+✅ Combinação racional: HA + bioestimulador + iPRF
+✅ Como pensar protocolos com base em sinalização, não em volume
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/nNAM5O27xok`, category: `Preenchedores`, duration: `21:07`, order: 10 },
+        { ep: 17, title: `Como o Ácido Hialurônico Silencia o Colágeno | O Efeito Paradoxal do HA`, description: `🎙️ Como o Ácido Hialurônico Silencia o Colágeno
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins traz um paradoxo que a maioria dos profissionais não conhece: em determinadas condições, o ácido hialurônico pode SILENCIAR a produção de colágeno do paciente. Entenda quando, por que, e como evitar.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ Como o fibroblasto "sente" volume e tensão local
+✅ Sinalização CD44 e a resposta paradoxal ao HA
+✅ Quando o filler reduz a produção de colágeno endógeno
+✅ Por que reaplicações constantes podem piorar a pele com o tempo
+✅ Diferença entre HA com baixo e alto crosslink na sinalização
+✅ Estratégias para combinar HA com bioestimulador sem sabotar
+✅ O que isso muda no aconselhamento de pacientes jovens
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/ATg1hazzFeU`, category: `Preenchedores`, duration: `26:52`, order: 11 },
+        { ep:  1, title: `Como os Bioestimuladores Reprogramam a Pele | Neocolagênese e Mecanotransdução`, description: `🎙️ Como os Bioestimuladores Reprogramam a Pele
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins desvenda por que os bioestimuladores deixaram de ser apenas "injeções de volume" e passaram a ser ferramentas de reprogramação tecidual. Você vai entender como a neocolagênese acontece de verdade, qual o papel da mecanotransdução e por que a resposta clínica depende muito mais do paciente do que do produto.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ O que diferencia bioestimulador de preenchedor — biologicamente
+✅ Mecanotransdução: como o estímulo mecânico vira sinal celular
+✅ PLLA, PCL, hidroxiapatita de cálcio — quem faz o quê na derme
+✅ A janela inflamatória controlada e por que NÃO bloqueá-la
+✅ Por que pacientes "respondedores" e "não respondedores" existem
+✅ Erros de protocolo que matam a neocolagênese
+✅ Como avaliar resposta clínica em 30, 90 e 180 dias
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/Gr4p_Nq6G7w`, category: `Bioestimuladores`, duration: `29:00`, order: 12 },
+        { ep:  6, title: `Por Que o Ozempic Trava o Bioestimulador de Colágeno | GLP-1 e Fibroblasto`, description: `🎙️ Por Que o Ozempic Trava o Bioestimulador de Colágeno
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins explica por que pacientes em uso de Ozempic, Wegovy e similares respondem pior aos bioestimuladores — e o que fazer clinicamente diante desse cenário cada vez mais comum.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ Mecanismo dos GLP-1 e seus efeitos sistêmicos
+✅ Por que a inflamação fisiológica é necessária — e o GLP-1 a reduz
+✅ O fibroblasto sob Ozempic: o que muda na neocolagênese
+✅ Quando suspender, espaçar ou contraindicar bioestimulador
+✅ Ajustes de protocolo para o paciente em terapia GLP-1
+✅ Sinais de resposta inadequada e como redirecionar o plano
+✅ Conversa franca com o paciente: o que dizer antes de aplicar
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/ViYmlahbehY`, category: `Bioestimuladores`, duration: `14:24`, order: 13 },
+        { ep: 15, title: `Anti-inflamatório Arruina Seu Bioestimulador | Por Que NÃO Bloquear a Inflamação`, description: `🎙️ Anti-inflamatório Arruina Seu Bioestimulador
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins explica por que prescrever anti-inflamatório de rotina depois do bioestimulador é um dos erros mais caros da harmonização — e o que fazer quando o paciente realmente precisa de analgesia.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ A inflamação fisiológica é PARTE do mecanismo de ação
+✅ Diferença entre inflamação útil e inflamação descontrolada
+✅ Por que AINE/corticoide cancelam a neocolagênese
+✅ Quando analgesia é necessária — e como fazer sem sabotar
+✅ Paracetamol, dipirona e o que escolher pós-procedimento
+✅ Orientação ao paciente: o que evitar nos primeiros 7 dias
+✅ Sinais de alerta que JUSTIFICAM anti-inflamatório
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/3qtpv4JYKYA`, category: `Bioestimuladores`, duration: `26:29`, order: 14 },
+        { ep:  7, title: `iPRF e a Evolução da Estética Regenerativa | Plasma Rico em Fibrina Injetável`, description: `🎙️ iPRF e a Evolução da Estética Regenerativa
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins percorre tudo o que você precisa saber sobre o iPRF (Injectable Platelet-Rich Fibrin): de onde vem, por que é considerado o agregado plaquetário de 2ª geração, como preparar corretamente e quem está autorizado a aplicar no Brasil em 2026.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ A história dos agregados plaquetários — de Matras (1970) a Miron (2014)
+✅ Por que o iPRF é 2ª geração: sem aditivos, sem anticoagulantes, 100% autólogo
+✅ Os 7 fatores de crescimento liberados e sua cinética clínica
+✅ O erro mais comum: seguir RPM sem calcular a força G (RCF)
+✅ Protocolos validados — Miron, LSCC, A-PRF+ e Horizontal
+✅ Aplicações estéticas e tricológicas
+✅ Regulamentação atualizada (CFO 158/2015, COFEN 788/2025, COFFITO 607/2025, CFBM 423/2026)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/3NrTwvaOLag`, category: `Biorreguladores`, duration: `30:09`, order: 15 },
+        { ep: 16, title: `Reprogramação Biológica com iPRF e PDRN | Polidesoxirribonucleotídeos e Regeneração`, description: `🎙️ Reprogramação Biológica com iPRF e PDRN
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins discute a combinação que está mudando a estética regenerativa: iPRF + PDRN. O que cada um faz isoladamente, o que fazem juntos, e como usar essa dupla com critério clínico.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ O que são polidesoxirribonucleotídeos (PDRN) e como agem
+✅ Receptor A2A: a porta de entrada do PDRN na célula
+✅ Sinergia iPRF + PDRN: por que somam, não competem
+✅ Indicações estéticas: pele, cicatrizes, melasma, olheiras
+✅ Indicações tricológicas: alopecia androgenética e telógena
+✅ Protocolos práticos: número de sessões e intervalos
+✅ Regulamentação atual e quem pode aplicar no Brasil
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/Vx3zOAJogC0`, category: `Biorreguladores`, duration: `20:17`, order: 16 },
+        { ep: 18, title: `Do Osso ao DNA com NaturalUp | Rejuvenescimento Multiplanar`, description: `🎙️ Do Osso ao DNA com NaturalUp
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins apresenta o conceito NaturalUp: um framework de rejuvenescimento multiplanar que começa no osso e termina no DNA. Estrutura, integração e ciência aplicada num só protocolo de raciocínio.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ Por que o envelhecimento é multiplanar — não "de pele"
+✅ Plano ósseo: reabsorção, projeção e suporte
+✅ Plano profundo: gordura, ligamentos e SMAS
+✅ Plano superficial: pele, derme e qualidade tegumentar
+✅ Plano celular/molecular: o nível do DNA e da senescência
+✅ Como sequenciar o tratamento dentro de 12 a 24 meses
+✅ Indicadores objetivos de evolução por plano anatômico
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/nvaZVon1-78`, category: `NaturalUp`, duration: `30:55`, order: 17 },
+        { ep:  5, title: `Inteligência Artificial na Harmonização Orofacial | IA, Simulação 3D e o Futuro`, description: `🎙️ Inteligência Artificial na Harmonização Orofacial
+
+Neste episódio da Plataforma Ampla Facial, o Dr. Gustavo Medeiros Martins discute como a inteligência artificial está mudando a forma de planejar a harmonização facial. Da simulação 3D pré-procedimento à análise objetiva de proporções, é hora de separar o hype real do marketing.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👉 SAIBA MAIS E ACESSE A PLATAFORMA AMPLA FACIAL
+🔗 Portal: https://portal.amplafacial.com.br
+💬 WhatsApp da equipe: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 O QUE VOCÊ VAI APRENDER
+
+✅ O que IA realmente entrega hoje no consultório
+✅ Simulação 3D: quando ajuda e quando engana o paciente
+✅ Análise facial objetiva com landmarks automáticos
+✅ Limites éticos da apresentação "antes e depois" gerada por IA
+✅ Workflow real: do prontuário ao planejamento assistido
+✅ Quais ferramentas valem investimento em 2026
+✅ Como integrar IA sem despersonalizar o atendimento
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 QUER APRENDER NA PRÁTICA, AO LADO DO DR. GUSTAVO?
+
+A Mentoria VIP do Dr. Gustavo Medeiros Martins é o próximo passo para quem quer dominar esse nível de raciocínio clínico com prática supervisionada em clínica real, com pacientes reais.
+
+▸ Conheça os detalhes pelo portal: https://portal.amplafacial.com.br
+▸ Fale com a equipe no WhatsApp: https://wa.me/5521976263881?text=Ol%C3%A1!%20Vim%20pelo%20YouTube%20e%20quero%20saber%20mais%20sobre%20a%20Mentoria%20VIP%20do%20Dr.%20Gustavo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 SOBRE A PLATAFORMA AMPLA FACIAL
+
+Criada pelo Dr. Gustavo Medeiros Martins, a Plataforma Ampla Facial é o pilar teórico do ensino do Instituto Medeiros Martins. Os alunos estudam online no próprio ritmo e depois fazem as práticas supervisionadas ao lado do Dr. Gustavo, em clínica real, com pacientes reais.
+
+Anos de prática clínica aplicada em observações reais — reunidos com todo amor e carinho para formar a próxima geração de profissionais da harmonização facial.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ AVISO IMPORTANTE
+Este conteúdo é de caráter educativo e destinado a profissionais de saúde habilitados.`, videoUrl: `https://youtu.be/29oPrndO2Xs`, category: `IA para Estudar`, duration: `12:34`, order: 18 },
+      ];
+      for (const p of podcasts) {
+        await db.execute(sql`INSERT INTO supplementary_content (type, title, description, video_url, category, duration, "order", visible, created_at, updated_at)
+          VALUES ('podcast', ${p.title}, ${p.description}, ${p.videoUrl}, ${p.category}, ${p.duration}, ${p.order}, true, ${now}, ${now})`);
+      }
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migName}, ${new Date().toISOString()})`);
+      console.log(`[auto-migrate] reseeded ${podcasts.length} podcast episodes by theme + hid iPRF v1`);
+    }
+  } catch (e: any) {
+    console.error("[auto-migrate] reseed_podcast_18_episodes_themes_v2 failed:", e.message);
+  }
+
   // POST /api/funnel/event — registrar evento do funil
   app.post("/api/funnel/event", async (req, res) => {
     try {
