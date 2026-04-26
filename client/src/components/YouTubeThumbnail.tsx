@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Play } from "lucide-react";
 import { getNextFallback, extractYouTubeId, type ThumbnailSize } from "@/lib/youtube-thumbnail";
 
@@ -63,10 +63,17 @@ export function YouTubeThumbnail({
 
   const [currentSize, setCurrentSize] = useState<ThumbnailSize>(startSize);
   const [hasError, setHasError] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const lastVideoIdRef = useRef<string | null>(videoId);
 
+  // Reseta apenas quando o videoId muda (e não em re-renders)
   useEffect(() => {
-    setCurrentSize(startSize);
-    setHasError(false);
+    if (lastVideoIdRef.current !== videoId) {
+      lastVideoIdRef.current = videoId;
+      setCurrentSize(startSize);
+      setHasError(false);
+      setIsLoaded(false);
+    }
   }, [videoId, startSize]);
 
   // No videoId extractable → show placeholder immediately
@@ -91,12 +98,18 @@ export function YouTubeThumbnail({
       referrerPolicy="no-referrer"
       {...(fetchPriority ? { fetchPriority } : {})}
       className={`${imgClassName} ${className}`}
+      style={{
+        opacity: isLoaded ? 1 : 0,
+        transition: "opacity 0.2s ease-in",
+      }}
+      onLoad={() => setIsLoaded(true)}
       onError={() => {
         const next = getNextFallback(thumbUrl);
         if (next) {
           const match = next.match(/\/(maxresdefault|hqdefault|mqdefault|sddefault|0)\.jpg/);
           if (match) {
             setCurrentSize(match[1] as ThumbnailSize);
+            setIsLoaded(false);
           } else {
             setHasError(true);
           }
