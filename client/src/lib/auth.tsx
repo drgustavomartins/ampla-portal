@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { User } from "@shared/schema";
+import { isLifetimePlan } from "@shared/access-rules";
 import { queryClient } from "./queryClient";
 
 type SafeUser = Omit<User, "password">;
@@ -130,9 +131,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ? Math.max(0, Math.ceil((new Date(user.accessExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : null;
   const isTrialExpired = isTrial && trialDaysLeft !== null && trialDaysLeft <= 0;
-  // Universal access expiration: works for ALL plan types (Trial, Workshop, Online, VIP, etc.)
+  // Access expiration: lifetime plans never expire; trial/tester check date
   const isAccessExpired = (() => {
     if (!user || isAdmin || isSuperAdmin) return false;
+    if (isLifetimePlan(user.planKey)) return false;
     if (!user.accessExpiresAt) return false;
     return new Date(user.accessExpiresAt).getTime() < Date.now();
   })();

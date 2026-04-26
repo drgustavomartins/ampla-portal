@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import { sql } from "drizzle-orm";
 import { storage } from "./storage";
 import { registerSchema, trialRegisterSchema, loginSchema, insertModuleSchema, insertLessonSchema } from "@shared/schema";
+import { isLifetimePlan, hasActiveAccess } from "@shared/access-rules";
 import { Resend } from "resend";
 import multer from "multer";
 import { registerStripeRoutes, registerPublicStripeRoutes } from "./stripe-routes";
@@ -1871,12 +1872,8 @@ export async function registerRoutes(server: Server, app: Express) {
       if (user.role === "student" && !user.approved) {
         return res.status(403).json({ message: "Sua conta ainda não foi aprovada. Aguarde o administrador." });
       }
-      if (user.role === "student" && user.accessExpiresAt) {
-        const now = new Date();
-        const expires = new Date(user.accessExpiresAt);
-        if (now > expires) {
-          return res.status(403).json({ message: "Seu acesso expirou. Entre em contato com o administrador." });
-        }
+      if (user.role === "student" && !hasActiveAccess(user)) {
+        return res.status(403).json({ message: "Seu acesso expirou. Entre em contato com o administrador." });
       }
       // Trial users: allow login even if expired (they keep portal access for credits)
       // The frontend will show locked modules and CTA to buy a plan
@@ -2069,9 +2066,7 @@ export async function registerRoutes(server: Server, app: Express) {
       } else {
         const user = await storage.getUser(auth.userId);
         if (user) {
-          const accessExpired = user.accessExpiresAt
-            ? new Date(user.accessExpiresAt) < new Date()
-            : false;
+          const accessExpired = !hasActiveAccess(user);
           if (accessExpired || (user as any).planKey === "workshop" || (user as any).inviteCode) {
             myModules = { accessAll: true, moduleIds: [] };
           } else {
@@ -2241,10 +2236,8 @@ export async function registerRoutes(server: Server, app: Express) {
       return res.json({ accessAll: false, moduleIds: [] });
     }
 
-    // Check if access is expired (for ANY plan type)
-    const accessExpired = user.accessExpiresAt
-      ? new Date(user.accessExpiresAt) < new Date()
-      : false;
+    // Check if access is expired (lifetime plans never expire)
+    const accessExpired = !hasActiveAccess(user);
 
     // If access is expired, return all modules visible but flagged as expired
     // so the frontend can show locked overlays with CTA
@@ -2359,15 +2352,14 @@ export async function registerRoutes(server: Server, app: Express) {
       const userRow = await db.execute(sql`SELECT role, approved, access_expires_at, plan_key FROM users WHERE id = ${auth.userId}`);
       const user = (userRow as any).rows?.[0];
       if (!user || user.approved === false) return { canSeeVideo: false, allowedLessonIds: null };
-      if (user.access_expires_at) {
-        const expires = new Date(user.access_expires_at);
-        if (new Date() > expires) return { canSeeVideo: false, allowedLessonIds: null };
-      }
+      // Map raw DB columns to camelCase for hasActiveAccess
+      const mappedUser = { planKey: user.plan_key, accessExpiresAt: user.access_expires_at };
+      // Lifetime plans never expire; others check date
+      if (!hasActiveAccess(mappedUser)) return { canSeeVideo: false, allowedLessonIds: null };
       // Workshop invite users get full access
       if (user.plan_key === "workshop") return { canSeeVideo: true, allowedLessonIds: null };
-      // Paid plan users get full access
-      const isTester = user.plan_key === "tester" || user.role === "trial" || !user.plan_key;
-      if (!isTester && user.plan_key) return { canSeeVideo: true, allowedLessonIds: null };
+      // Paid plan users (lifetime) get full access
+      if (isLifetimePlan(user.plan_key)) return { canSeeVideo: true, allowedLessonIds: null };
       // Trial/tester: first 2 lessons per module only
       const lessonsResult = await db.execute(sql`SELECT id, module_id, "order" FROM lessons ORDER BY module_id, "order"`);
       const rows = (lessonsResult as any).rows || [];
@@ -2437,12 +2429,11 @@ export async function registerRoutes(server: Server, app: Express) {
       const user = (userResult as any).rows?.[0];
       if (!user) return res.json({ accessType: "none", allowedLessonIds: [] });
 
-      // Check if access is expired (for ANY plan type)
-      if (user.access_expires_at) {
-        const expires = new Date(user.access_expires_at);
-        if (new Date() > expires) {
-          return res.json({ accessType: "expired", allowedLessonIds: [] });
-        }
+      const mappedUser = { planKey: user.plan_key, accessExpiresAt: user.access_expires_at };
+
+      // Lifetime plans never expire; others check date
+      if (!hasActiveAccess(mappedUser)) {
+        return res.json({ accessType: "expired", allowedLessonIds: [] });
       }
 
       // Workshop invite users get full access
@@ -2450,9 +2441,8 @@ export async function registerRoutes(server: Server, app: Express) {
         return res.json({ accessType: "full", allowedLessonIds: [] });
       }
 
-      const isTester = user.plan_key === "tester" || user.role === "trial" || !user.plan_key;
-
-      if (!isTester && user.plan_key) {
+      // Paid plan (lifetime) — full access
+      if (isLifetimePlan(user.plan_key)) {
         return res.json({ accessType: "full", allowedLessonIds: [] });
       }
 
@@ -3469,18 +3459,14 @@ export async function registerRoutes(server: Server, app: Express) {
       const isAdmin = auth.role === "admin" || auth.role === "super_admin";
 
       // Determine if this user has active materials access (approved + non-expired)
-      let hasActiveAccess = isAdmin;
+      let hasMaterialsAccess = isAdmin;
       if (!isAdmin) {
         try {
           const { db: matDb } = await import("./db");
-          const uRow = await matDb.execute(sql`SELECT approved, access_expires_at, materials_access FROM users WHERE id = ${auth.userId}`);
+          const uRow = await matDb.execute(sql`SELECT approved, access_expires_at, plan_key, materials_access FROM users WHERE id = ${auth.userId}`);
           const u = (uRow as any).rows?.[0];
           if (u && u.approved !== false && u.materials_access !== false) {
-            if (u.access_expires_at) {
-              hasActiveAccess = new Date() <= new Date(u.access_expires_at);
-            } else {
-              hasActiveAccess = true;
-            }
+            hasMaterialsAccess = hasActiveAccess({ planKey: u.plan_key, accessExpiresAt: u.access_expires_at });
           }
         } catch { /* default to no access */ }
       }
@@ -3500,7 +3486,7 @@ export async function registerRoutes(server: Server, app: Express) {
         const subcategories = allSubcategories[themeIdx];
         const subsWithFiles = subcategories.map(sub => {
           const files = filesMap.get(sub.id) || [];
-          const sanitizedFiles = hasActiveAccess
+          const sanitizedFiles = hasMaterialsAccess
             ? files
             : files.map(({ driveId: _d, youtubeId: _y, externalUrl: _e, ...rest }: any) => rest);
           return { ...sub, files: sanitizedFiles };

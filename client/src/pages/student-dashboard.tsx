@@ -28,6 +28,7 @@ import { stripPhone } from "@/lib/phone";
 import { SelectThemeModal } from "@/components/SelectThemeModal";
 import { PhoneInput } from "@/components/PhoneInput";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
+import { isLifetimePlan } from "@shared/access-rules";
 import { CreditsDashboardCard } from "@/components/CreditsDashboardCard";
 import { CreditsFullSection } from "@/components/CreditsFullSection";
 import { HeroContinue, type HeroMode } from "@/components/netflix/HeroContinue";
@@ -260,12 +261,13 @@ export default function StudentDashboard() {
   const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
   const userPlan = plans.find(p => p.id === user?.planId);
-  const rawDaysLeft = user?.accessExpiresAt
+  const isLifetime = isLifetimePlan(user?.planKey);
+  const rawDaysLeft = !isLifetime && user?.accessExpiresAt
     ? Math.ceil((new Date(user.accessExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
   const daysLeft = rawDaysLeft !== null ? Math.max(0, rawDaysLeft) : 0;
-  const isExpired = rawDaysLeft !== null && rawDaysLeft <= 0 && user?.approved;
-  const isExpiringSoon = rawDaysLeft !== null && rawDaysLeft > 0 && rawDaysLeft <= 3;
+  const isExpired = !isLifetime && rawDaysLeft !== null && rawDaysLeft <= 0 && user?.approved;
+  const isExpiringSoon = !isLifetime && rawDaysLeft !== null && rawDaysLeft > 0 && rawDaysLeft <= 3;
   // Granular access control
   const communityEnabled = (user as any)?.communityAccess !== false;
   const supportEnabled = (user as any)?.supportAccess !== false;
@@ -1136,7 +1138,7 @@ export default function StudentDashboard() {
                 <div className="h-8 w-px bg-white/10 hidden sm:block" />
                 <div className="flex items-center gap-6 text-xs text-[#b3b3b3]">
                   <span>{completedCount}/{totalLessons} aulas</span>
-                  <span>{daysLeft} dias restantes</span>
+                  <span>{isLifetime ? "Acesso vitalício" : `${daysLeft} dias restantes`}</span>
                   <span className="font-semibold text-[#D4AF37]">{progressPercent}%</span>
                 </div>
               </div>
