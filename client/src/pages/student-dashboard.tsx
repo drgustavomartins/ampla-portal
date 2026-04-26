@@ -1192,10 +1192,12 @@ export default function StudentDashboard() {
 
           {/* ===== NETFLIX ROWS: Category-based rows (Phase 2) ===== */}
           {!isAccessExpired && (() => {
+            // Helper: aulas "separadoras" (━━ X ━━) não aparecem nas linhas curadas
+            const isSeparatorLesson = (l: any) => typeof l?.title === "string" && /^[─━—–-]{2,}/.test(l.title.trim());
             // "Assista os Procedimentos" — practical lessons across all modules
-            const practicalLessons = lessons.filter((l: any) => l.contentType === "practical" && isPublishedLesson(l));
+            const practicalLessons = lessons.filter((l: any) => l.contentType === "practical" && isPublishedLesson(l) && !isSeparatorLesson(l));
             // "Casos Clínicos" — case_study lessons across all modules
-            const caseStudyLessons = lessons.filter((l: any) => l.contentType === "case_study" && isPublishedLesson(l));
+            const caseStudyLessons = lessons.filter((l: any) => l.contentType === "case_study" && isPublishedLesson(l) && !isSeparatorLesson(l));
 
             // Category rows based on module titles
             const categoryConfig: { title: string; emoji: string; keywords: string[] }[] = [
