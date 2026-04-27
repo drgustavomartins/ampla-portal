@@ -63,16 +63,28 @@ export const HeroContinue = memo(function HeroContinue({
       style={{ minHeight: "clamp(280px, 50vh, 480px)" }}
       aria-label={isWelcome ? "Boas-vindas" : `Continue de onde parou: ${lesson.title}`}
     >
-      {/* Background thumbnail + gradient overlay */}
+      {/* Background image + gradient overlay */}
       <div className="absolute inset-0">
-        <YouTubeThumbnail
-          videoIdOrUrl={lesson.videoUrl}
-          startSize="maxresdefault"
-          loading="eager"
-          fetchPriority="high"
-          title={lesson.title}
-          placeholder={<div className="w-full h-full bg-[#0A1628]" />}
-        />
+        {module?.imageUrl ? (
+          <img
+            src={module.imageUrl}
+            alt={module.title}
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            loading="eager"
+            fetchPriority="high"
+          />
+        ) : lesson.videoUrl ? (
+          <YouTubeThumbnail
+            videoIdOrUrl={lesson.videoUrl}
+            startSize="maxresdefault"
+            loading="eager"
+            fetchPriority="high"
+            title={lesson.title}
+            placeholder={<div className="w-full h-full bg-[#0A1628]" />}
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460]" />
+        )}
         {/* Gradient overlays (navy) */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#0A1628]/90 via-[#0A1628]/70 to-[#0A1628]/30" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0A1628]/80 via-transparent to-[#0A1628]/20" />

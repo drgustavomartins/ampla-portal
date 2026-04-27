@@ -32,7 +32,7 @@ export const ModuleHero = memo(function ModuleHero({
   hasProgress,
   onContinue,
 }: ModuleHeroProps) {
-  const courseImage = getCourseImage(mod);
+  const coverImage = mod.imageUrl || getCourseImage(mod);
 
   return (
     <section
@@ -41,9 +41,9 @@ export const ModuleHero = memo(function ModuleHero({
     >
       {/* Background image + gradient */}
       <div className="absolute inset-0">
-        {courseImage ? (
+        {coverImage ? (
           <img
-            src={courseImage}
+            src={coverImage}
             alt=""
             className="w-full h-full object-cover object-[30%_center] sm:object-center"
             loading="eager"
