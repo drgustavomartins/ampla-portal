@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ampla-facial-v6';
+const CACHE_NAME = 'ampla-facial-v7';
 
 const PRECACHE_ASSETS = [
   './',
@@ -35,7 +35,19 @@ self.addEventListener('activate', (event) => {
 
 // Fetch: network-first for API, cache-first for static assets
 self.addEventListener('fetch', (event) => {
+  // Bypass non-GET requests (POST/PUT/DELETE) — never cache these
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   const url = new URL(event.request.url);
+
+  // Bypass cross-origin requests entirely — let the browser handle them natively.
+  // This is critical for img.youtube.com thumbnails, Google Fonts, YouTube embeds, etc.
+  // Caching opaque cross-origin responses can cause net::ERR_FAILED in some browsers.
+  if (url.origin !== self.location.origin) {
+    return;
+  }
 
   // Network-first for API calls
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/api')) {
@@ -46,7 +58,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first for static assets (JS, CSS, images, fonts)
+  // Cache-first for same-origin static assets (JS, CSS, images, fonts)
   if (
     event.request.destination === 'style' ||
     event.request.destination === 'script' ||
