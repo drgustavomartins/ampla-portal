@@ -316,8 +316,9 @@ export default function StudentDashboard() {
     return url;
   };
 
-  // Map modules to course card data
+  // Map modules to course card data — prefer imageUrl from DB, fallback to hardcoded
   const getCourseImage = (mod: Module): string | null => {
+    if (mod.imageUrl) return mod.imageUrl;
     const title = mod.title.toLowerCase();
     if (title.includes("toxina")) return "/images/course-toxina.png";
     if (title.includes("preenchedores") || title.includes("ácido") || title.includes("acido")) return "/images/course-preenchedores.png";
