@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft, FileText, FileIcon, Headphones, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink, Eye, X, Loader2, Lock, Play, BookOpen,
+  ArrowLeft, FileText, FileIcon, Headphones, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink, Eye, X, Loader2, Lock, Play, BookOpen, Mic,
 } from "lucide-react";
 import { YouTubeThumbnail } from "@/components/YouTubeThumbnail";
 
@@ -14,7 +14,7 @@ import { YouTubeThumbnail } from "@/components/YouTubeThumbnail";
 type FileEntry = {
   id: number;
   name: string;
-  type: "pdf" | "docx" | "mp3" | "video" | "article";
+  type: "pdf" | "docx" | "mp3" | "video" | "article" | "podcast";
   driveId: string;
   youtubeId?: string | null;
   externalUrl?: string | null;
@@ -69,17 +69,20 @@ function FileTypeIcon({ type }: { type: FileEntry["type"] }) {
       return <FileIcon className="w-4 h-4 text-blue-400 shrink-0" />;
     case "article":
       return <BookOpen className="w-4 h-4 text-cyan-400 shrink-0" />;
+    case "podcast":
+      return <Mic className="w-4 h-4 text-amber-400 shrink-0" />;
   }
 }
 
 function TypeLabel({ type }: { type: FileEntry["type"] }) {
-  const labels: Record<FileEntry["type"], string> = { pdf: "PDF", mp3: "MP3", video: "V\u00eddeo", docx: "DOCX", article: "Artigo" };
+  const labels: Record<FileEntry["type"], string> = { pdf: "PDF", mp3: "MP3", video: "V\u00eddeo", docx: "DOCX", article: "Artigo", podcast: "Podcast" };
   const colors: Record<FileEntry["type"], string> = {
     pdf: "bg-red-500/15 text-red-400 border-red-500/20",
     mp3: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
     video: "bg-purple-500/15 text-purple-400 border-purple-500/20",
     docx: "bg-blue-500/15 text-blue-400 border-blue-500/20",
     article: "bg-cyan-500/15 text-cyan-400 border-cyan-500/20",
+    podcast: "bg-amber-500/15 text-amber-400 border-amber-500/20",
   };
   return (
     <Badge variant="outline" className={`text-[10px] px-1.5 py-0 font-medium ${colors[type]}`}>
@@ -91,7 +94,7 @@ function TypeLabel({ type }: { type: FileEntry["type"] }) {
 /* ───────── Thumbnail helper ───────── */
 
 function FileThumbnail({ file }: { file: FileEntry }) {
-  const isYouTube = file.type === "mp3" && !!file.youtubeId;
+  const isYouTube = (file.type === "mp3" || file.type === "podcast") && !!file.youtubeId;
   const driveThumb = file.type === "pdf" && !isFullUrl(file.driveId)
     ? `https://lh3.googleusercontent.com/d/${file.driveId}=w200`
     : null;
@@ -143,7 +146,7 @@ const isIOS = typeof navigator !== "undefined" &&
 function FileRow({ file, trialLocked = false }: { file: FileEntry; trialLocked?: boolean }) {
   const [pdfOpen, setPdfOpen] = useState(false);
   const [mp3Error, setMp3Error] = useState(false);
-  const showDownload = file.type !== "mp3" && file.type !== "article";
+  const showDownload = file.type !== "mp3" && file.type !== "article" && file.type !== "podcast";
 
   if (trialLocked) {
     return (
@@ -184,7 +187,18 @@ function FileRow({ file, trialLocked = false }: { file: FileEntry; trialLocked?:
               {file.journal && <span className="italic">{file.journal}</span>}
             </div>
           )}
-          {file.type === "mp3" && file.youtubeId ? (
+          {file.type === "podcast" && file.youtubeId ? (
+            <div className="relative w-full mt-1 rounded-lg overflow-hidden border border-border/20" style={{ paddingBottom: "56.25%", maxWidth: "28rem" }}>
+              <iframe
+                src={`https://www.youtube.com/embed/${file.youtubeId}`}
+                className="absolute inset-0 w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                frameBorder="0"
+                title={file.name}
+              />
+            </div>
+          ) : file.type === "mp3" && file.youtubeId ? (
             <div className="relative w-full mt-1 rounded-lg overflow-hidden border border-border/20" style={{ paddingBottom: "56.25%", maxWidth: "28rem" }}>
               <iframe
                 src={`https://www.youtube.com/embed/${file.youtubeId}`}
@@ -254,7 +268,7 @@ function FileRow({ file, trialLocked = false }: { file: FileEntry; trialLocked?:
               </button>
             )
           )}
-          {file.type !== "article" && (
+          {file.type !== "article" && file.type !== "podcast" && (
             <>
               <a
                 href={driveViewUrl(file.driveId)}
@@ -445,7 +459,7 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
               Materiais Complementares
             </h2>
             <p className="text-[13px] text-muted-foreground/50 mt-0.5">
-              Artigos, compilados e áudios organizados por tema
+              Podcasts, artigos, compilados e áudios organizados por tema
             </p>
           </div>
         </div>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ampla-facial-v8';
+const CACHE_NAME = 'ampla-facial-v9';
 
 const PRECACHE_ASSETS = [
   './',
