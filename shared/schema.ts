@@ -180,7 +180,7 @@ export const materialFiles = pgTable("material_files", {
   id: serial("id").primaryKey(),
   subcategoryId: integer("subcategory_id").notNull(),
   name: text("name").notNull(),
-  type: text("type").notNull(), // 'pdf' | 'docx' | 'mp3' | 'video' | 'article'
+  type: text("type").notNull(), // 'pdf' | 'docx' | 'mp3' | 'video' | 'article' | 'podcast'
   driveId: text("drive_id").notNull(),
   youtubeId: text("youtube_id"),
   // Para type='article': link externo (PubMed/DOI/editora) — substitui drive_id na renderização
