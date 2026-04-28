@@ -521,7 +521,7 @@ export default function ModulePage() {
         {/* Desktop: side-by-side, fills viewport below header */}
         <div className="flex-1 hidden lg:flex" style={{ height: "calc(100vh - 3.5rem)" }}>
           {/* Left: Video + details centered */}
-          <div ref={leftPanelRef} className="flex-[3] overflow-y-auto p-6 flex flex-col justify-center">
+          <div ref={leftPanelRef} className="flex-[3] min-h-0 overflow-y-auto p-6 flex flex-col justify-center">
             <div className="max-w-4xl mx-auto w-full space-y-4">
               {isLessonLocked ? (
                 <div className="aspect-video bg-card rounded-lg flex items-center justify-center ring-1 ring-border/30">
@@ -645,8 +645,8 @@ export default function ModulePage() {
             </div>
           </div>
 
-          {/* Right: Lesson list sidebar (35-40%) */}
-          <div className="flex-[2] border-l border-border/50 overflow-y-auto bg-card/50 shadow-inner">
+          {/* Right: Lesson list sidebar — scroll interno, player fica fixo */}
+          <div className="flex-[2] min-h-0 border-l border-border/50 overflow-y-auto bg-card/50 shadow-inner module-sidebar-scroll">
             <div className="p-4">
               <h3 className="text-xs font-semibold uppercase tracking-brand mb-3" style={{ color: theme.accent }}>
                 Aulas do modulo
