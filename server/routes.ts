@@ -427,31 +427,44 @@ export async function registerRoutes(server: Server, app: Express) {
     await db.execute(`ALTER TABLE lessons ADD COLUMN IF NOT EXISTS created_at TEXT`).catch(() => {});
     await db.execute(`ALTER TABLE lessons ADD COLUMN IF NOT EXISTS updated_at TEXT`).catch(() => {});
 
-    // Auto-classify existing lessons that still have the default 'theoretical'
-    // Idempotent: only touches lessons with content_type = 'theoretical'
-    // case_study first (higher priority), then practical
-    await db.execute(`UPDATE lessons SET content_type = 'case_study'
-      WHERE content_type = 'theoretical' AND (
-        LOWER(title) LIKE '%caso clínico%' OR LOWER(title) LIKE '%caso clinico%'
-        OR LOWER(title) LIKE '%antes e depois%' OR LOWER(title) LIKE '%antes/depois%'
-        OR LOWER(title) LIKE '%case%' OR LOWER(title) LIKE '%resultado%'
-        OR LOWER(title) LIKE '%paciente real%'
-      )`).catch(() => {});
-    await db.execute(`UPDATE lessons SET content_type = 'practical'
-      WHERE content_type = 'theoretical' AND (
-        LOWER(title) LIKE '%aplicação%' OR LOWER(title) LIKE '%aplicacao%'
-        OR LOWER(title) LIKE '%aplicando%' OR LOWER(title) LIKE '%aplicar%'
-        OR LOWER(title) LIKE '%procedimento%'
-        OR LOWER(title) LIKE '%passo a passo%' OR LOWER(title) LIKE '%passo-a-passo%'
-        OR LOWER(title) LIKE '%demonstra%'
-        OR LOWER(title) LIKE '%ao vivo%'
-        OR LOWER(title) LIKE '%na paciente%' OR LOWER(title) LIKE '%em paciente%'
-        OR LOWER(title) LIKE '%atendimento%' OR LOWER(title) LIKE '%atendendo%'
-        OR LOWER(title) LIKE '%prática%' OR LOWER(title) LIKE '%pratica%'
-        OR LOWER(title) LIKE '%hands-on%' OR LOWER(title) LIKE '%hands on%'
-        OR LOWER(title) LIKE '%injeção%' OR LOWER(title) LIKE '%injecao%'
-        OR LOWER(title) LIKE '%infiltra%'
-      )`).catch(() => {});
+    // Auto-classify existing lessons — RUN ONCE ONLY.
+    // Histórico: este bloco rodava em todo boot do servidor e sobrescrevia
+    // qualquer reclassificação manual feita pelo admin (ex.: aulas como
+    // "Reconstituição e seringas de aplicação" voltavam a 'practical' por
+    // causa do match em '%aplica%'). Agora só roda quando a flag
+    // 'lessons_auto_classify_v1' não existe na tabela migrations_applied.
+    try {
+      await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`).catch(() => {});
+      const flag = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${'lessons_auto_classify_v1'} LIMIT 1`);
+      if (!((flag as any).rows?.length > 0)) {
+        await db.execute(`UPDATE lessons SET content_type = 'case_study'
+          WHERE content_type = 'theoretical' AND (
+            LOWER(title) LIKE '%caso clínico%' OR LOWER(title) LIKE '%caso clinico%'
+            OR LOWER(title) LIKE '%antes e depois%' OR LOWER(title) LIKE '%antes/depois%'
+            OR LOWER(title) LIKE '%case%' OR LOWER(title) LIKE '%resultado%'
+            OR LOWER(title) LIKE '%paciente real%'
+          )`).catch(() => {});
+        await db.execute(`UPDATE lessons SET content_type = 'practical'
+          WHERE content_type = 'theoretical' AND (
+            LOWER(title) LIKE '%aplicação%' OR LOWER(title) LIKE '%aplicacao%'
+            OR LOWER(title) LIKE '%aplicando%' OR LOWER(title) LIKE '%aplicar%'
+            OR LOWER(title) LIKE '%procedimento%'
+            OR LOWER(title) LIKE '%passo a passo%' OR LOWER(title) LIKE '%passo-a-passo%'
+            OR LOWER(title) LIKE '%demonstra%'
+            OR LOWER(title) LIKE '%ao vivo%'
+            OR LOWER(title) LIKE '%na paciente%' OR LOWER(title) LIKE '%em paciente%'
+            OR LOWER(title) LIKE '%atendimento%' OR LOWER(title) LIKE '%atendendo%'
+            OR LOWER(title) LIKE '%prática%' OR LOWER(title) LIKE '%pratica%'
+            OR LOWER(title) LIKE '%hands-on%' OR LOWER(title) LIKE '%hands on%'
+            OR LOWER(title) LIKE '%injeção%' OR LOWER(title) LIKE '%injecao%'
+            OR LOWER(title) LIKE '%infiltra%'
+          )`).catch(() => {});
+        await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${'lessons_auto_classify_v1'}, ${new Date().toISOString()}) ON CONFLICT (name) DO NOTHING`);
+        console.log('[auto-migrate] lessons_auto_classify_v1 applied');
+      }
+    } catch (e: any) {
+      console.error('[auto-migrate] auto-classify failed:', e.message);
+    }
 
     // Video watch progress (partial position synced to DB)
     await db.execute(`CREATE TABLE IF NOT EXISTS user_video_progress (
@@ -4004,12 +4017,17 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       // Admin explicitly set contentType — respect the override
       lessonUpdate.contentType = contentType;
     } else if (title !== undefined || description !== undefined) {
-      // Title or description changed without explicit contentType — auto-classify
-      const { classifyLesson } = await import("./classify-lesson");
+      // Title or description changed without explicit contentType.
+      // Só auto-classificar se a aula ainda estiver no default 'theoretical'
+      // — assim NUNCA sobrescrevemos uma classificação manual existente
+      // (case_study ou practical) quando o admin edita só título/descrição.
       const existing = await storage.getLesson(parseInt(req.params.id));
-      const effectiveTitle = title !== undefined ? sanitize(title) : (existing?.title || "");
-      const effectiveDesc = description !== undefined ? (description ? sanitize(description) : null) : (existing?.description || null);
-      lessonUpdate.contentType = classifyLesson(effectiveTitle, effectiveDesc);
+      if (existing && existing.contentType === "theoretical") {
+        const { classifyLesson } = await import("./classify-lesson");
+        const effectiveTitle = title !== undefined ? sanitize(title) : (existing?.title || "");
+        const effectiveDesc = description !== undefined ? (description ? sanitize(description) : null) : (existing?.description || null);
+        lessonUpdate.contentType = classifyLesson(effectiveTitle, effectiveDesc);
+      }
     }
     lessonUpdate.updatedAt = new Date().toISOString();
     const updated = await storage.updateLesson(parseInt(req.params.id), lessonUpdate);
