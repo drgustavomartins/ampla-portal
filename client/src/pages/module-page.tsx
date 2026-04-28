@@ -487,6 +487,37 @@ export default function ModulePage() {
     }
   }, [selectedLesson]);
 
+  // Lock window scroll on desktop (lg+) when lesson view is active.
+  // Prevents Page Down / trackpad from scrolling the entire page and hiding the video.
+  useEffect(() => {
+    if (!selectedLesson || isLocked) return;
+
+    const mql = window.matchMedia("(min-width: 1024px)");
+
+    function applyLock(isDesktop: boolean) {
+      if (isDesktop) {
+        document.documentElement.style.overflow = "hidden";
+        document.body.style.overflow = "hidden";
+      } else {
+        document.documentElement.style.overflow = "";
+        document.body.style.overflow = "";
+      }
+    }
+
+    applyLock(mql.matches);
+
+    function onChange(e: MediaQueryListEvent) {
+      applyLock(e.matches);
+    }
+
+    mql.addEventListener("change", onChange);
+    return () => {
+      mql.removeEventListener("change", onChange);
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+  }, [selectedLesson, isLocked]);
+
   // Get support URL for a lesson, falling back to any URL found in the module's lessons
   const getLessonSupportUrl = useCallback((lesson: Lesson): { url: string; label: string } | null => {
     return lesson.description ? extractFirstLink(lesson.description) : null;
