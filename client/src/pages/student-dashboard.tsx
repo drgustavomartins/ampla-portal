@@ -1243,7 +1243,7 @@ export default function StudentDashboard() {
                 {/* Case studies row */}
                 {caseStudyLessons.length > 0 && (
                   <Suspense fallback={<RowSkeleton />}>
-                    <LessonRow title="📊 Casos Clínicos">
+                    <LessonRow title="🎬 Assista aos Procedimentos">
                       {caseStudyLessons.map((lesson) => (
                         <LessonCard
                           key={lesson.id}
