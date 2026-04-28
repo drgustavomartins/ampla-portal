@@ -1195,8 +1195,6 @@ export default function StudentDashboard() {
           {!isAccessExpired && (() => {
             // Helper: aulas "separadoras" (━━ X ━━) não aparecem nas linhas curadas
             const isSeparatorLesson = (l: any) => typeof l?.title === "string" && /^[─━—–-]{2,}/.test(l.title.trim());
-            // "Assista os Procedimentos" — practical lessons across all modules
-            const practicalLessons = lessons.filter((l: any) => l.contentType === "practical" && isPublishedLesson(l) && !isSeparatorLesson(l));
             // "Casos Clínicos" — case_study lessons across all modules
             const caseStudyLessons = lessons.filter((l: any) => l.contentType === "case_study" && isPublishedLesson(l) && !isSeparatorLesson(l));
 
@@ -1224,24 +1222,6 @@ export default function StudentDashboard() {
 
             return (
               <>
-                {/* Practical procedures row */}
-                {practicalLessons.length > 0 && (
-                  <Suspense fallback={<RowSkeleton />}>
-                    <LessonRow title="🎬 Assista os Procedimentos">
-                      {practicalLessons.map((lesson) => (
-                        <LessonCard
-                          key={lesson.id}
-                          lesson={lesson}
-                          module={modules.find((m) => m.id === lesson.moduleId)}
-                          progress={videoProgressStore[String(lesson.id)] || undefined}
-                          isCompleted={completedIds.has(lesson.id)}
-                          onClick={() => setSelectedLesson(lesson)}
-                        />
-                      ))}
-                    </LessonRow>
-                  </Suspense>
-                )}
-
                 {/* Category-based module rows */}
                 {categoryRows.map((cat) => (
                   <Suspense key={cat.title} fallback={<RowSkeleton />}>
