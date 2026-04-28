@@ -333,6 +333,25 @@
   background: rgba(255, 255, 255, 0.25);
 }
 
+/* Module sidebar scrollbar — navy/gold discreto */
+.module-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212, 175, 55, 0.25) transparent;
+}
+.module-sidebar-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.module-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.module-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.2);
+  border-radius: 3px;
+}
+.module-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.4);
+}
+
 /* Netflix meta theme color */
 .netflix-theme-active {
   color-scheme: dark;
