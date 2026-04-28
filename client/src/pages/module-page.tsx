@@ -520,9 +520,11 @@ export default function ModulePage() {
 
         {/* Desktop: side-by-side, fills viewport below header */}
         <div className="flex-1 hidden lg:flex" style={{ height: "calc(100vh - 3.5rem)" }}>
-          {/* Left: Video + details centered */}
-          <div ref={leftPanelRef} className="flex-[3] min-h-0 overflow-y-auto p-6 flex flex-col justify-center">
-            <div className="max-w-4xl mx-auto w-full space-y-4">
+          {/* Left: Video sticky + details scroll below */}
+          <div ref={leftPanelRef} className="flex-[3] min-h-0 overflow-y-auto">
+            <div className="max-w-4xl mx-auto w-full">
+              {/* Player sticky — always visible while scrolling left column */}
+              <div className="lg:sticky lg:top-0 z-10 bg-background p-6 pb-0">
               {isLessonLocked ? (
                 <div className="aspect-video bg-card rounded-lg flex items-center justify-center ring-1 ring-border/30">
                   <div className="text-center space-y-3 px-6">
@@ -574,8 +576,9 @@ export default function ModulePage() {
                   )}
                 </div>
               )}
+              </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3 p-6 pt-4">
                 <div className="flex items-start justify-between gap-4 min-w-0">
                   <div className="min-w-0 flex-1">
                     <h2 className="text-lg font-semibold text-foreground">{selectedLesson.title}</h2>
