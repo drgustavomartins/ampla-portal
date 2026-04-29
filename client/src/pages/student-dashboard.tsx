@@ -360,10 +360,16 @@ export default function StudentDashboard() {
         </header>
 
         <div className="max-w-6xl mx-auto p-4 lg:p-6">
-          {/* min-w-0 nos grid items é essencial: sem isso, o iframe do YouTube
-              (com width=640 default) faz o item explodir além do container
-              em mobile, escondendo o botão "Marcar como concluída". */}
-          <div className="grid lg:grid-cols-[1fr_320px] gap-6">
+          {/*
+            CRÍTICO: em mobile usamos block (não grid). Quando é grid sem
+            grid-cols-1 explicito, o CSS Grid usa as dimensões intrínsecas
+            do conteúdo para definir a coluna, e o iframe do YouTube reporta
+            ~2000px como tamanho intrínseco → a coluna fica 2000px e o player
+            estoura a tela. min-w-0 sozinho não resolve. Usar block em mobile
+            + grid só em lg garante que o iframe respeite a largura do
+            container e o botão "Marcar como concluída" fica visível.
+          */}
+          <div className="block lg:grid lg:grid-cols-[1fr_320px] gap-6 space-y-6 lg:space-y-0">
             {/* Video Area */}
             <div className="space-y-4 min-w-0">
               {isLessonLocked ? (
