@@ -2186,6 +2186,9 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
   // ==================== CRON: TRIAL DAY-5 URGENCY EMAIL ====================
 
   app.post("/api/cron/trial-urgency", async (req, res) => {
+    // DESATIVADO a pedido do usuário (29/04/2026)
+    return res.json({ sent: 0, message: "Endpoint desabilitado" });
+    // eslint-disable-next-line no-unreachable
     try {
       const { db } = await import("./db");
       if (!resend) return res.json({ sent: 0, message: "Resend not configured" });
