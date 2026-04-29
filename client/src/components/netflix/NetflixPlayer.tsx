@@ -159,6 +159,22 @@ export function NetflixPlayer({
         events: {
           onReady: () => {
             if (destroyed) return;
+            // Ensure fullscreen permissions on the iframe created by the
+            // YouTube IFrame API. Some browsers (notably iOS Safari and
+            // some Android Chrome versions) won't expose the fullscreen
+            // button unless these attributes are present on the iframe.
+            try {
+              const iframe = containerRef.current?.querySelector("iframe");
+              if (iframe) {
+                iframe.setAttribute(
+                  "allow",
+                  "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen; web-share"
+                );
+                iframe.setAttribute("allowfullscreen", "true");
+                iframe.setAttribute("webkitallowfullscreen", "true");
+                iframe.setAttribute("mozallowfullscreen", "true");
+              }
+            } catch { /* noop */ }
             setPlayerReady(true);
           },
           onStateChange: (event: YT.OnStateChangeEvent) => {
