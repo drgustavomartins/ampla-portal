@@ -752,6 +752,11 @@ export default function ModulePage() {
         {/* Mobile: stacked layout */}
         <div className="lg:hidden">
           <div className="p-4 space-y-4" ref={videoRef}>
+            {/* Container limita a altura do player no mobile (especialmente em
+                paisagem e tablets) para garantir que os botões "Marcar como
+                concluída / Próxima / Anterior" continuem visíveis sem precisar
+                de scroll. max-h é baseado na altura da viewport. */}
+            <div className="mx-auto w-full max-w-[min(100%,calc((100svh-220px)*16/9))]">
             {lessonLockedForTester ? (
               <div className="aspect-video bg-card rounded-lg flex items-center justify-center ring-1 ring-border/30">
                 <div className="text-center space-y-3 px-6">
@@ -780,6 +785,7 @@ export default function ModulePage() {
                 )}
               </div>
             )}
+            </div>
 
 
             <div className="space-y-3">
