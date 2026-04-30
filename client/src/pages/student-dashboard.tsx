@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
 import { useLocation, Link } from "wouter";
-import { useStudentInit } from "@/hooks/use-student-init";
+import { useStudentInit, type StudentInitData } from "@/hooks/use-student-init";
 import { UpgradeBanner } from "@/components/UpgradeBanner";
 import { ReferralCard } from "@/components/ReferralCard";
 import { Check as CheckIcon, FileCheck, PenLine } from "lucide-react";
@@ -145,7 +145,54 @@ export default function StudentDashboard() {
         : `/api/progress/${user?.id}/lesson/${lessonId}/incomplete`;
       await apiRequest("POST", endpoint);
     },
-    onSuccess: () => {
+    onMutate: async ({ lessonId, complete }) => {
+      // Optimistic update — atualiza a UI imediatamente, antes da resposta do servidor.
+      const initKey = ["/api/student/init", user?.id];
+      const progressKey = ["/api/progress", user?.id];
+      await queryClient.cancelQueries({ queryKey: initKey });
+      const previousInit = queryClient.getQueryData<StudentInitData>(initKey);
+      const previousProgress = queryClient.getQueryData<LessonProgress[]>(progressKey);
+
+      const updateProgressList = (list: LessonProgress[] | undefined): LessonProgress[] => {
+        const arr = list ? [...list] : [];
+        const idx = arr.findIndex((p) => p.lessonId === lessonId);
+        const completedAt = complete ? new Date().toISOString() : null;
+        if (idx >= 0) {
+          arr[idx] = { ...arr[idx], completed: complete, completedAt: completedAt as any };
+        } else if (complete) {
+          arr.push({
+            id: -Date.now(),
+            userId: user?.id ?? 0,
+            lessonId,
+            completed: true,
+            completedAt: completedAt as any,
+          } as LessonProgress);
+        }
+        return arr;
+      };
+
+      if (previousInit) {
+        queryClient.setQueryData<StudentInitData>(initKey, {
+          ...previousInit,
+          progress: updateProgressList(previousInit.progress),
+        });
+      }
+      queryClient.setQueryData<LessonProgress[]>(progressKey, updateProgressList(previousProgress));
+
+      return { previousInit, previousProgress };
+    },
+    onError: (_err, _vars, context) => {
+      // Reverte em caso de erro
+      if (context?.previousInit) {
+        queryClient.setQueryData(["/api/student/init", user?.id], context.previousInit);
+      }
+      if (context?.previousProgress) {
+        queryClient.setQueryData(["/api/progress", user?.id], context.previousProgress);
+      }
+    },
+    onSettled: () => {
+      // Garante consistência com o servidor
+      queryClient.invalidateQueries({ queryKey: ["/api/student/init", user?.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/progress", user?.id] });
     },
   });
