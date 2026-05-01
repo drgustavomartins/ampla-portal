@@ -213,6 +213,12 @@ export default function PlanosPublicos() {
                 <p className="text-xs text-white/40 mt-1">Pagamento único · Sem mensalidade</p>
               </div>
 
+              <div className="mt-3 flex justify-center">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#D4A843]/10 border border-[#D4A843]/20 px-3 py-1 text-[11px] font-semibold text-[#D4A843]">
+                  <Gift className="h-3 w-3" />10% de cashback em créditos
+                </span>
+              </div>
+
               <div className="my-6 h-px bg-white/[0.07]" />
 
               {/* Features */}
@@ -288,6 +294,12 @@ export default function PlanosPublicos() {
                 <p className="text-xs text-white/30 mt-1">ou 12x de R$ 560,00</p>
               </div>
 
+              <div className="mt-3 flex justify-center">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-400/10 border border-orange-400/20 px-3 py-1 text-[11px] font-semibold text-orange-400">
+                  <Gift className="h-3 w-3" />10% de cashback em créditos
+                </span>
+              </div>
+
               <div className="my-6 h-px bg-white/[0.07]" />
 
               <ul className="space-y-3 flex-1">
@@ -353,6 +365,12 @@ export default function PlanosPublicos() {
               <div className="mt-6 min-h-[80px] text-center">
                 <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-emerald-400 whitespace-nowrap">R$ 4.997</span>
                 <p className="text-xs text-white/30 mt-1">Parcelamento disponível</p>
+              </div>
+
+              <div className="mt-3 flex justify-center">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 border border-emerald-400/20 px-3 py-1 text-[11px] font-semibold text-emerald-400">
+                  <Gift className="h-3 w-3" />10% de cashback em créditos
+                </span>
               </div>
 
               <div className="my-6 h-px bg-white/[0.07]" />
@@ -434,6 +452,12 @@ export default function PlanosPublicos() {
                 <p className="text-xs text-white/30 mt-1">Parcelamento disponível</p>
               </div>
 
+              <div className="mt-3 flex justify-center">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-400/10 border border-purple-400/20 px-3 py-1 text-[11px] font-semibold text-purple-400">
+                  <Gift className="h-3 w-3" />10% de cashback em créditos
+                </span>
+              </div>
+
               <div className="my-6 h-px bg-white/[0.07]" />
 
               {/* Features */}
@@ -503,6 +527,12 @@ export default function PlanosPublicos() {
               <div className="mt-6 min-h-[80px] text-center">
                 <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#E8C86A] whitespace-nowrap">R$ 35.000</span>
                 <p className="text-xs text-white/40 mt-1">12x de R$ 2.916,67 · Vagas limitadas</p>
+              </div>
+
+              <div className="mt-3 flex justify-center">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E8C86A]/10 border border-[#E8C86A]/20 px-3 py-1 text-[11px] font-semibold text-[#E8C86A]">
+                  <Gift className="h-3 w-3" />10% de cashback em créditos
+                </span>
               </div>
 
               <div className="my-6 h-px bg-white/[0.07]" />
