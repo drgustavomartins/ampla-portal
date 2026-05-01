@@ -210,7 +210,7 @@ export default function PlanosPublicos() {
               {/* Price */}
               <div className="mt-6 min-h-[80px] text-center">
                 <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#D4A843] whitespace-nowrap">R$ 397</span>
-                <p className="text-xs text-white/40 mt-1">Pagamento único · Sem mensalidade</p>
+                <p className="text-xs text-white/40 mt-1 whitespace-nowrap">Pagamento único</p>
               </div>
 
               <div className="mt-3 flex justify-center">
@@ -291,7 +291,7 @@ export default function PlanosPublicos() {
 
               <div className="mt-6 min-h-[80px] text-center">
                 <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-orange-400 whitespace-nowrap">R$ 5.997</span>
-                <p className="text-xs text-white/30 mt-1">ou 12x de R$ 560,00</p>
+                <p className="text-xs text-white/30 mt-1 whitespace-nowrap">ou 12x de R$ 560,00</p>
               </div>
 
               <div className="mt-3 flex justify-center">
@@ -364,7 +364,7 @@ export default function PlanosPublicos() {
               {/* Price */}
               <div className="mt-6 min-h-[80px] text-center">
                 <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-emerald-400 whitespace-nowrap">R$ 4.997</span>
-                <p className="text-xs text-white/30 mt-1">Parcelamento disponível</p>
+                <p className="text-xs text-white/30 mt-1 whitespace-nowrap">Parcelamento disponível</p>
               </div>
 
               <div className="mt-3 flex justify-center">
@@ -449,7 +449,7 @@ export default function PlanosPublicos() {
               {/* Price */}
               <div className="mt-6 min-h-[80px] text-center">
                 <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-purple-400 whitespace-nowrap">R$ 17.350</span>
-                <p className="text-xs text-white/30 mt-1">Parcelamento disponível</p>
+                <p className="text-xs text-white/30 mt-1 whitespace-nowrap">Parcelamento disponível</p>
               </div>
 
               <div className="mt-3 flex justify-center">
@@ -526,7 +526,7 @@ export default function PlanosPublicos() {
 
               <div className="mt-6 min-h-[80px] text-center">
                 <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#E8C86A] whitespace-nowrap">R$ 35.000</span>
-                <p className="text-xs text-white/40 mt-1">12x de R$ 2.916,67 · Vagas limitadas</p>
+                <p className="text-xs text-white/40 mt-1 whitespace-nowrap">12x de R$ 2.916,67</p>
               </div>
 
               <div className="mt-3 flex justify-center">
