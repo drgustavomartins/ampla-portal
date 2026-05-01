@@ -214,8 +214,8 @@ export default function PlanosPublicos() {
               </div>
 
               <div className="mt-3 flex justify-center">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#D4A843]/10 border border-[#D4A843]/20 px-3 py-1 text-[11px] font-semibold text-[#D4A843]">
-                  <Gift className="h-3 w-3" />10% de cashback em créditos
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#D4A843]/10 border border-[#D4A843]/20 px-3 py-1 text-[11px] font-semibold text-[#D4A843]">
+                  <Gift className="h-3 w-3" />10% cashback em créditos
                 </span>
               </div>
 
@@ -295,8 +295,8 @@ export default function PlanosPublicos() {
               </div>
 
               <div className="mt-3 flex justify-center">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-400/10 border border-orange-400/20 px-3 py-1 text-[11px] font-semibold text-orange-400">
-                  <Gift className="h-3 w-3" />10% de cashback em créditos
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-orange-400/10 border border-orange-400/20 px-3 py-1 text-[11px] font-semibold text-orange-400">
+                  <Gift className="h-3 w-3" />10% cashback em créditos
                 </span>
               </div>
 
@@ -368,8 +368,8 @@ export default function PlanosPublicos() {
               </div>
 
               <div className="mt-3 flex justify-center">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/10 border border-emerald-400/20 px-3 py-1 text-[11px] font-semibold text-emerald-400">
-                  <Gift className="h-3 w-3" />10% de cashback em créditos
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-emerald-400/10 border border-emerald-400/20 px-3 py-1 text-[11px] font-semibold text-emerald-400">
+                  <Gift className="h-3 w-3" />10% cashback em créditos
                 </span>
               </div>
 
@@ -453,8 +453,8 @@ export default function PlanosPublicos() {
               </div>
 
               <div className="mt-3 flex justify-center">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-400/10 border border-purple-400/20 px-3 py-1 text-[11px] font-semibold text-purple-400">
-                  <Gift className="h-3 w-3" />10% de cashback em créditos
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-purple-400/10 border border-purple-400/20 px-3 py-1 text-[11px] font-semibold text-purple-400">
+                  <Gift className="h-3 w-3" />10% cashback em créditos
                 </span>
               </div>
 
@@ -530,8 +530,8 @@ export default function PlanosPublicos() {
               </div>
 
               <div className="mt-3 flex justify-center">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#E8C86A]/10 border border-[#E8C86A]/20 px-3 py-1 text-[11px] font-semibold text-[#E8C86A]">
-                  <Gift className="h-3 w-3" />10% de cashback em créditos
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#E8C86A]/10 border border-[#E8C86A]/20 px-3 py-1 text-[11px] font-semibold text-[#E8C86A]">
+                  <Gift className="h-3 w-3" />10% cashback em créditos
                 </span>
               </div>
 
