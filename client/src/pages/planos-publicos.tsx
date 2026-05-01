@@ -208,8 +208,9 @@ export default function PlanosPublicos() {
               </div>
 
               {/* Price */}
-              <div className="mt-6 min-h-[80px] text-center">
-                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#D4A843] whitespace-nowrap">R$ 397</span>
+              <div className="mt-6 min-h-[100px] text-center">
+                <p className="text-[10px] uppercase tracking-wider text-white/40 whitespace-nowrap">à vista</p>
+                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#D4A843] whitespace-nowrap leading-none">R$ 397</span>
                 <p className="text-xs text-white/40 mt-1 whitespace-nowrap">Pagamento único</p>
               </div>
 
@@ -289,9 +290,10 @@ export default function PlanosPublicos() {
                 </p>
               </div>
 
-              <div className="mt-6 min-h-[80px] text-center">
-                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-orange-400 whitespace-nowrap">R$ 5.997</span>
-                <p className="text-xs text-white/30 mt-1 whitespace-nowrap">ou 12x de R$ 560,00</p>
+              <div className="mt-6 min-h-[100px] text-center">
+                <p className="text-[10px] uppercase tracking-wider text-white/40 whitespace-nowrap">12x de</p>
+                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-orange-400 whitespace-nowrap leading-none">R$ 500</span>
+                <p className="text-xs text-white/40 mt-1 whitespace-nowrap">ou R$ 5.997 à vista</p>
               </div>
 
               <div className="mt-3 flex justify-center">
@@ -362,9 +364,10 @@ export default function PlanosPublicos() {
               </div>
 
               {/* Price */}
-              <div className="mt-6 min-h-[80px] text-center">
-                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-emerald-400 whitespace-nowrap">R$ 4.997</span>
-                <p className="text-xs text-white/30 mt-1 whitespace-nowrap">Parcelamento disponível</p>
+              <div className="mt-6 min-h-[100px] text-center">
+                <p className="text-[10px] uppercase tracking-wider text-white/40 whitespace-nowrap">12x de</p>
+                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-emerald-400 whitespace-nowrap leading-none">R$ 416</span>
+                <p className="text-xs text-white/40 mt-1 whitespace-nowrap">ou R$ 4.997 à vista</p>
               </div>
 
               <div className="mt-3 flex justify-center">
@@ -447,9 +450,10 @@ export default function PlanosPublicos() {
               </div>
 
               {/* Price */}
-              <div className="mt-6 min-h-[80px] text-center">
-                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-purple-400 whitespace-nowrap">R$ 17.350</span>
-                <p className="text-xs text-white/30 mt-1 whitespace-nowrap">Parcelamento disponível</p>
+              <div className="mt-6 min-h-[100px] text-center">
+                <p className="text-[10px] uppercase tracking-wider text-white/40 whitespace-nowrap">12x de</p>
+                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-purple-400 whitespace-nowrap leading-none">R$ 1.446</span>
+                <p className="text-xs text-white/40 mt-1 whitespace-nowrap">ou R$ 17.350 à vista</p>
               </div>
 
               <div className="mt-3 flex justify-center">
@@ -524,9 +528,10 @@ export default function PlanosPublicos() {
                 <p className="mt-2 text-sm text-white/60 leading-relaxed">12 meses ao lado do Dr. Gustavo: 7 dias clínicos completos, bastidores da clínica e licença exclusiva da marca NaturalUp®.</p>
               </div>
 
-              <div className="mt-6 min-h-[80px] text-center">
-                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#E8C86A] whitespace-nowrap">R$ 35.000</span>
-                <p className="text-xs text-white/40 mt-1 whitespace-nowrap">12x de R$ 2.916,67</p>
+              <div className="mt-6 min-h-[100px] text-center">
+                <p className="text-[10px] uppercase tracking-wider text-white/40 whitespace-nowrap">12x de</p>
+                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#E8C86A] whitespace-nowrap leading-none">R$ 2.917</span>
+                <p className="text-xs text-white/40 mt-1 whitespace-nowrap">ou R$ 35.000 à vista</p>
               </div>
 
               <div className="mt-3 flex justify-center">
