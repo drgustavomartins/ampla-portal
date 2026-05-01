@@ -1,40 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Check, X, ArrowRight, Loader2, Gift, Star, Tag, Shield, Crown, Sparkles, Clock } from "lucide-react";
-import { useCountdown } from "@/hooks/use-countdown";
+import { Check, X, ArrowRight, Loader2, Gift, Star, Tag, Shield, Crown, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-
-function formatBRL(c: number) {
-  return (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
 
 const WHATSAPP_URL = "https://wa.me/5521976263881";
 const WHATSAPP_PRATICA = `${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse no Acompanhamento Observacional da Ampla Facial.")}`;
 const WHATSAPP_MENTORIA = `${WHATSAPP_URL}?text=${encodeURIComponent("Olá Dr. Gustavo, tenho interesse no Acompanhamento VIP da Ampla Facial.")}`;
 
-function CountdownDigit({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="flex flex-col items-center">
-      <span
-        className="text-xl sm:text-2xl font-bold tabular-nums leading-none px-2.5 py-1.5 rounded-lg"
-        style={{ color: "#D4A843", background: "rgba(212,168,67,0.08)", minWidth: 44, textAlign: "center" }}
-      >
-        {String(value).padStart(2, "0")}
-      </span>
-      <span className="text-[9px] uppercase tracking-wider text-white/35 mt-1">{label}</span>
-    </div>
-  );
-}
-
-function CountdownSeparator() {
-  return <span className="text-lg font-bold text-[#D4A843]/50 self-start mt-1.5">:</span>;
-}
-
 export default function PlanosPublicos() {
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const countdown = useCountdown();
   const { data: slots } = useQuery<{ sold: number; remaining: number; limit: number; soldOut: boolean }>({
     queryKey: ["/api/vitalicio-slots"],
     refetchInterval: 30000, // atualiza a cada 30s
@@ -92,10 +68,6 @@ export default function PlanosPublicos() {
   });
 
   const handleCheckout = () => { setLoadingCheckout(true); checkoutMutation.mutate(); };
-
-  const scrollToCard = useCallback(() => {
-    cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, []);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 10);
@@ -164,48 +136,6 @@ export default function PlanosPublicos() {
 
       <div style={{ height: `${HEADER_H}px` }} />
 
-      {/* ═══ STICKY URGENCY BAR ═══ */}
-      {!countdown.expired && (
-        <div
-          className="fixed left-0 right-0 z-40 flex items-center justify-center gap-3 sm:gap-4 px-4 py-2.5"
-          style={{
-            top: `${HEADER_H}px`,
-            background: "linear-gradient(90deg, #0A0D14 0%, #12192A 50%, #0A0D14 100%)",
-            borderBottom: "1px solid rgba(212,168,67,0.15)",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
-          }}
-        >
-          <div className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-[13px] text-white/80 flex-wrap justify-center">
-            <Clock className="w-3.5 h-3.5 text-[#D4A843] shrink-0 hidden sm:block" />
-            <span>
-              <span className="hidden sm:inline">Oferta de lançamento R$ 397 — Plataforma Online vitalícia encerra em </span>
-              <span className="sm:hidden">R$ 397 encerra em </span>
-              <span className="font-bold text-[#D4A843]">
-                {countdown.days}d {String(countdown.hours).padStart(2,"0")}h {String(countdown.minutes).padStart(2,"0")}m {String(countdown.seconds).padStart(2,"0")}s
-              </span>
-            </span>
-            {slots && !slots.soldOut && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#D4A843]/15 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-[#D4A843]">
-                <span className="w-1.5 h-1.5 bg-[#D4A843] rounded-full animate-pulse" />
-                Vagas limitadas
-              </span>
-            )}
-            {slots?.soldOut && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-red-400">
-                Vagas esgotadas
-              </span>
-            )}
-          </div>
-          <button
-            onClick={scrollToCard}
-            className="shrink-0 rounded-lg px-3 py-1.5 text-[11px] sm:text-xs font-bold transition-all hover:brightness-110"
-            style={{ background: "linear-gradient(135deg, #D4A843, #F0D78C)", color: "#0A0D14" }}
-          >
-            Garantir Acesso <span className="hidden sm:inline">&rarr;</span>
-          </button>
-        </div>
-      )}
-
       {/* ═══ HERO ═══ */}
       <div className="relative overflow-hidden">
         {/* Background decoration */}
@@ -214,7 +144,7 @@ export default function PlanosPublicos() {
             style={{ background: "radial-gradient(ellipse, #D4A843 0%, transparent 70%)" }} />
         </div>
 
-        <div className={`relative mx-auto max-w-6xl px-5 sm:px-8 pb-6 sm:pb-10 text-center ${countdown.expired ? "pt-12 sm:pt-20" : "pt-20 sm:pt-28"}`}>
+        <div className="relative mx-auto max-w-6xl px-5 sm:px-8 pb-6 sm:pb-10 text-center pt-12 sm:pt-20">
           {/* Coupon badge */}
           {couponValid === true && (
             <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 text-xs font-semibold text-emerald-400">
@@ -253,23 +183,13 @@ export default function PlanosPublicos() {
       <main className="mx-auto max-w-7xl px-5 sm:px-6 xl:px-4 pb-24">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 xl:gap-3 items-stretch">
 
-          {/* ── Card 1: Acesso Vitalicio ── */}
+          {/* ── Card 1: Acesso Vitalício (Plataforma Online) ── */}
           <div ref={cardRef} className="relative rounded-[28px] overflow-hidden flex flex-col"
             style={{
               background: "linear-gradient(145deg, #12244A 0%, #0F2040 50%, #0A1628 100%)",
-              boxShadow: countdown.expired
-                ? "0 8px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06)"
-                : "0 8px 56px rgba(212,168,67,0.15), 0 0 0 1px rgba(212,168,67,0.15)",
-              opacity: countdown.expired ? 0.75 : 1,
+              boxShadow: "0 8px 56px rgba(212,168,67,0.15), 0 0 0 1px rgba(212,168,67,0.15)",
             }}
           >
-            {/* Top badge */}
-            <div className="absolute top-4 right-4 z-10 flex gap-2">
-              <span className="rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-wide bg-[#D4A843] text-[#0A0D14]">
-                Promoção
-              </span>
-            </div>
-
             {/* SVG background */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 600" fill="none" preserveAspectRatio="xMaxYMin slice">
               <circle cx="350" cy="50" r="150" fill="#D4A843" fillOpacity="0.06"/>
@@ -277,63 +197,22 @@ export default function PlanosPublicos() {
             </svg>
 
             {/* Gold accent line */}
-            <div className="h-[3px] w-full" style={{ background: countdown.expired ? "rgba(255,255,255,0.1)" : "linear-gradient(90deg, #D4A843, #F0D78C, #D4A843)" }} />
+            <div className="h-[3px] w-full" style={{ background: "linear-gradient(90deg, #D4A843, #F0D78C, #D4A843)" }} />
 
             <div className="relative p-7 sm:p-8 xl:p-5 flex flex-col flex-1">
               {/* Header */}
-              <div className="pt-6 min-h-[160px]">
+              <div className="min-h-[160px]">
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A843] mb-2">Acesso Vitalício</p>
-                <h3 className="text-2xl sm:text-[28px] xl:text-xl font-bold text-white leading-tight">Plataforma Online</h3>
-                <p className="mt-2 text-sm text-white/50 leading-relaxed">Todo o conteúdo gravado do método para estudar no seu ritmo. Ideal antes de entrar em um acompanhamento.</p>
+                <h3 className="text-2xl xl:text-xl font-bold text-white leading-tight">Plataforma Online</h3>
+                <p className="mt-2 text-sm text-white/60 leading-relaxed">Todo o conteúdo gravado do método para estudar no seu ritmo. Ideal antes de entrar em um acompanhamento.</p>
               </div>
 
               {/* Price */}
-              <div className="mt-6">
-                {countdown.expired ? (
-                  <>
-                    <div className="flex items-baseline gap-3">
-                      <span className="text-4xl sm:text-[42px] font-bold tabular-nums text-white/30 line-through">R$ 5.937,90</span>
-                    </div>
-                    <p className="text-sm font-semibold text-red-400 mt-2">Oferta encerrada</p>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-baseline gap-3 flex-wrap">
-                      <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#D4A843] whitespace-nowrap">R$ 397</span>
-                      <span className="text-base sm:text-lg text-white/30 line-through tabular-nums whitespace-nowrap">R$ 5.937,90</span>
-                    </div>
-                    <p className="text-xs text-white/40 mt-1">
-                      <span className="text-[#D4A843] font-semibold">93% OFF</span> · Pagamento único · Sem mensalidade
-                    </p>
-                  </>
-                )}
+              <div className="mt-6 min-h-[80px]">
+                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#D4A843] whitespace-nowrap">R$ 397</span>
+                <p className="text-xs text-white/40 mt-1">Pagamento único · Sem mensalidade</p>
               </div>
 
-              {/* Countdown compacto (uma linha) */}
-              {!countdown.expired && (
-                <div className="mt-4 flex items-center gap-2 text-[11px] text-[#D4A843]/80">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span className="tabular-nums">
-                    Termina em {countdown.days}d {String(countdown.hours).padStart(2,'0')}h {String(countdown.minutes).padStart(2,'0')}m
-                  </span>
-                </div>
-              )}
-
-              {/* Aviso de vagas limitadas */}
-              {!countdown.expired && slots && !slots.soldOut && (
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-[#D4A843] rounded-full animate-pulse shrink-0" />
-                  <span className="text-[11px] font-semibold text-[#D4A843]">Vagas limitadas</span>
-                </div>
-              )}
-              {slots?.soldOut && !countdown.expired && (
-                <div className="mt-3 rounded-lg bg-red-500/10 border border-red-500/30 px-3 py-2 text-center">
-                  <p className="text-[11px] font-semibold text-red-400">Vagas esgotadas</p>
-                  <p className="text-[10px] text-red-400/70">Oferta encerrada antes do prazo</p>
-                </div>
-              )}
-
-              {/* Divider */}
               <div className="my-6 h-px bg-white/[0.07]" />
 
               {/* Features */}
@@ -355,32 +234,25 @@ export default function PlanosPublicos() {
                 ))}
               </ul>
 
-              {/* Not included */}
               {/* CTA */}
-                <button
-                  onClick={handleCheckout}
-                  disabled={loadingCheckout || countdown.expired || slots?.soldOut}
-                  className="mt-auto pt-4 sm:pt-5 flex w-full items-center justify-center gap-1.5 rounded-lg py-[8px] text-[12px] font-semibold tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-105"
-                  style={{
-                    background: countdown.expired || slots?.soldOut
-                      ? "rgba(255,255,255,0.08)"
-                      : "rgba(255,255,255,0.06)",
-                    color: countdown.expired || slots?.soldOut ? "rgba(255,255,255,0.3)" : "#FFFFFF",
-                    border: countdown.expired || slots?.soldOut
-                      ? "1px solid rgba(255,255,255,0.1)"
-                      : "1px solid rgba(212,168,67,0.5)",
-                  }}
-                >
-                  {countdown.expired ? (
-                    "Oferta encerrada"
-                  ) : slots?.soldOut ? (
-                    "Vagas esgotadas"
-                  ) : loadingCheckout ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> Aguarde...</>
-                  ) : (
-                    <>Garantir meu acesso <ArrowRight className="h-4 w-4" /></>
-                  )}
-                </button>
+              <button
+                onClick={handleCheckout}
+                disabled={loadingCheckout || slots?.soldOut}
+                className="mt-auto pt-4 sm:pt-5 flex w-full items-center justify-center gap-1.5 rounded-lg py-[8px] text-[12px] font-semibold tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-105"
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  color: slots?.soldOut ? "rgba(255,255,255,0.4)" : "#FFFFFF",
+                  border: "1px solid rgba(212,168,67,0.5)",
+                }}
+              >
+                {slots?.soldOut ? (
+                  "Vagas esgotadas"
+                ) : loadingCheckout ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Aguarde...</>
+                ) : (
+                  <>Garantir meu acesso <ArrowRight className="h-4 w-4" /></>
+                )}
+              </button>
             </div>
           </div>
 
@@ -407,7 +279,7 @@ export default function PlanosPublicos() {
                 </p>
               </div>
 
-              <div className="mt-6 min-h-[140px]">
+              <div className="mt-6 min-h-[80px]">
                 <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-orange-400 whitespace-nowrap">R$ 5.997</span>
                 <p className="text-xs text-white/30 mt-1">ou 12x de R$ 560,00</p>
               </div>
@@ -472,7 +344,7 @@ export default function PlanosPublicos() {
               </div>
 
               {/* Price */}
-              <div className="mt-6">
+              <div className="mt-6 min-h-[80px]">
                 <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-emerald-400 whitespace-nowrap">R$ 4.997</span>
                 <p className="text-xs text-white/30 mt-1">Parcelamento disponível</p>
               </div>
@@ -543,13 +415,13 @@ export default function PlanosPublicos() {
             <div className="relative p-7 sm:p-8 xl:p-5 flex flex-col flex-1">
               {/* Header */}
               <div className="min-h-[160px]">
-                <div className="h-[28px]"></div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-purple-400 mb-2">Mentoria 6 meses</p>
                 <h3 className="text-2xl xl:text-xl font-bold text-white leading-tight">Acompanhamento VIP</h3>
                 <p className="mt-2 text-sm text-white/60 leading-relaxed">6 meses de mentoria individual com Dr. Gustavo, prática hands-on supervisionada e domínio do método NaturalUp®.</p>
               </div>
 
               {/* Price */}
-              <div className="mt-6">
+              <div className="mt-6 min-h-[80px]">
                 <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-purple-400 whitespace-nowrap">R$ 17.350</span>
                 <p className="text-xs text-white/30 mt-1">Parcelamento disponível</p>
               </div>
@@ -612,18 +484,13 @@ export default function PlanosPublicos() {
             <div className="h-[3px] w-full" style={{ background: "linear-gradient(90deg, #E8C86A, #FFD87A, #E8C86A)" }} />
 
             <div className="relative p-7 sm:p-8 xl:p-5 flex flex-col flex-1">
-              <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.15em] bg-[#E8C86A] text-[#0A0D14] px-2.5 py-1 rounded-full self-start mb-4">
-                <Crown className="h-2.5 w-2.5" />
-                Experiência definitiva
-              </span>
-
               <div className="min-h-[160px]">
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#E8C86A] mb-2">O Mais Alto Nível</p>
-                <h3 className="text-2xl sm:text-[28px] xl:text-xl font-bold text-white leading-tight">Acompanhamento Elite</h3>
+                <h3 className="text-2xl xl:text-xl font-bold text-white leading-tight">Acompanhamento Elite</h3>
                 <p className="mt-2 text-sm text-white/60 leading-relaxed">12 meses ao lado do Dr. Gustavo: 7 dias clínicos completos, bastidores da clínica e licença exclusiva da marca NaturalUp®.</p>
               </div>
 
-              <div className="mt-6">
+              <div className="mt-6 min-h-[80px]">
                 <div className="flex items-baseline gap-2">
                   <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#E8C86A] whitespace-nowrap">R$ 35.000</span>
                 </div>
