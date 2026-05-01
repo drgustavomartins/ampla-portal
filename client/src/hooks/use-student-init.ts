@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/lib/auth";
-import type { Module, Lesson, LessonProgress, Plan, UserVideoProgress } from "@shared/schema";
+import type { Module, Lesson, LessonProgress, Plan, UserVideoProgress, SupplementaryProgress } from "@shared/schema";
 import { mergeServerProgress } from "@/hooks/use-video-progress";
 
 export interface SupplementaryItem {
@@ -42,6 +42,7 @@ export interface StudentInitData {
   podcasts: SupplementaryItem[];
   certificates: CertificateItem[];
   videoProgress: UserVideoProgress[];
+  supplementaryProgress: SupplementaryProgress[];
 }
 
 /**
@@ -66,6 +67,7 @@ export function useStudentInit() {
       queryClient.setQueryData(["/api/lessons"], data.lessons);
       queryClient.setQueryData(["/api/plans"], data.plans);
       queryClient.setQueryData(["/api/progress", user?.id], data.progress);
+      queryClient.setQueryData(["/api/supplementary-progress", user?.id], data.supplementaryProgress);
       queryClient.setQueryData(["/api/my-modules"], data.myModules);
       queryClient.setQueryData(["/api/lessons/access"], data.lessonAccess);
 

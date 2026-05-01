@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
+import { Description } from "@/lib/format-description";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, ChevronLeft,
   ChevronRight, Layers, Lock, Paperclip, ExternalLink, ShoppingCart,
@@ -614,7 +615,7 @@ export default function ModulePage() {
                   <div className="min-w-0 flex-1">
                     <h2 className="text-lg font-semibold text-foreground">{selectedLesson.title}</h2>
                     {selectedLesson.description && (
-                      <p className="text-sm text-muted-foreground mt-1 break-words overflow-hidden">{linkifyText(selectedLesson.description)}</p>
+                      <Description text={selectedLesson.description} className="text-sm text-muted-foreground mt-1" />
                     )}
                   </div>
                   {selectedLesson.duration && (
@@ -787,7 +788,7 @@ export default function ModulePage() {
                 <div className="min-w-0 flex-1">
                   <h2 className="text-lg font-semibold text-foreground">{selectedLesson.title}</h2>
                   {selectedLesson.description && (
-                    <p className="text-sm text-muted-foreground mt-1 break-words overflow-hidden">{linkifyText(selectedLesson.description)}</p>
+                    <Description text={selectedLesson.description} className="text-sm text-muted-foreground mt-1" />
                   )}
                 </div>
                 {selectedLesson.duration && (

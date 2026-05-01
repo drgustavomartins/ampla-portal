@@ -8,6 +8,8 @@ import { UpgradeBanner } from "@/components/UpgradeBanner";
 import { ReferralCard } from "@/components/ReferralCard";
 import { Check as CheckIcon, FileCheck, PenLine } from "lucide-react";
 import { TrialPlansToast } from "@/components/TrialPlansToast";
+import { Description } from "@/lib/format-description";
+import { SupplementaryCompleteButton } from "@/components/SupplementaryCompleteButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -85,7 +87,7 @@ export default function StudentDashboard() {
   const [, setLocation] = useLocation();
   const [selectedModule, setSelectedModule] = useState<number | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
-  const [selectedPodcast, setSelectedPodcast] = useState<{ title: string; videoUrl: string; description?: string | null } | null>(null);
+  const [selectedPodcast, setSelectedPodcast] = useState<{ id: number; title: string; videoUrl: string; description?: string | null } | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "", avatarUrl: "", username: "", instagram: "" });
@@ -470,7 +472,7 @@ export default function StudentDashboard() {
                   <div className="min-w-0 flex-1">
                     <h2 className="text-lg font-semibold text-foreground">{selectedLesson.title}</h2>
                     {selectedLesson.description && (
-                      <p className="text-sm text-muted-foreground mt-1 break-words overflow-hidden">{linkifyText(selectedLesson.description)}</p>
+                      <Description text={selectedLesson.description} className="text-sm text-muted-foreground mt-1" />
                     )}
                   </div>
                   {selectedLesson.duration && (
@@ -604,10 +606,13 @@ export default function StudentDashboard() {
               />
             </div>
           )}
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">{selectedPodcast.title}</h2>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <h2 className="text-lg font-semibold text-foreground min-w-0">{selectedPodcast.title}</h2>
+              <SupplementaryCompleteButton itemType="podcast" itemId={selectedPodcast.id} size="sm" />
+            </div>
             {selectedPodcast.description && (
-              <p className="text-sm text-muted-foreground mt-1">{selectedPodcast.description}</p>
+              <Description text={selectedPodcast.description} className="text-sm text-muted-foreground" />
             )}
           </div>
         </div>
@@ -1327,7 +1332,7 @@ export default function StudentDashboard() {
                     item={item}
                     onClick={() => {
                       if (item.video_url) {
-                        setSelectedPodcast({ title: item.title, videoUrl: item.video_url, description: item.description });
+                        setSelectedPodcast({ id: item.id, title: item.title, videoUrl: item.video_url, description: item.description });
                       }
                     }}
                   />

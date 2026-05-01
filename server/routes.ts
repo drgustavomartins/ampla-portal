@@ -2928,7 +2928,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
     try {
       // Fire all independent DB queries in parallel
       const { db: initDb } = await import("./db");
-      const [allModules, allLessons, allPlans, userProgress, podcastsResult, userCertificates, userVideoProgressRows] = await Promise.all([
+      const [allModules, allLessons, allPlans, userProgress, podcastsResult, userCertificates, userVideoProgressRows, supplementaryProgressRows] = await Promise.all([
         storage.getModules(),
         storage.getLessons(),
         storage.getPlans(),
@@ -2936,6 +2936,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
         initDb.execute(`SELECT * FROM supplementary_content WHERE visible = true ORDER BY "order" ASC`).catch(() => ({ rows: [] })),
         initDb.execute(sql`SELECT * FROM certificates WHERE user_id = ${auth.userId} ORDER BY issued_at DESC`).catch(() => ({ rows: [] })),
         storage.getVideoProgress(auth.userId).catch(() => [] as any[]),
+        storage.getSupplementaryProgress(auth.userId).catch(() => [] as any[]),
       ]);
 
       // Compute my-modules access (inlined from /api/my-modules logic)
@@ -2992,6 +2993,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
         podcasts: (podcastsResult as any).rows || [],
         certificates: (userCertificates as any).rows || [],
         videoProgress: userVideoProgressRows,
+        supplementaryProgress: supplementaryProgressRows,
       });
     } catch (e: any) {
       console.error("[GET /api/student/init]", e?.message || e);
@@ -3412,6 +3414,48 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       return res.status(403).json({ message: "Acesso negado" });
     }
     await storage.markLessonIncomplete(targetUserId, parseInt(req.params.lessonId));
+    res.json({ success: true });
+  });
+
+  // ===== Supplementary Progress (podcasts / materiais) =====
+  app.get("/api/supplementary-progress/:userId", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    const targetUserId = parseInt(req.params.userId);
+    if (auth.role !== "admin" && auth.role !== "super_admin" && auth.userId !== targetUserId) {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const progress = await storage.getSupplementaryProgress(targetUserId);
+    res.json(progress);
+  });
+
+  app.post("/api/supplementary-progress/:userId/:itemType/:itemId/complete", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    const targetUserId = parseInt(req.params.userId);
+    if (auth.role === "student" && auth.userId !== targetUserId) {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const itemType = req.params.itemType;
+    if (itemType !== "podcast" && itemType !== "material") {
+      return res.status(400).json({ message: "Tipo inválido" });
+    }
+    const p = await storage.markSupplementaryComplete(targetUserId, itemType, parseInt(req.params.itemId));
+    res.json(p);
+  });
+
+  app.post("/api/supplementary-progress/:userId/:itemType/:itemId/incomplete", async (req, res) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    const targetUserId = parseInt(req.params.userId);
+    if (auth.role === "student" && auth.userId !== targetUserId) {
+      return res.status(403).json({ message: "Acesso negado" });
+    }
+    const itemType = req.params.itemType;
+    if (itemType !== "podcast" && itemType !== "material") {
+      return res.status(400).json({ message: "Tipo inválido" });
+    }
+    await storage.markSupplementaryIncomplete(targetUserId, itemType, parseInt(req.params.itemId));
     res.json({ success: true });
   });
 

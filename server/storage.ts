@@ -5,11 +5,13 @@ import {
   userModules, userMaterialCategories,
   materialThemes, materialSubcategories, materialFiles,
   userVideoProgress,
+  supplementaryProgress,
   type Plan, type InsertPlan,
   type User, type InsertUser,
   type Module, type InsertModule,
   type Lesson, type InsertLesson,
   type LessonProgress,
+  type SupplementaryProgress,
   type PasswordReset,
   type PlanModule,
   type AuditLog, type InsertAuditLog,
@@ -179,6 +181,39 @@ export const storage = {
   async markLessonIncomplete(userId: number, lessonId: number): Promise<boolean> {
     await db.delete(lessonProgress)
       .where(and(eq(lessonProgress.userId, userId), eq(lessonProgress.lessonId, lessonId)));
+    return true;
+  },
+
+  // ===== SUPPLEMENTARY PROGRESS (podcasts / materiais) =====
+  async getSupplementaryProgress(userId: number): Promise<SupplementaryProgress[]> {
+    return db.select().from(supplementaryProgress).where(eq(supplementaryProgress.userId, userId));
+  },
+  async markSupplementaryComplete(userId: number, itemType: string, itemId: number): Promise<SupplementaryProgress> {
+    const [existing] = await db.select().from(supplementaryProgress)
+      .where(and(
+        eq(supplementaryProgress.userId, userId),
+        eq(supplementaryProgress.itemType, itemType),
+        eq(supplementaryProgress.itemId, itemId),
+      ));
+    if (existing) {
+      const [updated] = await db.update(supplementaryProgress)
+        .set({ completed: true, completedAt: new Date().toISOString() })
+        .where(eq(supplementaryProgress.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [p] = await db.insert(supplementaryProgress).values({
+      userId, itemType, itemId, completed: true, completedAt: new Date().toISOString(),
+    }).returning();
+    return p;
+  },
+  async markSupplementaryIncomplete(userId: number, itemType: string, itemId: number): Promise<boolean> {
+    await db.delete(supplementaryProgress)
+      .where(and(
+        eq(supplementaryProgress.userId, userId),
+        eq(supplementaryProgress.itemType, itemType),
+        eq(supplementaryProgress.itemId, itemId),
+      ));
     return true;
   },
 

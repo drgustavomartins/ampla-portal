@@ -282,6 +282,16 @@ export const supplementaryContent = pgTable("supplementary_content", {
   updatedAt: text("updated_at"),
 });
 
+// Supplementary Progress — marca podcasts/materiais como concluídos
+export const supplementaryProgress = pgTable("supplementary_progress", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  itemType: text("item_type").notNull(), // 'podcast' | 'material'
+  itemId: integer("item_id").notNull(),
+  completed: boolean("completed").notNull().default(false),
+  completedAt: text("completed_at"),
+});
+
 // Video Watch Progress (partial progress synced to DB)
 export const userVideoProgress = pgTable("user_video_progress", {
   id: serial("id").primaryKey(),
@@ -375,6 +385,7 @@ export type Lesson = typeof lessons.$inferSelect;
 export type InsertLesson = z.infer<typeof insertLessonSchema>;
 export type LessonProgress = typeof lessonProgress.$inferSelect;
 export type InsertLessonProgress = z.infer<typeof insertLessonProgressSchema>;
+export type SupplementaryProgress = typeof supplementaryProgress.$inferSelect;
 export type PasswordReset = typeof passwordResets.$inferSelect;
 export type PlanModule = typeof planModules.$inferSelect;
 export type InsertPlanModule = z.infer<typeof insertPlanModuleSchema>;

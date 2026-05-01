@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, FileText, FileIcon, Headphones, Download, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ExternalLink, Eye, X, Loader2, Lock, Play, BookOpen, Mic,
+  Check as CheckIcon,
 } from "lucide-react";
 import { YouTubeThumbnail } from "@/components/YouTubeThumbnail";
+import { useSupplementaryProgress } from "@/hooks/use-supplementary-progress";
 
 /* ───────── Types ───────── */
 
@@ -147,6 +149,8 @@ function FileRow({ file, trialLocked = false }: { file: FileEntry; trialLocked?:
   const [pdfOpen, setPdfOpen] = useState(false);
   const [mp3Error, setMp3Error] = useState(false);
   const showDownload = file.type !== "mp3" && file.type !== "article" && file.type !== "podcast";
+  const { isComplete, toggle: toggleComplete, isPending: completePending } = useSupplementaryProgress();
+  const done = !trialLocked && isComplete("material", file.id);
 
   if (trialLocked) {
     return (
@@ -302,6 +306,24 @@ function FileRow({ file, trialLocked = false }: { file: FileEntry; trialLocked?:
             style={{ height: "min(70vh, 600px)" }}
             title={file.name}
           />
+        </div>
+      )}
+      {!trialLocked && (
+        <div className="mt-2 pl-[3.25rem]">
+          <button
+            type="button"
+            onClick={() => toggleComplete("material", file.id)}
+            disabled={completePending}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border transition-colors ${
+              done
+                ? "bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border-emerald-500/30"
+                : "bg-white/5 hover:bg-white/10 text-muted-foreground border-white/10"
+            }`}
+            title={done ? "Desmarcar" : "Marcar como concluído"}
+          >
+            <CheckIcon className="w-3 h-3" />
+            {done ? "Concluído" : "Marcar como concluído"}
+          </button>
         </div>
       )}
     </div>
