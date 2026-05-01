@@ -4370,12 +4370,15 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
   // Mapa canônico de capas — fonte da verdade, nunca depende do banco
   // Atualizar este mapa sempre que gerar novas imagens de capa
   const COVER_MAP: Record<string, string> = {
-    "Toxina Botul\u00ednica":                  "/images/covers/cover_toxina_botulinica_v2026.png",
-    "Preenchedores Faciais":               "/images/covers/cover_preenchedores_faciais_v2026.png",
-    "Bioestimuladores de Col\u00e1geno":       "/images/covers/cover_bioestimuladores_v2026.png",
-    "Moduladores de Matriz Extracelular":  "/images/covers/cover_moduladores_matriz_v2026.png",
-    "M\u00e9todo NaturalUp\u00ae":                  "/images/covers/cover_metodo_naturalup_v2026.png",
-    "IA na Medicina Est\u00e9tica":             "/images/covers/cover_ia_medicina.png",
+    "Toxina Botul\u00ednica":                  "/images/covers/cover_material_toxina_v2027.png",
+    "Preenchedores Faciais":               "/images/covers/cover_material_preenchedores_v2027.png",
+    "Bioestimuladores de Colageno":        "/images/covers/cover_material_bioestimuladores_v2027.png",
+    "Bioestimuladores de Col\u00e1geno":       "/images/covers/cover_material_bioestimuladores_v2027.png",
+    "Biorregeneradores e Moduladores":     "/images/covers/cover_material_biorregeneradores_v2027.png",
+    "Moduladores de Matriz Extracelular":  "/images/covers/cover_material_biorregeneradores_v2027.png",
+    "M\u00e9todo NaturalUp\u00ae":                  "/images/covers/cover_material_naturalup_v2027.png",
+    "IA na Medicina":                      "/images/covers/cover_material_ia_v2027.png",
+    "IA na Medicina Est\u00e9tica":             "/images/covers/cover_material_ia_v2027.png",
   };
 
   app.get("/api/materials", async (req, res) => {
