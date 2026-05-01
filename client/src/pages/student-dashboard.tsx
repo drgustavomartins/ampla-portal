@@ -418,9 +418,9 @@ export default function StudentDashboard() {
             + grid só em lg garante que o iframe respeite a largura do
             container e o botão "Marcar como concluída" fica visível.
           */}
-          <div className="block lg:grid lg:grid-cols-[1fr_320px] gap-6 space-y-6 lg:space-y-0">
-            {/* Video Area */}
-            <div className="space-y-4 min-w-0">
+          <div className="block lg:grid lg:grid-cols-[1fr_320px] lg:items-start gap-6 space-y-6 lg:space-y-0">
+            {/* Video Area — sticky no desktop para o player nunca sair da tela */}
+            <div className="space-y-4 min-w-0 lg:sticky lg:top-4 lg:self-start">
               {isLessonLocked ? (
                 <div className="aspect-video bg-card rounded-lg flex items-center justify-center ring-1 ring-border/30 relative">
                   <div className="text-center space-y-3 px-6">
@@ -514,9 +514,9 @@ export default function StudentDashboard() {
               </div>
             </div>
 
-            {/* Lesson list sidebar */}
-            <div className="space-y-2">
-              <h3 className="text-xs font-semibold text-gold-muted uppercase tracking-brand mb-3">
+            {/* Lesson list sidebar — box com scroll interno no desktop */}
+            <div className="lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:rounded-lg lg:border lg:border-border/30 lg:bg-card/30 lg:p-3 space-y-2">
+              <h3 className="text-xs font-semibold text-gold-muted uppercase tracking-brand mb-3 lg:sticky lg:top-0 lg:bg-card/80 lg:backdrop-blur lg:py-2 lg:-mx-3 lg:px-3 lg:z-10">
                 Aulas do módulo
               </h3>
               {moduleLessons.map((lesson, i) => {
