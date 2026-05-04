@@ -2981,8 +2981,10 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
         lessonAccess = { accessType: "tester", allowedLessonIds };
       }
 
-      // Set Cache-Control for semi-static data (modules/plans change rarely)
-      res.set("Cache-Control", "private, max-age=60");
+      // No HTTP cache: progress/videoProgress/supplementary mudam após ações do usuário.
+      // O React Query cuida do cache em memória; o cache HTTP do navegador estava
+      // servindo respostas stale e fazendo o botão "Marcar como concluída" parecer quebrado.
+      res.set("Cache-Control", "no-store");
       res.json({
         modules: allModules,
         lessons: filteredLessons,
