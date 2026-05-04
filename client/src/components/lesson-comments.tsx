@@ -55,6 +55,7 @@ export default function LessonComments({ lessonId }: LessonCommentsProps) {
       setComment("");
       queryClient.invalidateQueries({ queryKey: [`/api/community/lessons/${lessonId}/comments`] });
       queryClient.invalidateQueries({ queryKey: [`/api/community/lessons/${lessonId}/comment-count`] });
+      queryClient.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("/api/community/feed") });
     },
   });
 
@@ -64,6 +65,7 @@ export default function LessonComments({ lessonId }: LessonCommentsProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/community/lessons/${lessonId}/comments`] });
+      queryClient.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("/api/community/feed") });
     },
   });
 
@@ -74,6 +76,7 @@ export default function LessonComments({ lessonId }: LessonCommentsProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/community/lessons/${lessonId}/comments`] });
       queryClient.invalidateQueries({ queryKey: [`/api/community/lessons/${lessonId}/comment-count`] });
+      queryClient.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("/api/community/feed") });
     },
   });
 

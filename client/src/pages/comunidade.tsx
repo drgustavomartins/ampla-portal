@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
   Heart, MessageCircle, Send, Image, Trash2, Award, ChevronLeft,
-  Plus, Loader2, Users, Settings, Camera, X
+  Plus, Loader2, Users, Settings, Camera, X, PlayCircle
 } from "lucide-react";
 
 function timeAgo(dateStr: string): string {
@@ -71,6 +71,7 @@ function UserAvatar({ name, avatarUrl, size = "md", className = "" }: {
 
 // ─── Interfaces ────────────────────────────────────────────────────────────
 interface Post {
+  kind: "post";
   id: number;
   userId: number;
   content: string;
@@ -85,6 +86,26 @@ interface Post {
   authorUsername?: string | null;
   liked: boolean;
 }
+
+interface LessonCommentFeedItem {
+  kind: "lesson_comment";
+  id: number;
+  userId: number;
+  content: string;
+  likesCount: number;
+  createdAt: string;
+  authorName: string;
+  authorInitial: string;
+  authorAvatar?: string | null;
+  authorUsername?: string | null;
+  liked: boolean;
+  lessonId: number;
+  lessonTitle: string | null;
+  moduleId: number | null;
+  moduleTitle: string | null;
+}
+
+type FeedItem = Post | LessonCommentFeedItem;
 
 interface Comment {
   id: number;
@@ -127,6 +148,7 @@ function PostComments({ postId }: { postId: number }) {
       setComment("");
       queryClient.invalidateQueries({ queryKey: [`/api/community/posts/${postId}/comments`] });
       queryClient.invalidateQueries({ queryKey: ["/api/community/posts"] });
+      queryClient.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("/api/community/feed") });
     },
   });
 
@@ -146,6 +168,7 @@ function PostComments({ postId }: { postId: number }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/community/posts/${postId}/comments`] });
       queryClient.invalidateQueries({ queryKey: ["/api/community/posts"] });
+      queryClient.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("/api/community/feed") });
     },
   });
 
@@ -353,6 +376,119 @@ function ProfileEditor({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ─── Lesson Comment Feed Card ──────────────────────────────────────────────
+function LessonCommentFeedCard({
+  item,
+  currentUserId,
+}: {
+  item: LessonCommentFeedItem;
+  currentUserId?: number;
+}) {
+  const { toast } = useToast();
+
+  const toggleLike = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", `/api/community/comments/${item.id}/like`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("/api/community/feed") });
+      queryClient.invalidateQueries({ queryKey: [`/api/community/lessons/${item.lessonId}/comments`] });
+    },
+  });
+
+  const deleteComment = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", `/api/community/comments/${item.id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("/api/community/feed") });
+      queryClient.invalidateQueries({ queryKey: [`/api/community/lessons/${item.lessonId}/comments`] });
+      toast({ title: "Comentário removido" });
+    },
+  });
+
+  const goToLesson = () => {
+    if (!item.moduleId) return;
+    try {
+      sessionStorage.setItem("openLessonId", String(item.lessonId));
+    } catch {}
+    window.location.hash = `#/module/${item.moduleId}`;
+  };
+
+  return (
+    <div className="rounded-2xl bg-[#0F1A2E] border border-white/5 overflow-hidden">
+      <div className="p-5 pb-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <UserAvatar name={item.authorName} avatarUrl={item.authorAvatar} size="md" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-foreground">{item.authorName}</span>
+                <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-gold/10 text-gold border-gold/30">
+                  Comentário em aula
+                </Badge>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {item.authorUsername && <span className="text-[11px] text-muted-foreground/60">@{item.authorUsername}</span>}
+                <span className="text-[11px] text-muted-foreground/40">{item.authorUsername ? " · " : ""}{timeAgo(item.createdAt)}</span>
+              </div>
+            </div>
+          </div>
+          {item.userId === currentUserId && (
+            <button
+              onClick={() => deleteComment.mutate()}
+              className="text-muted-foreground/40 hover:text-destructive transition-colors p-2 -mr-2"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Lesson chip — clickable */}
+      {item.lessonTitle && item.moduleId && (
+        <div className="px-5 pt-3">
+          <button
+            onClick={goToLesson}
+            className="inline-flex items-center gap-2 rounded-lg border border-gold/20 bg-gold/5 px-3 py-1.5 text-xs text-gold hover:bg-gold/10 transition-colors max-w-full"
+            title="Abrir aula"
+          >
+            <PlayCircle className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">
+              {item.moduleTitle ? `${item.moduleTitle} · ` : ""}{item.lessonTitle}
+            </span>
+          </button>
+        </div>
+      )}
+
+      <div className="px-5 py-3">
+        <p className="text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">{item.content}</p>
+      </div>
+
+      <div className="px-5 py-3 border-t border-white/5 flex items-center gap-5">
+        <button
+          onClick={() => toggleLike.mutate()}
+          className={`flex items-center gap-1.5 transition-all ${
+            item.liked ? "text-gold" : "text-muted-foreground/60 hover:text-gold"
+          }`}
+        >
+          <Heart className={`w-[18px] h-[18px] transition-all ${item.liked ? "fill-gold scale-110" : ""}`} />
+          <span className="text-xs font-medium">{item.likesCount || ""}</span>
+        </button>
+        {item.lessonTitle && item.moduleId && (
+          <button
+            onClick={goToLesson}
+            className="flex items-center gap-1.5 text-muted-foreground/60 hover:text-gold transition-colors ml-auto"
+          >
+            <PlayCircle className="w-[18px] h-[18px]" />
+            <span className="text-xs font-medium">Abrir aula</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────
 export default function ComunidadePage() {
   const { user } = useAuth();
@@ -367,11 +503,11 @@ export default function ComunidadePage() {
   const [offset, setOffset] = useState(0);
   const LIMIT = 20;
 
-  const { data, isLoading } = useQuery<{ posts: Post[] }>({
-    queryKey: ["/api/community/posts", `?limit=${LIMIT}&offset=${offset}`],
+  const { data, isLoading } = useQuery<{ items: FeedItem[]; hasMore: boolean }>({
+    queryKey: [`/api/community/feed?limit=${LIMIT}&offset=${offset}`],
   });
 
-  const posts = data?.posts || [];
+  const items = data?.items || [];
 
   const createPost = useMutation({
     mutationFn: async () => {
@@ -389,6 +525,7 @@ export default function ComunidadePage() {
       setShowCreate(false);
       setOffset(0);
       queryClient.invalidateQueries({ queryKey: ["/api/community/posts"] });
+      queryClient.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("/api/community/feed") });
       toast({ title: "Publicado!", description: "Créditos serão analisados em breve." });
     },
     onError: (err: any) => {
@@ -402,6 +539,7 @@ export default function ComunidadePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/community/posts"] });
+      queryClient.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("/api/community/feed") });
     },
   });
 
@@ -411,6 +549,7 @@ export default function ComunidadePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/community/posts"] });
+      queryClient.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("/api/community/feed") });
       toast({ title: "Post removido" });
     },
   });
@@ -587,7 +726,7 @@ export default function ComunidadePage() {
             <Loader2 className="w-6 h-6 animate-spin text-gold" />
             <p className="text-sm text-muted-foreground">Carregando comunidade...</p>
           </div>
-        ) : posts.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="text-center py-20 space-y-3">
             <div className="w-16 h-16 rounded-full bg-[#0F1A2E] flex items-center justify-center mx-auto">
               <Users className="w-8 h-8 text-muted-foreground/30" />
@@ -596,31 +735,33 @@ export default function ComunidadePage() {
           </div>
         ) : (
           <>
-            {posts.map((post) => (
-              <div key={post.id} className="rounded-2xl bg-[#0F1A2E] border border-white/5 overflow-hidden">
+            {items.map((item) => item.kind === "lesson_comment" ? (
+              <LessonCommentFeedCard key={`lc-${item.id}`} item={item} currentUserId={user?.id} />
+            ) : (
+              <div key={`p-${item.id}`} className="rounded-2xl bg-[#0F1A2E] border border-white/5 overflow-hidden">
                 {/* Author header */}
                 <div className="p-5 pb-0">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <UserAvatar name={post.authorName} avatarUrl={post.authorAvatar} size="md" />
+                      <UserAvatar name={item.authorName} avatarUrl={item.authorAvatar} size="md" />
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-foreground">{post.authorName}</span>
-                          {POST_TYPE_BADGES[post.postType] && (
-                            <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${POST_TYPE_BADGES[post.postType].className}`}>
-                              {POST_TYPE_BADGES[post.postType].label}
+                          <span className="text-sm font-semibold text-foreground">{item.authorName}</span>
+                          {POST_TYPE_BADGES[item.postType] && (
+                            <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${POST_TYPE_BADGES[item.postType].className}`}>
+                              {POST_TYPE_BADGES[item.postType].label}
                             </Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-1.5">
-                          {post.authorUsername && <span className="text-[11px] text-muted-foreground/60">@{post.authorUsername}</span>}
-                          <span className="text-[11px] text-muted-foreground/40">{post.authorUsername ? " · " : ""}{timeAgo(post.createdAt)}</span>
+                          {item.authorUsername && <span className="text-[11px] text-muted-foreground/60">@{item.authorUsername}</span>}
+                          <span className="text-[11px] text-muted-foreground/40">{item.authorUsername ? " · " : ""}{timeAgo(item.createdAt)}</span>
                         </div>
                       </div>
                     </div>
-                    {post.userId === user?.id && (
+                    {item.userId === user?.id && (
                       <button
-                        onClick={() => deletePost.mutate(post.id)}
+                        onClick={() => deletePost.mutate(item.id)}
                         className="text-muted-foreground/40 hover:text-destructive transition-colors p-2 -mr-2"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -631,14 +772,14 @@ export default function ComunidadePage() {
 
                 {/* Content */}
                 <div className="px-5 py-3">
-                  <p className="text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">{post.content}</p>
+                  <p className="text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">{item.content}</p>
                 </div>
 
                 {/* Images */}
-                {post.imageUrls && post.imageUrls.length > 0 && (
-                  <div className={`px-5 pb-3 grid gap-1.5 ${post.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
-                    {post.imageUrls.map((url, i) => (
-                      <div key={i} className={`rounded-xl overflow-hidden border border-white/5 ${post.imageUrls.length === 1 ? "aspect-video" : "aspect-square"}`}>
+                {item.imageUrls && item.imageUrls.length > 0 && (
+                  <div className={`px-5 pb-3 grid gap-1.5 ${item.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+                    {item.imageUrls.map((url, i) => (
+                      <div key={i} className={`rounded-xl overflow-hidden border border-white/5 ${item.imageUrls.length === 1 ? "aspect-video" : "aspect-square"}`}>
                         <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       </div>
                     ))}
@@ -648,20 +789,20 @@ export default function ComunidadePage() {
                 {/* Actions */}
                 <div className="px-5 py-3 border-t border-white/5 flex items-center gap-5">
                   <button
-                    onClick={() => toggleLike.mutate(post.id)}
+                    onClick={() => toggleLike.mutate(item.id)}
                     className={`flex items-center gap-1.5 transition-all ${
-                      post.liked ? "text-gold" : "text-muted-foreground/60 hover:text-gold"
+                      item.liked ? "text-gold" : "text-muted-foreground/60 hover:text-gold"
                     }`}
                   >
-                    <Heart className={`w-[18px] h-[18px] transition-all ${post.liked ? "fill-gold scale-110" : ""}`} />
-                    <span className="text-xs font-medium">{post.likesCount || ""}</span>
+                    <Heart className={`w-[18px] h-[18px] transition-all ${item.liked ? "fill-gold scale-110" : ""}`} />
+                    <span className="text-xs font-medium">{item.likesCount || ""}</span>
                   </button>
                   <button
-                    onClick={() => toggleComments(post.id)}
+                    onClick={() => toggleComments(item.id)}
                     className="flex items-center gap-1.5 text-muted-foreground/60 hover:text-gold transition-colors"
                   >
                     <MessageCircle className="w-[18px] h-[18px]" />
-                    <span className="text-xs font-medium">{post.commentsCount || ""}</span>
+                    <span className="text-xs font-medium">{item.commentsCount || ""}</span>
                   </button>
                   <div className="flex items-center gap-1 text-muted-foreground/30 ml-auto" title="Gera R$ 50 em creditos">
                     <Award className="w-3.5 h-3.5" />
@@ -670,16 +811,16 @@ export default function ComunidadePage() {
                 </div>
 
                 {/* Comments section */}
-                {expandedComments.has(post.id) && (
+                {expandedComments.has(item.id) && (
                   <div className="px-5 pb-5">
-                    <PostComments postId={post.id} />
+                    <PostComments postId={item.id} />
                   </div>
                 )}
               </div>
             ))}
 
             {/* Pagination */}
-            {posts.length >= LIMIT && (
+            {(data?.hasMore || items.length >= LIMIT) && (
               <div className="flex justify-center pt-4">
                 <Button
                   variant="outline"

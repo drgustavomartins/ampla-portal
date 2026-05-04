@@ -21,6 +21,7 @@ import { LessonCard } from "@/components/netflix/LessonCard";
 import { NetflixPlayer } from "@/components/netflix/NetflixPlayer";
 import { NextUpOverlay } from "@/components/netflix/NextUpOverlay";
 import { TheaterMode } from "@/components/netflix/TheaterMode";
+import LessonComments from "@/components/lesson-comments";
 
 function linkifyText(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -429,6 +430,23 @@ export default function ModulePage() {
     window.scrollTo(0, 0);
   }, [moduleId]);
 
+  // Deep-link from community: open a specific lesson on mount
+  useEffect(() => {
+    if (!moduleLessons.length) return;
+    let pendingLessonId: number | null = null;
+    try {
+      const stored = sessionStorage.getItem("openLessonId");
+      if (stored) {
+        pendingLessonId = parseInt(stored, 10);
+        sessionStorage.removeItem("openLessonId");
+      }
+    } catch {}
+    if (pendingLessonId) {
+      const target = moduleLessons.find(l => l.id === pendingLessonId);
+      if (target) setSelectedLesson(target);
+    }
+  }, [moduleId, moduleLessons.length]);
+
   const videoRef = useRef<HTMLDivElement>(null);
   const leftPanelRef = useRef<HTMLDivElement>(null);
 
@@ -676,6 +694,14 @@ export default function ModulePage() {
                 {showUpsellBanner && isOnlineOnlyStudent && !isVipOrMentoria && (
                   <MentoriaCTABanner onDismiss={() => { setShowUpsellBanner(false); setUpsellDismissed(true); }} />
                 )}
+
+                {/* Comments section — visible whenever lesson is unlocked */}
+                {!isLessonLocked && (
+                  <div className="mt-6 pt-5 border-t border-border/40">
+                    <h3 className="text-sm font-semibold text-foreground mb-3">Comentários desta aula</h3>
+                    <LessonComments lessonId={selectedLesson.id} />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -836,6 +862,14 @@ export default function ModulePage() {
                 <MentoriaCTABanner onDismiss={() => { setShowUpsellBanner(false); setUpsellDismissed(true); }} />
               )}
               </div>
+
+              {/* Comments section (mobile) */}
+              {!lessonLockedForTester && (
+                <div className="mt-4 pt-4 border-t border-border/40">
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Comentários desta aula</h3>
+                  <LessonComments lessonId={selectedLesson.id} />
+                </div>
+              )}
             </div>
           </div>
 

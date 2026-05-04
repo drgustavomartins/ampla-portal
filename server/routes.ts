@@ -5984,6 +5984,116 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
     }
   });
 
+  // ─── GET /api/community/feed ──────────────────────────────────────────────
+  // Unified feed: community_posts + lesson comments (community_comments where lesson_id IS NOT NULL)
+  // Each item has `kind` = 'post' | 'lesson_comment'.
+  app.get("/api/community/feed", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const auth = authenticateRequest(req);
+      if (!auth) return res.status(401).json({ message: "Não autorizado" });
+
+      const limit = Math.min(Number(req.query.limit) || 20, 50);
+      const offset = Number(req.query.offset) || 0;
+
+      // Posts
+      const postsRes = await db.execute(sql`
+        SELECT cp.*, u.name as author_name, u.avatar_url as author_avatar, u.username as author_username
+        FROM community_posts cp
+        JOIN users u ON u.id = cp.user_id
+        ORDER BY cp.created_at DESC
+        LIMIT ${limit + offset}
+      `);
+
+      // Lesson comments (top-level lesson comments — no parent_comment_id, lesson_id set)
+      const lessonCommentsRes = await db.execute(sql`
+        SELECT cc.id, cc.user_id, cc.content, cc.likes_count, cc.created_at, cc.lesson_id,
+               u.name as author_name, u.avatar_url as author_avatar, u.username as author_username,
+               l.title as lesson_title, l.module_id as module_id,
+               m.title as module_title
+        FROM community_comments cc
+        JOIN users u ON u.id = cc.user_id
+        LEFT JOIN lessons l ON l.id = cc.lesson_id
+        LEFT JOIN modules m ON m.id = l.module_id
+        WHERE cc.lesson_id IS NOT NULL AND cc.parent_comment_id IS NULL
+        ORDER BY cc.created_at DESC
+        LIMIT ${limit + offset}
+      `);
+
+      const postRows = (postsRes as any).rows || [];
+      const lessonCommentRows = (lessonCommentsRes as any).rows || [];
+
+      // Likes for posts
+      let likedPostIds: Set<number> = new Set();
+      if (postRows.length > 0) {
+        const postIds = postRows.map((r: any) => r.id);
+        const likes = await db.execute(sql`
+          SELECT post_id FROM community_likes
+          WHERE user_id = ${auth.userId} AND post_id IN (${sql.join(postIds.map((id: number) => sql`${id}`), sql`, `)})
+        `);
+        likedPostIds = new Set(((likes as any).rows || []).map((l: any) => l.post_id));
+      }
+
+      // Likes for lesson comments
+      let likedCommentIds: Set<number> = new Set();
+      if (lessonCommentRows.length > 0) {
+        const commentIds = lessonCommentRows.map((r: any) => r.id);
+        const likes = await db.execute(sql`
+          SELECT comment_id FROM community_likes
+          WHERE user_id = ${auth.userId} AND comment_id IN (${sql.join(commentIds.map((id: number) => sql`${id}`), sql`, `)})
+        `);
+        likedCommentIds = new Set(((likes as any).rows || []).map((l: any) => l.comment_id));
+      }
+
+      const postItems = postRows.map((p: any) => ({
+        kind: 'post' as const,
+        id: p.id,
+        userId: p.user_id,
+        content: p.content,
+        imageUrls: JSON.parse(p.image_urls || '[]'),
+        postType: p.post_type,
+        likesCount: p.likes_count,
+        commentsCount: p.comments_count,
+        createdAt: p.created_at,
+        updatedAt: p.updated_at,
+        authorName: p.author_name,
+        authorInitial: (p.author_name || '?')[0].toUpperCase(),
+        authorAvatar: p.author_avatar || null,
+        authorUsername: p.author_username || null,
+        liked: likedPostIds.has(p.id),
+      }));
+
+      const lessonItems = lessonCommentRows.map((c: any) => ({
+        kind: 'lesson_comment' as const,
+        id: c.id,
+        userId: c.user_id,
+        content: c.content,
+        likesCount: c.likes_count,
+        createdAt: c.created_at,
+        authorName: c.author_name,
+        authorInitial: (c.author_name || '?')[0].toUpperCase(),
+        authorAvatar: c.author_avatar || null,
+        authorUsername: c.author_username || null,
+        liked: likedCommentIds.has(c.id),
+        lessonId: c.lesson_id,
+        lessonTitle: c.lesson_title,
+        moduleId: c.module_id,
+        moduleTitle: c.module_title,
+      }));
+
+      // Merge and sort by createdAt DESC, then paginate
+      const all = [...postItems, ...lessonItems].sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      const items = all.slice(offset, offset + limit);
+
+      res.json({ items, hasMore: all.length > offset + limit });
+    } catch (e: any) {
+      console.error("[GET /api/community/feed]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
   // ─── POST /api/community/posts/:postId/comments ──────────────────────────
   app.post("/api/community/posts/:postId/comments", async (req: Request, res: Response) => {
     try {
