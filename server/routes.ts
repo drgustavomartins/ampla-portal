@@ -445,6 +445,8 @@ export async function registerRoutes(server: Server, app: Express) {
     // Community tables
     await db.execute(`CREATE TABLE IF NOT EXISTS community_posts (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, content TEXT NOT NULL, image_urls TEXT DEFAULT '[]', post_type TEXT NOT NULL DEFAULT 'general', likes_count INTEGER NOT NULL DEFAULT 0, comments_count INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT)`).catch(() => {});
     await db.execute(`CREATE TABLE IF NOT EXISTS community_comments (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, post_id INTEGER, lesson_id INTEGER, parent_comment_id INTEGER, content TEXT NOT NULL, likes_count INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)`).catch(() => {});
+    // Partial unique index: at most 1 top-level comment por (lesson_id, user_id). Não afeta comentários de posts nem respostas em threads.
+    await db.execute(`CREATE UNIQUE INDEX IF NOT EXISTS idx_community_comments_one_per_lesson_per_user ON community_comments(lesson_id, user_id) WHERE lesson_id IS NOT NULL AND parent_comment_id IS NULL`).catch(() => {});
     await db.execute(`CREATE TABLE IF NOT EXISTS community_likes (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, post_id INTEGER, comment_id INTEGER, created_at TEXT NOT NULL, UNIQUE(user_id, post_id), UNIQUE(user_id, comment_id))`).catch(() => {});
     await db.execute(`CREATE TABLE IF NOT EXISTS credit_requests (id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, action_type TEXT NOT NULL, reference_type TEXT NOT NULL, reference_id INTEGER NOT NULL, amount INTEGER NOT NULL DEFAULT 5000, status TEXT NOT NULL DEFAULT 'pending', admin_note TEXT, created_at TEXT NOT NULL, reviewed_at TEXT, reviewed_by INTEGER)`).catch(() => {});
     // Lead Events (CRM activity timeline)
@@ -6285,13 +6287,35 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
       const { content, parentCommentId } = req.body as { content: string; parentCommentId?: number };
       if (!content || !content.trim()) return res.status(400).json({ message: "Conteúdo é obrigatório" });
 
+      // Limite: 1 comentário por aula por usuário (apenas para top-level; respostas via parentCommentId não aplicam à seção da aula).
+      if (!parentCommentId) {
+        const existing = await db.execute(sql`
+          SELECT id FROM community_comments
+          WHERE lesson_id = ${lessonId} AND user_id = ${auth.userId} AND parent_comment_id IS NULL
+          LIMIT 1
+        `);
+        if ((existing as any).rows?.length > 0) {
+          return res.status(409).json({ message: "Você já comentou nesta aula. Continue a conversa pela comunidade." });
+        }
+      }
+
       const now = new Date().toISOString();
-      const result = await db.execute(sql`
-        INSERT INTO community_comments (user_id, lesson_id, parent_comment_id, content, created_at)
-        VALUES (${auth.userId}, ${lessonId}, ${parentCommentId || null}, ${content.trim()}, ${now})
-        RETURNING id
-      `);
-      const commentId = (result as any).rows?.[0]?.id;
+      let commentId: number | undefined;
+      try {
+        const result = await db.execute(sql`
+          INSERT INTO community_comments (user_id, lesson_id, parent_comment_id, content, created_at)
+          VALUES (${auth.userId}, ${lessonId}, ${parentCommentId || null}, ${content.trim()}, ${now})
+          RETURNING id
+        `);
+        commentId = (result as any).rows?.[0]?.id;
+      } catch (insertErr: any) {
+        // Race condition fallback: o índice único parcial garante 1 comentário top-level por aula por usuário.
+        const msg = String(insertErr?.message || "");
+        if (msg.includes("idx_community_comments_one_per_lesson_per_user") || msg.toLowerCase().includes("unique")) {
+          return res.status(409).json({ message: "Você já comentou nesta aula. Continue a conversa pela comunidade." });
+        }
+        throw insertErr;
+      }
 
       // Create credit request (prevent duplicate)
       await db.execute(sql`

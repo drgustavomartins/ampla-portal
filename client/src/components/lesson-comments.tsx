@@ -41,6 +41,7 @@ interface LessonCommentsProps {
 export default function LessonComments({ lessonId }: LessonCommentsProps) {
   const { user } = useAuth();
   const [comment, setComment] = useState("");
+  const [limitError, setLimitError] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery<{ comments: Comment[] }>({
     queryKey: [`/api/community/lessons/${lessonId}/comments`],
@@ -53,9 +54,25 @@ export default function LessonComments({ lessonId }: LessonCommentsProps) {
     },
     onSuccess: () => {
       setComment("");
+      setLimitError(null);
       queryClient.invalidateQueries({ queryKey: [`/api/community/lessons/${lessonId}/comments`] });
       queryClient.invalidateQueries({ queryKey: [`/api/community/lessons/${lessonId}/comment-count`] });
       queryClient.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("/api/community/feed") });
+    },
+    onError: (err: Error) => {
+      const msg = err.message || "";
+      if (msg.startsWith("409")) {
+        const friendly = msg.replace(/^409:\s*/, "").trim();
+        try {
+          const parsed = JSON.parse(friendly);
+          setLimitError(parsed.message || "Você já comentou nesta aula.");
+        } catch {
+          setLimitError(friendly || "Você já comentou nesta aula.");
+        }
+        queryClient.invalidateQueries({ queryKey: [`/api/community/lessons/${lessonId}/comments`] });
+      } else {
+        setLimitError("Não foi possível enviar seu comentário. Tente novamente.");
+      }
     },
   });
 
@@ -81,6 +98,7 @@ export default function LessonComments({ lessonId }: LessonCommentsProps) {
   });
 
   const comments = data?.comments || [];
+  const userAlreadyCommented = !!user && comments.some((c) => c.userId === user.id);
 
   return (
     <div className="space-y-4">
@@ -136,31 +154,44 @@ export default function LessonComments({ lessonId }: LessonCommentsProps) {
         </div>
       )}
 
-      {/* Add comment */}
-      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-start pt-3 border-t border-border/30">
-        <Textarea
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="Escreva uma dúvida ou comentário sobre esta aula..."
-          className="min-h-[44px] resize-none text-sm bg-background/50 border-border/40 flex-1"
-          rows={2}
-        />
-        <Button
-          size="sm"
-          disabled={!comment.trim() || addComment.isPending}
-          onClick={() => addComment.mutate(comment.trim())}
-          className="bg-gold text-[#0A1628] hover:bg-gold/90 sm:self-start h-10 px-4 font-semibold"
-        >
-          {addComment.isPending ? (
-            <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Enviando</>
-          ) : (
-            <><Send className="w-4 h-4 mr-1.5" /> Comentar</>
+      {/* Add comment / aviso de limite */}
+      {userAlreadyCommented ? (
+        <div className="pt-3 border-t border-border/30">
+          <p className="text-xs text-muted-foreground bg-muted/30 border border-border/40 rounded-md px-3 py-2">
+            Você já enviou seu comentário nesta aula. Continue a conversa pela comunidade.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-start pt-3 border-t border-border/30">
+            <Textarea
+              value={comment}
+              onChange={(e) => { setComment(e.target.value); if (limitError) setLimitError(null); }}
+              placeholder="Escreva uma dúvida ou comentário sobre esta aula..."
+              className="min-h-[44px] resize-none text-sm bg-background/50 border-border/40 flex-1"
+              rows={2}
+            />
+            <Button
+              size="sm"
+              disabled={!comment.trim() || addComment.isPending}
+              onClick={() => addComment.mutate(comment.trim())}
+              className="bg-gold text-[#0A1628] hover:bg-gold/90 sm:self-start h-10 px-4 font-semibold"
+            >
+              {addComment.isPending ? (
+                <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Enviando</>
+              ) : (
+                <><Send className="w-4 h-4 mr-1.5" /> Comentar</>
+              )}
+            </Button>
+          </div>
+          {limitError && (
+            <p className="text-xs text-rose-400 mt-1">{limitError}</p>
           )}
-        </Button>
-      </div>
-      <p className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
-        <Award className="w-3 h-3" /> Comentários em aulas geram R$ 50 em créditos
-      </p>
+          <p className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
+            <Award className="w-3 h-3" /> Comentários em aulas geram R$ 50 em créditos. Limite de 1 comentário por aula.
+          </p>
+        </>
+      )}
     </div>
   );
 }
