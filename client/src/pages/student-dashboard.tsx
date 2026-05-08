@@ -1257,7 +1257,16 @@ export default function StudentDashboard() {
             // Helper: aulas "separadoras" (━━ X ━━) não aparecem nas linhas curadas
             const isSeparatorLesson = (l: any) => typeof l?.title === "string" && /^[─━—–-]{2,}/.test(l.title.trim());
             // "Casos Clínicos" — case_study lessons across all modules
-            const caseStudyLessons = lessons.filter((l: any) => l.contentType === "case_study" && isPublishedLesson(l) && !isSeparatorLesson(l));
+            // Deduplica por video_url para casos clínicos cadastrados em mais de um módulo
+            // (ex.: Caso Thomas existe em Bioestimuladores e em Método NaturalUp)
+            const caseStudyLessonsRaw = lessons.filter((l: any) => l.contentType === "case_study" && isPublishedLesson(l) && !isSeparatorLesson(l));
+            const seenVideoUrls = new Set<string>();
+            const caseStudyLessons = caseStudyLessonsRaw.filter((l: any) => {
+              const key = (l.videoUrl || `id:${l.id}`).trim();
+              if (seenVideoUrls.has(key)) return false;
+              seenVideoUrls.add(key);
+              return true;
+            });
 
             // Category rows based on module titles
             const categoryConfig: { title: string; emoji: string; keywords: string[] }[] = [

@@ -825,7 +825,7 @@ export default function ModulePage() {
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Button
                   variant={isCompleted ? "secondary" : "default"}
                   size="sm"
@@ -857,20 +857,21 @@ export default function ModulePage() {
                     Proxima
                   </Button>
                 )}
+              </div>
+
               {/* Upsell CTA banner for online-only students (mobile) */}
               {showUpsellBanner && isOnlineOnlyStudent && !isVipOrMentoria && (
                 <MentoriaCTABanner onDismiss={() => { setShowUpsellBanner(false); setUpsellDismissed(true); }} />
               )}
-              </div>
-
-              {/* Comments section (mobile) */}
-              {!lessonLockedForTester && (
-                <div className="mt-4 pt-4 border-t border-border/40">
-                  <h3 className="text-sm font-semibold text-foreground mb-3">Comentários desta aula</h3>
-                  <LessonComments lessonId={selectedLesson.id} />
-                </div>
-              )}
             </div>
+
+            {/* Comments section (mobile) — fora do space-y-3 para garantir visibilidade abaixo dos botões */}
+            {!isLessonLocked && (
+              <div className="mt-4 pt-4 border-t border-border/40">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Comentários desta aula</h3>
+                <LessonComments lessonId={selectedLesson.id} />
+              </div>
+            )}
           </div>
 
           {/* Mobile lesson list */}
