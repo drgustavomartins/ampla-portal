@@ -129,6 +129,89 @@ async function notifyNewRegistration(user: { name: string; email: string; phone?
   }
 }
 
+const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "gustavo.medeiros.martins@gmail.com";
+
+function escapeHtml(input: string): string {
+  return String(input)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+type AdminNotificationKind = "lesson_comment" | "community_post" | "community_post_comment";
+
+interface AdminNotificationParams {
+  kind: AdminNotificationKind;
+  authorName: string;
+  authorEmail?: string | null;
+  contextTitle?: string | null;
+  contextLink?: string | null;
+  body: string;
+  createdAt: Date;
+}
+
+async function sendAdminNotificationEmail(params: AdminNotificationParams): Promise<void> {
+  if (!resend) return;
+  const { kind, authorName, authorEmail, contextTitle, contextLink, body, createdAt } = params;
+  const labelMap: Record<AdminNotificationKind, { label: string; subject: string }> = {
+    lesson_comment: { label: "Novo comentário em aula", subject: "Novo comentário em aula" },
+    community_post: { label: "Nova publicação na comunidade", subject: "Nova publicação na comunidade" },
+    community_post_comment: { label: "Novo comentário na comunidade", subject: "Novo comentário na comunidade" },
+  };
+  const meta = labelMap[kind];
+  const safeName = escapeHtml(authorName || "Aluno(a)");
+  const safeEmail = authorEmail ? escapeHtml(authorEmail) : "";
+  const safeContext = contextTitle ? escapeHtml(contextTitle) : "";
+  const safeBody = escapeHtml(body || "").replace(/\n/g, "<br/>");
+  const link = contextLink || "https://portal.amplafacial.com.br/#/community";
+  const safeLink = escapeHtml(link);
+  const dateStr = createdAt.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+
+  const subject = `📣 ${meta.subject} — ${authorName || "aluno"}`.slice(0, 120);
+  const textParts = [
+    `${meta.label}`,
+    `Aluno: ${authorName || "—"}${authorEmail ? ` <${authorEmail}>` : ""}`,
+    contextTitle ? `Contexto: ${contextTitle}` : null,
+    `Data: ${dateStr}`,
+    "",
+    body,
+    "",
+    `Link: ${link}`,
+  ].filter(Boolean).join("\n");
+
+  try {
+    await resend.emails.send({
+      from: "Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",
+      to: ADMIN_NOTIFICATION_EMAIL,
+      subject,
+      text: textParts,
+      html: `
+        <div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0A1628;color:#fff;padding:32px;border-radius:12px">
+          <div style="color:#D4A843;font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Ampla Facial</div>
+          <h1 style="color:#D4A843;font-size:20px;margin:0 0 20px">${escapeHtml(meta.label)}</h1>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+            <tr><td style="padding:6px 0;color:#999;width:90px">Aluno</td><td style="padding:6px 0;font-weight:bold">${safeName}</td></tr>
+            ${safeEmail ? `<tr><td style="padding:6px 0;color:#999">E-mail</td><td style="padding:6px 0">${safeEmail}</td></tr>` : ""}
+            ${safeContext ? `<tr><td style="padding:6px 0;color:#999">${kind === "lesson_comment" ? "Aula" : "Contexto"}</td><td style="padding:6px 0">${safeContext}</td></tr>` : ""}
+            <tr><td style="padding:6px 0;color:#999">Data</td><td style="padding:6px 0">${escapeHtml(dateStr)}</td></tr>
+          </table>
+          <div style="background:#0D1E35;border-left:3px solid #D4A843;padding:16px 20px;border-radius:8px;margin-bottom:24px;color:#e6e6e6;font-size:14px;line-height:1.6">
+            ${safeBody || "<em style=\"color:#888\">(sem texto)</em>"}
+          </div>
+          <div>
+            <a href="${safeLink}" style="display:inline-block;background:#D4A843;color:#0A1628;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold">Abrir no portal</a>
+          </div>
+          <p style="margin-top:24px;font-size:12px;color:#666">portal.amplafacial.com.br</p>
+        </div>
+      `,
+    });
+  } catch (err) {
+    console.error("[email] Erro ao enviar notificação admin:", err);
+  }
+}
+
 // In-memory rate limiter for IP-based throttling
 const rateLimitStore = new Map<string, { count: number; resetAt: number; first: number }>();
 function rateLimit(key: string, maxRequests: number, windowMs: number): boolean {
@@ -2191,7 +2274,8 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
     // eslint-disable-next-line no-unreachable
     try {
       const { db } = await import("./db");
-      if (!resend) return res.json({ sent: 0, message: "Resend not configured" });
+      const resendClient = resend;
+      if (!resendClient) return res.json({ sent: 0, message: "Resend not configured" });
 
       // Find trial users on day 5 (2 days left) who haven't received this email
       const now = new Date();
@@ -2207,11 +2291,11 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       for (const user of trials.rows) {
         const startDate = new Date(String(user.trial_started_at || user.created_at));
         const daysSinceStart = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-        
+
         if (daysSinceStart >= 5) {
           const firstName = (user.name as string || "").split(" ")[0];
           try {
-            await resend.emails.send({
+            await resendClient!.emails.send({
               from: "Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",
               to: user.email as string,
               subject: "Seu teste gratuito termina em 2 dias",
@@ -5818,6 +5902,27 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
         )
       `);
 
+      // Fire-and-forget admin notification (skip admins/super_admins)
+      if (auth.role !== "admin" && auth.role !== "super_admin") {
+        (async () => {
+          try {
+            const userRow = await db.execute(sql`SELECT name, email FROM users WHERE id = ${auth.userId} LIMIT 1`);
+            const u = (userRow as any).rows?.[0];
+            await sendAdminNotificationEmail({
+              kind: "community_post",
+              authorName: u?.name || "Aluno(a)",
+              authorEmail: u?.email || null,
+              contextTitle: type !== "general" ? `Tipo: ${type}` : null,
+              contextLink: postId ? `https://portal.amplafacial.com.br/#/community?post=${postId}` : "https://portal.amplafacial.com.br/#/community",
+              body: content.trim(),
+              createdAt: new Date(now),
+            });
+          } catch (err) {
+            console.error("[notify] community_post:", err);
+          }
+        })();
+      }
+
       res.json({ id: postId, message: "Post criado com sucesso" });
     } catch (e: any) {
       console.error("[POST /api/community/posts]", e.message);
@@ -6129,6 +6234,37 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
         )
       `);
 
+      // Fire-and-forget admin notification (skip admins/super_admins)
+      if (auth.role !== "admin" && auth.role !== "super_admin") {
+        (async () => {
+          try {
+            const userRow = await db.execute(sql`SELECT name, email FROM users WHERE id = ${auth.userId} LIMIT 1`);
+            const postRow = await db.execute(sql`
+              SELECT cp.content as post_content, u.name as author_name
+              FROM community_posts cp LEFT JOIN users u ON u.id = cp.user_id
+              WHERE cp.id = ${postId} LIMIT 1
+            `);
+            const u = (userRow as any).rows?.[0];
+            const p = (postRow as any).rows?.[0];
+            const snippet = p?.post_content ? String(p.post_content).slice(0, 80) : "";
+            const contextTitle = p?.author_name
+              ? `Post de ${p.author_name}${snippet ? `: "${snippet}${snippet.length >= 80 ? '…' : ''}"` : ""}`
+              : `Post #${postId}`;
+            await sendAdminNotificationEmail({
+              kind: "community_post_comment",
+              authorName: u?.name || "Aluno(a)",
+              authorEmail: u?.email || null,
+              contextTitle,
+              contextLink: `https://portal.amplafacial.com.br/#/community?post=${postId}`,
+              body: content.trim(),
+              createdAt: new Date(now),
+            });
+          } catch (err) {
+            console.error("[notify] community_post_comment:", err);
+          }
+        })();
+      }
+
       res.json({ id: commentId, message: "Comentário adicionado" });
     } catch (e: any) {
       console.error("[POST /api/community/posts/:postId/comments]", e.message);
@@ -6165,6 +6301,34 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
           SELECT 1 FROM credit_requests WHERE user_id = ${auth.userId} AND action_type = 'comment_on_video' AND reference_id = ${commentId}
         )
       `);
+
+      // Fire-and-forget admin notification (skip admins/super_admins)
+      if (auth.role !== "admin" && auth.role !== "super_admin") {
+        (async () => {
+          try {
+            const userRow = await db.execute(sql`SELECT name, email FROM users WHERE id = ${auth.userId} LIMIT 1`);
+            const lessonRow = await db.execute(sql`SELECT title, module_id FROM lessons WHERE id = ${lessonId} LIMIT 1`);
+            const u = (userRow as any).rows?.[0];
+            const l = (lessonRow as any).rows?.[0];
+            const lessonTitle = l?.title || `Aula #${lessonId}`;
+            const moduleId = l?.module_id;
+            const link = moduleId
+              ? `https://portal.amplafacial.com.br/#/student/module/${moduleId}/lesson/${lessonId}`
+              : `https://portal.amplafacial.com.br/#/student`;
+            await sendAdminNotificationEmail({
+              kind: "lesson_comment",
+              authorName: u?.name || "Aluno(a)",
+              authorEmail: u?.email || null,
+              contextTitle: lessonTitle,
+              contextLink: link,
+              body: content.trim(),
+              createdAt: new Date(now),
+            });
+          } catch (err) {
+            console.error("[notify] lesson_comment:", err);
+          }
+        })();
+      }
 
       res.json({ id: commentId, message: "Comentário adicionado" });
     } catch (e: any) {
