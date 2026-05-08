@@ -53,6 +53,8 @@ function UserAvatar({ name, avatarUrl, size = "md", className = "" }: {
           src={avatarUrl}
           alt={name}
           className="w-full h-full rounded-full object-cover border-2 border-gold/30"
+          loading="lazy"
+          decoding="async"
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden"); }}
         />
         <div className={`hidden ${sizeMap[size].split(" ").slice(0, 2).join(" ")} absolute inset-0 rounded-full border-2 border-gold/30 flex items-center justify-center`} style={bgStyle}>
@@ -505,6 +507,7 @@ export default function ComunidadePage() {
 
   const { data, isLoading } = useQuery<{ items: FeedItem[]; hasMore: boolean }>({
     queryKey: [`/api/community/feed?limit=${LIMIT}&offset=${offset}`],
+    staleTime: 60 * 1000, // 1 min — feed pode mudar com posts/comentários novos, mas não a cada navegação
   });
 
   const items = data?.items || [];

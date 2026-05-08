@@ -353,6 +353,10 @@ function ThemeDetail({ theme, onBack, isTrial = false }: { theme: Theme; onBack:
           src={theme.coverUrl}
           alt={theme.title}
           className="w-16 h-20 object-cover rounded-lg shadow-lg"
+          loading="lazy"
+          decoding="async"
+          width={64}
+          height={80}
         />
         <div>
           <h2 className="text-xl font-semibold text-foreground">{theme.title}</h2>
@@ -533,6 +537,8 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
                 src={theme.coverUrl}
                 alt={theme.title}
                 className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.03]"
+                loading="lazy"
+                decoding="async"
               />
 
               {/* Soft vignette */}

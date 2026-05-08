@@ -477,7 +477,7 @@ function CommunityAdminTab() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0 flex-1">
                       {post.authorAvatar ? (
-                        <img src={post.authorAvatar} alt="" className="w-8 h-8 rounded-full object-cover border border-gold/30 shrink-0 mt-0.5" />
+                        <img src={post.authorAvatar} alt="" className="w-8 h-8 rounded-full object-cover border border-gold/30 shrink-0 mt-0.5" loading="lazy" decoding="async" width={32} height={32} />
                       ) : (
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gold/80 to-gold border border-gold/30 flex items-center justify-center shrink-0 mt-0.5">
                           <span className="text-xs font-semibold text-[#0A1628]">{post.authorInitial}</span>
@@ -1621,6 +1621,9 @@ export default function AdminDashboard() {
               src="/logo-icon.png"
               alt="Ampla Facial"
               className="h-8 w-8 object-contain flex-shrink-0"
+              decoding="async"
+              width={32}
+              height={32}
             />
             <span className="text-sm font-semibold text-gold tracking-brand leading-none">
               AMPLA FACIAL
@@ -3705,7 +3708,7 @@ export default function AdminDashboard() {
                   <CardContent className="p-0">
                     {/* Theme header */}
                     <div className="flex items-center gap-3 p-4">
-                      <img src={theme.coverUrl} alt={theme.title} className="w-12 h-16 object-cover rounded-lg shrink-0" />
+                      <img src={theme.coverUrl} alt={theme.title} className="w-12 h-16 object-cover rounded-lg shrink-0" loading="lazy" decoding="async" width={48} height={64} />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-foreground truncate">{theme.title}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">{theme.fileCount} {theme.fileCount === 1 ? "arquivo" : "arquivos"} &middot; {theme.subcategories.length} {theme.subcategories.length === 1 ? "subcategoria" : "subcategorias"} &middot; Ordem: {theme.order}</p>

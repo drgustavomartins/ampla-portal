@@ -251,6 +251,8 @@ export default function LandingPage() {
             src="/logo-transparent.png"
             alt="Ampla Facial"
             className="h-28 md:h-32 mx-auto mb-4 opacity-90"
+            decoding="async"
+            fetchPriority="high"
           />
 
           {/* headline */}
@@ -274,6 +276,7 @@ export default function LandingPage() {
               title="Apresentação Ampla Facial"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
+              loading="eager"
               className="absolute inset-0 w-full h-full"
             />
           </div>
@@ -925,6 +928,8 @@ export default function LandingPage() {
                 src="/dr-gustavo-perfil.jpg"
                 alt="Dr. Gustavo Martins"
                 className="shrink-0 w-48 h-48 md:w-56 md:h-56 rounded-full object-cover object-top border-4 border-[#D4A843]/30 mx-auto"
+                loading="lazy"
+                decoding="async"
               />
 
               <div className="flex flex-col items-center">
@@ -987,6 +992,7 @@ export default function LandingPage() {
                   title="Depoimento de uma aluna em mentoria Ampla Facial"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
+                  loading="lazy"
                   className="absolute inset-0 w-full h-full"
                 />
               </div>
@@ -1105,7 +1111,7 @@ export default function LandingPage() {
       <footer className="border-t border-white/5 py-8">
         <div className="max-w-5xl mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500">
           <div className="flex items-center gap-3">
-            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-6 opacity-50" />
+            <img src="/logo-transparent.png" alt="Ampla Facial" className="h-6 opacity-50" loading="lazy" decoding="async" />
             <span>&copy; 2026 Ampla Facial. Todos os direitos reservados.</span>
           </div>
 

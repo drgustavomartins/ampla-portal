@@ -93,7 +93,7 @@ export default function PlanosPublicos() {
       >
         <div className="mx-auto max-w-6xl h-full px-5 sm:px-8 flex items-center justify-between">
           <a href="/#/comecar" className="flex items-center gap-2.5">
-            <img src="/logo-icon.png" alt="" className="h-10 w-10 object-contain" />
+            <img src="/logo-icon.png" alt="" className="h-10 w-10 object-contain" decoding="async" width={40} height={40} />
             <div className="flex flex-col">
               <span className="text-[16px] font-bold uppercase tracking-[0.06em] text-white leading-tight">Ampla Facial</span>
             </div>

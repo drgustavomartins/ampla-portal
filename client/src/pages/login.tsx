@@ -187,7 +187,7 @@ export default function LoginPage() {
 
           {/* Logo — fiel à montagem */}
           <div className="flex items-center gap-2 justify-start pl-1">
-            <img src="/logo-icon.png" alt="" className="h-20 w-20 object-contain shrink-0 -mt-3" />
+            <img src="/logo-icon.png" alt="" className="h-20 w-20 object-contain shrink-0 -mt-3" decoding="async" width={80} height={80} fetchPriority="high" />
             <div>
               <h1 className="text-[2rem] font-extrabold tracking-wide text-white leading-none">AMPLA FACIAL</h1>
               <p className="text-sm text-[#D4A843] mt-1 font-light tracking-wide">Dr. Gustavo Martins</p>
@@ -196,7 +196,7 @@ export default function LoginPage() {
 
           {/* Logo mobile (mantida para compatibilidade) */}
           <div className="hidden text-center space-y-3">
-            <img src="/logo-icon.png" alt="Ampla Facial" className="mx-auto h-28 w-28 object-contain drop-shadow-lg" />
+            <img src="/logo-icon.png" alt="Ampla Facial" className="mx-auto h-28 w-28 object-contain drop-shadow-lg" decoding="async" width={112} height={112} loading="lazy" />
             <div>
               <h1 className="text-2xl font-semibold tracking-widest text-gold uppercase">Ampla Facial</h1>
               <div className="w-10 h-px bg-gold mx-auto mt-3 mb-2 opacity-50" />
@@ -396,7 +396,7 @@ export default function LoginPage() {
                   <div className="flex items-center gap-3">
                     {avatarPreview ? (
                       <div className="w-10 h-10 rounded-full overflow-hidden border border-gold/30 shrink-0">
-                        <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
+                        <img src={avatarPreview} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                       </div>
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">

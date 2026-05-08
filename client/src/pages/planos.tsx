@@ -384,7 +384,7 @@ export default function PlanosPage() {
             
             {/* Logo */}
             <a href="/#/" className="flex items-center gap-2.5">
-              <img src="/logo-icon.png" alt="" className="h-9 w-9 object-contain" />
+              <img src="/logo-icon.png" alt="" className="h-9 w-9 object-contain" decoding="async" width={36} height={36} />
               <span className="text-[15px] sm:text-[17px] font-bold uppercase tracking-[0.06em] text-[#1a1a1a] leading-tight">Ampla Facial</span>
             </a>
             
@@ -424,7 +424,7 @@ export default function PlanosPage() {
         <div className="fixed inset-0 z-50 bg-white animate-in fade-in duration-200">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <div className="flex items-center gap-2.5">
-              <img src="/logo-icon.png" alt="" className="h-8 w-8 object-contain" />
+              <img src="/logo-icon.png" alt="" className="h-8 w-8 object-contain" loading="lazy" decoding="async" width={32} height={32} />
               <span className="text-[15px] font-bold uppercase tracking-[0.06em] text-[#1a1a1a]">Ampla Facial</span>
             </div>
             <button onClick={() => setMobileMenuOpen(false)} className="w-10 h-10 flex items-center justify-center" aria-label="Fechar">

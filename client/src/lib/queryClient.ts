@@ -62,8 +62,13 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: true,
-      staleTime: 5 * 60 * 1000, // 5 min default — modules/lessons/plans rarely change
+      // Refetch on focus is too aggressive for the portal: the admin dashboard
+      // alone fires 20+ queries on every tab switch. Mutations still invalidate
+      // their relevant caches explicitly.
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      staleTime: 5 * 60 * 1000, // 5 min — modules/lessons/plans rarely change
+      gcTime: 30 * 60 * 1000, // keep cached data for 30 min after last observer
       retry: false,
     },
     mutations: {
