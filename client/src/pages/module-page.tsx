@@ -452,20 +452,6 @@ export default function ModulePage() {
   const commentsDesktopRef = useRef<HTMLDivElement>(null);
   const commentsMobileRef = useRef<HTMLDivElement>(null);
 
-  const scrollToComments = useCallback(() => {
-    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
-    if (isDesktop) {
-      const target = commentsDesktopRef.current;
-      const panel = leftPanelRef.current;
-      if (target && panel) {
-        const offset = target.offsetTop - 16;
-        panel.scrollTo({ top: offset, behavior: "smooth" });
-      }
-    } else {
-      commentsMobileRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, []);
-
   const handleSelectLesson = useCallback((lesson: Lesson | null) => {
     setShowNextUp(false);
     setTheaterMode(false);
@@ -687,19 +673,6 @@ export default function ModulePage() {
                     </Button>
                   )}
 
-                  {!isLessonLocked && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-gold/40 text-gold hover:bg-gold/10 hover:text-gold"
-                      onClick={scrollToComments}
-                      title="Ir para comentários"
-                    >
-                      <MessageCircle className="w-4 h-4 mr-1.5" />
-                      Comentar
-                    </Button>
-                  )}
-
                   <div className="flex-1" />
 
                   {prevLesson && (
@@ -719,20 +692,29 @@ export default function ModulePage() {
                   )}
                 </div>
 
+                {/* Compose box: textarea visivel logo abaixo dos botoes principais */}
+                {!isLessonLocked && (
+                  <div ref={commentsDesktopRef} id="lesson-comment-compose-desktop" className="rounded-xl border-2 border-gold/40 bg-gradient-to-br from-[#12244A]/80 to-[#0F2040]/80 p-5 shadow-[0_4px_20px_rgba(212,168,67,0.08)]">
+                    <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4 text-gold" />
+                      Deixe seu comentário ou dúvida
+                    </h3>
+                    <p className="text-xs text-white/60 mb-3">
+                      Tire dúvidas, compartilhe sua experiência ou pergunte ao Dr. Gustavo sobre esta aula.
+                    </p>
+                    <LessonComments lessonId={selectedLesson.id} mode="compose" />
+                  </div>
+                )}
+
                 {/* Upsell CTA banner for online-only students */}
                 {showUpsellBanner && isOnlineOnlyStudent && !isVipOrMentoria && (
                   <MentoriaCTABanner onDismiss={() => { setShowUpsellBanner(false); setUpsellDismissed(true); }} />
                 )}
 
-                {/* Comments section — visible whenever lesson is unlocked */}
+                {/* Lista de comentarios desta aula */}
                 {!isLessonLocked && (
-                  <div ref={commentsDesktopRef} id="lesson-comments-desktop" className="mt-6 rounded-xl border border-gold/20 bg-card/40 p-5">
-                    <h3 className="text-base font-semibold text-foreground mb-1 flex items-center gap-2">
-                      <MessageCircle className="w-4 h-4 text-gold" />
-                      Comentários desta aula
-                    </h3>
-                    <p className="text-xs text-muted-foreground mb-4">Tire dúvidas, compartilhe sua experiência ou pergunte ao Dr. Gustavo. Comentários geram R$ 50 em créditos.</p>
-                    <LessonComments lessonId={selectedLesson.id} />
+                  <div className="mt-6 rounded-xl border border-gold/20 bg-card/40 p-5">
+                    <LessonComments lessonId={selectedLesson.id} mode="list" />
                   </div>
                 )}
               </div>
@@ -873,19 +855,6 @@ export default function ModulePage() {
                   )}
                 </Button>
 
-                {!lessonLockedForTester && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-gold/40 text-gold hover:bg-gold/10 hover:text-gold"
-                    onClick={scrollToComments}
-                    title="Ir para comentários"
-                  >
-                    <MessageCircle className="w-4 h-4 mr-1.5" />
-                    Comentar
-                  </Button>
-                )}
-
                 <div className="flex-1" />
 
                 {prevLesson && (
@@ -911,15 +880,24 @@ export default function ModulePage() {
               )}
             </div>
 
-            {/* Comments section (mobile) — fora do space-y-3 para garantir visibilidade abaixo dos botões */}
+            {/* Compose box (mobile): textarea visivel logo abaixo dos botoes */}
             {!isLessonLocked && (
-              <div ref={commentsMobileRef} id="lesson-comments-mobile" className="mt-4 rounded-xl border border-gold/20 bg-card/40 p-4">
-                <h3 className="text-base font-semibold text-foreground mb-1 flex items-center gap-2">
+              <div ref={commentsMobileRef} id="lesson-comment-compose-mobile" className="mt-4 rounded-xl border-2 border-gold/40 bg-gradient-to-br from-[#12244A]/80 to-[#0F2040]/80 p-4 shadow-[0_4px_20px_rgba(212,168,67,0.08)]">
+                <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2">
                   <MessageCircle className="w-4 h-4 text-gold" />
-                  Comentários desta aula
+                  Deixe seu comentário ou dúvida
                 </h3>
-                <p className="text-xs text-muted-foreground mb-4">Tire dúvidas, compartilhe sua experiência ou pergunte ao Dr. Gustavo. Comentários geram R$ 50 em créditos.</p>
-                <LessonComments lessonId={selectedLesson.id} />
+                <p className="text-xs text-white/60 mb-3">
+                  Tire dúvidas, compartilhe sua experiência ou pergunte ao Dr. Gustavo sobre esta aula.
+                </p>
+                <LessonComments lessonId={selectedLesson.id} mode="compose" />
+              </div>
+            )}
+
+            {/* Lista de comentarios (mobile) */}
+            {!isLessonLocked && (
+              <div className="mt-4 rounded-xl border border-gold/20 bg-card/40 p-4">
+                <LessonComments lessonId={selectedLesson.id} mode="list" />
               </div>
             )}
           </div>

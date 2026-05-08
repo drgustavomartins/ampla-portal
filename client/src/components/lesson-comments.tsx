@@ -36,9 +36,15 @@ interface Comment {
 
 interface LessonCommentsProps {
   lessonId: number;
+  /**
+   * "full"    – list + compose form (default)
+   * "compose" – only the textarea/submit/limit message
+   * "list"    – only the comments list (no compose form)
+   */
+  mode?: "full" | "compose" | "list";
 }
 
-export default function LessonComments({ lessonId }: LessonCommentsProps) {
+export default function LessonComments({ lessonId, mode = "full" }: LessonCommentsProps) {
   const { user } = useAuth();
   const [comment, setComment] = useState("");
   const [limitError, setLimitError] = useState<string | null>(null);
@@ -100,8 +106,54 @@ export default function LessonComments({ lessonId }: LessonCommentsProps) {
   const comments = data?.comments || [];
   const userAlreadyCommented = !!user && comments.some((c) => c.userId === user.id);
 
-  return (
-    <div className="space-y-4">
+  const composeBlock = (
+    <>
+      {userAlreadyCommented ? (
+        <div>
+          <p className="text-xs text-muted-foreground bg-muted/30 border border-border/40 rounded-md px-3 py-2">
+            Você já enviou seu comentário nesta aula. Continue a conversa pela comunidade.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-start">
+            <Textarea
+              value={comment}
+              onChange={(e) => { setComment(e.target.value); if (limitError) setLimitError(null); }}
+              placeholder="Escreva sua dúvida ou comentário sobre esta aula..."
+              className="min-h-[88px] resize-none text-sm bg-background/60 border-gold/30 focus-visible:ring-gold/40 flex-1"
+              rows={4}
+            />
+            <Button
+              size="sm"
+              disabled={!comment.trim() || addComment.isPending}
+              onClick={() => addComment.mutate(comment.trim())}
+              className="bg-gold text-[#0A1628] hover:bg-gold/90 sm:self-start h-10 px-4 font-semibold whitespace-nowrap"
+            >
+              {addComment.isPending ? (
+                <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Enviando</>
+              ) : (
+                <><Send className="w-4 h-4 mr-1.5" /> Enviar comentário</>
+              )}
+            </Button>
+          </div>
+          {limitError && (
+            <p className="text-xs text-rose-400 mt-2">{limitError}</p>
+          )}
+          <p className="text-[11px] text-muted-foreground/70 flex items-center gap-1 mt-2">
+            <Award className="w-3 h-3" /> Comentários em aulas geram R$ 50 em créditos. Limite de 1 comentário por aula.
+          </p>
+        </>
+      )}
+    </>
+  );
+
+  if (mode === "compose") {
+    return <div className="space-y-2">{composeBlock}</div>;
+  }
+
+  const listBlock = (
+    <>
       <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
         <MessageCircle className="w-4 h-4 text-gold" />
         {comments.length} {comments.length === 1 ? "comentário" : "comentários"}
@@ -153,45 +205,17 @@ export default function LessonComments({ lessonId }: LessonCommentsProps) {
           ))}
         </div>
       )}
+    </>
+  );
 
-      {/* Add comment / aviso de limite */}
-      {userAlreadyCommented ? (
-        <div className="pt-3 border-t border-border/30">
-          <p className="text-xs text-muted-foreground bg-muted/30 border border-border/40 rounded-md px-3 py-2">
-            Você já enviou seu comentário nesta aula. Continue a conversa pela comunidade.
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-start pt-3 border-t border-border/30">
-            <Textarea
-              value={comment}
-              onChange={(e) => { setComment(e.target.value); if (limitError) setLimitError(null); }}
-              placeholder="Escreva uma dúvida ou comentário sobre esta aula..."
-              className="min-h-[44px] resize-none text-sm bg-background/50 border-border/40 flex-1"
-              rows={2}
-            />
-            <Button
-              size="sm"
-              disabled={!comment.trim() || addComment.isPending}
-              onClick={() => addComment.mutate(comment.trim())}
-              className="bg-gold text-[#0A1628] hover:bg-gold/90 sm:self-start h-10 px-4 font-semibold"
-            >
-              {addComment.isPending ? (
-                <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Enviando</>
-              ) : (
-                <><Send className="w-4 h-4 mr-1.5" /> Comentar</>
-              )}
-            </Button>
-          </div>
-          {limitError && (
-            <p className="text-xs text-rose-400 mt-1">{limitError}</p>
-          )}
-          <p className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
-            <Award className="w-3 h-3" /> Comentários em aulas geram R$ 50 em créditos. Limite de 1 comentário por aula.
-          </p>
-        </>
-      )}
+  if (mode === "list") {
+    return <div className="space-y-4">{listBlock}</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {listBlock}
+      <div className="pt-3 border-t border-border/30">{composeBlock}</div>
     </div>
   );
 }
