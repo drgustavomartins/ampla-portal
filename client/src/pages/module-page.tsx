@@ -11,7 +11,7 @@ import { Description } from "@/lib/format-description";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, ChevronLeft,
   ChevronRight, Layers, Lock, Paperclip, ExternalLink, ShoppingCart,
-  ArrowRight, X as XIcon, Award, Maximize2
+  ArrowRight, X as XIcon, Award, Maximize2, MessageCircle
 } from "lucide-react";
 import type { Module, Lesson, LessonProgress } from "@shared/schema";
 import { ModuleHero } from "@/components/netflix/ModuleHero";
@@ -449,6 +449,22 @@ export default function ModulePage() {
 
   const videoRef = useRef<HTMLDivElement>(null);
   const leftPanelRef = useRef<HTMLDivElement>(null);
+  const commentsDesktopRef = useRef<HTMLDivElement>(null);
+  const commentsMobileRef = useRef<HTMLDivElement>(null);
+
+  const scrollToComments = useCallback(() => {
+    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+    if (isDesktop) {
+      const target = commentsDesktopRef.current;
+      const panel = leftPanelRef.current;
+      if (target && panel) {
+        const offset = target.offsetTop - 16;
+        panel.scrollTo({ top: offset, behavior: "smooth" });
+      }
+    } else {
+      commentsMobileRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
 
   const handleSelectLesson = useCallback((lesson: Lesson | null) => {
     setShowNextUp(false);
@@ -671,6 +687,19 @@ export default function ModulePage() {
                     </Button>
                   )}
 
+                  {!isLessonLocked && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-gold/40 text-gold hover:bg-gold/10 hover:text-gold"
+                      onClick={scrollToComments}
+                      title="Ir para comentários"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-1.5" />
+                      Comentar
+                    </Button>
+                  )}
+
                   <div className="flex-1" />
 
                   {prevLesson && (
@@ -697,8 +726,12 @@ export default function ModulePage() {
 
                 {/* Comments section — visible whenever lesson is unlocked */}
                 {!isLessonLocked && (
-                  <div className="mt-6 pt-5 border-t border-border/40">
-                    <h3 className="text-sm font-semibold text-foreground mb-3">Comentários desta aula</h3>
+                  <div ref={commentsDesktopRef} id="lesson-comments-desktop" className="mt-6 rounded-xl border border-gold/20 bg-card/40 p-5">
+                    <h3 className="text-base font-semibold text-foreground mb-1 flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4 text-gold" />
+                      Comentários desta aula
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-4">Tire dúvidas, compartilhe sua experiência ou pergunte ao Dr. Gustavo. Comentários geram R$ 50 em créditos.</p>
                     <LessonComments lessonId={selectedLesson.id} />
                   </div>
                 )}
@@ -840,6 +873,19 @@ export default function ModulePage() {
                   )}
                 </Button>
 
+                {!lessonLockedForTester && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-gold/40 text-gold hover:bg-gold/10 hover:text-gold"
+                    onClick={scrollToComments}
+                    title="Ir para comentários"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-1.5" />
+                    Comentar
+                  </Button>
+                )}
+
                 <div className="flex-1" />
 
                 {prevLesson && (
@@ -867,8 +913,12 @@ export default function ModulePage() {
 
             {/* Comments section (mobile) — fora do space-y-3 para garantir visibilidade abaixo dos botões */}
             {!isLessonLocked && (
-              <div className="mt-4 pt-4 border-t border-border/40">
-                <h3 className="text-sm font-semibold text-foreground mb-3">Comentários desta aula</h3>
+              <div ref={commentsMobileRef} id="lesson-comments-mobile" className="mt-4 rounded-xl border border-gold/20 bg-card/40 p-4">
+                <h3 className="text-base font-semibold text-foreground mb-1 flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4 text-gold" />
+                  Comentários desta aula
+                </h3>
+                <p className="text-xs text-muted-foreground mb-4">Tire dúvidas, compartilhe sua experiência ou pergunte ao Dr. Gustavo. Comentários geram R$ 50 em créditos.</p>
                 <LessonComments lessonId={selectedLesson.id} />
               </div>
             )}

@@ -137,22 +137,25 @@ export default function LessonComments({ lessonId }: LessonCommentsProps) {
       )}
 
       {/* Add comment */}
-      <div className="flex gap-2 items-start pt-2 border-t border-border/30">
+      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-start pt-3 border-t border-border/30">
         <Textarea
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          placeholder="Deixe um comentário sobre esta aula..."
-          className="min-h-[36px] h-9 resize-none text-sm bg-background/50 border-border/40"
-          rows={1}
+          placeholder="Escreva uma dúvida ou comentário sobre esta aula..."
+          className="min-h-[44px] resize-none text-sm bg-background/50 border-border/40 flex-1"
+          rows={2}
         />
         <Button
           size="sm"
-          variant="ghost"
           disabled={!comment.trim() || addComment.isPending}
           onClick={() => addComment.mutate(comment.trim())}
-          className="text-gold hover:text-gold hover:bg-gold/10 h-9 px-3"
+          className="bg-gold text-[#0A1628] hover:bg-gold/90 sm:self-start h-10 px-4 font-semibold"
         >
-          {addComment.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          {addComment.isPending ? (
+            <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Enviando</>
+          ) : (
+            <><Send className="w-4 h-4 mr-1.5" /> Comentar</>
+          )}
         </Button>
       </div>
       <p className="text-[10px] text-muted-foreground/60 flex items-center gap-1">
