@@ -121,14 +121,16 @@ export default function LessonComments({ lessonId, mode = "full" }: LessonCommen
               value={comment}
               onChange={(e) => { setComment(e.target.value); if (limitError) setLimitError(null); }}
               placeholder="Escreva sua dúvida ou comentário sobre esta aula..."
-              className="min-h-[88px] resize-none text-sm bg-background/60 border-gold/30 focus-visible:ring-gold/40 flex-1"
+              className="min-h-[88px] resize-none text-sm flex-1"
+              style={{ background: "rgba(10,22,40,0.6)", borderColor: "rgba(212,168,67,0.3)" }}
               rows={4}
             />
             <Button
               size="sm"
               disabled={!comment.trim() || addComment.isPending}
               onClick={() => addComment.mutate(comment.trim())}
-              className="bg-gold text-[#0A1628] hover:bg-gold/90 sm:self-start h-10 px-4 font-semibold whitespace-nowrap"
+              className="sm:self-start h-10 px-4 font-semibold whitespace-nowrap"
+              style={{ backgroundColor: "#D4A843", color: "#0A1628" }}
             >
               {addComment.isPending ? (
                 <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> Enviando</>

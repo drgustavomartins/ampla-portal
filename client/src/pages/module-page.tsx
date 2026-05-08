@@ -692,14 +692,26 @@ export default function ModulePage() {
                   )}
                 </div>
 
-                {/* Compose box: textarea visivel logo abaixo dos botoes principais */}
+                {/* Compose box: textarea visivel logo abaixo dos botoes principais
+                    Inline styles para garantir visibilidade independente de classes
+                    customizadas com opacity (border-gold/40 etc. nao geram CSS). */}
                 {!isLessonLocked && (
-                  <div ref={commentsDesktopRef} id="lesson-comment-compose-desktop" className="rounded-xl border-2 border-gold/40 bg-gradient-to-br from-[#12244A]/80 to-[#0F2040]/80 p-5 shadow-[0_4px_20px_rgba(212,168,67,0.08)]">
-                    <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2">
-                      <MessageCircle className="w-4 h-4 text-gold" />
+                  <div
+                    ref={commentsDesktopRef}
+                    id="lesson-comment-compose-desktop"
+                    style={{
+                      borderRadius: 12,
+                      border: "2px solid rgba(212,168,67,0.4)",
+                      background: "linear-gradient(135deg, rgba(18,36,74,0.85), rgba(15,32,64,0.85))",
+                      padding: 20,
+                      boxShadow: "0 4px 20px rgba(212,168,67,0.10)",
+                    }}
+                  >
+                    <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+                      <MessageCircle style={{ width: 16, height: 16, color: "#D4A843" }} />
                       Deixe seu comentário ou dúvida
                     </h3>
-                    <p className="text-xs text-white/60 mb-3">
+                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 12 }}>
                       Tire dúvidas, compartilhe sua experiência ou pergunte ao Dr. Gustavo sobre esta aula.
                     </p>
                     <LessonComments lessonId={selectedLesson.id} mode="compose" />
@@ -713,7 +725,15 @@ export default function ModulePage() {
 
                 {/* Lista de comentarios desta aula */}
                 {!isLessonLocked && (
-                  <div className="mt-6 rounded-xl border border-gold/20 bg-card/40 p-5">
+                  <div
+                    style={{
+                      marginTop: 24,
+                      borderRadius: 12,
+                      border: "1px solid rgba(212,168,67,0.2)",
+                      background: "rgba(15,32,64,0.4)",
+                      padding: 20,
+                    }}
+                  >
                     <LessonComments lessonId={selectedLesson.id} mode="list" />
                   </div>
                 )}
@@ -880,14 +900,27 @@ export default function ModulePage() {
               )}
             </div>
 
-            {/* Compose box (mobile): textarea visivel logo abaixo dos botoes */}
+            {/* Compose box (mobile): textarea visivel logo abaixo dos botoes
+                Inline styles para garantir visibilidade independente de classes Tailwind
+                customizadas (gold/40 etc. nao geram CSS quando 'gold' nao esta na palette). */}
             {!isLessonLocked && (
-              <div ref={commentsMobileRef} id="lesson-comment-compose-mobile" className="mt-4 rounded-xl border-2 border-gold/40 bg-gradient-to-br from-[#12244A]/80 to-[#0F2040]/80 p-4 shadow-[0_4px_20px_rgba(212,168,67,0.08)]">
-                <h3 className="text-base font-bold text-white mb-1 flex items-center gap-2">
-                  <MessageCircle className="w-4 h-4 text-gold" />
+              <div
+                ref={commentsMobileRef}
+                id="lesson-comment-compose-mobile"
+                style={{
+                  marginTop: 16,
+                  borderRadius: 12,
+                  border: "2px solid rgba(212,168,67,0.4)",
+                  background: "linear-gradient(135deg, rgba(18,36,74,0.85), rgba(15,32,64,0.85))",
+                  padding: 16,
+                  boxShadow: "0 4px 20px rgba(212,168,67,0.10)",
+                }}
+              >
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+                  <MessageCircle style={{ width: 16, height: 16, color: "#D4A843" }} />
                   Deixe seu comentário ou dúvida
                 </h3>
-                <p className="text-xs text-white/60 mb-3">
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 12 }}>
                   Tire dúvidas, compartilhe sua experiência ou pergunte ao Dr. Gustavo sobre esta aula.
                 </p>
                 <LessonComments lessonId={selectedLesson.id} mode="compose" />
@@ -896,7 +929,15 @@ export default function ModulePage() {
 
             {/* Lista de comentarios (mobile) */}
             {!isLessonLocked && (
-              <div className="mt-4 rounded-xl border border-gold/20 bg-card/40 p-4">
+              <div
+                style={{
+                  marginTop: 16,
+                  borderRadius: 12,
+                  border: "1px solid rgba(212,168,67,0.2)",
+                  background: "rgba(15,32,64,0.4)",
+                  padding: 16,
+                }}
+              >
                 <LessonComments lessonId={selectedLesson.id} mode="list" />
               </div>
             )}
