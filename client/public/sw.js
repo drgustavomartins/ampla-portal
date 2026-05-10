@@ -1,100 +1,51 @@
-const CACHE_NAME = 'ampla-facial-v11';
+// Service worker desativado para evitar que cache antigo bloqueie atualizacoes
+// do bundle. Esse SW registra-se, limpa todas as caches existentes, e desregistra-se
+// imediatamente. Clientes que ja tinham o SW antigo (v10/v11) recebem este novo
+// arquivo na proxima navegacao (Cache-Control: no-cache em /sw.js no vercel.json),
+// disparam o handler 'activate' que apaga as caches, e ficam sem SW na proxima visita.
+// O app continua funcionando normalmente — sem offline mas tambem sem stale bundle.
 
-const PRECACHE_ASSETS = [
-  './',
-  './index.html',
-  './favicon.png',
-  './icon-192x192.png',
-  './icon-512x512.png',
-  './manifest.json'
-];
+const CACHE_NAME = 'ampla-facial-disabled-v1';
 
-// Install: precache static shell
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_ASSETS);
-    })
-  );
+  // Pula a fase de waiting para ativar imediatamente.
   self.skipWaiting();
 });
 
-// Activate: clean old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      );
-    })
+    (async () => {
+      // Apaga todas as caches (qualquer nome — ampla-facial-v10, v11, etc.)
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+
+      // Toma controle de todas as abas abertas.
+      await self.clients.claim();
+
+      // Desregistra-se. Na proxima navegacao nao havera SW ativo.
+      try {
+        await self.registration.unregister();
+      } catch (_) {
+        // ignore
+      }
+
+      // Recarrega as abas controladas para garantir que o proximo fetch venha
+      // da rede sem passar por nenhum SW.
+      const allClients = await self.clients.matchAll({ type: 'window' });
+      for (const client of allClients) {
+        try {
+          client.navigate(client.url);
+        } catch (_) {
+          // ignore
+        }
+      }
+    })()
   );
-  self.clients.claim();
 });
 
-// Fetch: network-first for API, cache-first for static assets
+// Pass-through fetch — apenas durante o ciclo de vida ate o unregister completar.
+// Nao cacheia nada. Sempre vai para a rede.
 self.addEventListener('fetch', (event) => {
-  // Bypass non-GET requests (POST/PUT/DELETE) — never cache these
-  if (event.request.method !== 'GET') {
-    return;
-  }
-
-  const url = new URL(event.request.url);
-
-  // Bypass cross-origin requests entirely — let the browser handle them natively.
-  // This is critical for img.youtube.com thumbnails, Google Fonts, YouTube embeds, etc.
-  // Caching opaque cross-origin responses can cause net::ERR_FAILED in some browsers.
-  if (url.origin !== self.location.origin) {
-    return;
-  }
-
-  // Network-first for API calls
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/api')) {
-    event.respondWith(
-      fetch(event.request)
-        .catch(() => caches.match(event.request))
-    );
-    return;
-  }
-
-  // Cache-first for same-origin static assets (JS, CSS, images, fonts)
-  if (
-    event.request.destination === 'style' ||
-    event.request.destination === 'script' ||
-    event.request.destination === 'image' ||
-    event.request.destination === 'font' ||
-    url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|gif|woff2?|ttf|eot)$/)
-  ) {
-    event.respondWith(
-      caches.match(event.request).then((cached) => {
-        if (cached) return cached;
-        return fetch(event.request).then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        });
-      })
-    );
-    return;
-  }
-
-  // Network-first for navigation (HTML pages)
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
-        return response;
-      })
-      .catch(() => {
-        return caches.match(event.request).then((cached) => {
-          return cached || caches.match('./index.html');
-        });
-      })
-  );
+  // Sem chamar respondWith → o browser usa o caminho normal de rede.
+  return;
 });

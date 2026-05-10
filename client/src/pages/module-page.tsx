@@ -11,8 +11,9 @@ import { Description } from "@/lib/format-description";
 import {
   BookOpen, Play, CheckCircle2, Circle, Clock, ChevronLeft,
   ChevronRight, Layers, Lock, Paperclip, ExternalLink, ShoppingCart,
-  ArrowRight, X as XIcon, Award, Maximize2, MessageCircle
+  ArrowRight, X as XIcon, Award, Maximize2, MessageCircle, Send, Loader2
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import type { Module, Lesson, LessonProgress } from "@shared/schema";
 import { ModuleHero } from "@/components/netflix/ModuleHero";
 import { LessonListItem } from "@/components/netflix/LessonListItem";
@@ -173,6 +174,189 @@ function getCourseImage(mod: Module): string | null {
   if (title.includes("naturalup") || title.includes("natural up") || title.includes("método") || title.includes("metodo")) return "/images/naturalup-v2.png";
   if (title.includes("boas vindas") || title.includes("boas-vindas")) return "/images/boas-vindas-v2.png";
   return null;
+}
+
+// ─── Inline Comment Box (renderizado direto no fluxo da aula, sem dependencia
+//     do componente LessonComments. Garantia visual de que o aluno SEMPRE ve o
+//     campo, independente de cache de SW antigo, classes Tailwind sem CSS, etc.
+//     Marker visivel no DOM/bundle: data-testid="lesson-comment-inline-visible". ──
+function InlineCommentBox({ lessonId }: { lessonId: number }) {
+  const { user } = useAuth();
+  const [content, setContent] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+
+  const submit = useMutation({
+    mutationFn: async (text: string) => {
+      await apiRequest("POST", `/api/community/lessons/${lessonId}/comments`, { content: text });
+    },
+    onSuccess: () => {
+      setContent("");
+      setError(null);
+      setSubmitted(true);
+      queryClient.invalidateQueries({ queryKey: [`/api/community/lessons/${lessonId}/comments`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/community/lessons/${lessonId}/comment-count`] });
+      queryClient.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("/api/community/feed") });
+    },
+    onError: (err: Error) => {
+      const msg = err.message || "";
+      if (msg.startsWith("409")) {
+        const friendly = msg.replace(/^409:\s*/, "").trim();
+        try {
+          const parsed = JSON.parse(friendly);
+          setError(parsed.message || "Você já comentou nesta aula.");
+        } catch {
+          setError(friendly || "Você já comentou nesta aula.");
+        }
+      } else if (msg.startsWith("401")) {
+        setError("Faça login para comentar.");
+      } else {
+        setError("Não foi possível enviar seu comentário. Tente novamente.");
+      }
+    },
+  });
+
+  return (
+    <div
+      data-testid="lesson-comment-inline-visible"
+      id={`lesson-comment-inline-${lessonId}`}
+      style={{
+        marginTop: 12,
+        marginBottom: 12,
+        borderRadius: 12,
+        border: "2px solid #D4A843",
+        background: "linear-gradient(135deg, rgba(18,36,74,0.95), rgba(15,32,64,0.95))",
+        padding: 16,
+        boxShadow: "0 4px 20px rgba(212,168,67,0.15)",
+      }}
+    >
+      <h3
+        style={{
+          fontSize: 16,
+          fontWeight: 700,
+          color: "#fff",
+          margin: 0,
+          marginBottom: 4,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <MessageCircle style={{ width: 18, height: 18, color: "#D4A843" }} />
+        Deixe seu comentário ou dúvida
+      </h3>
+      <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", margin: 0, marginBottom: 10 }}>
+        Tire dúvidas, compartilhe sua experiência ou pergunte ao Dr. Gustavo sobre esta aula.
+      </p>
+
+      {!user ? (
+        <p
+          style={{
+            fontSize: 13,
+            color: "#D4A843",
+            background: "rgba(212,168,67,0.08)",
+            border: "1px solid rgba(212,168,67,0.3)",
+            borderRadius: 8,
+            padding: "10px 12px",
+            margin: 0,
+          }}
+        >
+          Comentários disponíveis para alunos logados. <a href="/#/login" style={{ color: "#D4A843", textDecoration: "underline" }}>Faça login para comentar</a>.
+        </p>
+      ) : submitted ? (
+        <p
+          style={{
+            fontSize: 13,
+            color: "#86efac",
+            background: "rgba(134,239,172,0.08)",
+            border: "1px solid rgba(134,239,172,0.3)",
+            borderRadius: 8,
+            padding: "10px 12px",
+            margin: 0,
+          }}
+        >
+          Comentário enviado com sucesso! Aparecerá no feed da comunidade.
+        </p>
+      ) : error && error.toLowerCase().includes("já") ? (
+        <p
+          style={{
+            fontSize: 13,
+            color: "rgba(255,255,255,0.85)",
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.15)",
+            borderRadius: 8,
+            padding: "10px 12px",
+            margin: 0,
+          }}
+        >
+          {error}
+        </p>
+      ) : (
+        <>
+          <Textarea
+            id={`lesson-comment-textarea-${lessonId}`}
+            data-testid="lesson-comment-textarea"
+            value={content}
+            onChange={(e) => {
+              setContent(e.target.value);
+              if (error) setError(null);
+            }}
+            placeholder="Escreva sua dúvida ou comentário sobre esta aula..."
+            rows={3}
+            style={{
+              width: "100%",
+              minHeight: 80,
+              resize: "none",
+              fontSize: 14,
+              padding: 10,
+              borderRadius: 8,
+              border: "1px solid rgba(212,168,67,0.4)",
+              background: "rgba(10,22,40,0.6)",
+              color: "#fff",
+              outline: "none",
+            }}
+          />
+          {error && (
+            <p style={{ fontSize: 12, color: "#fca5a5", marginTop: 6, marginBottom: 0 }}>{error}</p>
+          )}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", display: "flex", alignItems: "center", gap: 4 }}>
+              <Award style={{ width: 12, height: 12 }} /> Comentários geram R$ 50 em créditos. Limite de 1 por aula.
+            </span>
+            <button
+              type="button"
+              data-testid="lesson-comment-inline-submit"
+              disabled={!content.trim() || submit.isPending}
+              onClick={() => submit.mutate(content.trim())}
+              style={{
+                backgroundColor: !content.trim() || submit.isPending ? "rgba(212,168,67,0.4)" : "#D4A843",
+                color: "#0A1628",
+                border: "none",
+                borderRadius: 8,
+                padding: "9px 16px",
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: !content.trim() || submit.isPending ? "not-allowed" : "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              {submit.isPending ? (
+                <>
+                  <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> Enviando
+                </>
+              ) : (
+                <>
+                  <Send style={{ width: 14, height: 14 }} /> Enviar comentário
+                </>
+              )}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 // ─── Upsell CTA Banner (shown to online-only students after every few lessons) ─────
@@ -449,8 +633,6 @@ export default function ModulePage() {
 
   const videoRef = useRef<HTMLDivElement>(null);
   const leftPanelRef = useRef<HTMLDivElement>(null);
-  const commentsDesktopRef = useRef<HTMLDivElement>(null);
-  const commentsMobileRef = useRef<HTMLDivElement>(null);
 
   const handleSelectLesson = useCallback((lesson: Lesson | null) => {
     setShowNextUp(false);
@@ -646,35 +828,15 @@ export default function ModulePage() {
                   )}
                 </div>
 
-                {/* Compose box (DESKTOP): renderizado ANTES dos botoes de acao,
-                    imediatamente abaixo da descricao, garantindo que o aluno
-                    veja o campo de comentario na dobra sem precisar rolar.
-                    Inline styles para garantir visibilidade independente de
-                    classes customizadas com opacity (border-gold/40 etc. nao
-                    geram CSS porque 'gold' nao esta na palette tailwind). */}
-                {!isLessonLocked && (
-                  <div
-                    ref={commentsDesktopRef}
-                    id="lesson-comment-compose-desktop"
-                    data-testid="lesson-comment-compose"
-                    style={{
-                      borderRadius: 12,
-                      border: "2px solid rgba(212,168,67,0.4)",
-                      background: "linear-gradient(135deg, rgba(18,36,74,0.85), rgba(15,32,64,0.85))",
-                      padding: 20,
-                      boxShadow: "0 4px 20px rgba(212,168,67,0.10)",
-                    }}
-                  >
-                    <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
-                      <MessageCircle style={{ width: 16, height: 16, color: "#D4A843" }} />
-                      Deixe seu comentário ou dúvida
-                    </h3>
-                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 12 }}>
-                      Tire dúvidas, compartilhe sua experiência ou pergunte ao Dr. Gustavo sobre esta aula.
-                    </p>
-                    <LessonComments lessonId={selectedLesson.id} mode="compose" />
-                  </div>
-                )}
+                {/* Inline compose box (DESKTOP): renderizado ANTES dos botoes
+                    de acao, imediatamente apos a descricao. Sem dependencia do
+                    componente LessonComments — implementacao inline direta com
+                    inline styles para garantir visibilidade independente de
+                    cache de SW antigo, classes Tailwind customizadas, ou
+                    qualquer condicao do bundle anterior. SEM guarda condicional
+                    extra: se o aluno chegou ate a tela da aula (selectedLesson
+                    existe e !isLocked), ele ve o campo de comentario. */}
+                <InlineCommentBox lessonId={selectedLesson.id} />
 
                 <div className="flex items-center gap-2 flex-wrap">
                   <Button
@@ -691,27 +853,25 @@ export default function ModulePage() {
                     )}
                   </Button>
 
-                  {!isLessonLocked && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      data-testid="lesson-comment-cta"
-                      style={{ borderColor: "rgba(212,168,67,0.5)", color: "#D4A843" }}
-                      onClick={() => {
-                        const el = commentsDesktopRef.current;
-                        if (el) {
-                          el.scrollIntoView({ behavior: "smooth", block: "center" });
-                        }
-                        setTimeout(() => {
-                          const ta = document.getElementById(`lesson-comment-textarea-${selectedLesson.id}`) as HTMLTextAreaElement | null;
-                          if (ta) ta.focus();
-                        }, 350);
-                      }}
-                    >
-                      <MessageCircle className="w-4 h-4 mr-1.5" />
-                      Deixe seu comentário ou dúvida
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    data-testid="lesson-comment-cta"
+                    style={{ borderColor: "rgba(212,168,67,0.5)", color: "#D4A843" }}
+                    onClick={() => {
+                      const el = document.getElementById(`lesson-comment-inline-${selectedLesson.id}`);
+                      if (el) {
+                        el.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }
+                      setTimeout(() => {
+                        const ta = document.getElementById(`lesson-comment-textarea-${selectedLesson.id}`) as HTMLTextAreaElement | null;
+                        if (ta) ta.focus();
+                      }, 350);
+                    }}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-1.5" />
+                    Deixe seu comentário ou dúvida
+                  </Button>
 
                   {!isLessonLocked && selectedLesson.videoUrl && (
                     <Button
@@ -886,34 +1046,9 @@ export default function ModulePage() {
                 )}
               </div>
 
-              {/* Compose box (MOBILE): renderizado ANTES dos botoes de acao,
-                  imediatamente abaixo da descricao, na dobra. Inline styles
-                  para garantir visibilidade independente de classes Tailwind
-                  customizadas (gold/40 etc nao geram CSS quando 'gold' nao
-                  esta na palette tailwind). */}
-              {!isLessonLocked && (
-                <div
-                  ref={commentsMobileRef}
-                  id="lesson-comment-compose-mobile"
-                  data-testid="lesson-comment-compose-mobile"
-                  style={{
-                    borderRadius: 12,
-                    border: "2px solid rgba(212,168,67,0.4)",
-                    background: "linear-gradient(135deg, rgba(18,36,74,0.85), rgba(15,32,64,0.85))",
-                    padding: 16,
-                    boxShadow: "0 4px 20px rgba(212,168,67,0.10)",
-                  }}
-                >
-                  <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
-                    <MessageCircle style={{ width: 16, height: 16, color: "#D4A843" }} />
-                    Deixe seu comentário ou dúvida
-                  </h3>
-                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 12 }}>
-                    Tire dúvidas, compartilhe sua experiência ou pergunte ao Dr. Gustavo sobre esta aula.
-                  </p>
-                  <LessonComments lessonId={selectedLesson.id} mode="compose" />
-                </div>
-              )}
+              {/* Inline compose box (MOBILE): mesmo InlineCommentBox do
+                  desktop, renderizado direto no fluxo, antes dos botoes. */}
+              <InlineCommentBox lessonId={selectedLesson.id} />
 
               <div className="flex items-center gap-2 flex-wrap">
                 <Button
@@ -930,27 +1065,25 @@ export default function ModulePage() {
                   )}
                 </Button>
 
-                {!isLessonLocked && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    data-testid="lesson-comment-cta-mobile"
-                    style={{ borderColor: "rgba(212,168,67,0.5)", color: "#D4A843" }}
-                    onClick={() => {
-                      const el = commentsMobileRef.current;
-                      if (el) {
-                        el.scrollIntoView({ behavior: "smooth", block: "center" });
-                      }
-                      setTimeout(() => {
-                        const ta = document.getElementById(`lesson-comment-textarea-${selectedLesson.id}`) as HTMLTextAreaElement | null;
-                        if (ta) ta.focus();
-                      }, 350);
-                    }}
-                  >
-                    <MessageCircle className="w-4 h-4 mr-1.5" />
-                    Comentar
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-testid="lesson-comment-cta-mobile"
+                  style={{ borderColor: "rgba(212,168,67,0.5)", color: "#D4A843" }}
+                  onClick={() => {
+                    const el = document.getElementById(`lesson-comment-inline-${selectedLesson.id}`);
+                    if (el) {
+                      el.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }
+                    setTimeout(() => {
+                      const ta = document.getElementById(`lesson-comment-textarea-${selectedLesson.id}`) as HTMLTextAreaElement | null;
+                      if (ta) ta.focus();
+                    }, 350);
+                  }}
+                >
+                  <MessageCircle className="w-4 h-4 mr-1.5" />
+                  Comentar
+                </Button>
 
                 <div className="flex-1" />
 

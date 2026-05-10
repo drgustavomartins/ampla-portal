@@ -77,9 +77,19 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      // Service worker desativado. Em qualquer navegacao, desregistra todos os SWs
+      // existentes (v10/v11/etc.) e apaga as caches, garantindo que o bundle vivo
+      // seja sempre o ultimo deployado em producao.
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
+          navigator.serviceWorker.getRegistrations().then((regs) => {
+            regs.forEach((reg) => { reg.unregister().catch(() => {}); });
+          }).catch(() => {});
+          if (window.caches && caches.keys) {
+            caches.keys().then((keys) => {
+              keys.forEach((key) => { caches.delete(key).catch(() => {}); });
+            }).catch(() => {});
+          }
         });
       }
     </script>
