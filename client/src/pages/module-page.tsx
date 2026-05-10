@@ -359,6 +359,159 @@ function InlineCommentBox({ lessonId }: { lessonId: number }) {
   );
 }
 
+// ─── Fallback Comment Trigger ────────────────────────────────────────────────
+// CTA minimo + form expansivel renderizado SEMPRE junto aos botoes de acao.
+// Independente do InlineCommentBox: se aquele falhar por qualquer razao
+// (query/auth/render), ESTE continua aparecendo. Usa estado local para
+// abrir/fechar o form e mutation propria para enviar.
+function FallbackCommentTrigger({ lessonId }: { lessonId: number }) {
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [content, setContent] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+
+  const submit = useMutation({
+    mutationFn: async (text: string) => {
+      await apiRequest("POST", `/api/community/lessons/${lessonId}/comments`, { content: text });
+    },
+    onSuccess: () => {
+      setContent("");
+      setError(null);
+      setSubmitted(true);
+      queryClient.invalidateQueries({ queryKey: [`/api/community/lessons/${lessonId}/comments`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/community/lessons/${lessonId}/comment-count`] });
+      queryClient.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith("/api/community/feed") });
+    },
+    onError: (err: Error) => {
+      const msg = err.message || "";
+      if (msg.startsWith("409")) {
+        const friendly = msg.replace(/^409:\s*/, "").trim();
+        try {
+          const parsed = JSON.parse(friendly);
+          setError(parsed.message || "Você já comentou nesta aula.");
+        } catch {
+          setError(friendly || "Você já comentou nesta aula.");
+        }
+      } else if (msg.startsWith("401")) {
+        setError("Faça login para comentar.");
+      } else {
+        setError("Não foi possível enviar. Tente novamente.");
+      }
+    },
+  });
+
+  return (
+    <>
+      <button
+        type="button"
+        data-testid="lesson-comment-fallback-cta"
+        onClick={() => {
+          if (!user) {
+            window.location.href = "/#/login";
+            return;
+          }
+          setOpen((v) => !v);
+        }}
+        style={{
+          backgroundColor: "#D4A843",
+          color: "#0A1628",
+          border: "none",
+          borderRadius: 8,
+          padding: "8px 14px",
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        <MessageCircle style={{ width: 14, height: 14 }} />
+        Deixe seu comentário ou dúvida
+      </button>
+
+      {open && (
+        <div
+          data-testid="lesson-comment-fallback-panel"
+          style={{
+            width: "100%",
+            marginTop: 12,
+            borderRadius: 12,
+            border: "2px solid #D4A843",
+            background: "rgba(15,32,64,0.95)",
+            padding: 14,
+          }}
+        >
+          {submitted ? (
+            <p style={{ fontSize: 13, color: "#86efac", margin: 0 }}>
+              Comentário enviado com sucesso! Aparecerá no feed da comunidade.
+            </p>
+          ) : error && error.toLowerCase().includes("já") ? (
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", margin: 0 }}>{error}</p>
+          ) : (
+            <>
+              <Textarea
+                id={`lesson-comment-fallback-textarea-${lessonId}`}
+                data-testid="lesson-comment-fallback-textarea"
+                value={content}
+                onChange={(e) => { setContent(e.target.value); if (error) setError(null); }}
+                placeholder="Escreva sua dúvida ou comentário sobre esta aula..."
+                rows={3}
+                style={{
+                  width: "100%",
+                  minHeight: 80,
+                  resize: "none",
+                  fontSize: 14,
+                  padding: 10,
+                  borderRadius: 8,
+                  border: "1px solid rgba(212,168,67,0.4)",
+                  background: "rgba(10,22,40,0.6)",
+                  color: "#fff",
+                  outline: "none",
+                }}
+              />
+              {error && (
+                <p style={{ fontSize: 12, color: "#fca5a5", marginTop: 6, marginBottom: 0 }}>{error}</p>
+              )}
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+                <button
+                  type="button"
+                  disabled={!content.trim() || submit.isPending}
+                  onClick={() => submit.mutate(content.trim())}
+                  style={{
+                    backgroundColor: !content.trim() || submit.isPending ? "rgba(212,168,67,0.4)" : "#D4A843",
+                    color: "#0A1628",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "8px 14px",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: !content.trim() || submit.isPending ? "not-allowed" : "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  {submit.isPending ? (
+                    <>
+                      <Loader2 style={{ width: 14, height: 14 }} className="animate-spin" /> Enviando
+                    </>
+                  ) : (
+                    <>
+                      <Send style={{ width: 14, height: 14 }} /> Enviar comentário
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
 // ─── Upsell CTA Banner (shown to online-only students after every few lessons) ─────
 function MentoriaCTABanner({ onDismiss }: { onDismiss: () => void }) {
   return (
@@ -853,25 +1006,7 @@ export default function ModulePage() {
                     )}
                   </Button>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    data-testid="lesson-comment-cta"
-                    style={{ borderColor: "rgba(212,168,67,0.5)", color: "#D4A843" }}
-                    onClick={() => {
-                      const el = document.getElementById(`lesson-comment-inline-${selectedLesson.id}`);
-                      if (el) {
-                        el.scrollIntoView({ behavior: "smooth", block: "center" });
-                      }
-                      setTimeout(() => {
-                        const ta = document.getElementById(`lesson-comment-textarea-${selectedLesson.id}`) as HTMLTextAreaElement | null;
-                        if (ta) ta.focus();
-                      }, 350);
-                    }}
-                  >
-                    <MessageCircle className="w-4 h-4 mr-1.5" />
-                    Deixe seu comentário ou dúvida
-                  </Button>
+                  <FallbackCommentTrigger lessonId={selectedLesson.id} />
 
                   {!isLessonLocked && selectedLesson.videoUrl && (
                     <Button
@@ -1065,25 +1200,7 @@ export default function ModulePage() {
                   )}
                 </Button>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  data-testid="lesson-comment-cta-mobile"
-                  style={{ borderColor: "rgba(212,168,67,0.5)", color: "#D4A843" }}
-                  onClick={() => {
-                    const el = document.getElementById(`lesson-comment-inline-${selectedLesson.id}`);
-                    if (el) {
-                      el.scrollIntoView({ behavior: "smooth", block: "center" });
-                    }
-                    setTimeout(() => {
-                      const ta = document.getElementById(`lesson-comment-textarea-${selectedLesson.id}`) as HTMLTextAreaElement | null;
-                      if (ta) ta.focus();
-                    }, 350);
-                  }}
-                >
-                  <MessageCircle className="w-4 h-4 mr-1.5" />
-                  Comentar
-                </Button>
+                <FallbackCommentTrigger lessonId={selectedLesson.id} />
 
                 <div className="flex-1" />
 

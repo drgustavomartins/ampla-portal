@@ -75,23 +75,58 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Service worker desativado. Em qualquer navegacao, desregistra todos os SWs
-      // existentes (v10/v11/etc.) e apaga as caches, garantindo que o bundle vivo
-      // seja sempre o ultimo deployado em producao.
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.getRegistrations().then((regs) => {
-            regs.forEach((reg) => { reg.unregister().catch(() => {}); });
-          }).catch(() => {});
-          if (window.caches && caches.keys) {
-            caches.keys().then((keys) => {
-              keys.forEach((key) => { caches.delete(key).catch(() => {}); });
-            }).catch(() => {});
-          }
-        });
-      }
+      // Build marker para depuracao do usuario via console: window.__AMPLA_BUILD
+      window.__AMPLA_BUILD = "comments-inline-v13";
+      try { console.log("[Ampla] build:", window.__AMPLA_BUILD); } catch (_) {}
     </script>
+    <script>
+      // Service worker desativado. Em qualquer navegacao:
+      // 1. Desregistra TODOS os service workers existentes (v10, v11, etc.)
+      // 2. Apaga TODAS as caches do navegador
+      // 3. Se um SW antigo era ativo (controlando a aba), forca um reload UNICO
+      //    para garantir que o proximo fetch venha direto da rede sem o app shell
+      //    antigo no controle. Usa flag em sessionStorage para nao loopar.
+      (function () {
+        if (!('serviceWorker' in navigator)) return;
+        var hadActiveSw = !!navigator.serviceWorker.controller;
+        var done = sessionStorage.getItem('ampla-sw-cleanup-done') === '1';
+
+        function cleanup() {
+          var promises = [];
+          try {
+            promises.push(
+              navigator.serviceWorker.getRegistrations().then(function (regs) {
+                return Promise.all(regs.map(function (r) { return r.unregister().catch(function () {}); }));
+              }).catch(function () {})
+            );
+          } catch (_) {}
+          if (window.caches && caches.keys) {
+            try {
+              promises.push(
+                caches.keys().then(function (keys) {
+                  return Promise.all(keys.map(function (k) { return caches.delete(k).catch(function () {}); }));
+                }).catch(function () {})
+              );
+            } catch (_) {}
+          }
+          return Promise.all(promises);
+        }
+
+        window.addEventListener('load', function () {
+          cleanup().then(function () {
+            // Se havia um SW antigo controlando esta aba e ainda nao limpamos
+            // nesta sessao, recarrega uma unica vez sem cache para pegar o
+            // bundle realmente novo.
+            if (hadActiveSw && !done) {
+              try { sessionStorage.setItem('ampla-sw-cleanup-done', '1'); } catch (_) {}
+              try { console.log("[Ampla] SW antigo detectado e limpo; recarregando..."); } catch (_) {}
+              setTimeout(function () { window.location.reload(); }, 100);
+            }
+          });
+        });
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
