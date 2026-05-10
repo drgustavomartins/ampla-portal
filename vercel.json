@@ -96,13 +96,17 @@
         {
           "key": "Service-Worker-Allowed",
           "value": "/"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
         }
       ]
     }
   ],
   "build": {
     "env": {
-      "FORCE_REBUILD": "v10-converter"
+      "FORCE_REBUILD": "v11-cta-comments"
     }
   },
   "buildCommand": "npm run build",
