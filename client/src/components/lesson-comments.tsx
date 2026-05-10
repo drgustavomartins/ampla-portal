@@ -118,6 +118,8 @@ export default function LessonComments({ lessonId, mode = "full" }: LessonCommen
         <>
           <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-start">
             <Textarea
+              id={`lesson-comment-textarea-${lessonId}`}
+              data-testid="lesson-comment-textarea"
               value={comment}
               onChange={(e) => { setComment(e.target.value); if (limitError) setLimitError(null); }}
               placeholder="Escreva sua dúvida ou comentário sobre esta aula..."

@@ -646,7 +646,37 @@ export default function ModulePage() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                {/* Compose box (DESKTOP): renderizado ANTES dos botoes de acao,
+                    imediatamente abaixo da descricao, garantindo que o aluno
+                    veja o campo de comentario na dobra sem precisar rolar.
+                    Inline styles para garantir visibilidade independente de
+                    classes customizadas com opacity (border-gold/40 etc. nao
+                    geram CSS porque 'gold' nao esta na palette tailwind). */}
+                {!isLessonLocked && (
+                  <div
+                    ref={commentsDesktopRef}
+                    id="lesson-comment-compose-desktop"
+                    data-testid="lesson-comment-compose"
+                    style={{
+                      borderRadius: 12,
+                      border: "2px solid rgba(212,168,67,0.4)",
+                      background: "linear-gradient(135deg, rgba(18,36,74,0.85), rgba(15,32,64,0.85))",
+                      padding: 20,
+                      boxShadow: "0 4px 20px rgba(212,168,67,0.10)",
+                    }}
+                  >
+                    <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+                      <MessageCircle style={{ width: 16, height: 16, color: "#D4A843" }} />
+                      Deixe seu comentário ou dúvida
+                    </h3>
+                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 12 }}>
+                      Tire dúvidas, compartilhe sua experiência ou pergunte ao Dr. Gustavo sobre esta aula.
+                    </p>
+                    <LessonComments lessonId={selectedLesson.id} mode="compose" />
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 flex-wrap">
                   <Button
                     variant={isCompleted ? "secondary" : "default"}
                     size="sm"
@@ -660,6 +690,28 @@ export default function ModulePage() {
                       <><Circle className="w-4 h-4 mr-1.5" />Marcar como concluida</>
                     )}
                   </Button>
+
+                  {!isLessonLocked && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      data-testid="lesson-comment-cta"
+                      style={{ borderColor: "rgba(212,168,67,0.5)", color: "#D4A843" }}
+                      onClick={() => {
+                        const el = commentsDesktopRef.current;
+                        if (el) {
+                          el.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }
+                        setTimeout(() => {
+                          const ta = document.getElementById(`lesson-comment-textarea-${selectedLesson.id}`) as HTMLTextAreaElement | null;
+                          if (ta) ta.focus();
+                        }, 350);
+                      }}
+                    >
+                      <MessageCircle className="w-4 h-4 mr-1.5" />
+                      Deixe seu comentário ou dúvida
+                    </Button>
+                  )}
 
                   {!isLessonLocked && selectedLesson.videoUrl && (
                     <Button
@@ -691,32 +743,6 @@ export default function ModulePage() {
                     </Button>
                   )}
                 </div>
-
-                {/* Compose box: textarea visivel logo abaixo dos botoes principais
-                    Inline styles para garantir visibilidade independente de classes
-                    customizadas com opacity (border-gold/40 etc. nao geram CSS). */}
-                {!isLessonLocked && (
-                  <div
-                    ref={commentsDesktopRef}
-                    id="lesson-comment-compose-desktop"
-                    style={{
-                      borderRadius: 12,
-                      border: "2px solid rgba(212,168,67,0.4)",
-                      background: "linear-gradient(135deg, rgba(18,36,74,0.85), rgba(15,32,64,0.85))",
-                      padding: 20,
-                      boxShadow: "0 4px 20px rgba(212,168,67,0.10)",
-                    }}
-                  >
-                    <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
-                      <MessageCircle style={{ width: 16, height: 16, color: "#D4A843" }} />
-                      Deixe seu comentário ou dúvida
-                    </h3>
-                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 12 }}>
-                      Tire dúvidas, compartilhe sua experiência ou pergunte ao Dr. Gustavo sobre esta aula.
-                    </p>
-                    <LessonComments lessonId={selectedLesson.id} mode="compose" />
-                  </div>
-                )}
 
                 {/* Upsell CTA banner for online-only students */}
                 {showUpsellBanner && isOnlineOnlyStudent && !isVipOrMentoria && (
@@ -860,6 +886,35 @@ export default function ModulePage() {
                 )}
               </div>
 
+              {/* Compose box (MOBILE): renderizado ANTES dos botoes de acao,
+                  imediatamente abaixo da descricao, na dobra. Inline styles
+                  para garantir visibilidade independente de classes Tailwind
+                  customizadas (gold/40 etc nao geram CSS quando 'gold' nao
+                  esta na palette tailwind). */}
+              {!isLessonLocked && (
+                <div
+                  ref={commentsMobileRef}
+                  id="lesson-comment-compose-mobile"
+                  data-testid="lesson-comment-compose-mobile"
+                  style={{
+                    borderRadius: 12,
+                    border: "2px solid rgba(212,168,67,0.4)",
+                    background: "linear-gradient(135deg, rgba(18,36,74,0.85), rgba(15,32,64,0.85))",
+                    padding: 16,
+                    boxShadow: "0 4px 20px rgba(212,168,67,0.10)",
+                  }}
+                >
+                  <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+                    <MessageCircle style={{ width: 16, height: 16, color: "#D4A843" }} />
+                    Deixe seu comentário ou dúvida
+                  </h3>
+                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 12 }}>
+                    Tire dúvidas, compartilhe sua experiência ou pergunte ao Dr. Gustavo sobre esta aula.
+                  </p>
+                  <LessonComments lessonId={selectedLesson.id} mode="compose" />
+                </div>
+              )}
+
               <div className="flex items-center gap-2 flex-wrap">
                 <Button
                   variant={isCompleted ? "secondary" : "default"}
@@ -874,6 +929,28 @@ export default function ModulePage() {
                     <><Circle className="w-4 h-4 mr-1.5" />Marcar como concluida</>
                   )}
                 </Button>
+
+                {!isLessonLocked && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    data-testid="lesson-comment-cta-mobile"
+                    style={{ borderColor: "rgba(212,168,67,0.5)", color: "#D4A843" }}
+                    onClick={() => {
+                      const el = commentsMobileRef.current;
+                      if (el) {
+                        el.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }
+                      setTimeout(() => {
+                        const ta = document.getElementById(`lesson-comment-textarea-${selectedLesson.id}`) as HTMLTextAreaElement | null;
+                        if (ta) ta.focus();
+                      }, 350);
+                    }}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-1.5" />
+                    Comentar
+                  </Button>
+                )}
 
                 <div className="flex-1" />
 
@@ -899,33 +976,6 @@ export default function ModulePage() {
                 <MentoriaCTABanner onDismiss={() => { setShowUpsellBanner(false); setUpsellDismissed(true); }} />
               )}
             </div>
-
-            {/* Compose box (mobile): textarea visivel logo abaixo dos botoes
-                Inline styles para garantir visibilidade independente de classes Tailwind
-                customizadas (gold/40 etc. nao geram CSS quando 'gold' nao esta na palette). */}
-            {!isLessonLocked && (
-              <div
-                ref={commentsMobileRef}
-                id="lesson-comment-compose-mobile"
-                style={{
-                  marginTop: 16,
-                  borderRadius: 12,
-                  border: "2px solid rgba(212,168,67,0.4)",
-                  background: "linear-gradient(135deg, rgba(18,36,74,0.85), rgba(15,32,64,0.85))",
-                  padding: 16,
-                  boxShadow: "0 4px 20px rgba(212,168,67,0.10)",
-                }}
-              >
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
-                  <MessageCircle style={{ width: 16, height: 16, color: "#D4A843" }} />
-                  Deixe seu comentário ou dúvida
-                </h3>
-                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 12 }}>
-                  Tire dúvidas, compartilhe sua experiência ou pergunte ao Dr. Gustavo sobre esta aula.
-                </p>
-                <LessonComments lessonId={selectedLesson.id} mode="compose" />
-              </div>
-            )}
 
             {/* Lista de comentarios (mobile) */}
             {!isLessonLocked && (
