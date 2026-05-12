@@ -30,7 +30,7 @@ import { stripPhone } from "@/lib/phone";
 import { SelectThemeModal } from "@/components/SelectThemeModal";
 import { PhoneInput } from "@/components/PhoneInput";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
-import { isLifetimePlan } from "@shared/access-rules";
+import { isLifetimePlan, hasMentoriaAtiva } from "@shared/access-rules";
 import { CreditsDashboardCard } from "@/components/CreditsDashboardCard";
 import { CreditsFullSection } from "@/components/CreditsFullSection";
 import { HeroContinue, type HeroMode } from "@/components/netflix/HeroContinue";
@@ -911,6 +911,13 @@ export default function StudentDashboard() {
               Acompanhamento
             </Link>
             <Link
+              href="/encontros-quinzenais"
+              className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/5 hover:bg-gold/15 px-3 py-1.5 text-xs font-semibold text-gold transition-colors"
+            >
+              <Calendar className="w-3 h-3" />
+              Encontros
+            </Link>
+            <Link
               href="/planos"
               className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/5 hover:bg-gold/15 px-3 py-1.5 text-xs font-semibold text-gold transition-colors"
             >
@@ -1050,6 +1057,14 @@ export default function StudentDashboard() {
             >
               <Sparkles className="w-5 h-5 text-emerald-400/70" />
               <span className="text-[20px] font-semibold text-white">Acompanhamento</span>
+            </button>
+
+            <button
+              onClick={() => { setMobileMenuOpen(false); setLocation("/encontros-quinzenais"); }}
+              className="flex items-center gap-4 w-full text-left py-3.5 border-b border-white/5"
+            >
+              <Calendar className="w-5 h-5 text-gold/70" />
+              <span className="text-[20px] font-semibold text-white">Encontros Quinzenais</span>
             </button>
 
             <button
@@ -1553,6 +1568,100 @@ export default function StudentDashboard() {
                   </div>
                 );
               })}
+
+              {/* ===== ENCONTROS QUINZENAIS — virtual module card ===== */}
+              {(() => {
+                const mentoriaAtiva = hasMentoriaAtiva({
+                  planKey: (user as any)?.planKey ?? null,
+                  role: (user as any)?.role ?? null,
+                });
+                const matchesSearch = !lessonSearch
+                  || "encontros quinzenais aulas online mentoria gravacoes preenchedores neocolagenese glp-1 emagrecimento".includes(lessonSearch.toLowerCase());
+                if (!matchesSearch) return null;
+                const isLocked = !mentoriaAtiva;
+                const courseNumber = String(courseModules.length + 1).padStart(2, "0");
+                return (
+                  <div
+                    key="encontros-quinzenais"
+                    className="shelf-card shrink-0 group transition-all duration-500 cursor-pointer"
+                    onClick={() => {
+                      if (isLocked) {
+                        window.open(whatsappRenewUrl, "_blank");
+                      } else {
+                        setLocation("/encontros-quinzenais");
+                      }
+                    }}
+                    data-testid="button-module-encontros-quinzenais"
+                  >
+                    <div
+                      className="relative rounded-[20px] overflow-hidden transition-all duration-500 group-hover:-translate-y-1.5 group-hover:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.5)]"
+                      style={{ aspectRatio: "4/5" }}
+                    >
+                      <div
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-[1.03]"
+                        style={{
+                          background:
+                            "linear-gradient(160deg, #14213D 0%, #0A1628 55%, #0A0D14 100%)",
+                        }}
+                      />
+                      {/* Decorative pattern */}
+                      <div
+                        className="absolute inset-0 opacity-[0.10]"
+                        style={{
+                          backgroundImage:
+                            "radial-gradient(circle at 30% 25%, #D4A843 0%, transparent 55%)",
+                        }}
+                      />
+                      <div className="absolute top-5 left-5">
+                        <div className="inline-flex items-center gap-1.5 rounded-full border border-gold/30 bg-[#0A1628]/60 px-2.5 py-1">
+                          <Sparkles className="w-3 h-3 text-gold" />
+                          <span className="text-[9px] font-semibold text-gold uppercase tracking-wider">
+                            Mentoria
+                          </span>
+                        </div>
+                      </div>
+                      <span
+                        className="absolute bottom-4 left-5 text-[4rem] font-extralight leading-none text-white/[0.07] select-none tracking-tight"
+                        style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}
+                      >
+                        {courseNumber}
+                      </span>
+
+                      {isLocked && (
+                        <div className="absolute inset-0 bg-[#0A1628]/50 backdrop-blur-[3px] flex flex-col items-center justify-center gap-2">
+                          <Lock className="w-6 h-6 text-gold/80" />
+                          <span className="text-[10px] font-semibold text-gold/90 uppercase tracking-wider bg-[#0A1628]/60 px-3 py-1 rounded-full text-center max-w-[80%]">
+                            Renove seu plano
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-4 pb-1 space-y-1.5 min-h-[90px]">
+                      <div className="flex items-center gap-2">
+                        {isLocked ? (
+                          <span className="text-[10px] font-medium text-gold/70 uppercase tracking-[0.12em]">
+                            Bloqueado
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium text-emerald-400/90 uppercase tracking-[0.12em]">
+                            Disponível
+                          </span>
+                        )}
+                      </div>
+                      <h3
+                        className="font-semibold text-[15px] text-foreground/90 leading-snug line-clamp-2 tracking-[-0.01em] min-h-[2.6em]"
+                        title="Encontros Quinzenais"
+                      >
+                        Encontros Quinzenais
+                      </h3>
+                      <p className="text-[12px] text-muted-foreground/60 leading-relaxed line-clamp-1">
+                        Gravações das aulas online da mentoria
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
               </div>
             </div>
           </section>

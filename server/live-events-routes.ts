@@ -39,19 +39,12 @@ async function requireAdmin(req: Request, res: Response): Promise<{ userId: numb
 }
 
 // ─── Planos que têm acesso ao Acompanhamento ─────────────────────────────────
-const PLANS_WITH_ACCESS = new Set([
-  "observador_essencial", "observador_avancado", "observador_intensivo",
-  "imersao",
-  "vip_online", "vip_presencial", "vip_completo",
-  "imersao_elite",
-  // Admin/testers também podem ver
-  "tester", "workshop",
-]);
+// Usa a mesma lista do módulo "Encontros Quinzenais" (mentoria ativa),
+// definida em shared/access-rules.ts como fonte única.
+import { hasMentoriaAtiva } from "../shared/access-rules";
 
 function userHasAccess(userPlanKey: string | null | undefined, role?: string): boolean {
-  if (role === "admin" || role === "super_admin") return true;
-  if (!userPlanKey) return false;
-  return PLANS_WITH_ACCESS.has(userPlanKey);
+  return hasMentoriaAtiva({ planKey: userPlanKey ?? null, role: role ?? null });
 }
 
 export function registerLiveEventsRoutes(app: Express) {

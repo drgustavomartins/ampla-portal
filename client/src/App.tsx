@@ -36,6 +36,7 @@ const CreditsPage = lazy(() => import("./pages/credits"));
 const CreditsRulesPage = lazy(() => import("./pages/credits-rules"));
 const ComunidadePage = lazy(() => import("./pages/comunidade"));
 const AcompanhamentoPage = lazy(() => import("./pages/acompanhamento"));
+const EncontrosQuinzenaisPage = lazy(() => import("./pages/encontros-quinzenais"));
 const LandingPage = lazy(() => import("./pages/lp"));
 
 // ─── Loading spinner for lazy chunks ──────────────────────────────────────
@@ -153,6 +154,7 @@ function App() {
             <Route path="/creditos/regras" component={() => <ProtectedPage component={CreditsRulesPage} />} />
             <Route path="/comunidade" component={() => <ProtectedPage component={ComunidadePage} />} />
             <Route path="/acompanhamento" component={() => <ProtectedPageAdminOk component={AcompanhamentoPage} />} />
+            <Route path="/encontros-quinzenais" component={() => <ProtectedPageAdminOk component={EncontrosQuinzenaisPage} />} />
             <Route path="/termos" component={() => <LazyRoute component={TermosPage} />} />
             <Route path="/privacidade" component={() => <LazyRoute component={PrivacidadePage} />} />
             <Route component={NotFound} />

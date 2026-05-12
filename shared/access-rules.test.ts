@@ -1,9 +1,9 @@
 /**
- * Testes unitários para isLifetimePlan e hasActiveAccess.
+ * Testes unitários para isLifetimePlan, hasActiveAccess e hasMentoriaAtiva.
  * Executar: npx tsx shared/access-rules.test.ts
  */
 
-import { isLifetimePlan, hasActiveAccess } from "./access-rules";
+import { isLifetimePlan, hasActiveAccess, hasMentoriaAtiva } from "./access-rules";
 
 let passed = 0;
 let failed = 0;
@@ -43,6 +43,22 @@ assert("planKey 'tester' + sem expiração → false", hasActiveAccess({ planKey
 assert("planKey 'vip_completo' + expiração passada (resíduo) → true", hasActiveAccess({ planKey: "vip_completo", accessExpiresAt: passado }), true);
 assert("planKey 'vip_completo' + expiração null → true", hasActiveAccess({ planKey: "vip_completo", accessExpiresAt: null }), true);
 assert("planKey 'modulo_avulso' + qualquer expiração → true", hasActiveAccess({ planKey: "modulo_avulso", accessExpiresAt: futuro }), true);
+
+console.log("\nhasMentoriaAtiva:");
+assert("admin sem plano → true", hasMentoriaAtiva({ planKey: null, role: "admin" }), true);
+assert("super_admin sem plano → true", hasMentoriaAtiva({ planKey: null, role: "super_admin" }), true);
+assert("student sem plano → false", hasMentoriaAtiva({ planKey: null, role: "student" }), false);
+assert("student 'tester' → false", hasMentoriaAtiva({ planKey: "tester", role: "student" }), false);
+assert("student 'modulo_avulso' (vitalício, sem mentoria) → false", hasMentoriaAtiva({ planKey: "modulo_avulso", role: "student" }), false);
+assert("student 'pacote_completo' (vitalício, sem mentoria) → false", hasMentoriaAtiva({ planKey: "pacote_completo", role: "student" }), false);
+assert("student 'acesso_vitalicio' (vitalício, sem mentoria) → false", hasMentoriaAtiva({ planKey: "acesso_vitalicio", role: "student" }), false);
+assert("student 'vip_online' → true", hasMentoriaAtiva({ planKey: "vip_online", role: "student" }), true);
+assert("student 'vip_completo' → true", hasMentoriaAtiva({ planKey: "vip_completo", role: "student" }), true);
+assert("student 'observador_essencial' → true", hasMentoriaAtiva({ planKey: "observador_essencial", role: "student" }), true);
+assert("student 'observador_intensivo' → true", hasMentoriaAtiva({ planKey: "observador_intensivo", role: "student" }), true);
+assert("student 'imersao' → true", hasMentoriaAtiva({ planKey: "imersao", role: "student" }), true);
+assert("student 'imersao_elite' → true", hasMentoriaAtiva({ planKey: "imersao_elite", role: "student" }), true);
+assert("student 'extensao_acompanhamento' → true", hasMentoriaAtiva({ planKey: "extensao_acompanhamento", role: "student" }), true);
 
 console.log(`\nResultado: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
