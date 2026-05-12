@@ -23,8 +23,9 @@ function TrialLeadsSection({ trialStudents, onConvert, onEdit }: {
 }) {
   const { toast } = useToast();
 
-  const getDaysLeft = (expiresAt: string) => {
-    if (!expiresAt) return 0;
+  // Retorna número de dias restantes, ou null se o acesso for vitalício (sem expiração).
+  const getDaysLeft = (expiresAt: string | null | undefined): number | null => {
+    if (!expiresAt) return null;
     return Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000));
   };
 
@@ -98,7 +99,7 @@ function TrialLeadsSection({ trialStudents, onConvert, onEdit }: {
       <div className="space-y-4">
         <div>
           <h4 className="text-sm font-semibold text-foreground">ALUNOS EM TRIAL (0)</h4>
-          <p className="text-xs text-muted-foreground mt-0.5">Alunos no periodo de teste gratuito de 7 dias</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Alunos com cadastro gratuito (acesso por tempo indeterminado, primeiras aulas)</p>
         </div>
         <div className="rounded-xl border border-border/30 bg-card/40 py-10 text-center">
           <p className="text-sm text-muted-foreground">Nenhum lead em trial no momento.</p>
@@ -112,7 +113,7 @@ function TrialLeadsSection({ trialStudents, onConvert, onEdit }: {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h4 className="text-sm font-semibold text-foreground uppercase tracking-wider">Alunos em Trial ({trialStudents.length})</h4>
-          <p className="text-xs text-muted-foreground mt-0.5">Alunos no periodo de teste gratuito de 7 dias</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Alunos com cadastro gratuito (acesso por tempo indeterminado, primeiras aulas)</p>
         </div>
         {hasDuplicates && (
           <AlertDialog>
@@ -176,12 +177,17 @@ function TrialLeadsSection({ trialStudents, onConvert, onEdit }: {
                   {student.phone && <p className="text-xs text-muted-foreground">{student.phone}</p>}
                 </div>
                 <span className={`text-[10px] rounded-full px-2 py-0.5 font-semibold shrink-0 ${
+                  daysLeft === null ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" :
                   daysLeft === 0 ? "bg-red-500/20 text-red-400 border border-red-500/30" :
                   daysLeft <= 2 ? "bg-red-500/20 text-red-400 border border-red-500/30" :
                   daysLeft <= 4 ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30" :
                   "bg-green-500/20 text-green-400 border border-green-500/30"
                 }`}>
-                  {daysLeft === 0 ? "Expirado" : `${daysLeft} dia${daysLeft !== 1 ? "s" : ""} restante${daysLeft !== 1 ? "s" : ""}`}
+                  {daysLeft === null
+                    ? "Acesso vitalício"
+                    : daysLeft === 0
+                    ? "Expirado"
+                    : `${daysLeft} dia${daysLeft !== 1 ? "s" : ""} restante${daysLeft !== 1 ? "s" : ""}`}
                 </span>
               </div>
 

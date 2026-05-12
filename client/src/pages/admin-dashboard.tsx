@@ -4487,7 +4487,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Leads Trial ({trialStudents.length})</h3>
-                <p className="text-[11px] text-muted-foreground/60 mt-0.5">Alunos no período de teste gratuito de 7 dias</p>
+                <p className="text-[11px] text-muted-foreground/60 mt-0.5">Alunos com cadastro gratuito (acesso por tempo indeterminado, primeiras aulas)</p>
               </div>
             </div>
             {trialStudents.length === 0 ? (

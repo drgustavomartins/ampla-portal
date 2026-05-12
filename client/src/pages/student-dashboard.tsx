@@ -733,7 +733,7 @@ export default function StudentDashboard() {
     return "Conteúdo exclusivo da mentoria Ampla Facial";
   };
 
-  const whatsappTrialUrl = `https://wa.me/5521976263881?text=${encodeURIComponent(`Olá! Estou no período de teste gratuito da Ampla Facial e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
+  const whatsappTrialUrl = `https://wa.me/5521976263881?text=${encodeURIComponent(`Olá! Estou com o cadastro gratuito da Ampla Facial e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
 
   // ===== NETFLIX PHASE 1: Hero + Rows =====
 

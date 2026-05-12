@@ -320,13 +320,13 @@ Voce tem R$ ${(h/100).toFixed(2).replace(".",",")} em creditos que serao aplicad
         `),l&&l>0){let m=(await d.execute(x`SELECT title FROM live_events WHERE id = ${a}`)).rows?.[0]?.title||"Acompanhamento",g=new Date(Date.now()+180*864e5).toISOString(),b=`live_event_${a}_${r}`;(await d.execute(x`SELECT id FROM credit_transactions WHERE reference_id = ${b} LIMIT 1`)).rows?.length||await d.execute(x`
             INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at, expires_at)
             VALUES (${r}, 'acompanhamento', ${l}, ${`Participa\xE7\xE3o ativa: ${m}`}, ${b}, ${p}, ${g})
-          `)}return t.json({ok:!0})}catch(a){return console.error("[live-events] POST /attendance error:",a),t.status(500).json({message:"Erro"})}})}var _re=(0,lE.default)({storage:lE.default.memoryStorage(),limits:{fileSize:2*1024*1024},fileFilter:(i,e,t)=>{["image/jpeg","image/png","image/webp"].includes(e.mimetype)?t(null,!0):t(new Error("Apenas imagens JPG, PNG ou WebP"))}}),Ki=process.env.RESEND_API_KEY?new yre(process.env.RESEND_API_KEY):null;async function w5(i){if(!Ki)return;let e=i.name.split(" ")[0];try{await Ki.emails.send({from:"Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",to:i.email,subject:"Seu acesso \xE0 Ampla Facial est\xE1 ativo \u2014 7 dias para explorar",html:`
+          `)}return t.json({ok:!0})}catch(a){return console.error("[live-events] POST /attendance error:",a),t.status(500).json({message:"Erro"})}})}var _re=(0,lE.default)({storage:lE.default.memoryStorage(),limits:{fileSize:2*1024*1024},fileFilter:(i,e,t)=>{["image/jpeg","image/png","image/webp"].includes(e.mimetype)?t(null,!0):t(new Error("Apenas imagens JPG, PNG ou WebP"))}}),Ki=process.env.RESEND_API_KEY?new yre(process.env.RESEND_API_KEY):null;async function w5(i){if(!Ki)return;let e=i.name.split(" ")[0];try{await Ki.emails.send({from:"Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",to:i.email,subject:"Seu acesso gratuito \xE0 Ampla Facial est\xE1 ativo",html:`
         <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0A1628;color:#fff;padding:40px 32px;border-radius:16px">
           <img src="https://portal.amplafacial.com.br/logo-icon.png" alt="Ampla Facial" style="width:72px;display:block;margin:0 auto 24px" />
           <h1 style="text-align:center;color:#D4A843;font-size:22px;margin:0 0 8px">Bem-vindo \xE0 Ampla Facial, ${e}!</h1>
           <div style="width:48px;height:1px;background:#D4A843;opacity:0.5;margin:0 auto 24px"></div>
           <p style="color:#ccc;font-size:15px;line-height:1.6;margin:0 0 20px">
-            Seu teste gratuito de <strong style="color:#D4A843">7 dias</strong> est\xE1 ativo. Voc\xEA tem acesso \xE0s primeiras aulas de cada m\xF3dulo \u2014 sem cart\xE3o de cr\xE9dito.
+            Seu cadastro gratuito est\xE1 ativo por <strong style="color:#D4A843">tempo indeterminado</strong>. Voc\xEA tem acesso \xE0s primeiras aulas de cada m\xF3dulo \u2014 sem cart\xE3o de cr\xE9dito.
           </p>
           <div style="background:#0D1E35;border-radius:12px;padding:20px;margin:0 0 24px">
             <p style="color:#D4A843;font-size:13px;font-weight:bold;margin:0 0 12px;text-transform:uppercase;letter-spacing:0.05em">O que voc\xEA pode explorar:</p>
@@ -366,7 +366,7 @@ Voce tem R$ ${(h/100).toFixed(2).replace(".",",")} em creditos que serao aplicad
       `})}catch(a){console.error("[email] Erro ao enviar email de reset:",a)}}async function E5(i){if(Ki)try{await Ki.emails.send({from:"Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",to:"gustavo.m.martins@outlook.com",subject:`\u{1F195} Novo aluno em Trial: ${i.name}`,html:`
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0A1628;color:#fff;padding:32px;border-radius:12px">
           <div style="color:#D4A843;font-size:20px;font-weight:bold;margin-bottom:24px">Ampla Facial \u2014 Novo Aluno em Trial</div>
-          <p style="margin:0 0 16px">Um novo aluno se cadastrou e j\xE1 est\xE1 em <strong style="color:#D4A843">Trial (7 dias)</strong>:</p>
+          <p style="margin:0 0 16px">Um novo aluno se cadastrou e j\xE1 est\xE1 em <strong style="color:#D4A843">Cadastro gratuito (acesso por tempo indeterminado)</strong>:</p>
           <table style="width:100%;border-collapse:collapse">
             <tr><td style="padding:8px 0;color:#999">Nome</td><td style="padding:8px 0;font-weight:bold">${i.name}</td></tr>
             <tr><td style="padding:8px 0;color:#999">Email</td><td style="padding:8px 0">${i.email}</td></tr>
@@ -1317,7 +1317,7 @@ Este conte\xFAdo \xE9 de car\xE1ter educativo e destinado a profissionais de sa\
                     <img src="https://portal.amplafacial.com.br/logo-transparent.png" height="48" />
                     <h2 style="color:#D4A843;margin-top:24px">Ol\xE1, ${p.split(" ")[0]}!</h2>
                     <p>Seu resultado no quiz foi: <strong style="color:#D4A843">${m==="vip"?"Mentoria VIP":m==="observador"?"Plano Observador":"Acesso Digital"}</strong></p>
-                    <p>Criei um acesso gratuito de 7 dias para voc\xEA explorar a plataforma Ampla Facial.</p>
+                    <p>Criei um acesso gratuito por tempo indeterminado para voc\xEA explorar a plataforma Ampla Facial.</p>
                     <div style="background:#0D1E35;border-radius:8px;padding:20px;margin:24px 0">
                       <p style="margin:0;color:#aaa">E-mail: <strong style="color:#fff">${f}</strong></p>
                       <p style="margin:8px 0 0;color:#aaa">Senha tempor\xE1ria: <strong style="color:#D4A843;font-size:18px">${N}</strong></p>

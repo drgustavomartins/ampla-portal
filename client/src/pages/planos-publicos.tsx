@@ -624,7 +624,7 @@ export default function PlanosPublicos() {
               href="/#/comecar"
               className="text-sm font-semibold text-[#D4A843] hover:text-[#F0D78C] transition-colors"
             >
-              Comece com o Trial gratuito — 7 dias de acesso &rarr;
+              Crie seu cadastro gratuito — acesso por tempo indeterminado &rarr;
             </a>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, X, Clock } from "lucide-react";
+import { TrendingUp, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
 
@@ -27,30 +27,7 @@ export function UpgradeBanner({ context = "padrao", lockedContent }: UpgradeBann
 
   if (dismissed || !myPlan) return null;
 
-  // Banner de trial expirando
-  if (myPlan.isTrialActive && myPlan.trialDaysLeft !== null && myPlan.trialDaysLeft <= 3) {
-    return (
-      <div className="relative mb-4 rounded-xl border border-amber-500/30 bg-amber-900/20 p-4 flex items-center gap-3">
-        <Clock className="h-5 w-5 shrink-0 text-amber-400" />
-        <div className="flex-1 text-sm text-amber-300">
-          <strong>
-            {myPlan.trialDaysLeft === 0
-              ? "Seu período gratuito termina hoje!"
-              : `${myPlan.trialDaysLeft} dia${myPlan.trialDaysLeft !== 1 ? "s" : ""} restante${myPlan.trialDaysLeft !== 1 ? "s" : ""} no período gratuito.`}
-          </strong>{" "}
-          Escolha um plano agora para não perder o acesso.
-        </div>
-        <Link href="/planos">
-          <button className="shrink-0 rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-bold text-[#0A1628] hover:bg-amber-400 transition-all">
-            Ver planos
-          </button>
-        </Link>
-        <button onClick={() => setDismissed(true)} className="text-amber-400/60 hover:text-amber-400">
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-    );
-  }
+  // Trial vitalício: não exibe banner de "expirando" — acesso gratuito é por tempo indeterminado.
 
   // Banner de conteúdo bloqueado
   if (context === "modulo_bloqueado" || context === "material_bloqueado") {

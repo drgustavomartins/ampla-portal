@@ -493,7 +493,7 @@ export default function QuizPage() {
             <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 flex items-start gap-3 mb-4">
               <CheckCircle2 className="h-5 w-5 text-green-400 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-semibold text-white">Acesso gratuito liberado por 7 dias!</p>
+                <p className="text-sm font-semibold text-white">Acesso gratuito liberado!</p>
                 <p className="text-xs text-gray-400 mt-0.5">
                   Entrando na plataforma automaticamente em instantes… Verifique seu e-mail para a senha de acesso.
                 </p>

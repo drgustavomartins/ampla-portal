@@ -41,14 +41,14 @@ async function sendWelcomeEmail(user: { name: string; email: string }) {
     await resend.emails.send({
       from: "Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",
       to: user.email,
-      subject: "Seu acesso à Ampla Facial está ativo — 7 dias para explorar",
+      subject: "Seu acesso gratuito à Ampla Facial está ativo",
       html: `
         <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0A1628;color:#fff;padding:40px 32px;border-radius:16px">
           <img src="https://portal.amplafacial.com.br/logo-icon.png" alt="Ampla Facial" style="width:72px;display:block;margin:0 auto 24px" />
           <h1 style="text-align:center;color:#D4A843;font-size:22px;margin:0 0 8px">Bem-vindo à Ampla Facial, ${firstName}!</h1>
           <div style="width:48px;height:1px;background:#D4A843;opacity:0.5;margin:0 auto 24px"></div>
           <p style="color:#ccc;font-size:15px;line-height:1.6;margin:0 0 20px">
-            Seu teste gratuito de <strong style="color:#D4A843">7 dias</strong> está ativo. Você tem acesso às primeiras aulas de cada módulo — sem cartão de crédito.
+            Seu cadastro gratuito está ativo por <strong style="color:#D4A843">tempo indeterminado</strong>. Você tem acesso às primeiras aulas de cada módulo — sem cartão de crédito.
           </p>
           <div style="background:#0D1E35;border-radius:12px;padding:20px;margin:0 0 24px">
             <p style="color:#D4A843;font-size:13px;font-weight:bold;margin:0 0 12px;text-transform:uppercase;letter-spacing:0.05em">O que você pode explorar:</p>
@@ -118,7 +118,7 @@ async function notifyNewRegistration(user: { name: string; email: string; phone?
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0A1628;color:#fff;padding:32px;border-radius:12px">
           <div style="color:#D4A843;font-size:20px;font-weight:bold;margin-bottom:24px">Ampla Facial — Novo Aluno em Trial</div>
-          <p style="margin:0 0 16px">Um novo aluno se cadastrou e já está em <strong style="color:#D4A843">Trial (7 dias)</strong>:</p>
+          <p style="margin:0 0 16px">Um novo aluno se cadastrou e já está em <strong style="color:#D4A843">Cadastro gratuito (acesso por tempo indeterminado)</strong>:</p>
           <table style="width:100%;border-collapse:collapse">
             <tr><td style="padding:8px 0;color:#999">Nome</td><td style="padding:8px 0;font-weight:bold">${user.name}</td></tr>
             <tr><td style="padding:8px 0;color:#999">Email</td><td style="padding:8px 0">${user.email}</td></tr>
@@ -2234,7 +2234,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
                     <img src="https://portal.amplafacial.com.br/logo-transparent.png" height="48" />
                     <h2 style="color:#D4A843;margin-top:24px">Olá, ${nome.split(" ")[0]}!</h2>
                     <p>Seu resultado no quiz foi: <strong style="color:#D4A843">${resultado === "vip" ? "Mentoria VIP" : resultado === "observador" ? "Plano Observador" : "Acesso Digital"}</strong></p>
-                    <p>Criei um acesso gratuito de 7 dias para você explorar a plataforma Ampla Facial.</p>
+                    <p>Criei um acesso gratuito por tempo indeterminado para você explorar a plataforma Ampla Facial.</p>
                     <div style="background:#0D1E35;border-radius:8px;padding:20px;margin:24px 0">
                       <p style="margin:0;color:#aaa">E-mail: <strong style="color:#fff">${email}</strong></p>
                       <p style="margin:8px 0 0;color:#aaa">Senha temporária: <strong style="color:#D4A843;font-size:18px">${tempPassword}</strong></p>
@@ -2647,8 +2647,9 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
   });
 
   // ==================== AUTH: Trial Register ====================
-  // Auto-approves the user with role='trial' and 7-day expiry. No admin needed.
-  // If invite code is present and valid, grants full workshop access instead.
+  // Auto-approves the user with role='trial' as cadastro gratuito vitalício (sem expiração).
+  // O trial vitalício libera nav permanente, com acesso restrito (2 primeiras aulas por módulo).
+  // Se o invite code for válido, concede acesso completo de workshop por durationDays.
   app.post("/api/auth/register-trial", async (req, res) => {
     try {
       const ip = req.ip || req.socket.remoteAddress || "unknown";

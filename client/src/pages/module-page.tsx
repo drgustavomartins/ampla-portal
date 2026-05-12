@@ -1322,7 +1322,7 @@ export default function ModulePage() {
   }
 
   // ========== MODULE PAGE (NETFLIX-STYLE REDESIGN — PHASE 2) ==========
-  const whatsappTrialUrl = `https://wa.me/5521976263881?text=${encodeURIComponent(`Olá! Estou no período de teste gratuito da Ampla Facial e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
+  const whatsappTrialUrl = `https://wa.me/5521976263881?text=${encodeURIComponent(`Olá! Estou com o cadastro gratuito da Ampla Facial e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
 
   // Compute total duration string from lesson durations (e.g. "25:00" → sum)
   const totalDurationMinutes = moduleLessons.reduce((sum, l) => {

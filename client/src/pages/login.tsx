@@ -214,8 +214,8 @@ export default function LoginPage() {
               <div className="flex items-center gap-2.5">
                 <Star className="w-4 h-4 text-emerald-400 shrink-0" />
                 <div>
-                  <p className="text-sm font-semibold text-emerald-300 leading-tight">Teste grátis por 7 dias</p>
-                  <p className="text-xs text-white/40 mt-0.5">Sem cartão de crédito, acesso imediato</p>
+                  <p className="text-sm font-semibold text-emerald-300 leading-tight">Crie seu cadastro gratuito</p>
+                  <p className="text-xs text-white/40 mt-0.5">Acesso liberado por tempo indeterminado, sem cartão</p>
                 </div>
               </div>
               <span className="text-xs text-emerald-400/70 shrink-0">Começar &rarr;</span>
@@ -231,13 +231,13 @@ export default function LoginPage() {
               {mode === "trial" && (
                 <div className="flex items-center gap-2">
                   {inviteInfo ? <Star className="w-4 h-4 text-emerald-400" /> : <Sparkles className="w-4 h-4 text-gold" />}
-                  <h2 className="text-lg font-medium text-white">{inviteInfo ? "Criar sua conta" : "Começar teste gratuito"}</h2>
+                  <h2 className="text-lg font-medium text-white">{inviteInfo ? "Criar sua conta" : "Cadastro gratuito"}</h2>
                 </div>
               )}
               {mode === "forgot" && <h2 className="text-lg font-medium text-white">Recuperar senha</h2>}
               <p className="text-sm text-white/40">
                 {mode === "login" && "Acesse suas aulas da mentoria"}
-                {mode === "trial" && (inviteInfo ? `Acesso completo por ${inviteInfo.durationDays} dias` : "7 dias sem cartão de crédito")}
+                {mode === "trial" && (inviteInfo ? `Acesso completo por ${inviteInfo.durationDays} dias` : "Acesso gratuito por tempo indeterminado, sem cartão")}
                 {mode === "forgot" && "Enviaremos um link para seu e-mail"}
               </p>
             </div>
@@ -337,7 +337,7 @@ export default function LoginPage() {
               >
                 <div className={`rounded-lg border px-3 py-2.5 text-xs flex items-start gap-2 ${inviteInfo ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-400/80" : "border-gold/15 bg-gold/5 text-gold/70"}`}>
                   {inviteInfo ? <Star className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-400" /> : <Sparkles className="w-3.5 h-3.5 mt-0.5 shrink-0 text-gold" />}
-                  <span>{inviteInfo ? `Acesso imediato. Todas as aulas e módulos liberados por ${inviteInfo.durationDays} dias.` : "Acesso imediato. Primeiras 2 aulas de cada módulo liberadas por 7 dias."}</span>
+                  <span>{inviteInfo ? `Acesso imediato. Todas as aulas e módulos liberados por ${inviteInfo.durationDays} dias.` : "Acesso imediato e por tempo indeterminado às 2 primeiras aulas de cada módulo. Sem cartão de crédito."}</span>
                 </div>
 
                 <div className="space-y-1.5">
@@ -587,7 +587,7 @@ export default function LoginPage() {
                     className="text-gold/70 hover:text-gold transition-colors"
                     onClick={() => switchMode("trial")}
                   >
-                    Iniciar teste gratuito
+                    Criar cadastro gratuito
                   </button>
                 </p>
               )}
@@ -667,7 +667,7 @@ export default function LoginPage() {
         <div className="w-full rounded-xl border border-[#D4A843]/30 bg-[#D4A843]/5 px-4 py-3 flex items-center gap-3">
           <Sparkles className="h-4 w-4 text-[#D4A843] shrink-0" />
           <div>
-            <p className="text-xs font-semibold text-white">7 dias grátis — sem cartão</p>
+            <p className="text-xs font-semibold text-white">Cadastro gratuito — sem cartão</p>
             <p className="text-[9px] text-white/40">Acesse as primeiras aulas agora mesmo</p>
           </div>
         </div>

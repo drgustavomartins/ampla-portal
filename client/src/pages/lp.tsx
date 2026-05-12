@@ -905,10 +905,10 @@ export default function LandingPage() {
                 </p>
               </div>
               <div className="bg-[#0A0D14] rounded-xl p-6 border border-white/10">
-                <h3 className="text-[#D4A843] font-semibold text-sm uppercase tracking-wider mb-3">Trial gratuito de 7 dias</h3>
+                <h3 className="text-[#D4A843] font-semibold text-sm uppercase tracking-wider mb-3">Cadastro gratuito</h3>
                 <p className="text-gray-300 text-sm leading-relaxed">
-                  Ainda em dúvida? Crie uma conta gratuita e tenha acesso às primeiras aulas de cada módulo
-                  por 7 dias. Sem compromisso, sem cartão de crédito. Conheça a metodologia antes de investir.
+                  Ainda em dúvida? Crie uma conta gratuita por tempo indeterminado e tenha acesso às primeiras
+                  aulas de cada módulo. Sem compromisso, sem cartão de crédito. Conheça a metodologia antes de investir.
                 </p>
               </div>
             </div>
