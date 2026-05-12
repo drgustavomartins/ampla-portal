@@ -1378,7 +1378,8 @@ export default function ModulePage() {
             <span className="text-[#D4AF37] font-semibold">
               {isTrial && trialDaysLeft !== null && trialDaysLeft > 0
                 ? `Teste gratuito — ${trialDaysLeft} dia${trialDaysLeft === 1 ? "" : "s"} restante${trialDaysLeft === 1 ? "" : "s"}`
-                : isTrial ? "Seu período de teste encerrou"
+                : isTrial && trialDaysLeft !== null ? "Seu período de teste encerrou"
+                : isTrial ? "Modo teste — assine para acesso completo"
                 : "Modo teste"}
             </span>
             <span className="text-white/50 hidden sm:inline">Primeiras 2 aulas de cada módulo liberadas</span>

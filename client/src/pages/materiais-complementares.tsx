@@ -139,7 +139,8 @@ function FileThumbnail({ file }: { file: FileEntry }) {
 
 /* ───────── Components ───────── */
 
-const TRIAL_FREE_MATERIAL_DRIVE_ID = "1AURBQNKIsduh6EBJV1uUfsgkaipm2qry"; // Compilado Toxina Botulínica — Ampla Facial
+// Trial vitalício: TODOS os materiais ficam bloqueados (sem amostra gratuita).
+// O CTA de upgrade fica visível na vitrine e nos detalhes do tema.
 
 // #40 — Detecta iOS/Safari para evitar iframe do Drive (que falha no iOS)
 const isIOS = typeof navigator !== "undefined" &&
@@ -398,7 +399,7 @@ function ThemeDetail({ theme, onBack, isTrial = false }: { theme: Theme; onBack:
                 <FileRow
                   key={file.id}
                   file={file}
-                  trialLocked={isTrial && file.driveId !== TRIAL_FREE_MATERIAL_DRIVE_ID}
+                  trialLocked={isTrial}
                 />
               ))}
             </div>
@@ -520,7 +521,8 @@ export default function MateriaisComplementares({ onBack }: { onBack?: () => voi
 
         <div ref={matShelfRef} className="shelf-scroll flex gap-6 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6">
         {visibleThemes.map((theme) => {
-          const isLockedForTrial = isContentLocked && theme.title !== "Toxina Botul\u00ednica";
+          // Trial vital\u00edcio / acesso expirado: TODOS os temas bloqueados (sem amostra de Toxina).
+          const isLockedForTrial = isContentLocked;
           return (
           <div
             key={theme.id}
