@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 import { sql } from "drizzle-orm";
 import { storage } from "./storage";
 import { registerSchema, trialRegisterSchema, loginSchema, insertModuleSchema, insertLessonSchema } from "@shared/schema";
-import { isLifetimePlan, hasActiveAccess } from "@shared/access-rules";
+import { isLifetimePlan, hasActiveAccess, isTrialLimited, canAccessMaterials } from "@shared/access-rules";
 import { Resend } from "resend";
 import multer from "multer";
 import { registerStripeRoutes, registerPublicStripeRoutes } from "./stripe-routes";
@@ -2178,11 +2178,10 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
           const crypto = await import("crypto");
           tempPassword = crypto.randomBytes(4).toString("hex"); // senha temporária de 8 chars
           const hash = await bcrypt.hash(tempPassword, 10);
-          const trialExpiry = new Date(Date.now() + 7 * 86400000).toISOString();
-
+          // Trial vitalício: sem data de expiração (apenas as 2 primeiras aulas por módulo ficam liberadas).
           const now = new Date().toISOString();
           const inserted = await db.execute(sql`INSERT INTO users (name, email, phone, password, role, approved, access_expires_at, materials_access, trial_started_at, created_at, lead_source)
-             VALUES (${nome}, ${email}, ${sanitizePhone(whatsapp)}, ${hash}, 'trial', true, ${trialExpiry}, false, ${now}, ${now}, 'Questionário')
+             VALUES (${nome}, ${email}, ${sanitizePhone(whatsapp)}, ${hash}, 'trial', true, NULL, false, ${now}, ${now}, 'Questionário')
              RETURNING id`);
           userId = (inserted.rows[0]?.id as number) ?? null;
           isNew = true;
@@ -2210,7 +2209,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
           const token = jwt.sign(
             { userId, role: "trial" },
             process.env.JWT_SECRET!,
-            { expiresIn: "7d" }
+            { expiresIn: "365d" }
           );
 
           // Enviar e-mail de boas-vindas com senha e link (se tiver Resend configurado)
@@ -2552,8 +2551,15 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
         }
       }
 
-      const accessExpires = new Date();
-      accessExpires.setDate(accessExpires.getDate() + (inviteData ? inviteData.durationDays : 7));
+      // Trial: vitalício para navegação (accessExpiresAt = null).
+      // Workshop (invite): mantém duração específica.
+      const accessExpiresIso: string | null = inviteData
+        ? (() => {
+            const d = new Date();
+            d.setDate(d.getDate() + inviteData!.durationDays);
+            return d.toISOString();
+          })()
+        : null;
 
       const user = await storage.createUser({
         name: sanitize(data.name),
@@ -2569,7 +2575,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       const updateFields: any = {
         role,
         approved: true,
-        accessExpiresAt: accessExpires.toISOString(),
+        accessExpiresAt: accessExpiresIso,
         trialStartedAt: now,
         lgpdAcceptedAt: now,
         utmSource: data.utm_source || null,
@@ -2609,8 +2615,9 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
         } catch {} // non-blocking
       }
 
-      // Issue JWT so frontend can log in immediately
-      const token = jwt.sign({ userId: user.id, role }, JWT_SECRET, { expiresIn: inviteData ? `${inviteData.durationDays}d` : "7d" });
+      // Issue JWT — trial sem expiração curta agora (vitalício para nav);
+      // workshop mantém duração específica.
+      const token = jwt.sign({ userId: user.id, role }, JWT_SECRET, { expiresIn: inviteData ? `${inviteData.durationDays}d` : "365d" });
       res.cookie("ampla_token", token, { httpOnly: true, secure: true, sameSite: "strict", maxAge: 30 * 24 * 60 * 60 * 1000, path: "/" });
 
       // Send welcome email and notify admin (non-blocking)
@@ -2620,10 +2627,10 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       const { password: _p, lockedUntil: _l, loginAttempts: _a, ...safeUser } = user;
       const message = inviteData
         ? `Acesso completo ativado por ${inviteData.durationDays} dias!`
-        : "Seu teste gratuito de 7 dias foi ativado!";
+        : "Seu acesso de teste foi ativado!";
       return res.json({
         message,
-        user: { ...safeUser, role, approved: true, accessExpiresAt: accessExpires.toISOString(), planKey: inviteData ? "workshop" : null, inviteCode: inviteData?.code || null },
+        user: { ...safeUser, role, approved: true, accessExpiresAt: accessExpiresIso, planKey: inviteData ? "workshop" : null, inviteCode: inviteData?.code || null },
         token,
       });
     } catch (e: any) {
@@ -2662,8 +2669,15 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
         }
       }
 
-      const accessExpires = new Date();
-      accessExpires.setDate(accessExpires.getDate() + (inviteData ? inviteData.durationDays : 7));
+      // Trial: vitalício para navegação (accessExpiresAt = null).
+      // Workshop (invite): mantém duração específica.
+      const accessExpiresIso: string | null = inviteData
+        ? (() => {
+            const d = new Date();
+            d.setDate(d.getDate() + inviteData!.durationDays);
+            return d.toISOString();
+          })()
+        : null;
 
       const user = await storage.createUser({
         name: sanitize(data.name),
@@ -2679,7 +2693,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       const updateFields: any = {
         role,
         approved: true,
-        accessExpiresAt: accessExpires.toISOString(),
+        accessExpiresAt: accessExpiresIso,
         trialStartedAt: now,
         lgpdAcceptedAt: now,
         utmSource: data.utm_source || null,
@@ -2710,8 +2724,9 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
         }
       }
 
-      // Issue JWT so frontend can log in immediately without a second request
-      const token = jwt.sign({ userId: user.id, role }, JWT_SECRET, { expiresIn: inviteData ? `${inviteData.durationDays}d` : "7d" });
+      // Issue JWT — trial vitalício (1 ano de JWT, renovado em cada me-call);
+      // workshop mantém duração específica.
+      const token = jwt.sign({ userId: user.id, role }, JWT_SECRET, { expiresIn: inviteData ? `${inviteData.durationDays}d` : "365d" });
       res.cookie("ampla_token", token, { httpOnly: true, secure: true, sameSite: "strict", maxAge: 30 * 24 * 60 * 60 * 1000, path: "/" });
 
       // Link anonymous visitor to this user account
@@ -2733,7 +2748,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
             VALUES (${user.id}, 'workshop_acesso', ${'Acesso Workshop ativado — ' + inviteData.campaign + ' (' + inviteData.durationDays + ' dias)'}, ${JSON.stringify({ campaign: inviteData.campaign, code: inviteData.code, durationDays: inviteData.durationDays })}, ${now})`);
         } else {
           await evDb.execute(sql`INSERT INTO lead_events (user_id, event_type, event_description, metadata, created_at)
-            VALUES (${user.id}, 'trial_inicio', 'Iniciou Trial (7 dias)', ${JSON.stringify({ source: 'registration' })}, ${now})`);
+            VALUES (${user.id}, 'trial_inicio', 'Iniciou Trial (vitalício — primeiras 2 aulas por módulo)', ${JSON.stringify({ source: 'registration' })}, ${now})`);
         }
       } catch {} // non-blocking
 
@@ -2744,10 +2759,10 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       const { password: _p, lockedUntil: _l, loginAttempts: _a, ...safeUser } = user;
       const message = inviteData
         ? `Acesso completo ativado por ${inviteData.durationDays} dias!`
-        : "Seu teste gratuito de 7 dias foi ativado!";
+        : "Seu acesso de teste foi ativado!";
       return res.json({
         message,
-        user: { ...safeUser, role, approved: true, accessExpiresAt: accessExpires.toISOString(), planKey: inviteData ? "workshop" : null, inviteCode: inviteData?.code || null },
+        user: { ...safeUser, role, approved: true, accessExpiresAt: accessExpiresIso, planKey: inviteData ? "workshop" : null, inviteCode: inviteData?.code || null },
         token,
       });
     } catch (e: any) {
@@ -3269,6 +3284,10 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       const user = await storage.getUser(auth.userId);
       if (!user) {
         return res.json({ accessAll: false, topics: [] });
+      }
+      // Trial limitado (sem plano pago) — sem acesso a nenhum tópico.
+      if (isTrialLimited({ planKey: (user as any).planKey, role: user.role })) {
+        return res.json({ accessAll: false, topics: [], trial: true });
       }
       // Check per-user material category overrides first
       let userCats: Awaited<ReturnType<typeof storage.getUserMaterialCategories>> = [];
@@ -4478,14 +4497,18 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       const isAdmin = auth.role === "admin" || auth.role === "super_admin";
 
       // Determine if this user has active materials access (approved + non-expired)
+      // Regra: trial limitado (planKey null/tester ou role 'trial') NUNCA tem acesso a materiais,
+      // mesmo navegando vitalício. Apenas planos pagos (isLifetimePlan) + materials_access=true.
       let hasMaterialsAccess = isAdmin;
       if (!isAdmin) {
         try {
           const { db: matDb } = await import("./db");
-          const uRow = await matDb.execute(sql`SELECT approved, access_expires_at, plan_key, materials_access FROM users WHERE id = ${auth.userId}`);
+          const uRow = await matDb.execute(sql`SELECT role, approved, access_expires_at, plan_key, materials_access FROM users WHERE id = ${auth.userId}`);
           const u = (uRow as any).rows?.[0];
           if (u && u.approved !== false && u.materials_access !== false) {
-            hasMaterialsAccess = hasActiveAccess({ planKey: u.plan_key, accessExpiresAt: u.access_expires_at });
+            // canAccessMaterials já bloqueia trial limitado e exige planKey vitalício.
+            hasMaterialsAccess = canAccessMaterials({ planKey: u.plan_key, role: u.role })
+              && hasActiveAccess({ planKey: u.plan_key, accessExpiresAt: u.access_expires_at });
           }
         } catch { /* default to no access */ }
       }

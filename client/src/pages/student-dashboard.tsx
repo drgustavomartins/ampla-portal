@@ -1228,7 +1228,7 @@ export default function StudentDashboard() {
                 href="/planos"
                 className="shrink-0 rounded-lg border border-[#D4AF37]/30 bg-[#D4AF37]/5 hover:bg-[#D4AF37]/15 px-4 py-2 text-xs font-semibold text-[#D4AF37] transition-colors"
               >
-                {isTrial ? `Trial — ${trialDaysLeft}d` : "Ver planos"}
+                {isTrial ? (trialDaysLeft !== null ? `Trial — ${trialDaysLeft}d` : "Trial — Assinar plano") : "Ver planos"}
               </Link>
             </div>
           )}

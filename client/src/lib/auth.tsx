@@ -126,16 +126,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isSuperAdmin = user?.role === "super_admin";
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
   const isStudent = user?.role === "student";
-  const isTrial = user?.role === "trial";
+  // Trial flag: role 'trial' OU student rebaixado (planKey null/tester).
+  // Trial é vitalício para navegação; conteúdo continua gated (2 aulas/módulo).
+  const isTrial = user?.role === "trial"
+    || (user?.role === "student" && !isLifetimePlan(user?.planKey));
   const trialDaysLeft = isTrial && user?.accessExpiresAt
     ? Math.max(0, Math.ceil((new Date(user.accessExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : null;
+  // Trial vitalício nunca "expira" para navegação — apenas se accessExpiresAt explícito ficar no passado.
   const isTrialExpired = isTrial && trialDaysLeft !== null && trialDaysLeft <= 0;
-  // Access expiration: lifetime plans never expire; trial/tester check date
+  // Access expiration: lifetime plans never expire; trial vitalício sem data tampouco.
   const isAccessExpired = (() => {
     if (!user || isAdmin || isSuperAdmin) return false;
     if (isLifetimePlan(user.planKey)) return false;
-    if (!user.accessExpiresAt) return false;
+    if (!user.accessExpiresAt) return false; // trial vitalício
     return new Date(user.accessExpiresAt).getTime() < Date.now();
   })();
 
