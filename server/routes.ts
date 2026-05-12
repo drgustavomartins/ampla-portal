@@ -6,7 +6,15 @@ import jwt from "jsonwebtoken";
 import { sql } from "drizzle-orm";
 import { storage } from "./storage";
 import { registerSchema, trialRegisterSchema, loginSchema, insertModuleSchema, insertLessonSchema } from "@shared/schema";
-import { isLifetimePlan, hasActiveAccess, isTrialLimited, canAccessMaterials } from "@shared/access-rules";
+import {
+  isLifetimePlan,
+  hasActiveAccess,
+  isTrialLimited,
+  canAccessMaterials,
+  getAccessType,
+  THEME_TO_MODULE_IDS as ACCESS_THEME_TO_MODULE_IDS,
+  TRIAL_FREE_LESSONS_PER_MODULE,
+} from "@shared/access-rules";
 import { Resend } from "resend";
 import multer from "multer";
 import { registerStripeRoutes, registerPublicStripeRoutes } from "./stripe-routes";
@@ -3132,15 +3140,11 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
   });
 
   // ==================== MODULES ====================
-  // Mapa: tema do plano Modulo Avulso com Pratica -> IDs dos modulos
-  // [2] Toxina, [3] Preenchedores, [5] Bioestimuladores, [7] Biorregeneradores
-  // [6] Boas vindas = sempre liberado como módulo introdutório
-  const THEME_TO_MODULE_IDS: Record<string, number[]> = {
-    toxina: [6, 2],
-    preenchedores: [6, 3],
-    bioestimuladores: [6, 5],
-    biorregeneradores: [6, 7],
-  };
+  // Mapa tema → módulos liberados pelo plano "modulo_pratica".
+  // Fonte única em shared/access-rules.ts (THEME_TO_MODULE_IDS).
+  // [2] Toxina, [3] Preenchedores, [5] Bioestimuladores, [7] Biorregeneradores,
+  // [6] Boas vindas (sempre incluído como módulo introdutório).
+  const THEME_TO_MODULE_IDS = ACCESS_THEME_TO_MODULE_IDS;
 
   app.get("/api/modules", async (_req, res) => {
     const m = await storage.getModules();
@@ -3337,18 +3341,24 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
     if (auth.role === "admin" || auth.role === "super_admin") return { canSeeVideo: true, allowedLessonIds: null };
     try {
       const { db } = await import("./db");
-      const userRow = await db.execute(sql`SELECT role, approved, access_expires_at, plan_key FROM users WHERE id = ${auth.userId}`);
+      const userRow = await db.execute(sql`SELECT role, approved, access_expires_at, plan_key, selected_theme FROM users WHERE id = ${auth.userId}`);
       const user = (userRow as any).rows?.[0];
       if (!user || user.approved === false) return { canSeeVideo: false, allowedLessonIds: null };
-      // Map raw DB columns to camelCase for hasActiveAccess
-      const mappedUser = { planKey: user.plan_key, accessExpiresAt: user.access_expires_at };
-      // Lifetime plans never expire; others check date
+      const mappedUser = {
+        role: user.role,
+        planKey: user.plan_key,
+        accessExpiresAt: user.access_expires_at,
+        selectedTheme: user.selected_theme,
+      };
       if (!hasActiveAccess(mappedUser)) return { canSeeVideo: false, allowedLessonIds: null };
-      // Workshop invite users get full access
-      if (user.plan_key === "workshop") return { canSeeVideo: true, allowedLessonIds: null };
-      // Paid plan users (lifetime) get full access
-      if (isLifetimePlan(user.plan_key)) return { canSeeVideo: true, allowedLessonIds: null };
-      // Trial/tester: first 2 lessons per module only
+
+      // Fonte única: getAccessType decide se é admin/full/trial/module.
+      // full → libera tudo; trial → 2 aulas por módulo; module → libera aulas
+      // dos módulos permitidos (user_modules ou tema), + 2 aulas dos demais.
+      const accessType = getAccessType(mappedUser);
+      if (accessType === "full") return { canSeeVideo: true, allowedLessonIds: null };
+
+      // Carregar todas as aulas agrupadas por módulo (ordenadas).
       const lessonsResult = await db.execute(sql`SELECT id, module_id, "order" FROM lessons ORDER BY module_id, "order"`);
       const rows = (lessonsResult as any).rows || [];
       const moduleMap: Record<number, number[]> = {};
@@ -3356,9 +3366,36 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
         if (!moduleMap[l.module_id]) moduleMap[l.module_id] = [];
         moduleMap[l.module_id].push(l.id);
       }
+
+      // Para acesso por módulo, descobrir quais módulos o aluno comprou.
+      let purchasedModuleIds: Set<number> | null = null;
+      if (accessType === "module") {
+        // 1ª fonte: user_modules.
+        try {
+          const um = await storage.getUserModules(auth.userId);
+          const now = new Date().toISOString();
+          const ids = um
+            .filter(m => m.enabled && (!m.startDate || now >= m.startDate) && (!m.endDate || now <= m.endDate))
+            .map(m => m.moduleId);
+          if (ids.length > 0) purchasedModuleIds = new Set(ids);
+        } catch { /* tabela pode não existir em ambientes antigos */ }
+        // 2ª fonte: modulo_pratica + selected_theme.
+        if (!purchasedModuleIds && user.plan_key === "modulo_pratica" && user.selected_theme && ACCESS_THEME_TO_MODULE_IDS[user.selected_theme]) {
+          purchasedModuleIds = new Set(ACCESS_THEME_TO_MODULE_IDS[user.selected_theme]);
+        }
+      }
+
       const allowedIds: number[] = [];
-      for (const moduleId of Object.keys(moduleMap)) {
-        allowedIds.push(...moduleMap[Number(moduleId)].slice(0, 2));
+      for (const moduleIdStr of Object.keys(moduleMap)) {
+        const moduleId = Number(moduleIdStr);
+        const lessonsInModule = moduleMap[moduleId];
+        if (purchasedModuleIds && purchasedModuleIds.has(moduleId)) {
+          // Módulo comprado → libera todas as aulas.
+          allowedIds.push(...lessonsInModule);
+        } else {
+          // Trial puro ou módulo não comprado → preview das 2 primeiras.
+          allowedIds.push(...lessonsInModule.slice(0, TRIAL_FREE_LESSONS_PER_MODULE));
+        }
       }
       return { canSeeVideo: true, allowedLessonIds: allowedIds };
     } catch { return { canSeeVideo: false, allowedLessonIds: null }; }
@@ -3413,46 +3450,66 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       if (!auth) return res.status(401).json({ message: "Não autorizado" });
       const { db } = await import("./db");
 
-      const userResult = await db.execute(sql`SELECT role, plan_key, access_expires_at FROM users WHERE id = ${auth.userId}`);
+      const userResult = await db.execute(sql`SELECT role, plan_key, access_expires_at, selected_theme FROM users WHERE id = ${auth.userId}`);
       const user = (userResult as any).rows?.[0];
       if (!user) return res.json({ accessType: "none", allowedLessonIds: [] });
 
-      const mappedUser = { planKey: user.plan_key, accessExpiresAt: user.access_expires_at };
+      const mappedUser = {
+        role: user.role,
+        planKey: user.plan_key,
+        accessExpiresAt: user.access_expires_at,
+        selectedTheme: user.selected_theme,
+      };
 
-      // Lifetime plans never expire; others check date
       if (!hasActiveAccess(mappedUser)) {
         return res.json({ accessType: "expired", allowedLessonIds: [] });
       }
 
-      // Workshop invite users get full access
-      if (user.plan_key === "workshop") {
+      const accessType = getAccessType(mappedUser);
+      if (accessType === "admin" || accessType === "full") {
         return res.json({ accessType: "full", allowedLessonIds: [] });
       }
 
-      // Paid plan (lifetime) — full access
-      if (isLifetimePlan(user.plan_key)) {
-        return res.json({ accessType: "full", allowedLessonIds: [] });
-      }
-
-      // Tester: first 2 lessons per module
+      // trial ou module → calcular IDs liberados
       const lessonsResult = await db.execute(sql`
         SELECT id, module_id, "order" FROM lessons ORDER BY module_id, "order"
       `);
       const rows = (lessonsResult as any).rows || [];
-
       const moduleMap: Record<number, number[]> = {};
       for (const l of rows) {
         if (!moduleMap[l.module_id]) moduleMap[l.module_id] = [];
         moduleMap[l.module_id].push(l.id);
       }
 
-      const allowedIds: number[] = [];
-      for (const moduleId of Object.keys(moduleMap)) {
-        const sorted = moduleMap[Number(moduleId)];
-        allowedIds.push(...sorted.slice(0, 2));
+      let purchasedModuleIds: Set<number> | null = null;
+      if (accessType === "module") {
+        try {
+          const um = await storage.getUserModules(auth.userId);
+          const now = new Date().toISOString();
+          const ids = um
+            .filter(m => m.enabled && (!m.startDate || now >= m.startDate) && (!m.endDate || now <= m.endDate))
+            .map(m => m.moduleId);
+          if (ids.length > 0) purchasedModuleIds = new Set(ids);
+        } catch { /* tabela ausente */ }
+        if (!purchasedModuleIds && user.plan_key === "modulo_pratica" && user.selected_theme && ACCESS_THEME_TO_MODULE_IDS[user.selected_theme]) {
+          purchasedModuleIds = new Set(ACCESS_THEME_TO_MODULE_IDS[user.selected_theme]);
+        }
       }
 
-      return res.json({ accessType: "tester", allowedLessonIds: allowedIds });
+      const allowedIds: number[] = [];
+      for (const moduleIdStr of Object.keys(moduleMap)) {
+        const moduleId = Number(moduleIdStr);
+        const lessons = moduleMap[moduleId];
+        if (purchasedModuleIds && purchasedModuleIds.has(moduleId)) {
+          allowedIds.push(...lessons);
+        } else {
+          allowedIds.push(...lessons.slice(0, TRIAL_FREE_LESSONS_PER_MODULE));
+        }
+      }
+
+      // Preservar contrato: "tester" para trial puro, "module" para acesso por módulo.
+      const responseAccessType = accessType === "trial" ? "tester" : "module";
+      return res.json({ accessType: responseAccessType, allowedLessonIds: allowedIds });
     } catch (e: any) {
       console.error("[GET /api/lessons/access]", e.message);
       res.status(500).json({ message: "Erro interno" });
