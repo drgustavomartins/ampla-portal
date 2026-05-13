@@ -74,12 +74,18 @@ async function sendWelcomeEmail(user: { name: string; email: string }) {
   }
 }
 
-async function sendPasswordResetEmail(user: { name: string; email: string }, token: string) {
-  if (!resend) return;
+async function sendPasswordResetEmail(user: { name: string; email: string }, token: string): Promise<{ ok: boolean; error?: string }> {
+  if (!resend) {
+    console.error("[password-reset] RESEND_API_KEY ausente — não foi possível enviar email", {
+      email: user.email,
+      userName: user.name,
+    });
+    return { ok: false, error: "resend_not_configured" };
+  }
   const firstName = user.name.split(" ")[0];
   const resetLink = `https://portal.amplafacial.com.br/#/reset-password/${token}`;
   try {
-    await resend.emails.send({
+    const result: any = await resend.emails.send({
       from: "Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",
       to: user.email,
       subject: "Redefinição de senha — Ampla Facial",
@@ -103,8 +109,25 @@ async function sendPasswordResetEmail(user: { name: string; email: string }, tok
         </div>
       `,
     });
-  } catch (err) {
-    console.error("[email] Erro ao enviar email de reset:", err);
+    if (result && result.error) {
+      console.error("[password-reset] Provider retornou erro ao enviar email", {
+        email: user.email,
+        providerError: typeof result.error === "string" ? result.error : (result.error?.message || result.error?.name || "unknown"),
+      });
+      return { ok: false, error: "provider_error" };
+    }
+    console.log("[password-reset] Email de reset enviado com sucesso", {
+      email: user.email,
+      providerMessageId: result?.data?.id || result?.id || null,
+    });
+    return { ok: true };
+  } catch (err: any) {
+    console.error("[password-reset] Falha ao enviar email de reset", {
+      email: user.email,
+      error: err?.message || String(err),
+      name: err?.name,
+    });
+    return { ok: false, error: "send_failed" };
   }
 }
 
@@ -2802,9 +2825,18 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       const token = crypto.randomBytes(32).toString("hex");
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
       await storage.createPasswordReset(user.id, token, expiresAt);
-      sendPasswordResetEmail({ name: user.name, email: user.email }, token);
+      const sendResult = await sendPasswordResetEmail({ name: user.name, email: user.email }, token);
+      if (!sendResult.ok) {
+        console.error("[forgot-password] Falha no envio — token criado mas email não entregue", {
+          userId: user.id,
+          email: user.email,
+          reason: sendResult.error,
+        });
+      }
+      // Resposta pública sempre 200 para evitar enumeração de usuários.
       return res.json({ message: "Se este email estiver cadastrado, você receberá um link em instantes." });
     } catch (e: any) {
+      console.error("[forgot-password] Erro interno no fluxo", { error: e?.message || String(e) });
       return res.status(500).json({ message: "Erro interno. Tente novamente." });
     }
   });
