@@ -1092,6 +1092,107 @@ export function registerPublicStripeRoutes(app: Express) {
     }
   });
 
+  // ─── POST /api/stripe/create-public-checkout ──────────────────────────────
+  // Checkout publico SEM autenticacao para qualquer plano pago (Plataforma, Modulo
+  // Avulso com Pratica, Observacional, VIP, Elite). Salva metadata para o admin
+  // distinguir origem ("publico") e flag de qualificacao (ex.: "trilha_b").
+  app.post("/api/stripe/create-public-checkout", async (req: Request, res: Response) => {
+    try {
+      const { db } = await import("./db");
+      const stripe = getStripe();
+      if (!stripe) return res.status(503).json({ message: "Pagamentos não configurados ainda" });
+
+      const { planKey, couponCode, qualificacaoFlag, email } = req.body as {
+        planKey: PlanKey;
+        couponCode?: string;
+        qualificacaoFlag?: string;
+        email?: string;
+      };
+      const plan = PLANS[planKey];
+      if (!plan) return res.status(400).json({ message: "Plano inválido" });
+
+      // Bloqueia compra da Plataforma Online quando as 200 vagas esgotarem
+      if (planKey === "acesso_vitalicio") {
+        const slotsCheck: any = await db.execute(sql`
+          SELECT COUNT(*)::int AS sold FROM users
+          WHERE plan_key = 'acesso_vitalicio'
+            AND (role = 'student' OR plan_paid_at IS NOT NULL)
+        `);
+        const sold = slotsCheck.rows?.[0]?.sold || 0;
+        if (sold >= VITALICIO_SLOTS_LIMIT) {
+          return res.status(409).json({
+            message: "Vagas esgotadas. As 200 vagas promocionais da Plataforma Online já foram preenchidas.",
+            soldOut: true,
+          });
+        }
+      }
+
+      // Desconto de 10% para quem usa codigo de indicacao valido
+      let finalPrice = plan.price;
+      let referralDiscount = 0;
+      const refCodeNormalized = (couponCode || "").trim().toUpperCase();
+      if (refCodeNormalized) {
+        const refCheck = await db.execute(sql`SELECT user_id FROM referral_codes WHERE UPPER(code) = ${refCodeNormalized}`);
+        if ((refCheck as any).rows?.length > 0) {
+          referralDiscount = Math.floor(finalPrice * 0.10);
+          finalPrice -= referralDiscount;
+          console.log(`[create-public-checkout] Desconto indicacao 10% = ${referralDiscount} centavos (plano ${planKey})`);
+        }
+      }
+
+      const qualFlag = qualificacaoFlag || "padrao";
+      const baseUrl = process.env.APP_URL || "https://portal.amplafacial.com.br";
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        payment_method_options: {
+          card: { installments: { enabled: true } },
+        },
+        mode: "payment",
+        billing_address_collection: "auto",
+        customer_creation: "always",
+        phone_number_collection: { enabled: true },
+        payment_intent_data: {
+          metadata: {
+            planKey,
+            source: "publico",
+            qualificacaoFlag: qualFlag,
+            email: email || "",
+          },
+        },
+        line_items: [
+          {
+            price_data: {
+              currency: "brl",
+              product_data: {
+                name: `Ampla Facial — ${plan.name}${referralDiscount > 0 ? " (10% indicacao)" : ""}`,
+                description: plan.features.slice(0, 3).join(" · "),
+                metadata: { planKey },
+              },
+              unit_amount: finalPrice,
+            },
+            quantity: 1,
+          },
+        ],
+        metadata: {
+          planKey,
+          source: "publico",
+          qualificacaoFlag: qualFlag,
+          referralCode: refCodeNormalized || "",
+          email: email || "",
+        },
+        success_url: `${baseUrl}/#/pagamento/sucesso?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/#/planos-publicos`,
+        locale: "pt-BR",
+      });
+
+      res.json({ url: session.url, sessionId: session.id });
+    } catch (e: any) {
+      console.error("[POST /api/stripe/create-public-checkout]", e.message);
+      res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
   // ─── GET /api/referral/code ────────────────────────────────────────────────
   app.get("/api/referral/code", async (req: Request, res: Response) => {
     try {

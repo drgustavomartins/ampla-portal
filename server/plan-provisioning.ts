@@ -92,4 +92,16 @@ export const PLAN_PROVISIONING: Record<string, PlanProvisioning> = {
     mentorshipMonths: 6,
     supportMonths: 6,
   },
+  modulo_pratica: {
+    modules: [MODULE_BOAS_VINDAS].map(id => ({ moduleId: id, enabled: true })),
+    materials: [],
+    mentorshipMonths: 0,
+    supportMonths: 3,
+  },
+  imersao_elite: {
+    modules: MODULES_COMPLETO.map(id => ({ moduleId: id, enabled: true })),
+    materials: MATS_COMPLETO,
+    mentorshipMonths: 12,
+    supportMonths: 12,
+  },
 };
