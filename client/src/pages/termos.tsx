@@ -12,7 +12,7 @@ export default function TermosPage() {
       >
         <ChevronLeft className="w-4 h-4" /> Voltar
       </button>
-      <img src="/logo-icon.png" alt="Ampla Facial" className="w-12 h-12 object-contain mb-6" loading="lazy" decoding="async" />
+      <img src="/logo-icon.png" alt="Ampla IA" className="w-12 h-12 object-contain mb-6" loading="lazy" decoding="async" />
       <h1 className="text-2xl font-semibold text-gold mb-1">Termos de Uso</h1>
       <p className="text-xs text-muted-foreground mb-8">Última atualização: abril de 2026</p>
 
@@ -21,18 +21,22 @@ export default function TermosPage() {
         <section>
           <h2 className="text-white text-base font-semibold mb-2">1. Identificação do serviço</h2>
           <p>
-            A plataforma Ampla Facial Portal ("Plataforma") é operada por <strong className="text-white">Gustavo Martins Martins
-            (Dr. Gustavo Martins)</strong>, cirurgião-dentista, CPF/CNPJ disponível mediante solicitação,
-            com sede no Rio de Janeiro — RJ, acessível em <a href="https://portal.amplafacial.com.br" className="text-gold underline" target="_blank">portal.amplafacial.com.br</a>.
+            A plataforma <strong className="text-white">Ampla IA</strong> ("Plataforma" ou "Serviço") é operada
+            por <strong className="text-white">Gustavo Medeiros Martins (Dr. Gustavo Martins)</strong>,
+            cirurgião-dentista, CPF/CNPJ disponível mediante solicitação, com sede no Rio de Janeiro — RJ.
+            A Plataforma é acessível por meio do endereço <a href="https://portal.amplafacial.com.br" className="text-gold underline" target="_blank">portal.amplafacial.com.br</a>,
+            domínio histórico mantido durante a transição de marca; a referência institucional do produto é Ampla IA.
           </p>
         </section>
 
         <section>
           <h2 className="text-white text-base font-semibold mb-2">2. Objeto</h2>
           <p>
-            A Plataforma disponibiliza conteúdo educacional em formato de vídeo-aulas, materiais em PDF, resumos em
-            áudio e outros recursos relacionados à Harmonização Orofacial (HOF), destinados exclusivamente a
-            profissionais de saúde habilitados para a prática clínica em seu respectivo estado.
+            A Plataforma Ampla IA disponibiliza conteúdo educacional em formato de vídeo-aulas, materiais em PDF, resumos
+            em áudio e outros recursos sobre uso de Inteligência Artificial aplicada à rotina de profissionais de saúde
+            (clínica, atendimento, gestão, comercial e estudo). O conteúdo é de caráter educacional e a aplicação prática
+            ocorre sob responsabilidade do profissional, conforme habilitações e regulamentações do respectivo conselho
+            profissional. A IA é tratada como ferramenta de apoio — não substitui o julgamento clínico nem exames complementares.
           </p>
         </section>
 
@@ -48,9 +52,11 @@ export default function TermosPage() {
         <section>
           <h2 className="text-white text-base font-semibold mb-2">4. Propriedade intelectual</h2>
           <p>
-            Todo o conteúdo disponibilizado — incluindo aulas, materiais, protocolos (entre eles o Método NaturalUp®,
-            protocolo registrado) e materiais complementares — é de propriedade exclusiva do Dr. Gustavo Martins.
-            É vedada a reprodução, distribuição ou comercialização sem autorização expressa.
+            Todo o conteúdo disponibilizado — incluindo aulas, materiais, prompts, fluxos sugeridos e materiais
+            complementares — é de propriedade exclusiva do Dr. Gustavo Martins / Ampla IA. É vedada a reprodução,
+            distribuição ou comercialização sem autorização expressa. Prompts e exemplos compartilhados são oferecidos
+            como base educacional e devem ser adaptados pelo profissional ao seu contexto, ao conselho profissional
+            aplicável e à LGPD.
           </p>
         </section>
 

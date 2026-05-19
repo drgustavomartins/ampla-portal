@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { DollarSign, Gift, TrendingUp, ChevronRight, Copy, Check, Share2 } from "lucide-react";
+import { BRAND } from "@/lib/brand";
 
 interface Transaction {
   id: number;
@@ -65,7 +66,7 @@ export function CreditsDashboardCard() {
   };
 
   const shareWhatsApp = () => {
-    const msg = `Estou estudando na Ampla Facial e quero te indicar! Use meu código ${data.referralCode} na hora da inscrição e garanta seu acesso. Conheça: portal.amplafacial.com.br`;
+    const msg = `Estou estudando no ${BRAND.name} e quero te indicar! Use meu código ${data.referralCode} na hora da inscrição e garanta seu acesso. Conheça: ${BRAND.domain}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
   };
 

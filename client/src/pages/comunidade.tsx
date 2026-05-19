@@ -594,9 +594,9 @@ export default function ComunidadePage() {
             </Link>
             <div>
               <h1 className="text-lg font-serif font-semibold text-foreground">
-                Comunidade Ampla Facial&reg;
+                Comunidade Ampla IA
               </h1>
-              <p className="text-[11px] text-muted-foreground">Compartilhe experiencias, cases clinicos e aprenda com outros profissionais</p>
+              <p className="text-[11px] text-muted-foreground">Compartilhe usos de IA, prompts, cases e aprenda com outros profissionais de saúde</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

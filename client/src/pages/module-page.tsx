@@ -23,6 +23,7 @@ import { NetflixPlayer } from "@/components/netflix/NetflixPlayer";
 import { NextUpOverlay } from "@/components/netflix/NextUpOverlay";
 import { TheaterMode } from "@/components/netflix/TheaterMode";
 import LessonComments from "@/components/lesson-comments";
+import { BRAND } from "@/lib/brand";
 
 function linkifyText(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -112,24 +113,12 @@ function LessonThumb({ lesson, size = "md", done, theme, index }: {
 }
 
 // Module theme colors
+// Temas visuais por eixo do Ampla IA. Mantém compatibilidade visual com o
+// produto anterior (paleta gold default) e adiciona variações cromáticas
+// que refletem os 6 eixos do Ampla IA. As cores foram escolhidas para
+// permanecer coerentes com a identidade existente (dourado dominante).
 const MODULE_THEMES: Record<string, { accent: string; accentRgb: string; gradient: string; progressBg: string; activeBg: string; accentText: string }> = {
-  toxina: {
-    accent: "#D4A843",
-    accentRgb: "212, 168, 67",
-    gradient: "from-amber-900/80 via-amber-950/60 to-background",
-    progressBg: "bg-amber-500",
-    activeBg: "bg-amber-500/10 border-amber-500/20",
-    accentText: "text-amber-400",
-  },
-  preenchedores: {
-    accent: "#E8829B",
-    accentRgb: "232, 130, 155",
-    gradient: "from-rose-900/80 via-rose-950/60 to-background",
-    progressBg: "bg-rose-400",
-    activeBg: "bg-rose-500/10 border-rose-500/20",
-    accentText: "text-rose-400",
-  },
-  bioestimulador: {
+  clinica: {
     accent: "#34D399",
     accentRgb: "52, 211, 153",
     gradient: "from-emerald-900/80 via-emerald-950/60 to-background",
@@ -137,15 +126,7 @@ const MODULE_THEMES: Record<string, { accent: string; accentRgb: string; gradien
     activeBg: "bg-emerald-500/10 border-emerald-500/20",
     accentText: "text-emerald-400",
   },
-  modulador: {
-    accent: "#DC2626",
-    accentRgb: "220, 38, 38",
-    gradient: "from-red-900/80 via-red-950/60 to-background",
-    progressBg: "bg-red-500",
-    activeBg: "bg-red-500/10 border-red-500/20",
-    accentText: "text-red-400",
-  },
-  naturalup: {
+  atendimento: {
     accent: "#22D3EE",
     accentRgb: "34, 211, 238",
     gradient: "from-cyan-900/80 via-cyan-950/60 to-background",
@@ -153,16 +134,56 @@ const MODULE_THEMES: Record<string, { accent: string; accentRgb: string; gradien
     activeBg: "bg-cyan-500/10 border-cyan-500/20",
     accentText: "text-cyan-400",
   },
+  administrativo: {
+    accent: "#D4A843",
+    accentRgb: "212, 168, 67",
+    gradient: "from-amber-900/80 via-amber-950/60 to-background",
+    progressBg: "bg-amber-500",
+    activeBg: "bg-amber-500/10 border-amber-500/20",
+    accentText: "text-amber-400",
+  },
+  comercial: {
+    accent: "#E8829B",
+    accentRgb: "232, 130, 155",
+    gradient: "from-rose-900/80 via-rose-950/60 to-background",
+    progressBg: "bg-rose-400",
+    activeBg: "bg-rose-500/10 border-rose-500/20",
+    accentText: "text-rose-400",
+  },
+  educacao: {
+    accent: "#A78BFA",
+    accentRgb: "167, 139, 250",
+    gradient: "from-violet-900/80 via-violet-950/60 to-background",
+    progressBg: "bg-violet-400",
+    activeBg: "bg-violet-500/10 border-violet-500/20",
+    accentText: "text-violet-400",
+  },
+  etica: {
+    accent: "#DC2626",
+    accentRgb: "220, 38, 38",
+    gradient: "from-red-900/80 via-red-950/60 to-background",
+    progressBg: "bg-red-500",
+    activeBg: "bg-red-500/10 border-red-500/20",
+    accentText: "text-red-400",
+  },
 };
 
+// Tema default (gold) usado quando nenhum eixo casa com o título — também
+// vale para módulos legados HOF ainda no banco. Apontamos para a paleta
+// dourada do eixo Administrativo, mas nomeamos a constante separadamente
+// para deixar a intenção explícita.
+const DEFAULT_MODULE_THEME = MODULE_THEMES.administrativo;
+
 function getModuleTheme(title: string) {
-  const t = title.toLowerCase();
-  if (t.includes("toxina")) return MODULE_THEMES.toxina;
-  if (t.includes("preenchedores") || t.includes("ácido") || t.includes("acido")) return MODULE_THEMES.preenchedores;
-  if (t.includes("bioestimulador")) return MODULE_THEMES.bioestimulador;
-  if (t.includes("regeneração") || t.includes("regeneracao") || t.includes("modulador") || t.includes("matriz")) return MODULE_THEMES.modulador;
-  if (t.includes("naturalup") || t.includes("natural up") || t.includes("método") || t.includes("metodo")) return MODULE_THEMES.naturalup;
-  return MODULE_THEMES.toxina; // default gold
+  const t = (title || "").toLowerCase();
+  // Eixos Ampla IA (palavra-chave → tema).
+  if (/(clinic|anamnese|diagnost|prontuario|prontuário|evolucao|evolução|exame)/.test(t)) return MODULE_THEMES.clinica;
+  if (/(atendimento|paciente|comunicac|comunicação|whatsapp|chatbot|recepcao|recepção|agendamento)/.test(t)) return MODULE_THEMES.atendimento;
+  if (/(gestao|gestão|administr|financeir|agenda|processo|operacao|operação|fluxo)/.test(t)) return MODULE_THEMES.administrativo;
+  if (/(marketing|vendas|comercial|captacao|captação|lead|anuncio|anúncio|trafego|tráfego|instagram|midia|mídia)/.test(t)) return MODULE_THEMES.comercial;
+  if (/(estudo|educa|aprend|artigo|pesquisa|evidenc|literatura|resumo|leitura)/.test(t)) return MODULE_THEMES.educacao;
+  if (/(etic|ética|lgpd|privacid|regula|limit|responsab|seguranc|segurança)/.test(t)) return MODULE_THEMES.etica;
+  return DEFAULT_MODULE_THEME;
 }
 
 function getCourseImage(mod: Module): string | null {
@@ -762,7 +783,7 @@ export default function ModulePage() {
   };
 
   const getWhatsAppUrl = () => {
-    const msg = encodeURIComponent(`Olá! Tenho interesse em adquirir o módulo ${currentModule.title} da mentoria Ampla Facial. Meu email de acesso é ${user?.email || ""}.`);
+    const msg = encodeURIComponent(`Olá! Tenho interesse em adquirir o módulo ${currentModule.title} do ${BRAND.name}. Meu email de acesso é ${user?.email || ""}.`);
     return `https://wa.me/5521976263881?text=${msg}`;
   };
 
@@ -1326,7 +1347,7 @@ export default function ModulePage() {
   }
 
   // ========== MODULE PAGE (NETFLIX-STYLE REDESIGN — PHASE 2) ==========
-  const whatsappTrialUrl = `https://wa.me/5521976263881?text=${encodeURIComponent(`Olá! Estou com o cadastro gratuito da Ampla Facial e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
+  const whatsappTrialUrl = `https://wa.me/5521976263881?text=${encodeURIComponent(`Olá! Estou com o cadastro gratuito do ${BRAND.name} e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
 
   // Compute total duration string from lesson durations (e.g. "25:00" → sum)
   const totalDurationMinutes = moduleLessons.reduce((sum, l) => {
@@ -1534,8 +1555,8 @@ export default function ModulePage() {
       {/* Footer */}
       <footer className="border-t border-white/5 py-6 mt-4">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[#808080]">
-          <span>&copy; 2026 Ampla Facial &mdash; Todos os direitos reservados</span>
-          <span className="text-[#D4AF37]/60 font-semibold tracking-[0.15em] text-[10px]">NATURALUP&reg;</span>
+          <span>{BRAND.copyrightLine}</span>
+          <span className="text-[#D4AF37]/60 font-semibold tracking-[0.15em] text-[10px]">AMPLA IA</span>
         </div>
       </footer>
     </div>

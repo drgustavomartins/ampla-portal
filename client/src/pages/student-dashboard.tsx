@@ -33,6 +33,7 @@ import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 import { isLifetimePlan, hasMentoriaAtiva } from "@shared/access-rules";
 import { CreditsDashboardCard } from "@/components/CreditsDashboardCard";
 import { CreditsFullSection } from "@/components/CreditsFullSection";
+import { BRAND, BRAND_CATEGORIES, getBrandModuleDescription, BRAND_AI_DISCLAIMER } from "@/lib/brand";
 import { HeroContinue, type HeroMode } from "@/components/netflix/HeroContinue";
 import { LessonRow } from "@/components/netflix/LessonRow";
 import { LessonCard } from "@/components/netflix/LessonCard";
@@ -346,10 +347,10 @@ export default function StudentDashboard() {
     return isTesterAccess && allowedLessonIds.size > 0 && !allowedLessonIds.has(lessonId);
   };
 
-  const whatsappRenewUrl = "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20gostaria%20de%20saber%20mais%20sobre%20os%20planos%20da%20Ampla%20Facial";
+  const whatsappRenewUrl = `https://wa.me/5521976263881?text=${encodeURIComponent(`Olá Dr. Gustavo, gostaria de saber mais sobre os planos do ${BRAND.name}.`)}`;
 
   const getWhatsAppUrl = (mod: Module) => {
-    const msg = encodeURIComponent(`Olá! Tenho interesse em adquirir o módulo ${mod.title} da mentoria Ampla Facial. Meu email de acesso é ${user?.email || ""}.`);
+    const msg = encodeURIComponent(`Olá! Tenho interesse em adquirir o módulo ${mod.title} do ${BRAND.name}. Meu email de acesso é ${user?.email || ""}.`);
     return `https://wa.me/5521976263881?text=${msg}`;
   };
 
@@ -726,19 +727,15 @@ export default function StudentDashboard() {
   const daysUsed = Math.max(0, planDurationDays - daysLeft);
   const dayProgressPercent = Math.min(100, Math.round((daysUsed / planDurationDays) * 100));
 
-  // Course card description fallback
+  // Course card description fallback (Ampla IA brand). Mantém compatibilidade
+  // com módulos antigos por meio da heurística baseada em palavras-chave
+  // centralizada em `@/lib/brand`.
   const getCourseDescription = (mod: Module): string => {
     if (mod.description) return mod.description;
-    const title = mod.title.toLowerCase();
-    if (title.includes("toxina")) return "Técnicas e protocolos de aplicação de toxina botulínica";
-    if (title.includes("preenchedores") || title.includes("ácido")) return "Preenchimentos e volumização com ácido hialurônico";
-    if (title.includes("bioestimulador")) return "Bioestimuladores de colágeno e neocolagênese";
-    if (title.includes("modulador") || title.includes("matriz")) return "Moduladores de matriz extracelular";
-    if (title.includes("naturalup") || title.includes("método")) return "Protocolo integrado completo NaturalUp®";
-    return "Conteúdo exclusivo da mentoria Ampla Facial";
+    return getBrandModuleDescription(mod.title);
   };
 
-  const whatsappTrialUrl = `https://wa.me/5521976263881?text=${encodeURIComponent(`Olá! Estou com o cadastro gratuito da Ampla Facial e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
+  const whatsappTrialUrl = `https://wa.me/5521976263881?text=${encodeURIComponent(`Olá! Estou com o cadastro gratuito do ${BRAND.name} e gostaria de assinar a plataforma. Meu email é ${user?.email || ""}.`)}`;
 
   // ===== NETFLIX PHASE 1: Hero + Rows =====
 
@@ -869,10 +866,10 @@ export default function StudentDashboard() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           {/* Left: Logo */}
           <div className="flex items-center gap-2.5">
-            <img src="/logo-icon.png" alt="Ampla Facial" className="w-10 h-10 object-contain shrink-0 -mt-1" loading="eager" decoding="async" />
+            <img src="/logo-icon.png" alt={BRAND.name} className="w-10 h-10 object-contain shrink-0 -mt-1" loading="eager" decoding="async" />
             <div className="leading-none">
-              <p className="text-sm font-extrabold tracking-wide text-white">AMPLA FACIAL</p>
-              <p className="text-[9px] text-gold/70 tracking-wide font-light">Dr. Gustavo Martins</p>
+              <p className="text-sm font-extrabold tracking-wide text-white">{BRAND.shortName}</p>
+              <p className="text-[9px] text-gold/70 tracking-wide font-light">{BRAND.tagline}</p>
             </div>
           </div>
 
@@ -987,8 +984,8 @@ export default function StudentDashboard() {
         <div className="fixed inset-0 z-50 bg-[#0A0D14] animate-in fade-in duration-200">
           <div className="flex items-center justify-between px-5 py-4">
             <div className="flex items-center gap-2.5">
-              <img src="/logo-icon.png" alt="Ampla Facial" className="w-8 h-8 object-contain" loading="eager" decoding="async" />
-              <span className="text-sm font-extrabold tracking-wide text-white">AMPLA FACIAL</span>
+              <img src="/logo-icon.png" alt={BRAND.name} className="w-8 h-8 object-contain" loading="eager" decoding="async" />
+              <span className="text-sm font-extrabold tracking-wide text-white">{BRAND.shortName}</span>
             </div>
             <button
               onClick={() => setMobileMenuOpen(false)}
@@ -1288,14 +1285,14 @@ export default function StudentDashboard() {
               return true;
             });
 
-            // Category rows based on module titles
-            const categoryConfig: { title: string; emoji: string; keywords: string[] }[] = [
-              { title: "Toxina Botulínica", emoji: "💉", keywords: ["toxina"] },
-              { title: "Preenchedores Faciais", emoji: "💧", keywords: ["preenchedores", "ácido", "acido", "preenchedor"] },
-              { title: "Bioestimuladores de Colágeno", emoji: "✨", keywords: ["bioestimulador"] },
-              { title: "Moduladores de Matriz Extracelular", emoji: "🔬", keywords: ["modulador", "regeneração", "regeneracao", "matriz", "biorregenerador"] },
-              { title: "Método NaturalUp", emoji: "📐", keywords: ["naturalup", "natural up", "método", "metodo", "protocolo"] },
-            ];
+            // Category rows based on module titles. Categories são definidas
+            // em `@/lib/brand` como BRAND_CATEGORIES (Ampla IA), permitindo
+            // edição centralizada da taxonomia.
+            const categoryConfig: { title: string; emoji: string; keywords: string[] }[] = BRAND_CATEGORIES.map((c) => ({
+              title: c.title,
+              emoji: c.emoji,
+              keywords: c.keywords,
+            }));
 
             const categoryRows = categoryConfig
               .map((cat) => {
@@ -1678,7 +1675,7 @@ export default function StudentDashboard() {
                   <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
                     <Users className="w-5 h-5 text-gold" />
                   </div>
-                  <h3 className="font-semibold text-sm text-foreground">Comunidade NaturalUp&reg;</h3>
+                  <h3 className="font-semibold text-sm text-foreground">Comunidade Ampla IA</h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">Conecte-se com outros profissionais, troque experiências e evolua junto com a comunidade.</p>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">
@@ -1694,7 +1691,7 @@ export default function StudentDashboard() {
                   <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center">
                     <Users className="w-5 h-5 text-gold" />
                   </div>
-                  <h3 className="font-semibold text-sm text-foreground">Comunidade NaturalUp&reg;</h3>
+                  <h3 className="font-semibold text-sm text-foreground">Comunidade Ampla IA</h3>
                   <p className="text-xs text-muted-foreground leading-relaxed">Conecte-se com outros profissionais, troque experiências e evolua junto com a comunidade.</p>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center rounded-full bg-destructive/15 border border-destructive/30 px-2 py-0.5 text-[10px] font-semibold text-destructive uppercase tracking-wider">
@@ -1997,9 +1994,12 @@ export default function StudentDashboard() {
       {/* ===== FOOTER ===== */}
       <footer className="border-t border-border/30 py-6 mt-4">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-          <span>&copy; 2026 Ampla Facial &mdash; Todos os direitos reservados</span>
-          <span className="text-gold-muted font-semibold tracking-brand text-[10px]">NATURALUP&reg;</span>
+          <span>{BRAND.copyrightLine}</span>
+          <span className="text-gold-muted font-semibold tracking-brand text-[10px]">AMPLA IA</span>
         </div>
+        <p className="max-w-6xl mx-auto px-4 sm:px-6 mt-3 text-[10px] leading-relaxed text-muted-foreground/70">
+          {BRAND_AI_DISCLAIMER}
+        </p>
       </footer>
 
       {/* Purchase Module Dialog / Expired Access Dialog */}
