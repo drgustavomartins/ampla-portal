@@ -1600,18 +1600,12 @@ export default function StudentDashboard() {
                       <div
                         className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-[1.03]"
                         style={{
-                          background:
-                            "linear-gradient(160deg, #14213D 0%, #0A1628 55%, #0A0D14 100%)",
-                        }}
-                      />
-                      {/* Decorative pattern */}
-                      <div
-                        className="absolute inset-0 opacity-[0.10]"
-                        style={{
                           backgroundImage:
-                            "radial-gradient(circle at 30% 25%, #D4A843 0%, transparent 55%)",
+                            "url(/images/covers/cover_encontros_quinzenais_v2026.png)",
                         }}
                       />
+                      {/* Soft white vignette at bottom (same as other module cards) */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-white/[0.06] via-transparent to-transparent" />
                       <div className="absolute top-5 left-5">
                         <div className="inline-flex items-center gap-1.5 rounded-full border border-gold/30 bg-[#0A1628]/60 px-2.5 py-1">
                           <Sparkles className="w-3 h-3 text-gold" />
