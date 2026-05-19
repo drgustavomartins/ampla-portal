@@ -13,7 +13,6 @@ import { Loader2, Sparkles, Eye, EyeOff, CheckCircle2, Star, Users, Clock, Play,
 import { PhoneInput } from "@/components/PhoneInput";
 import { trackEvent } from "@/lib/funnel";
 import { captureUtmParams, getUtmData, getInviteCode, clearInviteCode } from "@/lib/utm";
-import { BRAND, BRAND_SHOWCASE_MODULES } from "@/lib/brand";
 import type { z } from "zod";
 
 // #33 — Humaniza erros de API em mensagens amigáveis
@@ -40,8 +39,14 @@ function humanizeError(error: any): string {
   return msg || "Ocorreu um erro. Tente novamente ou fale conosco pelo WhatsApp.";
 }
 
-// Módulos para exibir na proposta de valor — sourced from BRAND.
-const MODULES = BRAND_SHOWCASE_MODULES;
+// Módulos para exibir na proposta de valor
+const MODULES = [
+  { title: "Toxina Botulínica" },
+  { title: "Preenchedores Faciais" },
+  { title: "Bioestimuladores de Colágeno" },
+  { title: "Moduladores de Matriz Extracelular" },
+  { title: "Método NaturalUp®" },
+];
 
 type Mode = "login" | "trial" | "forgot";
 
@@ -184,18 +189,18 @@ export default function LoginPage() {
           <div className="flex items-center gap-2 justify-start pl-1">
             <img src="/logo-icon.png" alt="" className="h-20 w-20 object-contain shrink-0 -mt-3" decoding="async" width={80} height={80} fetchPriority="high" />
             <div>
-              <h1 className="text-[2rem] font-extrabold tracking-wide text-white leading-none">{BRAND.shortName}</h1>
-              <p className="text-sm text-[#D4A843] mt-1 font-light tracking-wide">{BRAND.tagline}</p>
+              <h1 className="text-[2rem] font-extrabold tracking-wide text-white leading-none">AMPLA FACIAL</h1>
+              <p className="text-sm text-[#D4A843] mt-1 font-light tracking-wide">Dr. Gustavo Martins</p>
             </div>
           </div>
 
           {/* Logo mobile (mantida para compatibilidade) */}
           <div className="hidden text-center space-y-3">
-            <img src="/logo-icon.png" alt={BRAND.name} className="mx-auto h-28 w-28 object-contain drop-shadow-lg" decoding="async" width={112} height={112} loading="lazy" />
+            <img src="/logo-icon.png" alt="Ampla Facial" className="mx-auto h-28 w-28 object-contain drop-shadow-lg" decoding="async" width={112} height={112} loading="lazy" />
             <div>
-              <h1 className="text-2xl font-semibold tracking-widest text-gold uppercase">{BRAND.name}</h1>
+              <h1 className="text-2xl font-semibold tracking-widest text-gold uppercase">Ampla Facial</h1>
               <div className="w-10 h-px bg-gold mx-auto mt-3 mb-2 opacity-50" />
-              <p className="text-xs tracking-widest uppercase text-white/40">{BRAND.tagline}</p>
+              <p className="text-xs tracking-widest uppercase text-white/40">Dr. Gustavo Martins</p>
             </div>
           </div>
 
@@ -231,7 +236,7 @@ export default function LoginPage() {
               )}
               {mode === "forgot" && <h2 className="text-lg font-medium text-white">Recuperar senha</h2>}
               <p className="text-sm text-white/40">
-                {mode === "login" && "Acesse suas aulas do Ampla IA"}
+                {mode === "login" && "Acesse suas aulas da mentoria"}
                 {mode === "trial" && (inviteInfo ? `Acesso completo por ${inviteInfo.durationDays} dias` : "Acesso gratuito por tempo indeterminado, sem cartão")}
                 {mode === "forgot" && "Enviaremos um link para seu e-mail"}
               </p>
@@ -601,7 +606,7 @@ export default function LoginPage() {
           {/* Link para LP */}
           <div className="mt-6 text-center">
             <a href="/#/lp" className="text-sm text-gold hover:text-gold/80 font-medium underline-offset-4 hover:underline transition-colors">
-              Conheça o Ampla IA
+              Conheça a formação completa
             </a>
           </div>
 
@@ -653,9 +658,9 @@ export default function LoginPage() {
             {[...Array(5)].map((_, i) => <Star key={i} className="h-2.5 w-2.5 text-[#D4A843] fill-[#D4A843]" />)}
           </div>
           <p className="text-[11px] text-white/55 leading-relaxed italic">
-            &ldquo;Conteúdo direto ao ponto. Saí de cada aula com algo aplicável no consultório no mesmo dia — sem promessas mágicas, só prática.&rdquo;
+            &ldquo;Amei cada aula. Foi uma das melhores experiências de aprendizado que já tive. Consigo assistir quantas vezes quiser ao meu professor favorito.&rdquo;
           </p>
-          <p className="mt-1.5 text-[9px] text-[#D4A843]/60">Aluna em fase beta — depoimento ilustrativo</p>
+          <p className="mt-1.5 text-[9px] text-[#D4A843]/60">Dra. Ana — Rio de Janeiro</p>
         </div>
 
         {/* Banner trial */}
@@ -673,10 +678,10 @@ export default function LoginPage() {
           onClick={() => { fetch("/api/quiz/click", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source: "login_banner" }) }).catch(() => {}); trackEvent("banner_click", { source: "login_banner" }); }}
           className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 flex items-center gap-3 hover:border-[#D4A843]/30 hover:bg-[#D4A843]/5 transition-all group"
         >
-          <span className="text-xl shrink-0">🤖</span>
+          <span className="text-xl shrink-0">🏆</span>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-white">Por onde começar a usar IA na sua prática?</p>
-            <p className="text-[9px] text-white/40">Faça o quiz e descubra a trilha ideal pra você</p>
+            <p className="text-xs font-semibold text-white">Qual mentoria é ideal para você?</p>
+            <p className="text-[9px] text-white/40">Faça o quiz e concorra a 1 mês VIP grátis</p>
           </div>
           <ArrowRight className="h-3.5 w-3.5 text-[#D4A843]/50 group-hover:text-[#D4A843] shrink-0 transition-colors" />
         </a>
