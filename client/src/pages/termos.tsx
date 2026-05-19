@@ -30,9 +30,11 @@ export default function TermosPage() {
         <section>
           <h2 className="text-white text-base font-semibold mb-2">2. Objeto</h2>
           <p>
-            A Plataforma disponibiliza conteúdo educacional em formato de vídeo-aulas, materiais em PDF, resumos em
-            áudio e outros recursos relacionados à Harmonização Orofacial (HOF), destinados exclusivamente a
-            profissionais de saúde habilitados para a prática clínica em seu respectivo estado.
+            A Plataforma Ampla IA disponibiliza conteúdo educacional em formato de vídeo-aulas, materiais em PDF, resumos
+            em áudio e outros recursos sobre uso de Inteligência Artificial aplicada à rotina de profissionais de saúde
+            (clínica, atendimento, gestão, comercial e estudo). O conteúdo é de caráter educacional e a aplicação prática
+            ocorre sob responsabilidade do profissional, conforme habilitações e regulamentações do respectivo conselho
+            profissional. A IA é tratada como ferramenta de apoio — não substitui o julgamento clínico nem exames complementares.
           </p>
         </section>
 
@@ -48,9 +50,11 @@ export default function TermosPage() {
         <section>
           <h2 className="text-white text-base font-semibold mb-2">4. Propriedade intelectual</h2>
           <p>
-            Todo o conteúdo disponibilizado — incluindo aulas, materiais, protocolos (entre eles o Método NaturalUp®,
-            protocolo registrado) e materiais complementares — é de propriedade exclusiva do Dr. Gustavo Martins.
-            É vedada a reprodução, distribuição ou comercialização sem autorização expressa.
+            Todo o conteúdo disponibilizado — incluindo aulas, materiais, prompts, fluxos sugeridos e materiais
+            complementares — é de propriedade exclusiva do Dr. Gustavo Martins / Ampla IA. É vedada a reprodução,
+            distribuição ou comercialização sem autorização expressa. Prompts e exemplos compartilhados são oferecidos
+            como base educacional e devem ser adaptados pelo profissional ao seu contexto, ao conselho profissional
+            aplicável e à LGPD.
           </p>
         </section>
 

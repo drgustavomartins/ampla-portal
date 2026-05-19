@@ -127,7 +127,7 @@ export default function UpgradePage() {
         <div className="flex min-h-screen flex-col items-center justify-center bg-[#0A1628] px-4 text-center">
           <TrendingUp className="mb-4 h-12 w-12 text-[#D4A843]" />
           <h2 className="text-2xl font-bold text-white">Escolha o plano ideal para você</h2>
-          <p className="mt-2 text-gray-400">Conheça nossos planos e comece sua formação em Harmonização Orofacial.</p>
+          <p className="mt-2 text-gray-400">Conheça os planos e comece sua formação em IA aplicada à saúde com o Ampla IA.</p>
           <Link href="/planos-publicos" className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#D4A843] px-6 py-3 font-semibold text-[#0A1628] hover:bg-[#e8b84d] transition-all">
             Ver planos disponíveis
           </Link>

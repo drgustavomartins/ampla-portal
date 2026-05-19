@@ -49,7 +49,7 @@ export default function CreditsPage() {
 
   function shareWhatsApp() {
     const msg = encodeURIComponent(
-      `Quer se especializar em harmonização facial com o Dr. Gustavo Martins? Use meu código ${referralCode} e você e eu ganhamos créditos!\n\n${referralLink}`
+      `Quer aprender a usar IA na sua prática profissional com o Dr. Gustavo Martins? Use meu código ${referralCode} e nós dois ganhamos créditos!\n\n${referralLink}`
     );
     window.open(`https://wa.me/?text=${msg}`, "_blank");
   }
@@ -267,8 +267,8 @@ export default function CreditsPage() {
       {/* Footer */}
       <footer className="border-t border-border/30 py-6 mt-4">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-          <span>&copy; 2026 Ampla Facial &mdash; Todos os direitos reservados</span>
-          <span className="text-gold-muted font-semibold tracking-brand text-[10px]">NATURALUP&reg;</span>
+          <span>&copy; 2026 Ampla IA &mdash; Todos os direitos reservados</span>
+          <span className="text-gold-muted font-semibold tracking-brand text-[10px]">AMPLA IA</span>
         </div>
       </footer>
     </div>
