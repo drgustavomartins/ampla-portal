@@ -168,18 +168,22 @@ const MODULE_THEMES: Record<string, { accent: string; accentRgb: string; gradien
   },
 };
 
+// Tema default (gold) usado quando nenhum eixo casa com o título — também
+// vale para módulos legados HOF ainda no banco. Apontamos para a paleta
+// dourada do eixo Administrativo, mas nomeamos a constante separadamente
+// para deixar a intenção explícita.
+const DEFAULT_MODULE_THEME = MODULE_THEMES.administrativo;
+
 function getModuleTheme(title: string) {
   const t = (title || "").toLowerCase();
-  // Eixos Ampla IA (palavra-chave → tema). Mantemos default gold como
-  // fallback para módulos com títulos que não casam (incluindo módulos
-  // legados de HOF ainda no banco).
+  // Eixos Ampla IA (palavra-chave → tema).
   if (/(clinic|anamnese|diagnost|prontuario|prontuário|evolucao|evolução|exame)/.test(t)) return MODULE_THEMES.clinica;
   if (/(atendimento|paciente|comunicac|comunicação|whatsapp|chatbot|recepcao|recepção|agendamento)/.test(t)) return MODULE_THEMES.atendimento;
   if (/(gestao|gestão|administr|financeir|agenda|processo|operacao|operação|fluxo)/.test(t)) return MODULE_THEMES.administrativo;
   if (/(marketing|vendas|comercial|captacao|captação|lead|anuncio|anúncio|trafego|tráfego|instagram|midia|mídia)/.test(t)) return MODULE_THEMES.comercial;
   if (/(estudo|educa|aprend|artigo|pesquisa|evidenc|literatura|resumo|leitura)/.test(t)) return MODULE_THEMES.educacao;
   if (/(etic|ética|lgpd|privacid|regula|limit|responsab|seguranc|segurança)/.test(t)) return MODULE_THEMES.etica;
-  return MODULE_THEMES.administrativo; // default gold
+  return DEFAULT_MODULE_THEME;
 }
 
 function getCourseImage(mod: Module): string | null {

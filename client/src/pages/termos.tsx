@@ -12,7 +12,7 @@ export default function TermosPage() {
       >
         <ChevronLeft className="w-4 h-4" /> Voltar
       </button>
-      <img src="/logo-icon.png" alt="Ampla Facial" className="w-12 h-12 object-contain mb-6" loading="lazy" decoding="async" />
+      <img src="/logo-icon.png" alt="Ampla IA" className="w-12 h-12 object-contain mb-6" loading="lazy" decoding="async" />
       <h1 className="text-2xl font-semibold text-gold mb-1">Termos de Uso</h1>
       <p className="text-xs text-muted-foreground mb-8">Última atualização: abril de 2026</p>
 
@@ -21,9 +21,11 @@ export default function TermosPage() {
         <section>
           <h2 className="text-white text-base font-semibold mb-2">1. Identificação do serviço</h2>
           <p>
-            A plataforma Ampla Facial Portal ("Plataforma") é operada por <strong className="text-white">Gustavo Martins Martins
-            (Dr. Gustavo Martins)</strong>, cirurgião-dentista, CPF/CNPJ disponível mediante solicitação,
-            com sede no Rio de Janeiro — RJ, acessível em <a href="https://portal.amplafacial.com.br" className="text-gold underline" target="_blank">portal.amplafacial.com.br</a>.
+            A plataforma <strong className="text-white">Ampla IA</strong> ("Plataforma" ou "Serviço") é operada
+            por <strong className="text-white">Gustavo Medeiros Martins (Dr. Gustavo Martins)</strong>,
+            cirurgião-dentista, CPF/CNPJ disponível mediante solicitação, com sede no Rio de Janeiro — RJ.
+            A Plataforma é acessível por meio do endereço <a href="https://portal.amplafacial.com.br" className="text-gold underline" target="_blank">portal.amplafacial.com.br</a>,
+            domínio histórico mantido durante a transição de marca; a referência institucional do produto é Ampla IA.
           </p>
         </section>
 

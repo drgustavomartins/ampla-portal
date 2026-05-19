@@ -172,7 +172,7 @@ export const BRAND_CATEGORIES: BrandCategory[] = [
  * Lista estática — não depende do banco. Reflete a arquitetura do novo
  * produto e serve como prévia do que o aluno encontrará por dentro.
  */
-export const BRAND_SHOWCASE_MODULES: { title: string }[] = [
+export const BRAND_SHOWCASE_MODULES = [
   { title: "Boas-vindas — IA para a sua prática" },
   { title: "IA na Rotina Clínica" },
   { title: "IA no Atendimento ao Paciente" },
@@ -180,7 +180,7 @@ export const BRAND_SHOWCASE_MODULES: { title: string }[] = [
   { title: "IA Comercial e Marketing" },
   { title: "IA para Estudo e Educação" },
   { title: "Ética, LGPD e Limites da IA" },
-];
+] as const satisfies ReadonlyArray<{ title: string }>;
 
 /**
  * Fallback de descrição usado nos cards de módulo quando o admin não

@@ -33,7 +33,7 @@ import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
 import { isLifetimePlan, hasMentoriaAtiva } from "@shared/access-rules";
 import { CreditsDashboardCard } from "@/components/CreditsDashboardCard";
 import { CreditsFullSection } from "@/components/CreditsFullSection";
-import { BRAND, BRAND_CATEGORIES, getBrandModuleDescription } from "@/lib/brand";
+import { BRAND, BRAND_CATEGORIES, getBrandModuleDescription, BRAND_AI_DISCLAIMER } from "@/lib/brand";
 import { HeroContinue, type HeroMode } from "@/components/netflix/HeroContinue";
 import { LessonRow } from "@/components/netflix/LessonRow";
 import { LessonCard } from "@/components/netflix/LessonCard";
@@ -347,7 +347,7 @@ export default function StudentDashboard() {
     return isTesterAccess && allowedLessonIds.size > 0 && !allowedLessonIds.has(lessonId);
   };
 
-  const whatsappRenewUrl = "https://wa.me/5521976263881?text=Ol%C3%A1%20Dr.%20Gustavo%2C%20gostaria%20de%20saber%20mais%20sobre%20os%20planos%20da%20Ampla%20Facial";
+  const whatsappRenewUrl = `https://wa.me/5521976263881?text=${encodeURIComponent(`Olá Dr. Gustavo, gostaria de saber mais sobre os planos do ${BRAND.name}.`)}`;
 
   const getWhatsAppUrl = (mod: Module) => {
     const msg = encodeURIComponent(`Olá! Tenho interesse em adquirir o módulo ${mod.title} do ${BRAND.name}. Meu email de acesso é ${user?.email || ""}.`);
@@ -1995,8 +1995,11 @@ export default function StudentDashboard() {
       <footer className="border-t border-border/30 py-6 mt-4">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
           <span>{BRAND.copyrightLine}</span>
-          <span className="text-gold-muted font-semibold tracking-brand text-[10px]">NATURALUP&reg;</span>
+          <span className="text-gold-muted font-semibold tracking-brand text-[10px]">AMPLA IA</span>
         </div>
+        <p className="max-w-6xl mx-auto px-4 sm:px-6 mt-3 text-[10px] leading-relaxed text-muted-foreground/70">
+          {BRAND_AI_DISCLAIMER}
+        </p>
       </footer>
 
       {/* Purchase Module Dialog / Expired Access Dialog */}

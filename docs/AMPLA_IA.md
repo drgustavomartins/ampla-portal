@@ -118,10 +118,13 @@ Definida em `client/src/lib/brand.ts → BRAND_CATEGORIES`:
   - link "Conheça o Ampla IA"
 - `client/src/pages/student-dashboard.tsx`:
   - header e mobile menu: `AMPLA IA` + tagline
-  - footer: `BRAND.copyrightLine`
+  - footer: `BRAND.copyrightLine` + badge "AMPLA IA" (removido `NATURALUP®`)
+  - footer: renderiza `BRAND_AI_DISCLAIMER` em letra miúda — única
+    superfície persistente do disclaimer ético do produto IA
   - `getCourseDescription` agora delega a `getBrandModuleDescription`
   - fileiras categorizadas no dashboard usam `BRAND_CATEGORIES`
   - cards de "Comunidade NaturalUp" → "Comunidade Ampla IA"
+  - `whatsappRenewUrl` agora usa `BRAND.name` (sem Ampla Facial hard-coded)
   - mensagem WhatsApp de upgrade/aquisição referencia `BRAND.name`
 - `client/src/pages/module-page.tsx`:
   - `MODULE_THEMES` rekey para os 6 eixos do Ampla IA com paletas
@@ -134,9 +137,23 @@ Definida em `client/src/lib/brand.ts → BRAND_CATEGORIES`:
 - `client/src/pages/credits-rules.tsx` — footer.
 - `client/src/pages/upgrade.tsx` — copy "comece sua formação em IA aplicada
   à saúde com o Ampla IA".
-- `client/src/pages/termos.tsx` — objeto do serviço e propriedade
-  intelectual reescritos para o contexto Ampla IA.
+- `client/src/pages/termos.tsx` — `alt` da logo, seção 1
+  (Identificação do serviço — agora consistentemente "Ampla IA", operada
+  por Dr. Gustavo Martins, domínio histórico mantido durante transição),
+  seção 2 (Objeto) e seção 4 (Propriedade intelectual) reescritos para
+  o contexto Ampla IA.
+- `client/src/pages/privacidade.tsx` — `alt` da logo migrado para
+  "Ampla IA" (página linkada do aceite LGPD do cadastro).
+- `client/src/pages/reset-password.tsx` — `alt` da logo e h1
+  migrados para "Ampla IA" (fluxo de auth).
+- `client/src/components/CreditsDashboardCard.tsx` — referral
+  WhatsApp do card que o aluno vê no dashboard agora usa `BRAND.name`
+  e `BRAND.domain`.
+- `client/src/components/CreditsFullSection.tsx` — referral WhatsApp
+  da seção completa de créditos também migrado para `BRAND.name`.
 - `client/src/pages/admin-dashboard.tsx` — logo no header e footer.
+- `client/src/lib/brand.ts` — `BRAND_SHOWCASE_MODULES` agora é
+  `readonly` (`as const satisfies ReadonlyArray<...>`).
 
 ### Preservados intencionalmente
 
@@ -162,11 +179,9 @@ próxima rodada de validação com o Dr. Gustavo:
 - `client/src/components/SelectThemeModal.tsx` — escolha de tema para
   o plano "Modulo com Pratica" (lista hardcoded HOF).
 - `client/src/components/QuizLeadsTab.tsx`,
-  `client/src/components/CreditsDashboardCard.tsx`,
-  `client/src/components/CreditsFullSection.tsx`,
   `client/src/components/LeadsTab.tsx`,
   `client/src/components/whatsapp-especialista.tsx` — mensagens default
-  para CRM/leads referenciam "Ampla Facial". Atualizar quando a
+  para CRM/leads admin referenciam "Ampla Facial". Atualizar quando a
   estratégia comercial do Ampla IA for definida.
 - `server/*`, `shared/schema.ts`, `shared/access-rules.ts`, `api/*`,
   `vercel.json`, `drizzle.config.ts`, `vite.config.ts`, `tailwind.config.ts`,
@@ -196,6 +211,55 @@ browser por esta etapa ser feita em ambiente headless.
 
 ---
 
+## 4.1 Follow-up da revisão sênior (PR #96)
+
+A revisão de produto/UX apontou bloqueadores e inconsistências dentro
+da própria área de membros. As correções abaixo foram aplicadas em
+cima do commit inicial:
+
+- **B1 — Footer com `NATURALUP®`**: substituído por `AMPLA IA` em
+  `student-dashboard.tsx`. Agora idêntico a `credits.tsx`,
+  `credits-rules.tsx` e `module-page.tsx`.
+- **B2 — Incoerência legal nos Termos**: seção 1 reescrita para
+  identificar consistentemente o serviço como "Ampla IA", operado por
+  Dr. Gustavo Medeiros Martins, com nota explícita de que o domínio
+  histórico (`portal.amplafacial.com.br`) foi mantido durante a
+  transição de marca. Documento legal não mistura mais duas marcas.
+- **B3 — Referral copy HOF nos cards**: `CreditsDashboardCard.tsx` e
+  `CreditsFullSection.tsx` agora geram o texto WhatsApp via `BRAND.name`
+  e `BRAND.domain`, alinhados à página `credits.tsx`.
+- **B4 — `alt="Ampla Facial"` em `termos.tsx`**: corrigido para "Ampla IA".
+- **O1 — `privacidade.tsx` e `reset-password.tsx`**: `alt` da logo e h1
+  ("Ampla Facial" → "Ampla IA"). Páginas alcançáveis a partir do
+  cadastro (LGPD) e do fluxo de recuperação de senha.
+- **O2 — `BRAND_AI_DISCLAIMER` invisível**: agora é renderizado em
+  letra miúda no rodapé do dashboard do aluno, abaixo do copyright.
+  É a primeira superfície persistente do disclaimer ético do produto IA
+  e materializa a promessa "IA com responsabilidade, sem substituir
+  julgamento clínico".
+- **Refinos opcionais**: `BRAND_SHOWCASE_MODULES` virou `readonly`
+  (`as const satisfies ReadonlyArray<...>`) e o fallback do
+  `MODULE_THEMES` foi extraído numa constante `DEFAULT_MODULE_THEME`
+  para deixar a intenção explícita.
+
+### O que NÃO foi alterado (decisões deliberadas)
+
+- **O3** (módulos HOF no dashboard, vitrine vende eixos que não
+  existem no banco, quiz ainda HOF) — exige migração de conteúdo pelo
+  admin / pass dedicado de copywriting; documentado em "Riscos" e
+  "Próximos passos". Mantido proposital até decisão comercial.
+- **O4** (covers PNG com nomes HOF) — depende de fornecimento de
+  artes. Naming sugerido permanece em "Próximos passos".
+- **O5** (7 itens na vitrine vs 6 eixos) — manter `Boas-vindas` como
+  item de hospitalidade é coerente com a tese do produto; aguarda
+  decisão se será materializado como módulo dedicado no banco.
+- **D1-D5** — pontos de discussão (domínio, posicionamento do
+  founder, descrição dos cards de comunidade, og-image, design
+  system) — todos exigem decisão do Dr. Gustavo / aprovação visual
+  antes de qualquer code change.
+
+---
+
 ## 5. Recomendações de UX / próximos passos
 
 1. **Rodada de conteúdo do Dr. Gustavo** para reescrever LP
@@ -220,10 +284,10 @@ browser por esta etapa ser feita em ambiente headless.
 4. **Reagrupar materiais (`material_themes`)** alinhados aos eixos do
    Ampla IA — hoje o controle é por categoria string. Pode ser feito
    100% via admin sem code change.
-5. **Disclaimer de IA**: usar `BRAND_AI_DISCLAIMER` em pelo menos um
-   lugar visível (sugestão: rodapé do dashboard ou abaixo de cards de
-   aula clínica). Não foi inserido automaticamente para evitar
-   pollution visual; recomenda-se validar UX antes.
+5. **Disclaimer de IA**: já inserido no rodapé do `student-dashboard`
+   em letra miúda usando `BRAND_AI_DISCLAIMER`. Avaliar se vale
+   replicar abaixo de aulas clínicas específicas ou no
+   `module-page`. Mantido enxuto para não poluir o layout.
 6. **Stripe / planos**: revisitar os nomes de planos
    (`shared/schema.ts → PLAN_KEYS`) — hoje têm semântica HOF
    (`vip_presencial`, `observador_*`, `imersao_elite`). Renomear
