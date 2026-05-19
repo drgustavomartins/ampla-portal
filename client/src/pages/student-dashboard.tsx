@@ -366,14 +366,19 @@ export default function StudentDashboard() {
   };
 
   // Map modules to course card data — prefer imageUrl from DB, fallback to hardcoded
+  // by title so cards always render a cover even if the DB row is missing image_url
+  // (e.g. older seeds, partial migrations, or rows created before the column was set).
   const getCourseImage = (mod: Module): string | null => {
     if (mod.imageUrl) return mod.imageUrl;
     const title = mod.title.toLowerCase();
-    if (title.includes("toxina")) return "/images/course-toxina.png";
-    if (title.includes("preenchedores") || title.includes("ácido") || title.includes("acido")) return "/images/course-preenchedores.png";
-    if (title.includes("bioestimulador")) return "/images/bioestimuladores-colageno.png";
-    if (title.includes("regeneração") || title.includes("regeneracao") || title.includes("modulador") || title.includes("matriz")) return "/images/moduladores-matriz.png";
-    if (title.includes("naturalup") || title.includes("natural up") || title.includes("método") || title.includes("metodo")) return "/images/naturalup-v2.png";
+    if (title.includes("toxina")) return "/images/covers/cover_toxina_botulinica_v2026.png";
+    if (title.includes("preenchedores") || title.includes("ácido") || title.includes("acido")) return "/images/covers/cover_preenchedores_faciais_v2026.png";
+    if (title.includes("bioestimulador")) return "/images/covers/cover_bioestimuladores_v2026.png";
+    if (title.includes("biorregenerador") || title.includes("regeneração") || title.includes("regeneracao") || title.includes("modulador") || title.includes("matriz")) return "/images/covers/cover_biorregeneradores_v2026.png";
+    if (title.includes("fios") || title.includes("pdo")) return "/images/covers/cover_fios_pdo_v2026.png";
+    if (title.includes("ia para clínica") || title.includes("ia para clinica") || title.startsWith("ia ") || title.includes("inteligência artificial") || title.includes("inteligencia artificial")) return "/images/covers/cover_ia_clinica_v2026.png";
+    if (title.includes("naturalup") || title.includes("natural up") || title.includes("método") || title.includes("metodo")) return "/images/covers/cover_metodo_naturalup_v2026.png";
+    if (title.includes("encontros") || title.includes("quinzena")) return "/images/covers/cover_encontros_quinzenais_v2026.png";
     return null;
   };
 

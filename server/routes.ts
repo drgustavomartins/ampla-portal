@@ -276,6 +276,9 @@ function safeParseInt(val: string): number | null {
 // Validate URL format (prevent stored XSS via javascript: URLs)
 function isValidUrl(url: string): boolean {
   if (!url) return true;
+  // Allow absolute site-relative paths (e.g. /images/covers/foo.png) so admins
+  // can reference assets bundled with the client without a full origin.
+  if (url.startsWith("/")) return !url.includes("..") && !url.includes("\0");
   try {
     const parsed = new URL(url);
     return parsed.protocol === "https:" || parsed.protocol === "http:";
