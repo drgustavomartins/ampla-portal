@@ -935,6 +935,33 @@ export async function registerRoutes(server: Server, app: Express) {
     console.error("[one-time-migrate] Failed to seed Toxina Terço Superior lesson:", e.message);
   }
 
+  // ==================== ONE-TIME: Toxina — Retoque com Xeomin (Cd99HuKNo6g) ====================
+  // Vídeo "Acompanhe comigo um retoque de toxina xeomin." (canal Dr. Gustavo Martins).
+  // Entra no módulo 2 (Toxina Botulínica) como aula prática — segue o mesmo padrão da
+  // demonstração clínica anterior (7M53CQwFvK0). Idempotente: chave (module_id, YouTube ID).
+  try {
+    const { db } = await import("./db");
+    await db.execute(`CREATE TABLE IF NOT EXISTS migrations_applied (id SERIAL PRIMARY KEY, name TEXT NOT NULL UNIQUE, applied_at TEXT NOT NULL)`);
+    const migrationName = "seed_toxina_retoque_xeomin_Cd99HuKNo6g_2026_05";
+    const already = await db.execute(sql`SELECT 1 FROM migrations_applied WHERE name = ${migrationName} LIMIT 1`);
+    if (already.rows.length === 0) {
+      const exists = await db.execute(`SELECT id FROM lessons WHERE module_id = 2 AND video_url LIKE '%Cd99HuKNo6g%' LIMIT 1`);
+      if (exists.rows.length === 0) {
+        const maxOrder = await db.execute(`SELECT COALESCE(MAX("order"), 0) as max_order FROM lessons WHERE module_id = 2`);
+        const nextOrder = (maxOrder.rows[0] as any).max_order + 1;
+        await db.execute(`INSERT INTO lessons (module_id, title, description, video_url, duration, "order", content_type) VALUES
+          (2, 'Acompanhe comigo um retoque de toxina com Xeomin', 'Acompanhe o raciocínio clínico e os pontos de atenção em um retoque de toxina botulínica com Xeomin, observando reavaliação dinâmica, planejamento de doses complementares e o refinamento do resultado em paciente real.', 'https://youtu.be/Cd99HuKNo6g', NULL, ${nextOrder}, 'practical')
+        `);
+        console.log("[one-time-migrate] Seeded Toxina Retoque Xeomin lesson");
+      }
+      await db.execute(sql`INSERT INTO migrations_applied (name, applied_at) VALUES (${migrationName}, ${new Date().toISOString()})`);
+    } else {
+      console.log("[one-time-migrate] seed_toxina_retoque_xeomin_Cd99HuKNo6g already applied, skipping");
+    }
+  } catch (e: any) {
+    console.error("[one-time-migrate] Failed to seed Toxina Retoque Xeomin lesson:", e.message);
+  }
+
   // ==================== ONE-TIME: Seed Bioestimuladores lessons ====================
   try {
     const { db } = await import("./db");
