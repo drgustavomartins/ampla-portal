@@ -1619,14 +1619,14 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-2.5">
             <img
               src="/logo-icon.png"
-              alt="Ampla IA"
+              alt="Ampla Facial"
               className="h-8 w-8 object-contain flex-shrink-0"
               decoding="async"
               width={32}
               height={32}
             />
             <span className="text-sm font-semibold text-gold tracking-brand leading-none">
-              AMPLA IA
+              AMPLA FACIAL
             </span>
             <Badge
               variant="secondary"
@@ -5105,7 +5105,7 @@ export default function AdminDashboard() {
 
       <footer className="border-t border-border/20 mt-8 py-5">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center text-xs text-muted-foreground">
-          Ampla IA — Portal de Aulas
+          Ampla Facial — Portal de Aulas
         </div>
       </footer>
     </div>

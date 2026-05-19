@@ -5,7 +5,6 @@ import {
   ChevronRight, Clock, ArrowUpRight, ArrowDownRight, Sparkles, HelpCircle,
   ShoppingCart, ArrowRight
 } from "lucide-react";
-import { BRAND } from "@/lib/brand";
 
 interface Transaction {
   id: number;
@@ -74,7 +73,7 @@ export function CreditsFullSection() {
   };
 
   const shareWhatsApp = () => {
-    const msg = `Estou estudando no ${BRAND.name} e quero te indicar! Use meu código ${data.referralCode} na hora da inscrição. Conheça: ${BRAND.domain}`;
+    const msg = `Estou estudando na Ampla Facial e quero te indicar! Use meu código ${data.referralCode} na hora da inscrição. Conheça: portal.amplafacial.com.br`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
