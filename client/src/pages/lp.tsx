@@ -174,7 +174,7 @@ export default function LandingPage() {
           }}
         >
           <span className="inline-flex items-center gap-2 flex-wrap justify-center">
-            <span>🎓 Agora com Acesso Vitalício por R$ 397</span>
+            <span>🎓 Agora com Acesso Vitalício por R$ 479</span>
             <span className="hidden sm:inline">—</span>
             <span>
               oferta termina em{" "}
@@ -202,8 +202,8 @@ export default function LandingPage() {
           <div className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-[13px] text-white/80 flex-wrap justify-center">
             <Clock className="w-3.5 h-3.5 text-[#D4A843] shrink-0 hidden sm:block" />
             <span>
-              <span className="hidden sm:inline">Oferta de lançamento R$ 397 — Acesso Vitalício encerra em </span>
-              <span className="sm:hidden">R$ 397 encerra em </span>
+              <span className="hidden sm:inline">Oferta de lançamento R$ 479 — Acesso Vitalício encerra em </span>
+              <span className="sm:hidden">R$ 479 encerra em </span>
               <span className="font-bold text-[#D4A843]">
                 {countdown.days}d {String(countdown.hours).padStart(2,"0")}h {String(countdown.minutes).padStart(2,"0")}m {String(countdown.seconds).padStart(2,"0")}s
               </span>
@@ -611,7 +611,7 @@ export default function LandingPage() {
                     </>
                   ) : (
                     <>
-                      <p className="text-2xl font-bold text-white"><span className="text-[#D4A843]">R$ 397</span></p>
+                      <p className="text-2xl font-bold text-white"><span className="text-[#D4A843]">R$ 479</span></p>
                       <p className="text-xs text-gray-500 mt-0.5">Pagamento único &middot; Sem mensalidade</p>
                     </>
                   )}
@@ -667,7 +667,7 @@ export default function LandingPage() {
                       style={{ backgroundColor: "#D4A843", color: "#0A0D14" }}
                       className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-center text-sm hover:brightness-110 transition"
                     >
-                      Garantir Acesso &mdash; R$ 397
+                      Garantir Acesso &mdash; R$ 479
                     </a>
                   )}
                 </div>

@@ -38,7 +38,7 @@ function authenticateRequest(req: Request): { userId: number; role: string } | n
 
 export function registerStripeRoutes(app: Express) {
   // ─── GET /api/vitalicio-slots ─── Vagas restantes do lançamento ─────
-  // Público — retorna quantas vagas de Plataforma Online (R$ 397) ainda existem.
+  // Público — retorna quantas vagas de Plataforma Online (R$ 479) ainda existem.
   app.get("/api/vitalicio-slots", async (_req: Request, res: Response) => {
     try {
       const { db } = await import("./db");

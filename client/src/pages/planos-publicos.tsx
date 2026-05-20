@@ -228,7 +228,7 @@ export default function PlanosPublicos() {
               {/* Price */}
               <div className="mt-6 min-h-[100px] text-center">
                 <p className="text-[10px] uppercase tracking-wider text-white/40 whitespace-nowrap">à vista</p>
-                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#D4A843] whitespace-nowrap leading-none">R$ 397</span>
+                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#D4A843] whitespace-nowrap leading-none">R$ 479</span>
                 <p className="text-xs text-white/40 mt-1 whitespace-nowrap">Pagamento único</p>
               </div>
 
