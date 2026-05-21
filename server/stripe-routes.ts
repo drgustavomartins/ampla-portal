@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
-import { PLANS, calculateUpgradePrice, formatBRL, isPlanVisibleForStudent, getPurchaseStatus } from "./stripe-plans";
+import { PLANS, calculateUpgradePrice, formatBRL, isPlanVisibleForStudent, getPurchaseStatus, getCheckoutDescription } from "./stripe-plans";
 import type { PlanKey } from "@shared/schema";
 import jwt from "jsonwebtoken";
 
@@ -1166,7 +1166,7 @@ export function registerPublicStripeRoutes(app: Express) {
               currency: "brl",
               product_data: {
                 name: `Ampla Facial — ${plan.name}${referralDiscount > 0 ? " (10% indicacao)" : ""}`,
-                description: plan.features.slice(0, 3).join(" · "),
+                description: getCheckoutDescription(plan),
                 metadata: { planKey },
               },
               unit_amount: finalPrice,

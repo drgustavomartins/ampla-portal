@@ -3,6 +3,16 @@ import type { PlanKey } from "@shared/schema";
 // ─── Definição completa dos planos Ampla Facial ───────────────────────────────
 // Preços em centavos (BRL)
 
+// Helper para gerar descrição completa do produto no Stripe
+export function getCheckoutDescription(plan: PlanConfig): string {
+  const features = plan.features.slice(0, 3).join(" · ");
+  const billingText = plan.billingPeriod === "annual" ? " — Acesso anual" : 
+                      plan.billingPeriod === "monthly" ? " — Assinatura mensal" : 
+                      " — Pagamento único";
+  return features + billingText;
+}
+
+
 export interface PlanConfig {
   key: PlanKey;
   name: string;
@@ -12,6 +22,7 @@ export interface PlanConfig {
   group: "digital" | "observador" | "vip" | "horas" | "observacao_extra";
   features: string[];
   highlight?: string; // ex: "Mais popular"
+  billingPeriod?: "one-time" | "monthly" | "annual"; // ex: "one-time" (padrão), "monthly", "annual"
   // Regras de acesso no portal
   accessDays: number;
   includesModules: boolean; // todos os 4 módulos gravados
@@ -69,6 +80,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 47900,
     installments12x: 3992,
     group: "digital",
+    billingPeriod: "one-time",
     highlight: "Promo até 30/04",
     promoUntil: "2026-05-01",
     valorMercado: 593790,
@@ -99,6 +111,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 249000,
     installments12x: null,
     group: "digital",
+    billingPeriod: "one-time",
     hidden: true,
     features: [
       "1 módulo completo à sua escolha (Toxina, Preenchedores, Bioestimuladores ou Biorregeneradores)",
@@ -128,6 +141,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 597000,
     installments12x: 54700,
     group: "digital",
+    billingPeriod: "one-time",
     hidden: true,
     highlight: "Melhor custo-benefício",
     valorMercado: 996000,
@@ -163,6 +177,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 599700,
     installments12x: 56000,
     group: "vip",
+    billingPeriod: "one-time",
     highlight: "Tema único",
     valorMercado: 1200000,
     features: [
@@ -202,6 +217,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 299700,
     installments12x: 27970,
     group: "observador",
+    billingPeriod: "one-time",
     features: [
       "Todos os 4 módulos completos",
       "Materiais científicos complementares",
@@ -235,6 +251,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 399700,
     installments12x: 37320,
     group: "observador",
+    billingPeriod: "one-time",
     features: [
       "Todos os 4 módulos completos",
       "Materiais científicos complementares",
@@ -266,6 +283,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 499700,
     installments12x: 46700,
     group: "observador",
+    billingPeriod: "one-time",
     features: [
       "Todos os 4 módulos completos com aulas gravadas",
       "Materiais científicos complementares",
@@ -296,6 +314,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     key: "observador_avancado",
     hidden: true,
     deprecated: true,
+    billingPeriod: "one-time",
     name: "Observador Avançado",
     // DEPRECATED — existe apenas para suportar alunos antigos. Não aparece mais na vitrine.
     // Novos clientes compram "Acompanhamento Observacional" (24h) + horas extras se quiserem.
@@ -329,6 +348,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     key: "observador_intensivo",
     hidden: true,
     deprecated: true,
+    billingPeriod: "one-time",
     name: "Observador Intensivo",
     // DEPRECATED — existe apenas para suportar alunos antigos. Não aparece mais na vitrine.
 
@@ -364,6 +384,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 1199700,
     installments12x: null,
     group: "observador",
+    billingPeriod: "one-time",
     hidden: true,
     deprecated: true,
     highlight: "Mais completo para iniciantes",
@@ -402,6 +423,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 1399700,
     installments12x: null,
     group: "vip",
+    billingPeriod: "one-time",
     hidden: true,
     valorMercado: 2800000,
     features: [
@@ -438,6 +460,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 1549700,
     installments12x: null,
     group: "vip",
+    billingPeriod: "one-time",
     hidden: true,
     valorMercado: 3500000,
     features: [
@@ -474,6 +497,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 1735000,
     installments12x: null,
     group: "vip",
+    billingPeriod: "one-time",
     highlight: "Formação completa",
     valorMercado: 6000000,
     features: [
@@ -516,6 +540,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 3500000,
     installments12x: 291667,
     group: "vip",
+    billingPeriod: "one-time",
     highlight: "Experiência definitiva",
     valorMercado: 12000000,
     features: [
@@ -557,6 +582,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 200000,
     installments12x: null,
     group: "vip",
+    billingPeriod: "one-time",
     features: [
       "+3 meses de acompanhamento individual",
       "Canal exclusivo direto com Dr. Gustavo",
@@ -748,6 +774,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     price: 0,
     installments12x: null,
     group: "digital",
+    billingPeriod: "one-time",
     hidden: true,
     features: [
       "Acesso completo a todos os módulos",
