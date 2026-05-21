@@ -4,6 +4,7 @@ import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 import { PLANS, calculateUpgradePrice, formatBRL, isPlanVisibleForStudent, getPurchaseStatus, getCheckoutDescription } from "./stripe-plans";
+import { EXTERNAL_PRODUCTS, type ExternalProductKey, type ExternalVariant } from "./external-products";
 import type { PlanKey } from "@shared/schema";
 import jwt from "jsonwebtoken";
 
@@ -1190,6 +1191,70 @@ export function registerPublicStripeRoutes(app: Express) {
     } catch (e: any) {
       console.error("[POST /api/stripe/create-public-checkout]", e.message);
       res.status(500).json({ message: "Erro interno" });
+    }
+  });
+
+  // ─── POST /api/stripe/create-external-checkout ────────────────────────────────
+  // Cria sessão de checkout para produtos externos (ex: Ampla IA - 12 meses)
+  // SEM autenticação necessária
+  app.post("/api/stripe/create-external-checkout", async (req: Request, res: Response) => {
+    try {
+      const stripe = getStripe();
+      if (!stripe) return res.status(503).json({ message: "Pagamentos não configurados ainda" });
+
+      const { productKey, variant } = req.body as {
+        productKey: ExternalProductKey;
+        variant?: ExternalVariant;
+      };
+
+      const product = EXTERNAL_PRODUCTS[productKey];
+      if (!product) {
+        return res.status(400).json({ message: "Produto não encontrado" });
+      }
+
+      const selectedVariant = product.variants[variant || "full"];
+      if (!selectedVariant) {
+        return res.status(400).json({ message: "Variante não encontrada" });
+      }
+
+      const baseUrl = process.env.APP_URL || "https://ia-ampla.com.br";
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        payment_method_options: {
+          card: { installments: { enabled: true } },
+        },
+        mode: "payment",
+        billing_address_collection: "auto",
+        customer_creation: "always",
+        phone_number_collection: { enabled: true },
+        line_items: [
+          {
+            price_data: {
+              currency: "brl",
+              product_data: {
+                name: product.name,
+                description: selectedVariant.description,
+              },
+              unit_amount: selectedVariant.price,
+            },
+            quantity: 1,
+          },
+        ],
+        metadata: {
+          productKey,
+          variant: variant || "full",
+          source: "external",
+        },
+        success_url: `${baseUrl}/#/pagamento/sucesso?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/#/`,
+        locale: "pt-BR",
+      });
+
+      res.json({ url: session.url, sessionId: session.id });
+    } catch (e: any) {
+      console.error("[POST /api/stripe/create-external-checkout]", e.message);
+      res.status(500).json({ message: "Erro ao gerar link de pagamento" });
     }
   });
 
