@@ -1,0 +1,96 @@
+name: Conceder crédito presença 2026-05-27
+
+# Workflow temporário, executado manualmente, para creditar R$150 aos
+# participantes da aula ao vivo de 2026-05-27.
+#
+# Pré-requisitos:
+#   • Secret VERCEL_TOKEN já existe (usado pelo deploy.yml).
+#   • Secret DATABASE_URL no GitHub: se existir, é usado diretamente. Caso
+#     contrário, o workflow tenta puxar DATABASE_URL do projeto Vercel via
+#     VERCEL_TOKEN (env vars do environment "production" com decrypt=true).
+#
+# Como executar:
+#   1. Vá em Actions → "Conceder crédito presença 2026-05-27" → Run workflow
+#   2. Escolha `dry_run = true` para apenas listar o que seria feito.
+#   3. Escolha `dry_run = false` para gravar de fato.
+#
+# Idempotente: o script usa reference_id `attendance_2026-05-27_<userId>`
+# em credit_transactions. Re-execuções não duplicam.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Apenas simular (true) ou gravar de verdade (false)"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+jobs:
+  grant-credits:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_TEAM_ID: drgustavomartins-projects
+      VERCEL_PROJECT_ID: ampla-portal
+      # Se DATABASE_URL for adicionado como secret no GitHub, é usado direto.
+      DATABASE_URL_SECRET: ${{ secrets.DATABASE_URL }}
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Instalar dependências
+        run: npm ci || npm install
+
+      - name: Resolver DATABASE_URL (secret ou Vercel)
+        id: resolve_db
+        run: |
+          set -euo pipefail
+          if [ -n "${DATABASE_URL_SECRET:-}" ]; then
+            echo "Usando DATABASE_URL do secret do GitHub."
+            echo "::add-mask::${DATABASE_URL_SECRET}"
+            echo "DATABASE_URL=${DATABASE_URL_SECRET}" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "ERRO: nem DATABASE_URL secret nem VERCEL_TOKEN disponíveis." >&2
+            exit 1
+          fi
+          echo "Buscando DATABASE_URL do projeto Vercel via API..."
+          # Lista env vars (sem valor)
+          ENVS_JSON=$(curl -fsS \
+            "https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/env?teamId=${VERCEL_TEAM_ID}&decrypt=true" \
+            -H "Authorization: Bearer ${VERCEL_TOKEN}")
+          DB_URL=$(echo "$ENVS_JSON" | python3 -c "
+          import sys, json
+          d = json.load(sys.stdin)
+          for e in d.get('envs', []):
+              if e.get('key') == 'DATABASE_URL' and 'production' in (e.get('target') or []):
+                  print(e.get('value',''))
+                  break
+          ")
+          if [ -z "$DB_URL" ]; then
+            echo "ERRO: DATABASE_URL não encontrada no projeto Vercel." >&2
+            exit 1
+          fi
+          echo "::add-mask::${DB_URL}"
+          echo "DATABASE_URL=${DB_URL}" >> "$GITHUB_ENV"
+          echo "DATABASE_URL resolvido do Vercel."
+
+      - name: Executar script de crédito (dry-run=${{ inputs.dry_run }})
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            npx tsx scripts/grant_attendance_credits_2026_05_27.ts --dry-run
+          else
+            npx tsx scripts/grant_attendance_credits_2026_05_27.ts
+          fi
