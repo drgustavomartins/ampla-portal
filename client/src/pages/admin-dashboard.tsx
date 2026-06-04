@@ -210,48 +210,62 @@ function SortableLessonCard({
     position: "relative" as const,
   };
 
+  const contentTypeInfo = {
+    theoretical: { label: "Teórico", color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+    practical: { label: "Prático", color: "bg-green-500/10 text-green-400 border-green-500/20" },
+    case_study: { label: "Caso Clínico", color: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+  }[(lesson as any).contentType as string] || { label: "Teórico", color: "bg-blue-500/10 text-blue-400 border-blue-500/20" };
+
   return (
     <div ref={setNodeRef} style={style}>
-      <Card className={`border-border/25 bg-card/40 transition-all ${isDragging ? "shadow-lg shadow-gold/10 opacity-90 scale-[1.02] border-gold/30" : "hover:bg-card/60"}`}>
-        <CardContent className="p-3 sm:p-4">
-          <div className="flex items-start gap-2 sm:gap-4">
-            <button
-              ref={setActivatorNodeRef}
-              {...attributes}
-              {...listeners}
-              className={`shrink-0 mt-1 cursor-grab active:cursor-grabbing touch-none rounded p-1 -ml-1 transition-colors ${isDragging ? "text-gold" : "text-muted-foreground/50 hover:text-gold/80"}`}
-              aria-label="Arrastar para reordenar"
-              disabled={reorderPending}
-            >
-              <GripVertical className="w-4 h-4" />
-            </button>
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-md bg-background/60 flex items-center justify-center shrink-0 text-xs sm:text-sm font-medium text-muted-foreground">{idx + 1}</div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground truncate">{lesson.title}</p>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    {lesson.duration && <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" />{lesson.duration}</span>}
-                    {lesson.videoUrl ? <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-0 px-1.5">Com vídeo</Badge> : <Badge variant="outline" className="text-[10px] border-border/30 text-muted-foreground px-1.5">Sem vídeo</Badge>}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-8 w-8 p-0" onClick={onEdit} data-testid={`button-edit-lesson-${lesson.id}`}><Pencil className="w-3.5 h-3.5" /></Button>
-                  {isSuperAdmin && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild><Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-8 w-8 p-0" data-testid={`button-delete-lesson-${lesson.id}`}><Trash2 className="w-3.5 h-3.5" /></Button></AlertDialogTrigger>
-                      <AlertDialogContent className="bg-card border-border/40">
-                        <AlertDialogHeader><AlertDialogTitle>Confirmar exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir a aula "{lesson.title}"?</AlertDialogDescription></AlertDialogHeader>
-                        <AlertDialogFooter><AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={onDelete}>Excluir</AlertDialogAction></AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
-              </div>
-            </div>
+      <div className={`group flex items-center gap-2 sm:gap-3 rounded-lg border px-3 py-2.5 transition-all ${isDragging ? "border-gold/40 bg-gold/5 shadow-md" : "border-border/20 bg-card/30 hover:border-border/40 hover:bg-card/60"}`}>
+        {/* Drag handle */}
+        <button
+          ref={setActivatorNodeRef}
+          {...attributes}
+          {...listeners}
+          className={`shrink-0 cursor-grab active:cursor-grabbing touch-none transition-colors ${isDragging ? "text-gold" : "text-border/40 group-hover:text-muted-foreground/50 hover:text-gold/80"}`}
+          aria-label="Arrastar para reordenar"
+          disabled={reorderPending}
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
+        {/* Number */}
+        <span className="shrink-0 w-6 text-center text-xs font-mono text-muted-foreground/50">{idx + 1}</span>
+        {/* Video indicator */}
+        <div className={`shrink-0 w-7 h-7 rounded-md flex items-center justify-center ${lesson.videoUrl ? "bg-emerald-500/10" : "bg-border/20"}`}>
+          {lesson.videoUrl
+            ? <Video className="w-3.5 h-3.5 text-emerald-400" />
+            : <Video className="w-3.5 h-3.5 text-border/40" />}
+        </div>
+        {/* Content */}
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-foreground leading-tight truncate">{lesson.title}</p>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            {lesson.duration && (
+              <span className="text-[11px] text-muted-foreground/70 flex items-center gap-0.5">
+                <Clock className="w-3 h-3" />{lesson.duration}
+              </span>
+            )}
+            <span className={`inline-flex items-center rounded border px-1.5 py-0 text-[10px] font-medium ${contentTypeInfo.color}`}>
+              {contentTypeInfo.label}
+            </span>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        {/* Actions — visible on hover */}
+        <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-gold h-7 w-7 p-0" onClick={onEdit} data-testid={`button-edit-lesson-${lesson.id}`}><Pencil className="w-3 h-3" /></Button>
+          {isSuperAdmin && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild><Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive h-7 w-7 p-0" data-testid={`button-delete-lesson-${lesson.id}`}><Trash2 className="w-3 h-3" /></Button></AlertDialogTrigger>
+              <AlertDialogContent className="bg-card border-border/40">
+                <AlertDialogHeader><AlertDialogTitle>Confirmar exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja excluir a aula "{lesson.title}"?</AlertDialogDescription></AlertDialogHeader>
+                <AlertDialogFooter><AlertDialogCancel className="border-border/40">Cancelar</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={onDelete}>Excluir</AlertDialogAction></AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -807,6 +821,7 @@ export default function AdminDashboard() {
   });
   const clinicalSessions = clinicalSessionsData?.sessions || [];
   const [clinicalDialogOpen, setClinicalDialogOpen] = useState(false);
+  const [lessonSearch, setLessonSearch] = useState("");
   const [historyStudent, setHistoryStudent] = useState<{ id: number; name: string; balance: number } | null>(null);
   const { data: sessionHistory, isLoading: historyLoading } = useQuery<{ sessions: any[] }>({
     queryKey: ["clinical-sessions-history", historyStudent?.id],
@@ -3569,10 +3584,36 @@ export default function AdminDashboard() {
 
           {/* ========== LESSONS TAB ========== */}
           <TabsContent value="lessons" className="space-y-6 mt-0">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-brand">Aulas ({lessons.length})</h3>
-              <Dialog open={lessonDialogOpen} onOpenChange={setLessonDialogOpen}>
-                <DialogTrigger asChild><Button size="sm" className="bg-gold text-background hover:bg-gold/90 font-medium" data-testid="button-add-lesson"><Plus className="w-4 h-4 mr-1.5" />Nova aula</Button></DialogTrigger>
+            <div className="space-y-3">
+              {/* Stats row */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-lg border border-border/20 bg-card/30 px-3 py-2 text-center">
+                  <p className="text-base font-bold text-foreground">{modules.length}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Módulos</p>
+                </div>
+                <div className="rounded-lg border border-border/20 bg-card/30 px-3 py-2 text-center">
+                  <p className="text-base font-bold text-foreground">{lessons.length}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Aulas</p>
+                </div>
+                <div className="rounded-lg border border-border/20 bg-card/30 px-3 py-2 text-center">
+                  <p className="text-base font-bold text-emerald-400">{lessons.filter((l: any) => l.videoUrl).length}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Com vídeo</p>
+                </div>
+              </div>
+              {/* Search + Add */}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="Buscar aula..."
+                    value={lessonSearch ?? ""}
+                    onChange={e => setLessonSearch(e.target.value)}
+                    className="w-full rounded-lg border border-border/30 bg-background/50 px-3 py-1.5 pl-8 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-gold/40"
+                  />
+                  <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
+                <Dialog open={lessonDialogOpen} onOpenChange={setLessonDialogOpen}>
+                  <DialogTrigger asChild><Button size="sm" className="bg-gold text-background hover:bg-gold/90 font-medium shrink-0" data-testid="button-add-lesson"><Plus className="w-4 h-4 mr-1.5" />Nova aula</Button></DialogTrigger>
                 <DialogContent className="bg-card border-border/40">
                   <DialogHeader><DialogTitle className="text-lg">Nova aula</DialogTitle><DialogDescription className="text-muted-foreground">Adicione uma nova aula a um módulo</DialogDescription></DialogHeader>
                   <div className="space-y-4 pt-2">
@@ -3585,7 +3626,8 @@ export default function AdminDashboard() {
                     <Button className="w-full bg-gold text-background hover:bg-gold/90 font-medium" onClick={() => createLessonMutation.mutate()} disabled={!lessonForm.title || !lessonForm.moduleId || createLessonMutation.isPending} data-testid="button-save-lesson">{createLessonMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar aula</Button>
                   </div>
                 </DialogContent>
-              </Dialog>
+                </Dialog>
+              </div>
             </div>
 
             {lessons.length === 0 ? (
@@ -3593,16 +3635,28 @@ export default function AdminDashboard() {
             ) : (
               <div className="space-y-6">
                 {[...modules].sort((a, b) => a.order - b.order).map((mod) => {
-                  const modLessons = lessons.filter(l => l.moduleId === mod.id).sort((a, b) => a.order - b.order);
+                  const allModLessons = lessons.filter((l: any) => l.moduleId === mod.id).sort((a: any, b: any) => a.order - b.order);
+                  const modLessons = lessonSearch.trim()
+                    ? allModLessons.filter((l: any) => l.title.toLowerCase().includes(lessonSearch.toLowerCase()))
+                    : allModLessons;
                   if (modLessons.length === 0) return null;
                   const lessonIds = modLessons.map(l => l.id);
                   return (
-                    <div key={mod.id} className="space-y-3">
-                      <div className="flex items-center gap-3 pb-1">
-                        <div className="w-7 h-7 rounded-md bg-gold/10 flex items-center justify-center shrink-0"><BookOpen className="w-3.5 h-3.5 text-gold" /></div>
-                        <h4 className="text-xs font-semibold text-gold uppercase tracking-brand">{mod.title}</h4>
-                        <div className="flex-1 h-px bg-border/30" />
-                        <span className="text-xs text-muted-foreground">{modLessons.length} {modLessons.length === 1 ? "aula" : "aulas"}</span>
+                    <div key={mod.id} className="space-y-2">
+                      <div className="flex items-center gap-2.5 px-1 py-2 rounded-lg bg-gold/5 border border-gold/15">
+                        <div className="w-6 h-6 rounded-md bg-gold/15 flex items-center justify-center shrink-0"><BookOpen className="w-3 h-3 text-gold" /></div>
+                        <h4 className="text-xs font-bold text-gold uppercase tracking-widest flex-1 truncate">{mod.title}</h4>
+                        <span className="text-[10px] text-muted-foreground bg-background/40 px-2 py-0.5 rounded-full border border-border/20">
+                          {modLessons.length} {modLessons.length === 1 ? "aula" : "aulas"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => { setLessonForm(f => ({ ...f, moduleId: mod.id })); setLessonDialogOpen(true); }}
+                          className="shrink-0 h-6 w-6 rounded-md flex items-center justify-center text-gold/60 hover:text-gold hover:bg-gold/10 transition-colors"
+                          title={`Adicionar aula em ${mod.title}`}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                       <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleLessonDragEnd(mod.id)}>
                         <SortableContext items={lessonIds} strategy={verticalListSortingStrategy}>
