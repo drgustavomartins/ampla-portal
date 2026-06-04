@@ -2293,7 +2293,7 @@ export default function AdminDashboard() {
                         <div className={`h-0.5 w-full ${
                           !s.approved ? 'bg-amber-500/60' :
                           (s as any).mentorshipEndDate && new Date((s as any).mentorshipEndDate) > new Date()
-                            ? 'bg-emerald-500/60' : 'bg-border/30'
+                            ? 'bg-emerald-500/60' : 'bg-sky-400/50'
                         }`} />
                         <div className="p-4">
                           {/* Top: avatar + name + status + hover actions */}
@@ -2311,7 +2311,7 @@ export default function AdminDashboard() {
                                 {s.approved ? (
                                   (s as any).mentorshipEndDate && new Date((s as any).mentorshipEndDate) > new Date()
                                     ? <span className="shrink-0 inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0 text-[10px] font-medium text-emerald-400">Mentoria Ativa</span>
-                                    : <span className="shrink-0 inline-flex items-center rounded-full bg-blue-500/10 border border-blue-500/20 px-2 py-0 text-[10px] font-medium text-blue-400">Concluído</span>
+                                    : <span className="shrink-0 inline-flex items-center rounded-full bg-sky-400/15 border border-sky-400/40 px-2 py-0 text-[10px] font-medium text-sky-300">Concluído</span>
                                 ) : (
                                   <span className="shrink-0 inline-flex items-center rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0 text-[10px] font-medium text-amber-400">Pendente</span>
                                 )}
