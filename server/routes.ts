@@ -5489,19 +5489,29 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
     }
   });
 
-  // GET /api/admin/clinical-sessions — list all sessions
+  // GET /api/admin/clinical-sessions — list all sessions (optional ?studentId=X filter)
   app.get("/api/admin/clinical-sessions", async (req: Request, res: Response) => {
     if (!requireAdmin(req, res)) return;
     try {
       const { db } = await import("./db");
-      const result = await db.execute(sql`
-        SELECT cs.*, u.name as student_name, u.email as student_email, a.name as admin_name
-        FROM clinical_sessions cs
-        LEFT JOIN users u ON u.id = cs.student_id
-        LEFT JOIN users a ON a.id = cs.admin_id
-        ORDER BY cs.session_date DESC, cs.created_at DESC
-        LIMIT 200
-      `);
+      const studentId = req.query.studentId ? parseInt(req.query.studentId as string) : null;
+      const result = studentId
+        ? await db.execute(sql`
+            SELECT cs.*, u.name as student_name, u.email as student_email, a.name as admin_name
+            FROM clinical_sessions cs
+            LEFT JOIN users u ON u.id = cs.student_id
+            LEFT JOIN users a ON a.id = cs.admin_id
+            WHERE cs.student_id = ${studentId}
+            ORDER BY cs.session_date DESC, cs.created_at DESC
+          `)
+        : await db.execute(sql`
+            SELECT cs.*, u.name as student_name, u.email as student_email, a.name as admin_name
+            FROM clinical_sessions cs
+            LEFT JOIN users u ON u.id = cs.student_id
+            LEFT JOIN users a ON a.id = cs.admin_id
+            ORDER BY cs.session_date DESC, cs.created_at DESC
+            LIMIT 200
+          `);
       const sessions = ((result as any).rows || []).map((r: any) => ({
         id: r.id,
         studentId: r.student_id,
