@@ -14,6 +14,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription
 } from "@/components/ui/dialog";
 import {
+  Sheet, SheetContent, SheetHeader, SheetTitle
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger
@@ -803,6 +807,15 @@ export default function AdminDashboard() {
   });
   const clinicalSessions = clinicalSessionsData?.sessions || [];
   const [clinicalDialogOpen, setClinicalDialogOpen] = useState(false);
+  const [historyStudent, setHistoryStudent] = useState<{ id: number; name: string } | null>(null);
+  const { data: sessionHistory, isLoading: historyLoading } = useQuery<{ sessions: any[] }>({
+    queryKey: ["clinical-sessions-history", historyStudent?.id],
+    queryFn: async () => {
+      if (!historyStudent) return { sessions: [] };
+      return apiRequest("GET", `/api/admin/clinical-sessions?studentId=${historyStudent.id}`).then(r => r.json());
+    },
+    enabled: !!historyStudent,
+  });
   const [clinicalForm, setClinicalForm] = useState({ studentId: 0, sessionType: "pratica" as "pratica" | "observacao", sessionDate: "", startTime: "", endTime: "", durationHours: 0, procedures: [] as string[], notes: "", patientsCount: 0, patientsDetails: [] as string[] });
   const [clinicalLoading, setClinicalLoading] = useState(false);
   const handleAdminSign = async (sessionId: number) => {
@@ -2350,9 +2363,13 @@ export default function AdminDashboard() {
                               {(practiceH > 0 || obsH > 0) && (
                                 <div className="flex flex-wrap gap-1.5 mt-0.5">
                                   {practiceH > 0 && (
-                                    <span className="inline-flex items-center rounded-md bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 text-[10px] font-medium text-green-400">
-                                      {practiceH}h pratica
-                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); setHistoryStudent({ id: s.id, name: s.name }); }}
+                                      className="inline-flex items-center rounded-md bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 text-[10px] font-medium text-green-400 hover:bg-green-500/20 hover:border-green-500/40 transition-colors cursor-pointer"
+                                    >
+                                      {practiceH}h pratica ↗
+                                    </button>
                                   )}
                                   {obsH > 0 && (
                                     <span className="inline-flex items-center rounded-md bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 text-[10px] font-medium text-indigo-400">
@@ -5102,6 +5119,84 @@ export default function AdminDashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ─── Sheet: Histórico de Prática Clínica ──────────────────────── */}
+      <Sheet open={!!historyStudent} onOpenChange={(open) => { if (!open) setHistoryStudent(null); }}>
+        <SheetContent side="right" className="w-full sm:max-w-lg bg-background border-l border-border/40 p-0 flex flex-col">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b border-border/30">
+            <SheetTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+              <span>Histórico de Prática Clínica</span>
+            </SheetTitle>
+            {historyStudent && (
+              <p className="text-sm text-muted-foreground mt-0.5">{historyStudent.name}</p>
+            )}
+          </SheetHeader>
+          <ScrollArea className="flex-1 px-6 py-4">
+            {historyLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              </div>
+            ) : !sessionHistory?.sessions?.length ? (
+              <div className="text-center py-12">
+                <p className="text-sm text-muted-foreground">Nenhuma sessão registrada ainda.</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">As sessões registradas via "Registrar Sessão" aparecerão aqui.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex gap-3 mb-5">
+                  <div className="flex-1 rounded-lg bg-green-500/10 border border-green-500/20 px-4 py-3 text-center">
+                    <p className="text-xl font-bold text-green-400">
+                      {sessionHistory.sessions.reduce((acc: number, s: any) => acc + Number(s.durationHours || 0), 0).toFixed(1)}h
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wide">Total prática</p>
+                  </div>
+                  <div className="flex-1 rounded-lg bg-primary/10 border border-primary/20 px-4 py-3 text-center">
+                    <p className="text-xl font-bold text-primary">{sessionHistory.sessions.length}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wide">Sessões</p>
+                  </div>
+                </div>
+                {sessionHistory.sessions.map((session: any) => (
+                  <div key={session.id} className="rounded-lg border border-border/30 bg-card/50 p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {new Date(session.sessionDate + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {session.startTime} – {session.endTime}
+                        </p>
+                      </div>
+                      <span className="shrink-0 inline-flex items-center rounded-md bg-green-500/10 border border-green-500/20 px-2 py-0.5 text-xs font-semibold text-green-400">
+                        {Number(session.durationHours).toFixed(1)}h
+                      </span>
+                    </div>
+                    {session.procedures?.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {session.procedures.map((p: string, i: number) => (
+                          <span key={i} className="inline-flex items-center rounded-md bg-primary/10 border border-primary/20 px-1.5 py-0.5 text-[10px] text-primary/80">
+                            {p}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {session.patientsDetails?.length > 0 && (
+                      <div className="space-y-0.5">
+                        {session.patientsDetails.map((pd: string, i: number) => (
+                          <p key={i} className="text-xs text-muted-foreground">👤 {pd}</p>
+                        ))}
+                      </div>
+                    )}
+                    {session.notes && (
+                      <p className="text-xs text-muted-foreground italic border-t border-border/20 pt-2 mt-2">{session.notes}</p>
+                    )}
+                    <p className="text-[10px] text-muted-foreground/50 pt-1">Registrado por {session.adminName || "Admin"}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
 
       <footer className="border-t border-border/20 mt-8 py-5">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center text-xs text-muted-foreground">
