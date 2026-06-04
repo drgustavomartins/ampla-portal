@@ -118,6 +118,13 @@ export default function PlanosPublicos() {
           </a>
           <div className="flex items-center gap-3">
             <a
+              href="https://www.amplafacial.com.br"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-[13px] font-medium text-white/50 hover:text-white/80 hover:border-white/20 transition-all"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Voltar ao site
+            </a>
+            <a
               href="/#/"
               className="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-[13px] font-medium text-white/70 hover:text-white hover:border-white/20 transition-all"
             >
@@ -145,6 +152,10 @@ export default function PlanosPublicos() {
             </button>
           </div>
           <nav className="px-8 pt-4 space-y-1">
+            <a href="https://www.amplafacial.com.br" className="block w-full text-left py-3 border-b border-white/10 flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              <span className="text-[22px] font-semibold text-white">Voltar ao site</span>
+            </a>
             <a href="/#/" className="block w-full text-left py-3 border-b border-white/10">
               <span className="text-[22px] font-semibold text-white">Entrar</span>
             </a>
