@@ -807,7 +807,7 @@ export default function AdminDashboard() {
   });
   const clinicalSessions = clinicalSessionsData?.sessions || [];
   const [clinicalDialogOpen, setClinicalDialogOpen] = useState(false);
-  const [historyStudent, setHistoryStudent] = useState<{ id: number; name: string } | null>(null);
+  const [historyStudent, setHistoryStudent] = useState<{ id: number; name: string; balance: number } | null>(null);
   const { data: sessionHistory, isLoading: historyLoading } = useQuery<{ sessions: any[] }>({
     queryKey: ["clinical-sessions-history", historyStudent?.id],
     queryFn: async () => {
@@ -2365,7 +2365,7 @@ export default function AdminDashboard() {
                                   {practiceH > 0 && (
                                     <button
                                       type="button"
-                                      onClick={(e) => { e.stopPropagation(); setHistoryStudent({ id: s.id, name: s.name }); }}
+                                      onClick={(e) => { e.stopPropagation(); setHistoryStudent({ id: s.id, name: s.name, balance: s.clinicalPracticeHours ?? 0 }); }}
                                       className="inline-flex items-center rounded-md bg-green-500/10 border border-green-500/20 px-1.5 py-0.5 text-[10px] font-medium text-green-400 hover:bg-green-500/20 hover:border-green-500/40 transition-colors cursor-pointer"
                                     >
                                       {practiceH}h pratica ↗
@@ -5143,18 +5143,44 @@ export default function AdminDashboard() {
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="flex gap-3 mb-5">
-                  <div className="flex-1 rounded-lg bg-green-500/10 border border-green-500/20 px-4 py-3 text-center">
-                    <p className="text-xl font-bold text-green-400">
-                      {sessionHistory.sessions.reduce((acc: number, s: any) => acc + Number(s.durationHours || 0), 0).toFixed(1)}h
-                    </p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wide">Total prática</p>
-                  </div>
-                  <div className="flex-1 rounded-lg bg-primary/10 border border-primary/20 px-4 py-3 text-center">
-                    <p className="text-xl font-bold text-primary">{sessionHistory.sessions.length}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wide">Sessões</p>
-                  </div>
-                </div>
+                {(() => {
+                  const consumed = sessionHistory.sessions.reduce((acc: number, s: any) => acc + Number(s.durationHours || 0), 0);
+                  const balance = historyStudent?.balance ?? 0;
+                  const total = consumed + balance;
+                  const pct = total > 0 ? Math.round((consumed / total) * 100) : 0;
+                  return (
+                    <div className="mb-5 space-y-3">
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="rounded-lg bg-card border border-border/40 px-3 py-3 text-center">
+                          <p className="text-lg font-bold text-foreground">{total.toFixed(1)}h</p>
+                          <p className="text-[9px] text-muted-foreground mt-0.5 uppercase tracking-wide">Carga total</p>
+                        </div>
+                        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-3 text-center">
+                          <p className="text-lg font-bold text-amber-400">{consumed.toFixed(1)}h</p>
+                          <p className="text-[9px] text-muted-foreground mt-0.5 uppercase tracking-wide">Consumido</p>
+                        </div>
+                        <div className="rounded-lg bg-green-500/10 border border-green-500/20 px-3 py-3 text-center">
+                          <p className="text-lg font-bold text-green-400">{balance.toFixed(1)}h</p>
+                          <p className="text-[9px] text-muted-foreground mt-0.5 uppercase tracking-wide">Saldo</p>
+                        </div>
+                      </div>
+                      {total > 0 && (
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] text-muted-foreground">
+                            <span>Progresso</span>
+                            <span>{pct}% utilizado</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-border/40 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-amber-400 transition-all"
+                              style={{ width: pct + "%" }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 {sessionHistory.sessions.map((session: any) => (
                   <div key={session.id} className="rounded-lg border border-border/30 bg-card/50 p-4 space-y-2">
                     <div className="flex items-start justify-between gap-2">
