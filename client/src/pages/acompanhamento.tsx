@@ -164,7 +164,7 @@ export default function AcompanhamentoPage() {
                   plano atual dá acesso somente às aulas gravadas e materiais.
                 </p>
               </div>
-              <Link href="/#/planos">
+              <Link href="/planos">
                 <Button className="whitespace-nowrap" style={{ backgroundColor: "#0A0D14", color: "#D4A843" }}>
                   Ver planos com acompanhamento
                 </Button>
@@ -419,3 +419,4 @@ export default function AcompanhamentoPage() {
     </div>
   );
 }
+
