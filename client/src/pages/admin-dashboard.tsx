@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LeadsTab } from "@/components/LeadsTab";
 import { CrmTab } from "@/components/CrmTab";
-import PracticeHoursTab from "@/components/PracticeHoursTab";
+import AgendamentoPacientesModeloTab from "@/components/AgendamentoPacientesModeloTab";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription
 } from "@/components/ui/dialog";
@@ -5036,7 +5036,7 @@ export default function AdminDashboard() {
 
           )}
           <TabsContent value="practice-hours" className="space-y-6 mt-0">
-            <PracticeHoursTab />
+            <AgendamentoPacientesModeloTab />
           </TabsContent>
         </Tabs>
 
