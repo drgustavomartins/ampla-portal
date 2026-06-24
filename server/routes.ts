@@ -7853,7 +7853,6 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
     
     try {
       const { discountPercent = 10, hoursValid = 48, productType = 'all', description } = req.body;
-      const { db } = await import('./db');
       
       // Generate unique code
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -7866,21 +7865,27 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
       const now = new Date();
       const validUntil = new Date(now.getTime() + hoursValid * 60 * 60 * 1000).toISOString();
       
+      const { db } = await import('./db');
+      
       const result = await db.execute(sql`
         INSERT INTO discount_coupons (code, discount_percent, valid_until, product_type, created_by, created_at, status, description)
         VALUES (${code}, ${discountPercent}, ${validUntil}, ${productType}, ${auth.userId}, ${new Date().toISOString()}, 'active', ${description || null})
         RETURNING *
       `);
       
-      const coupon = result.rows[0];
+      const coupon = (result as any).rows?.[0];
+      if (!coupon) {
+        return res.status(500).json({ error: 'Falha ao criar cupom - sem retorno' });
+      }
+      
       res.json({ 
         message: 'Cupom gerado com sucesso',
         coupon,
         shareLink: `https://portal.amplafacial.com.br/checkout?coupon=${code}`
       });
     } catch (error: any) {
-      console.error('Erro ao criar cupom:', error);
-      res.status(500).json({ error: 'Falha ao criar cupom' });
+      console.error('Erro ao criar cupom:', error.message, error);
+      res.status(500).json({ error: 'Falha ao criar cupom - ' + error.message });
     }
   });
 
@@ -7903,9 +7908,9 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
         ORDER BY dc.created_at DESC
       `);
       
-      res.json({ coupons: result.rows });
-    } catch (error) {
-      console.error('Erro ao listar cupons:', error);
+      res.json({ coupons: (result as any).rows || [] });
+    } catch (error: any) {
+      console.error('Erro ao listar cupons:', error.message);
       res.status(500).json({ error: 'Falha ao listar cupons' });
     }
   });
@@ -7933,9 +7938,9 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
         ORDER BY cu.used_at DESC
       `);
       
-      res.json({ usage: result.rows });
-    } catch (error) {
-      console.error('Erro ao buscar uso do cupom:', error);
+      res.json({ usage: (result as any).rows || [] });
+    } catch (error: any) {
+      console.error('Erro ao buscar uso do cupom:', error.message);
       res.status(500).json({ error: 'Falha ao buscar histórico' });
     }
   });
@@ -7961,13 +7966,14 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
         RETURNING *
       `);
       
-      if (result.rows.length === 0) {
+      const rows = (result as any).rows || [];
+      if (rows.length === 0) {
         return res.status(404).json({ error: 'Cupom não encontrado' });
       }
       
-      res.json({ message: 'Cupom atualizado', coupon: result.rows[0] });
-    } catch (error) {
-      console.error('Erro ao atualizar cupom:', error);
+      res.json({ message: 'Cupom atualizado', coupon: rows[0] });
+    } catch (error: any) {
+      console.error('Erro ao atualizar cupom:', error.message);
       res.status(500).json({ error: 'Falha ao atualizar cupom' });
     }
   });
@@ -7989,11 +7995,12 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
         LIMIT 1
       `);
       
-      if (result.rows.length === 0) {
+      const rows = (result as any).rows || [];
+      if (rows.length === 0) {
         return res.status(404).json({ error: 'Cupom não encontrado ou expirado' });
       }
       
-      const coupon = result.rows[0];
+      const coupon = rows[0];
       
       // Verificar se o tipo de produto é permitido
       if (coupon.product_type !== 'all' && planKey) {
@@ -8016,8 +8023,8 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
           description: coupon.description
         }
       });
-    } catch (error) {
-      console.error('Erro ao validar cupom:', error);
+    } catch (error: any) {
+      console.error('Erro ao validar cupom:', error.message);
       res.status(500).json({ error: 'Falha ao validar cupom' });
     }
   });
