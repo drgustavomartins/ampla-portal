@@ -7755,28 +7755,25 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
               ELSE (COALESCE(SUM(CASE WHEN ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) * 100.0) / COALESCE(mp.required_hours, 0)
             END, 2
           ) as "percentageComplete",
-          ep.created_at as "enrollmentDate",
+          um.start_date as "enrollmentDate",
           MAX(ph.updated_at) as "lastActivityDate",
           CASE 
             WHEN COALESCE(SUM(CASE WHEN ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) >= COALESCE(mp.required_hours, 0) 
               THEN 'completed'
             WHEN COALESCE(SUM(CASE WHEN ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) >= COALESCE(mp.required_hours, 0) * 0.75 
               THEN 'in-progress'
-            WHEN NOW() > ep.created_at + INTERVAL '6 months' 
-              THEN 'overdue'
-            WHEN COALESCE(SUM(CASE WHEN ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) < COALESCE(mp.required_hours, 0) * 0.5 
+            WHEN COALESCE(mp.required_hours, 0) > 0 AND COALESCE(SUM(CASE WHEN ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) < COALESCE(mp.required_hours, 0) * 0.5
               THEN 'at-risk'
             ELSE 'in-progress'
           END as status
         FROM users u
-        LEFT JOIN enrollments ep ON u.id = ep.user_id
-        LEFT JOIN plans p ON ep.plan_id = p.id
-        LEFT JOIN module_provisioning mp ON ep.plan_id = mp.plan_id
-        LEFT JOIN practice_hours ph ON u.id = ph.user_id AND ep.id = ph.enrollment_id
-        WHERE 
-          ep.is_active = true 
-          AND (p.name ILIKE '%NaturalUp%' OR p.name ILIKE '%Imersão%')
-        GROUP BY u.id, u.name, u.email, p.name, mp.required_hours, ep.created_at, ep.id
+        INNER JOIN user_modules um ON u.id = um.user_id AND um.enabled = true
+        INNER JOIN plan_modules pm ON um.module_id = pm.module_id
+        INNER JOIN plans p ON pm.plan_id = p.id
+        LEFT JOIN module_provisioning mp ON pm.plan_id = mp.plan_id
+        LEFT JOIN practice_hours ph ON u.id = ph.user_id AND um.id = ph.user_module_id
+        WHERE p.name ILIKE '%NaturalUp%' OR p.name ILIKE '%Imers%'
+        GROUP BY u.id, u.name, u.email, p.name, mp.required_hours, um.start_date, um.id
         ORDER BY "pendingHours" DESC
       `);
       const students = result.rows.map((row: any) => ({
@@ -7784,13 +7781,13 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
         studentName: row.studentName,
         studentEmail: row.studentEmail,
         planName: row.planName,
-        totalRequiredHours: parseFloat(row.totalRequiredHours),
-        completedHours: parseFloat(row.completedHours),
-        pendingHours: parseFloat(row.pendingHours),
-        percentageComplete: parseFloat(row.percentageComplete),
+        totalRequiredHours: parseFloat(row.totalRequiredHours) || 0,
+        completedHours: parseFloat(row.completedHours) || 0,
+        pendingHours: parseFloat(row.pendingHours) || 0,
+        percentageComplete: parseFloat(row.percentageComplete) || 0,
         enrollmentDate: row.enrollmentDate,
         lastActivityDate: row.lastActivityDate,
-        status: row.status
+        status: row.status || 'in-progress'
       }));
       res.json(students);
     } catch (error) {
@@ -7799,9 +7796,9 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
     }
   });
 
-  app.post('/api/admin/practice-hours/:enrollmentId', async (req: Request, res: Response) => {
+  app.post('/api/admin/practice-hours/:userModuleId', async (req: Request, res: Response) => {
     if (!requireAdmin(req, res)) return;
-    const { enrollmentId } = req.params;
+    const { userModuleId } = req.params;
     const { userId, hours, description, supervisorNotes } = req.body;
     if (!hours || hours <= 0) {
       return res.status(400).json({ error: 'Horas devem ser maiores que 0' });
@@ -7809,8 +7806,8 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
     try {
       const { db } = await import('./db');
       const result = await db.execute(sql`
-        INSERT INTO practice_hours (user_id, enrollment_id, hours, description, supervisor_notes, status)
-        VALUES (${userId}, ${enrollmentId}, ${hours}, ${description || null}, ${supervisorNotes || null}, 'completed')
+        INSERT INTO practice_hours (user_id, user_module_id, hours, description, supervisor_notes, status)
+        VALUES (${userId}, ${userModuleId}, ${hours}, ${description || null}, ${supervisorNotes || null}, 'completed')
         RETURNING *
       `);
       res.json({ message: 'Horas de prática registradas com sucesso', data: result.rows[0] });
@@ -7847,7 +7844,7 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
     }
   });
 
-}
+
 
 // Helper to get all progress (not in storage since it's a simple select-all)
 async function db_getProgress() {
