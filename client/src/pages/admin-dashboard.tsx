@@ -5034,11 +5034,10 @@ export default function AdminDashboard() {
               )}
             </TabsContent>
 
-          {/* ========== PRACTICE HOURS TAB ========== */}
+          )}
           <TabsContent value="practice-hours" className="space-y-6 mt-0">
             <PracticeHoursTab />
           </TabsContent>
-          )}
         </Tabs>
 
         {/* Historico de Atividades */}
