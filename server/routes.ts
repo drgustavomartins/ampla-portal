@@ -402,6 +402,13 @@ function computeLeadSource(utmSource?: string | null): string {
 }
 
 export async function registerRoutes(server: Server, app: Express) {
+  console.log('🔥 registerRoutes chamado!');
+  
+  // TEST ROUTE - COMEÇO
+  app.get('/api/horas-teste', (req, res) => {
+    res.json({ msg: 'Teste funcionando!' });
+  });
+  
   // ==================== AUTO-MIGRATE critical columns on startup ====================
   // This ensures new columns exist before any Drizzle query tries to SELECT them.
   // Without this, db.select().from(plans) generates SQL referencing material_topics,
