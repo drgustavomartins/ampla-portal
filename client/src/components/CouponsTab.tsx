@@ -69,8 +69,35 @@ export function CouponsTab() {
   // Criar cupom
   const createCouponMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/admin/coupons", formData);
-      return res.json();
+      // Buscar token do localStorage
+      const token = localStorage.getItem('ampla_token');
+      if (!token) {
+        throw new Error('Token não encontrado');
+      }
+
+      console.log('[CUPOM-SIMPLE] Enviando:', formData);
+      
+      const response = await fetch('/api/admin/coupons', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include',
+        body: JSON.stringify(formData)
+      });
+
+      console.log('[CUPOM-SIMPLE] Status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[CUPOM-SIMPLE] Erro:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('[CUPOM-SIMPLE] Sucesso!', data);
+      return data;
     },
     onSuccess: (data) => {
       toast({
