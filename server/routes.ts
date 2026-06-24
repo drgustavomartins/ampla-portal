@@ -8031,5 +8031,71 @@ async function db_getProgress() {
   const { db } = await import("./db");
   const { lessonProgress } = await import("@shared/schema");
   return db.select().from(lessonProgress);
+
+  // ========== STUDENT HOURS - Prática + Observação ==========
+  // GET /api/admin/student-hours - Listar alunos com horas pendentes
+  app.get('/api/admin/student-hours', authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const query = `
+        SELECT 
+          u.id as "studentId",
+          u.name as "studentName",
+          u.email as "studentEmail",
+          p.name as "planName",
+          COALESCE(pp.practice_hours_available, 0) as "practiceHoursAvailable",
+          COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "practiceHoursCompleted",
+          COALESCE(pp.practice_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "practiceHoursPending",
+          COALESCE(pp.observation_hours_available, 0) as "observationHoursAvailable",
+          COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "observationHoursCompleted",
+          COALESCE(pp.observation_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "observationHoursPending"
+        FROM users u
+        LEFT JOIN user_plans up ON u.id = up.user_id
+        LEFT JOIN plans p ON up.plan_id = p.id
+        LEFT JOIN practice_plan_hours pp ON u.id = pp.user_id AND p.id = pp.plan_id
+        LEFT JOIN practice_hours ph ON u.id = ph.user_id AND p.id = ph.plan_id
+        WHERE up.status = 'active' AND (p.name ILIKE '%NaturalUp%' OR p.name ILIKE '%Imersão%')
+        GROUP BY u.id, u.name, u.email, p.name, pp.practice_hours_available, pp.observation_hours_available
+        HAVING (COALESCE(pp.practice_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) > 0)
+          OR (COALESCE(pp.observation_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) > 0)
+        ORDER BY (COALESCE(pp.practice_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) + COALESCE(pp.observation_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0)) DESC
+      `;
+      const result = await sql.query(query);
+      const students = result.rows.map(row => ({
+        studentId: row.studentId,
+        studentName: row.studentName,
+        studentEmail: row.studentEmail,
+        planName: row.planName,
+        practiceHoursAvailable: parseFloat(row.practiceHoursAvailable || 0),
+        practiceHoursCompleted: parseFloat(row.practiceHoursCompleted || 0),
+        practiceHoursPending: parseFloat(row.practiceHoursPending || 0),
+        observationHoursAvailable: parseFloat(row.observationHoursAvailable || 0),
+        observationHoursCompleted: parseFloat(row.observationHoursCompleted || 0),
+        observationHoursPending: parseFloat(row.observationHoursPending || 0)
+      }));
+      res.json(students);
+    } catch (error) {
+      console.error('Erro ao buscar horas:', error);
+      res.status(500).json({ error: 'Falha ao buscar dados' });
+    }
+  });
+
+  // POST /api/admin/student-hours/:studentId - Registrar horas
+  app.post('/api/admin/student-hours/:studentId', authenticateToken, requireAdmin, async (req, res) => {
+    const { studentId } = req.params;
+    const { planId, hours, activityType, description, supervisorNotes } = req.body;
+    if (!hours || hours <= 0 || !activityType || !['practical', 'observational'].includes(activityType)) {
+      return res.status(400).json({ error: 'Dados inválidos' });
+    }
+    try {
+      const result = await sql.query(
+        `INSERT INTO practice_hours (user_id, plan_id, hours, activity_type, description, supervisor_notes, status) VALUES ($1, $2, $3, $4, $5, $6, 'completed') RETURNING *`,
+        [studentId, planId, hours, activityType, description || null, supervisorNotes || null]
+      );
+      res.json({ message: 'Horas registradas com sucesso', data: result.rows[0] });
+    } catch (error) {
+      console.error('Erro ao registrar horas:', error);
+      res.status(500).json({ error: 'Falha ao registrar horas' });
+    }
+  });
 }
 
