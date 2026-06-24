@@ -36,7 +36,7 @@ export default function PracticeHoursTab() {
         setLoading(true);
         const response = await fetch('/api/admin/practice-hours', {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            'Authorization': `Bearer ${localStorage.getItem('ampla_token')}`
           }
         });
 
