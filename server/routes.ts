@@ -7846,6 +7846,8 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
 
 
 
+}
+
 // Helper to get all progress (not in storage since it's a simple select-all)
 async function db_getProgress() {
   const { db } = await import("./db");
