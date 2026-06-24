@@ -8065,21 +8065,17 @@ async function db_getProgress() {
           u.email as "studentEmail",
           p.name as "planName",
           COALESCE(pp.practice_hours_available, 0) as "practiceHoursAvailable",
-          COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "practiceHoursCompleted",
-          COALESCE(pp.practice_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "practiceHoursPending",
+          COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' THEN ph.hours ELSE 0 END), 0) as "practiceHoursCompleted",
           COALESCE(pp.observation_hours_available, 0) as "observationHoursAvailable",
-          COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "observationHoursCompleted",
-          COALESCE(pp.observation_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "observationHoursPending"
-        FROM users u
-        LEFT JOIN user_plans up ON u.id = up.user_id
-        LEFT JOIN plans p ON up.plan_id = p.id
-        LEFT JOIN practice_plan_hours pp ON u.id = pp.user_id AND p.id = pp.plan_id
-        LEFT JOIN practice_hours ph ON u.id = ph.user_id AND p.id = ph.plan_id
-        WHERE up.status = 'active' AND (p.name ILIKE '%NaturalUp%' OR p.name ILIKE '%Imersão%')
-        GROUP BY u.id, u.name, u.email, p.name, pp.practice_hours_available, pp.observation_hours_available
-        HAVING (COALESCE(pp.practice_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) > 0)
-          OR (COALESCE(pp.observation_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) > 0)
-        ORDER BY (COALESCE(pp.practice_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) + COALESCE(pp.observation_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0)) DESC
+          COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' THEN ph.hours ELSE 0 END), 0) as "observationHoursCompleted"
+        FROM practice_plan_hours pp
+        JOIN users u ON pp.user_id = u.id
+        LEFT JOIN plans p ON pp.plan_id = p.id
+        LEFT JOIN practice_hours ph ON u.id = ph.user_id AND pp.plan_id = ph.plan_id
+        GROUP BY u.id, u.name, u.email, p.id, p.name, pp.practice_hours_available, pp.observation_hours_available
+        HAVING (COALESCE(pp.practice_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' THEN ph.hours ELSE 0 END), 0) > 0)
+          OR (COALESCE(pp.observation_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' THEN ph.hours ELSE 0 END), 0) > 0)
+        ORDER BY (COALESCE(pp.practice_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' THEN ph.hours ELSE 0 END), 0) + COALESCE(pp.observation_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' THEN ph.hours ELSE 0 END), 0)) DESC
       `;
       const result = await sql.query(query);
       const students = result.rows.map(row => ({
@@ -8089,10 +8085,10 @@ async function db_getProgress() {
         planName: row.planName,
         practiceHoursAvailable: parseFloat(row.practiceHoursAvailable || 0),
         practiceHoursCompleted: parseFloat(row.practiceHoursCompleted || 0),
-        practiceHoursPending: parseFloat(row.practiceHoursPending || 0),
+        practiceHoursPending: Math.max(0, (parseFloat(row.practiceHoursAvailable || 0) - parseFloat(row.practiceHoursCompleted || 0))),
         observationHoursAvailable: parseFloat(row.observationHoursAvailable || 0),
         observationHoursCompleted: parseFloat(row.observationHoursCompleted || 0),
-        observationHoursPending: parseFloat(row.observationHoursPending || 0)
+        observationHoursPending: Math.max(0, (parseFloat(row.observationHoursAvailable || 0) - parseFloat(row.observationHoursCompleted || 0)))
       }));
       res.json(students);
     } catch (error) {
