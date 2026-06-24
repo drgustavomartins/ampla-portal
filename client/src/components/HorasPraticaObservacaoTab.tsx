@@ -36,46 +36,11 @@ export default function HorasPraticaObservacaoTab() {
     const fetchStudents = async () => {
       try {
         setLoading(true);
-        
-        // DADOS HARDCODED PARA TESTE
-        const data = [
-          {
-            studentId: 12,
-            studentName: 'Carolina Pinto',
-            studentEmail: 'carolina@example.com',
-            planName: 'Online',
-            practiceHoursAvailable: 30,
-            practiceHoursCompleted: 26,
-            practiceHoursPending: 4,
-            observationHoursAvailable: 30,
-            observationHoursCompleted: 28,
-            observationHoursPending: 2
-          },
-          {
-            studentId: 8,
-            studentName: 'Felipe Panzeira',
-            studentEmail: 'felipe@example.com',
-            planName: 'Módulo Toxina',
-            practiceHoursAvailable: 60,
-            practiceHoursCompleted: 44,
-            practiceHoursPending: 16,
-            observationHoursAvailable: 60,
-            observationHoursCompleted: 30,
-            observationHoursPending: 30
-          },
-          {
-            studentId: 54,
-            studentName: 'Jéssica',
-            studentEmail: 'jessica@example.com',
-            planName: 'Módulo Toxina',
-            practiceHoursAvailable: 30,
-            practiceHoursCompleted: 10,
-            practiceHoursPending: 20,
-            observationHoursAvailable: 30,
-            observationHoursCompleted: 5,
-            observationHoursPending: 25
-          }
-        ];
+        const response = await fetch('/api/horas');
+
+        if (!response.ok) throw new Error('Falha ao carregar');
+
+        const data = await response.json();
         
         // Filtrar apenas quem tem saldo em alguma coisa
         const studentsWithSaldo = data
