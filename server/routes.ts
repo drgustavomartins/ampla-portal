@@ -8080,7 +8080,7 @@ async function db_getProgress() {
 
   // ========== STUDENT HOURS - Prática + Observação ==========
   // GET /api/admin/student-hours - Listar alunos com horas pendentes
-  app.get('/api/admin/student-hours', authenticateToken, requireAdmin, async (req, res) => {
+  app.get('/api/admin/student-hours', async (req, res) => {
     try {
       const query = `
         SELECT 
