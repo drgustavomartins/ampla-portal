@@ -8054,6 +8054,30 @@ async function db_getProgress() {
   const { lessonProgress } = await import("@shared/schema");
   return db.select().from(lessonProgress);
 
+  // ========== DEBUG ==========
+  app.get('/api/admin/student-hours-debug', async (req, res) => {
+    try {
+      const query = `
+        SELECT 
+          u.id, u.name, u.email,
+          p.name as plan_name,
+          pp.practice_hours_available,
+          pp.observation_hours_available,
+          COUNT(ph.id) as total_records
+        FROM practice_plan_hours pp
+        JOIN users u ON pp.user_id = u.id
+        LEFT JOIN plans p ON pp.plan_id = p.id
+        LEFT JOIN practice_hours ph ON u.id = ph.user_id AND pp.plan_id = ph.plan_id
+        GROUP BY u.id, u.name, u.email, p.name, pp.practice_hours_available, pp.observation_hours_available
+      `;
+      
+      const result = await sql.query(query);
+      res.json({ count: result.rows.length, data: result.rows });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ========== STUDENT HOURS - Prática + Observação ==========
   // GET /api/admin/student-hours - Listar alunos com horas pendentes
   app.get('/api/admin/student-hours', authenticateToken, requireAdmin, async (req, res) => {
