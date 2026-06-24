@@ -7848,11 +7848,19 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
   
   // POST /api/admin/coupons — Gerar novo cupom
   app.post('/api/admin/coupons', async (req: Request, res: Response) => {
+    console.log('[CUPOM] POST /api/admin/coupons', { body: req.body });
+    
     const auth = requireAdmin(req, res);
-    if (!auth) return;
+    if (!auth) {
+      console.log('[CUPOM] Falha de autenticação');
+      return;
+    }
+    
+    console.log('[CUPOM] Auth OK:', { userId: auth.userId, role: auth.role });
     
     try {
       const { discountPercent = 10, hoursValid = 48, productType = 'all', description } = req.body;
+      console.log('[CUPOM] Parâmetros:', { discountPercent, hoursValid, productType, description });
       
       // Generate unique code
       const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -7860,12 +7868,15 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
       for (let i = 0; i < 6; i++) {
         code += chars.charAt(Math.floor(Math.random() * chars.length));
       }
+      console.log('[CUPOM] Código gerado:', code);
       
       // Calculate expiration (now + hoursValid)
       const now = new Date();
       const validUntil = new Date(now.getTime() + hoursValid * 60 * 60 * 1000).toISOString();
+      console.log('[CUPOM] Valid until:', validUntil);
       
       const { db } = await import('./db');
+      console.log('[CUPOM] DB importado');
       
       const result = await db.execute(sql`
         INSERT INTO discount_coupons (code, discount_percent, valid_until, product_type, created_by, created_at, status, description)
@@ -7873,18 +7884,22 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
         RETURNING *
       `);
       
+      console.log('[CUPOM] Query executada, resultado:', { rows: (result as any).rows?.length });
+      
       const coupon = (result as any).rows?.[0];
       if (!coupon) {
+        console.log('[CUPOM] Erro: sem retorno do banco');
         return res.status(500).json({ error: 'Falha ao criar cupom - sem retorno' });
       }
       
+      console.log('[CUPOM] Sucesso!', { code: coupon.code });
       res.json({ 
         message: 'Cupom gerado com sucesso',
         coupon,
         shareLink: `https://portal.amplafacial.com.br/checkout?coupon=${code}`
       });
     } catch (error: any) {
-      console.error('Erro ao criar cupom:', error.message, error);
+      console.error('[CUPOM] ERRO FATAL:', error.message, error.stack);
       res.status(500).json({ error: 'Falha ao criar cupom - ' + error.message });
     }
   });
