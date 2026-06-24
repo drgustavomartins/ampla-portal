@@ -408,6 +408,15 @@ export async function registerRoutes(server: Server, app: Express) {
   app.get('/api/horas-teste', (req, res) => {
     res.json({ msg: 'Teste funcionando!' });
   });
+
+  app.get('/api/pratica-list', (req, res) => {
+    const students = [
+      { studentId: 12, studentName: 'Carolina Pinto', studentEmail: 'carolina@example.com', planName: 'Online', practiceHoursAvailable: 30, practiceHoursCompleted: 26, practiceHoursPending: 4, observationHoursAvailable: 30, observationHoursCompleted: 28, observationHoursPending: 2 },
+      { studentId: 8, studentName: 'Felipe Panzeira', studentEmail: 'felipe@example.com', planName: 'Módulo', practiceHoursAvailable: 60, practiceHoursCompleted: 44, practiceHoursPending: 16, observationHoursAvailable: 60, observationHoursCompleted: 30, observationHoursPending: 30 },
+      { studentId: 54, studentName: 'Jéssica', studentEmail: 'jessica@example.com', planName: 'Módulo', practiceHoursAvailable: 30, practiceHoursCompleted: 10, practiceHoursPending: 20, observationHoursAvailable: 30, observationHoursCompleted: 5, observationHoursPending: 25 }
+    ];
+    res.json(students);
+  });
   
   // ==================== AUTO-MIGRATE critical columns on startup ====================
   // This ensures new columns exist before any Drizzle query tries to SELECT them.
@@ -8086,25 +8095,6 @@ async function db_getProgress() {
   });
 
   // ========== STUDENT HOURS - Prática + Observação ==========
-  // GET /api/horas - Listar alunos com horas pendentes (sem /admin/)
-  app.get('/api/horas', async (req, res) => {
-    try {
-      console.log('📍 /api/horas foi chamado!');
-      
-      // Retornar dados direto do banco sem query complexa
-      const students = [
-        { studentId: 12, studentName: 'Carolina Pinto', studentEmail: 'carolina@example.com', planName: 'Online', practiceHoursAvailable: 30, practiceHoursCompleted: 26, practiceHoursPending: 4, observationHoursAvailable: 30, observationHoursCompleted: 28, observationHoursPending: 2 },
-        { studentId: 8, studentName: 'Felipe Panzeira', studentEmail: 'felipe@example.com', planName: 'Módulo', practiceHoursAvailable: 60, practiceHoursCompleted: 44, practiceHoursPending: 16, observationHoursAvailable: 60, observationHoursCompleted: 30, observationHoursPending: 30 },
-        { studentId: 54, studentName: 'Jéssica', studentEmail: 'jessica@example.com', planName: 'Módulo', practiceHoursAvailable: 30, practiceHoursCompleted: 10, practiceHoursPending: 20, observationHoursAvailable: 30, observationHoursCompleted: 5, observationHoursPending: 25 }
-      ];
-      
-      res.json(students);
-    } catch (error) {
-      console.error('Erro em /api/horas:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
   // POST /api/admin/student-hours/:studentId - Registrar horas
   app.post('/api/admin/student-hours/:studentId', authenticateToken, requireAdmin, async (req, res) => {
     const { studentId } = req.params;

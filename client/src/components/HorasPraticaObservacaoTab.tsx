@@ -36,7 +36,7 @@ export default function HorasPraticaObservacaoTab() {
     const fetchStudents = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/horas');
+        const response = await fetch('/api/pratica-list');
 
         if (!response.ok) throw new Error('Falha ao carregar');
 
