@@ -48,8 +48,9 @@ export function CouponsTab() {
   const { data: couponsData, isLoading: loadingCoupons, refetch } = useQuery({
     queryKey: ["admin-coupons"],
     queryFn: async () => {
-      const res = await apiRequest("/api/admin/coupons", { method: "GET" });
-      return res.coupons as Coupon[];
+      const res = await apiRequest("GET", "/api/admin/coupons");
+      const data = await res.json();
+      return data.coupons as Coupon[];
     },
   });
 
@@ -58,8 +59,9 @@ export function CouponsTab() {
     queryKey: ["coupon-usage", selectedCoupon?.id],
     queryFn: async () => {
       if (!selectedCoupon) return [];
-      const res = await apiRequest(`/api/admin/coupons/${selectedCoupon.id}/usage`, { method: "GET" });
-      return res.usage;
+      const res = await apiRequest("GET", `/api/admin/coupons/${selectedCoupon.id}/usage`);
+      const data = await res.json();
+      return data.usage;
     },
     enabled: !!selectedCoupon,
   });
@@ -67,11 +69,8 @@ export function CouponsTab() {
   // Criar cupom
   const createCouponMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("/api/admin/coupons", {
-        method: "POST",
-        body: formData,
-      });
-      return res;
+      const res = await apiRequest("POST", "/api/admin/coupons", formData);
+      return res.json();
     },
     onSuccess: (data) => {
       toast({
@@ -94,11 +93,8 @@ export function CouponsTab() {
   // Atualizar status do cupom
   const updateCouponMutation = useMutation({
     mutationFn: async ({ couponId, status }: { couponId: number; status: string }) => {
-      const res = await apiRequest(`/api/admin/coupons/${couponId}`, {
-        method: "PATCH",
-        body: { status },
-      });
-      return res;
+      const res = await apiRequest("PATCH", `/api/admin/coupons/${couponId}`, { status });
+      return res.json();
     },
     onSuccess: () => {
       toast({
