@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LeadsTab } from "@/components/LeadsTab";
 import { CrmTab } from "@/components/CrmTab";
+import PracticeHoursTab from "@/components/PracticeHoursTab";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription
 } from "@/components/ui/dialog";
@@ -2142,6 +2143,13 @@ export default function AdminDashboard() {
                       >
                         <History className="w-3.5 h-3.5" />
                         Historico
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="practice-hours"
+                        data-testid="tab-practice-hours-d"
+                        className="data-[state=active]:bg-gold/15 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-[0_0_12px_rgba(212,168,67,0.1)] data-[state=active]:shadow-none border border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all"
+                      >
+                        📊 Horas de Prática
                       </TabsTrigger>
                     </div>
                   </>
@@ -5025,6 +5033,11 @@ export default function AdminDashboard() {
                 </div>
               )}
             </TabsContent>
+
+          {/* ========== PRACTICE HOURS TAB ========== */}
+          <TabsContent value="practice-hours" className="space-y-6 mt-0">
+            <PracticeHoursTab />
+          </TabsContent>
           )}
         </Tabs>
 
