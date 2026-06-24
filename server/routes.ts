@@ -7734,6 +7734,119 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
 
   // ─── Rotas de Acompanhamento (encontros ao vivo em grupo) ──────────────
   registerLiveEventsRoutes(app);
+
+  // ===== PRÁTICA SUPERVISIONADA =====
+  app.get('/api/admin/practice-hours', async (req: Request, res: Response) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import('./db');
+      const result = await db.execute(sql`
+        SELECT 
+          u.id as "studentId",
+          u.name as "studentName",
+          u.email as "studentEmail",
+          p.name as "planName",
+          COALESCE(mp.required_hours, 0) as "totalRequiredHours",
+          COALESCE(SUM(CASE WHEN ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "completedHours",
+          COALESCE(mp.required_hours, 0) - COALESCE(SUM(CASE WHEN ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "pendingHours",
+          ROUND(
+            CASE 
+              WHEN COALESCE(mp.required_hours, 0) = 0 THEN 0
+              ELSE (COALESCE(SUM(CASE WHEN ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) * 100.0) / COALESCE(mp.required_hours, 0)
+            END, 2
+          ) as "percentageComplete",
+          ep.created_at as "enrollmentDate",
+          MAX(ph.updated_at) as "lastActivityDate",
+          CASE 
+            WHEN COALESCE(SUM(CASE WHEN ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) >= COALESCE(mp.required_hours, 0) 
+              THEN 'completed'
+            WHEN COALESCE(SUM(CASE WHEN ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) >= COALESCE(mp.required_hours, 0) * 0.75 
+              THEN 'in-progress'
+            WHEN NOW() > ep.created_at + INTERVAL '6 months' 
+              THEN 'overdue'
+            WHEN COALESCE(SUM(CASE WHEN ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) < COALESCE(mp.required_hours, 0) * 0.5 
+              THEN 'at-risk'
+            ELSE 'in-progress'
+          END as status
+        FROM users u
+        LEFT JOIN enrollments ep ON u.id = ep.user_id
+        LEFT JOIN plans p ON ep.plan_id = p.id
+        LEFT JOIN module_provisioning mp ON ep.plan_id = mp.plan_id
+        LEFT JOIN practice_hours ph ON u.id = ph.user_id AND ep.id = ph.enrollment_id
+        WHERE 
+          ep.is_active = true 
+          AND (p.name ILIKE '%NaturalUp%' OR p.name ILIKE '%Imersão%')
+        GROUP BY u.id, u.name, u.email, p.name, mp.required_hours, ep.created_at, ep.id
+        ORDER BY "pendingHours" DESC
+      `);
+      const students = result.rows.map((row: any) => ({
+        studentId: row.studentId,
+        studentName: row.studentName,
+        studentEmail: row.studentEmail,
+        planName: row.planName,
+        totalRequiredHours: parseFloat(row.totalRequiredHours),
+        completedHours: parseFloat(row.completedHours),
+        pendingHours: parseFloat(row.pendingHours),
+        percentageComplete: parseFloat(row.percentageComplete),
+        enrollmentDate: row.enrollmentDate,
+        lastActivityDate: row.lastActivityDate,
+        status: row.status
+      }));
+      res.json(students);
+    } catch (error) {
+      console.error('Erro ao buscar horas de prática:', error);
+      res.status(500).json({ error: 'Falha ao buscar dados de prática supervisionada' });
+    }
+  });
+
+  app.post('/api/admin/practice-hours/:enrollmentId', async (req: Request, res: Response) => {
+    if (!requireAdmin(req, res)) return;
+    const { enrollmentId } = req.params;
+    const { userId, hours, description, supervisorNotes } = req.body;
+    if (!hours || hours <= 0) {
+      return res.status(400).json({ error: 'Horas devem ser maiores que 0' });
+    }
+    try {
+      const { db } = await import('./db');
+      const result = await db.execute(sql`
+        INSERT INTO practice_hours (user_id, enrollment_id, hours, description, supervisor_notes, status)
+        VALUES (${userId}, ${enrollmentId}, ${hours}, ${description || null}, ${supervisorNotes || null}, 'completed')
+        RETURNING *
+      `);
+      res.json({ message: 'Horas de prática registradas com sucesso', data: result.rows[0] });
+    } catch (error) {
+      console.error('Erro ao registrar horas:', error);
+      res.status(500).json({ error: 'Falha ao registrar horas de prática' });
+    }
+  });
+
+  app.get('/api/admin/practice-hours/:studentId/detail', async (req: Request, res: Response) => {
+    if (!requireAdmin(req, res)) return;
+    const { studentId } = req.params;
+    try {
+      const { db } = await import('./db');
+      const result = await db.execute(sql`
+        SELECT 
+          ph.id,
+          ph.hours,
+          ph.description,
+          ph.supervisor_notes,
+          ph.status,
+          ph.created_at,
+          ph.updated_at,
+          u.name as supervisor_name
+        FROM practice_hours ph
+        LEFT JOIN users u ON ph.created_by = u.id
+        WHERE ph.user_id = ${studentId}
+        ORDER BY ph.created_at DESC
+      `);
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Erro ao buscar detalhe de horas:', error);
+      res.status(500).json({ error: 'Falha ao buscar histórico de horas' });
+    }
+  });
+
 }
 
 // Helper to get all progress (not in storage since it's a simple select-all)
