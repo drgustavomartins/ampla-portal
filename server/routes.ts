@@ -8086,8 +8086,8 @@ async function db_getProgress() {
   });
 
   // ========== STUDENT HOURS - Prática + Observação ==========
-  // GET /api/admin/student-hours - Listar alunos com horas pendentes
-  app.get('/api/admin/student-hours', async (req, res) => {
+  // GET /api/horas - Listar alunos com horas pendentes (sem /admin/)
+  app.get('/api/horas', async (req, res) => {
     try {
       const query = `
         SELECT 

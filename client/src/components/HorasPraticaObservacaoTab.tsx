@@ -36,7 +36,7 @@ export default function HorasPraticaObservacaoTab() {
     const fetchStudents = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/admin/student-hours', {
+        const response = await fetch('/api/horas', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('ampla_token')}`
           }
