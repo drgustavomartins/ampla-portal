@@ -406,6 +406,23 @@ export type InsertLeadEvent = z.infer<typeof insertLeadEventSchema>;
 export type InviteCode = typeof inviteCodes.$inferSelect;
 export type InsertInviteCode = z.infer<typeof insertInviteCodeSchema>;
 
+// Discount Coupons - for scarcity-based sales (48h, 10% off, etc)
+export const discountCoupons = pgTable("discount_coupons", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(), // e.g., 'NATURAL48-XK7M9P'
+  discountPercent: integer("discount_percent").notNull().default(10),
+  validUntil: text("valid_until").notNull(), // ISO date string
+  productType: text("product_type").notNull().default("all"), // 'mentorship'|'immersion'|'hours_package'|'all'
+  maxUses: integer("max_uses").default(-1), // -1 = unlimited
+  usedCount: integer("used_count").notNull().default(0),
+  createdBy: integer("created_by").notNull(), // admin user id
+  createdAt: text("created_at").notNull(),
+  status: text("status").notNull().default("active"), // 'active'|'expired'|'revoked'
+  description: text("description"), // optional note like "Aluno João Silva"
+});
+
+export const insertDiscountCouponSchema = createInsertSchema(discountCoupons);
+
 export type SiteVisitor = typeof siteVisitors.$inferSelect;
 export type InsertSiteVisitor = z.infer<typeof insertSiteVisitorSchema>;
 export type PageVisit = typeof pageVisits.$inferSelect;
@@ -416,3 +433,5 @@ export type Certificate = typeof certificates.$inferSelect;
 export type InsertCertificate = z.infer<typeof insertCertificateSchema>;
 export type UserVideoProgress = typeof userVideoProgress.$inferSelect;
 export type InsertUserVideoProgress = z.infer<typeof insertUserVideoProgressSchema>;
+export type DiscountCoupon = typeof discountCoupons.$inferSelect;
+export type InsertDiscountCoupon = z.infer<typeof insertDiscountCouponSchema>;

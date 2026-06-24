@@ -7844,6 +7844,184 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
     }
   });
 
+  // ===== DISCOUNT COUPONS ROUTES =====
+  
+  // POST /api/admin/coupons — Gerar novo cupom
+  app.post('/api/admin/coupons', async (req: Request, res: Response) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    
+    try {
+      const { discountPercent = 10, hoursValid = 48, productType = 'all', description } = req.body;
+      const { db } = await import('./db');
+      
+      // Generate unique code
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let code = 'NATURAL48-';
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      
+      // Calculate expiration (now + hoursValid)
+      const now = new Date();
+      const validUntil = new Date(now.getTime() + hoursValid * 60 * 60 * 1000).toISOString();
+      
+      const result = await db.execute(sql`
+        INSERT INTO discount_coupons (code, discount_percent, valid_until, product_type, created_by, created_at, status, description)
+        VALUES (${code}, ${discountPercent}, ${validUntil}, ${productType}, ${auth.userId}, ${new Date().toISOString()}, 'active', ${description || null})
+        RETURNING *
+      `);
+      
+      const coupon = result.rows[0];
+      res.json({ 
+        message: 'Cupom gerado com sucesso',
+        coupon,
+        shareLink: `https://portal.amplafacial.com.br/checkout?coupon=${code}`
+      });
+    } catch (error: any) {
+      console.error('Erro ao criar cupom:', error);
+      res.status(500).json({ error: 'Falha ao criar cupom' });
+    }
+  });
+
+  // GET /api/admin/coupons — Listar todos os cupons
+  app.get('/api/admin/coupons', async (req: Request, res: Response) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    
+    try {
+      const { db } = await import('./db');
+      const result = await db.execute(sql`
+        SELECT 
+          dc.*,
+          u.name as created_by_name,
+          COUNT(cu.id) as total_uses
+        FROM discount_coupons dc
+        LEFT JOIN users u ON dc.created_by = u.id
+        LEFT JOIN coupon_usage cu ON dc.id = cu.coupon_id
+        GROUP BY dc.id, u.id
+        ORDER BY dc.created_at DESC
+      `);
+      
+      res.json({ coupons: result.rows });
+    } catch (error) {
+      console.error('Erro ao listar cupons:', error);
+      res.status(500).json({ error: 'Falha ao listar cupons' });
+    }
+  });
+
+  // GET /api/admin/coupons/:couponId/usage — Histórico de uso de um cupom
+  app.get('/api/admin/coupons/:couponId/usage', async (req: Request, res: Response) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    
+    try {
+      const { couponId } = req.params;
+      const { db } = await import('./db');
+      
+      const result = await db.execute(sql`
+        SELECT 
+          cu.id,
+          cu.used_at,
+          cu.plan_key,
+          cu.amount_saved,
+          u.name as user_name,
+          u.email as user_email
+        FROM coupon_usage cu
+        LEFT JOIN users u ON cu.user_id = u.id
+        WHERE cu.coupon_id = ${parseInt(couponId)}
+        ORDER BY cu.used_at DESC
+      `);
+      
+      res.json({ usage: result.rows });
+    } catch (error) {
+      console.error('Erro ao buscar uso do cupom:', error);
+      res.status(500).json({ error: 'Falha ao buscar histórico' });
+    }
+  });
+
+  // PATCH /api/admin/coupons/:couponId — Revogar/desativar cupom
+  app.patch('/api/admin/coupons/:couponId', async (req: Request, res: Response) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    
+    try {
+      const { couponId } = req.params;
+      const { status } = req.body; // 'active', 'revoked', 'expired'
+      const { db } = await import('./db');
+      
+      if (!['active', 'revoked', 'expired'].includes(status)) {
+        return res.status(400).json({ error: 'Status inválido' });
+      }
+      
+      const result = await db.execute(sql`
+        UPDATE discount_coupons
+        SET status = ${status}
+        WHERE id = ${parseInt(couponId)}
+        RETURNING *
+      `);
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Cupom não encontrado' });
+      }
+      
+      res.json({ message: 'Cupom atualizado', coupon: result.rows[0] });
+    } catch (error) {
+      console.error('Erro ao atualizar cupom:', error);
+      res.status(500).json({ error: 'Falha ao atualizar cupom' });
+    }
+  });
+
+  // GET /api/checkout/validate-coupon — Validar cupom no checkout (public, não requer auth)
+  app.get('/api/checkout/validate-coupon', async (req: Request, res: Response) => {
+    try {
+      const { code, planKey } = req.query;
+      if (!code) {
+        return res.status(400).json({ error: 'Código do cupom é obrigatório' });
+      }
+      
+      const { db } = await import('./db');
+      const result = await db.execute(sql`
+        SELECT * FROM discount_coupons
+        WHERE code = ${code as string}
+        AND status = 'active'
+        AND valid_until > NOW()
+        LIMIT 1
+      `);
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Cupom não encontrado ou expirado' });
+      }
+      
+      const coupon = result.rows[0];
+      
+      // Verificar se o tipo de produto é permitido
+      if (coupon.product_type !== 'all' && planKey) {
+        // Você pode adicionar lógica aqui para mapear planKey para productType
+        // Por enquanto, permite todos
+      }
+      
+      // Verificar se atingiu o limite de usos
+      if (coupon.max_uses > 0 && coupon.used_count >= coupon.max_uses) {
+        return res.status(400).json({ error: 'Cupom expirou - limite de usos atingido' });
+      }
+      
+      res.json({ 
+        valid: true, 
+        coupon: {
+          code: coupon.code,
+          discountPercent: coupon.discount_percent,
+          productType: coupon.product_type,
+          validUntil: coupon.valid_until,
+          description: coupon.description
+        }
+      });
+    } catch (error) {
+      console.error('Erro ao validar cupom:', error);
+      res.status(500).json({ error: 'Falha ao validar cupom' });
+    }
+  });
+
 
 
 }

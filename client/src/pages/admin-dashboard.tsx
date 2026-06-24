@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LeadsTab } from "@/components/LeadsTab";
 import { CrmTab } from "@/components/CrmTab";
 import AgendamentoPacientesModeloTab from "@/components/AgendamentoPacientesModeloTab";
+import { CouponsTab } from "@/components/CouponsTab";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription
 } from "@/components/ui/dialog";
@@ -2119,6 +2120,14 @@ export default function AdminDashboard() {
                   >
                     <KeyRound className="w-3.5 h-3.5" />
                     Convites
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="coupons"
+                    data-testid="tab-coupons-d"
+                    className="data-[state=active]:bg-gold/15 data-[state=active]:text-gold data-[state=active]:border-gold/30 data-[state=active]:shadow-[0_0_12px_rgba(212,168,67,0.1)] data-[state=active]:shadow-none border border-transparent text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-lg px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-all"
+                  >
+                    <Gift className="w-3.5 h-3.5" />
+                    Cupons
                   </TabsTrigger>
                 </div>
 
@@ -4934,6 +4943,11 @@ export default function AdminDashboard() {
                 })}
               </div>
             )}
+          </TabsContent>
+
+          {/* ========== COUPONS TAB (admin/super_admin) ========== */}
+          <TabsContent value="coupons" className="space-y-6 mt-0">
+            <CouponsTab />
           </TabsContent>
 
           {/* ========== HISTORY TAB (super_admin: all logs, admin: own logs inline) ========== */}
