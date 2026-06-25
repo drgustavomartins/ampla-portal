@@ -363,18 +363,18 @@ export default function HorasPraticaObservacaoTab() {
       </div>
 
       {/* Info Footer */}
-      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-300 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-sm">📚 Sobre as Horas</CardTitle>
+          <CardTitle className="text-base font-bold text-gray-900">📚 Sobre as Horas</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-gray-700 space-y-2">
+        <CardContent className="text-sm text-gray-800 space-y-2">
           <p>
             <strong className="text-blue-900">💪 Horas de Prática:</strong> Aluno pratica procedimentos com paciente modelo sob sua supervisão
           </p>
           <p>
             <strong className="text-purple-900">👁️ Horas de Observação:</strong> Aluno observa você realizando atendimento clínico
           </p>
-          <p className="text-gray-600 mt-3">
+          <p className="text-gray-700 mt-3">
             ⚙️ Lista atualiza a cada 5 minutos automaticamente
           </p>
         </CardContent>
