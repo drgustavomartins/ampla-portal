@@ -409,6 +409,48 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json({ msg: 'Teste funcionando!' });
   });
 
+  // VER HISTÓRICO REAL DE SESSÕES DA CAROLINA
+  app.get('/api/sessoes-carolina', async (req, res) => {
+    try {
+      const { db } = await import('./db');
+      
+      const carolina_sessions = await db.execute(`
+        SELECT * FROM clinical_sessions 
+        WHERE student_id = 12 
+        ORDER BY session_date DESC
+      `);
+      
+      const felipe_sessions = await db.execute(`
+        SELECT * FROM clinical_sessions 
+        WHERE student_id = 8 
+        ORDER BY session_date DESC
+      `);
+      
+      // Estatísticas
+      const stats = await db.execute(`
+        SELECT 
+          u.id, u.name, u.clinical_practice_hours,
+          COUNT(cs.id) as total_sessoes,
+          SUM(cs.duration_hours) FILTER (WHERE cs.status = 'completed') as horas_concluidas,
+          SUM(cs.duration_hours) FILTER (WHERE cs.status != 'completed') as horas_pendentes
+        FROM users u
+        LEFT JOIN clinical_sessions cs ON cs.student_id = u.id
+        WHERE u.id IN (8, 12)
+        GROUP BY u.id, u.name, u.clinical_practice_hours
+      `);
+      
+      res.json({
+        carolina_sessions_count: carolina_sessions.rows.length,
+        carolina_sessions: carolina_sessions.rows,
+        felipe_sessions_count: felipe_sessions.rows.length,
+        felipe_sessions: felipe_sessions.rows,
+        estatisticas: stats.rows,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ENCONTRAR TABELA REAL DE SESSÕES CLÍNICAS
   app.get('/api/encontrar-sessoes-reais', async (req, res) => {
     try {
