@@ -412,83 +412,75 @@ export async function registerRoutes(server: Server, app: Express) {
   // INSPECAO DO SCHEMA REAL
   app.get('/api/schema-info', async (req, res) => {
     try {
-      const [cols_practice_hours, cols_practice_plan_hours, cols_users, sample_ph, sample_pph] = await Promise.all([
-        sql.query(`SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'practice_hours' ORDER BY ordinal_position`),
-        sql.query(`SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'practice_plan_hours' ORDER BY ordinal_position`),
-        sql.query(`SELECT id, name, email FROM users WHERE id = 12`),
-        sql.query(`SELECT * FROM practice_hours WHERE user_id = 12 LIMIT 10`),
-        sql.query(`SELECT * FROM practice_plan_hours WHERE user_id = 12 LIMIT 10`),
-      ]);
+      const { db } = await import('./db');
+      const cols_ph = await db.execute(`SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'practice_hours' ORDER BY ordinal_position`);
+      const cols_pph = await db.execute(`SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'practice_plan_hours' ORDER BY ordinal_position`);
+      const carolina = await db.execute(`SELECT id, name, email FROM users WHERE id = 12`);
+      const carolina_ph = await db.execute(`SELECT * FROM practice_hours WHERE user_id = 12 LIMIT 10`);
+      const carolina_pph = await db.execute(`SELECT * FROM practice_plan_hours WHERE user_id = 12 LIMIT 10`);
       res.json({
-        practice_hours_columns: cols_practice_hours.rows,
-        practice_plan_hours_columns: cols_practice_plan_hours.rows,
-        carolina: cols_users.rows[0],
-        carolina_practice_hours: sample_ph.rows,
-        carolina_practice_plan_hours: sample_pph.rows,
+        practice_hours_columns: cols_ph.rows,
+        practice_plan_hours_columns: cols_pph.rows,
+        carolina: carolina.rows[0],
+        carolina_practice_hours: carolina_ph.rows,
+        carolina_practice_plan_hours: carolina_pph.rows,
       });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.get('/api/pratica-list', (req, res) => {
-    // Query REAL do banco com histórico
-    const query = `
-      SELECT 
-        u.id as "studentId",
-        u.name as "studentName",
-        u.email as "studentEmail",
-        p.name as "planName",
-        p.id as "planId",
-        COALESCE(pp.practice_hours_available, 0) as "practiceHoursAvailable",
-        COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "practiceHoursCompleted",
-        COALESCE(pp.observation_hours_available, 0) as "observationHoursAvailable",
-        COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "observationHoursCompleted",
-        JSON_AGG(
-          JSON_BUILD_OBJECT(
-            'id', ph.id,
-            'hours', ph.hours,
-            'type', ph.activity_type,
-            'description', ph.description,
-            'date', ph.created_at,
-            'status', ph.status
-          ) ORDER BY ph.created_at DESC
-        ) FILTER (WHERE ph.id IS NOT NULL) as "history"
-      FROM practice_plan_hours pp
-      JOIN users u ON pp.user_id = u.id
-      LEFT JOIN plans p ON pp.plan_id = p.id
-      LEFT JOIN practice_hours ph ON u.id = ph.user_id AND pp.plan_id = ph.plan_id
-      GROUP BY u.id, u.name, u.email, p.id, p.name, pp.practice_hours_available, pp.observation_hours_available
-      HAVING (COALESCE(pp.practice_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) > 0)
-        OR (COALESCE(pp.observation_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) > 0)
-      ORDER BY u.name
-    `;
-
+  app.get('/api/pratica-list', async (req, res) => {
     try {
-      const result = sql.query(query);
-      result.then(res_data => {
-        const students = res_data.rows.map(row => ({
-          studentId: row.studentId,
-          studentName: row.studentName,
-          studentEmail: row.studentEmail,
-          planName: row.planName,
-          planId: row.planId,
-          practiceHoursAvailable: parseInt(row.practiceHoursAvailable || 0),
-          practiceHoursCompleted: parseInt(row.practiceHoursCompleted || 0),
-          practiceHoursPending: Math.max(0, parseInt(row.practiceHoursAvailable || 0) - parseInt(row.practiceHoursCompleted || 0)),
-          observationHoursAvailable: parseInt(row.observationHoursAvailable || 0),
-          observationHoursCompleted: parseInt(row.observationHoursCompleted || 0),
-          observationHoursPending: Math.max(0, parseInt(row.observationHoursAvailable || 0) - parseInt(row.observationHoursCompleted || 0)),
-          history: row.history || []
-        }));
-        res.json(students);
-      }).catch(err => {
-        console.error('Erro na query:', err);
-        res.status(500).json({ error: err.message });
-      });
-    } catch (error) {
-      console.error('Erro ao buscar pratica list:', error);
-      res.status(500).json({ error: 'Falha ao buscar dados' });
+      const { db } = await import('./db');
+      const result = await db.execute(`
+        SELECT 
+          u.id as "studentId",
+          u.name as "studentName",
+          u.email as "studentEmail",
+          p.name as "planName",
+          p.id as "planId",
+          COALESCE(pp.practice_hours_available, 0) as "practiceHoursAvailable",
+          COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "practiceHoursCompleted",
+          COALESCE(pp.observation_hours_available, 0) as "observationHoursAvailable",
+          COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "observationHoursCompleted",
+          JSON_AGG(
+            JSON_BUILD_OBJECT(
+              'id', ph.id,
+              'hours', ph.hours,
+              'type', ph.activity_type,
+              'description', ph.description,
+              'date', ph.created_at,
+              'status', ph.status
+            ) ORDER BY ph.created_at DESC
+          ) FILTER (WHERE ph.id IS NOT NULL) as "history"
+        FROM practice_plan_hours pp
+        JOIN users u ON pp.user_id = u.id
+        LEFT JOIN plans p ON pp.plan_id = p.id
+        LEFT JOIN practice_hours ph ON u.id = ph.user_id AND pp.plan_id = ph.plan_id
+        GROUP BY u.id, u.name, u.email, p.id, p.name, pp.practice_hours_available, pp.observation_hours_available
+        HAVING (COALESCE(pp.practice_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) > 0)
+          OR (COALESCE(pp.observation_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) > 0)
+        ORDER BY u.name
+      `);
+      const students = result.rows.map((row: any) => ({
+        studentId: row.studentId,
+        studentName: row.studentName,
+        studentEmail: row.studentEmail,
+        planName: row.planName,
+        planId: row.planId,
+        practiceHoursAvailable: parseInt(row.practiceHoursAvailable || 0),
+        practiceHoursCompleted: parseInt(row.practiceHoursCompleted || 0),
+        practiceHoursPending: Math.max(0, parseInt(row.practiceHoursAvailable || 0) - parseInt(row.practiceHoursCompleted || 0)),
+        observationHoursAvailable: parseInt(row.observationHoursAvailable || 0),
+        observationHoursCompleted: parseInt(row.observationHoursCompleted || 0),
+        observationHoursPending: Math.max(0, parseInt(row.observationHoursAvailable || 0) - parseInt(row.observationHoursCompleted || 0)),
+        history: row.history || []
+      }));
+      res.json(students);
+    } catch (error: any) {
+      console.error('Erro em /api/pratica-list:', error);
+      res.status(500).json({ error: error.message });
     }
   });
   
