@@ -584,6 +584,9 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   });
 
+  // ============================================================
+  // ENDPOINT REAL - usa users.clinical_practice_hours como fonte de verdade
+  // ============================================================
   app.get('/api/pratica-list', async (req, res) => {
     try {
       const { db } = await import('./db');
@@ -592,43 +595,56 @@ export async function registerRoutes(server: Server, app: Express) {
           u.id as "studentId",
           u.name as "studentName",
           u.email as "studentEmail",
-          p.name as "planName",
-          p.id as "planId",
-          COALESCE(pp.practice_hours_available, 0) as "practiceHoursAvailable",
-          COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "practiceHoursCompleted",
-          COALESCE(pp.observation_hours_available, 0) as "observationHoursAvailable",
-          COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "observationHoursCompleted",
-          JSON_AGG(
-            JSON_BUILD_OBJECT(
-              'id', ph.id,
-              'hours', ph.hours,
-              'type', ph.activity_type,
-              'description', ph.description,
-              'date', ph.created_at,
-              'status', ph.status
-            ) ORDER BY ph.created_at DESC
-          ) FILTER (WHERE ph.id IS NOT NULL) as "history"
-        FROM practice_plan_hours pp
-        JOIN users u ON pp.user_id = u.id
-        LEFT JOIN plans p ON pp.plan_id = p.id
-        LEFT JOIN practice_hours ph ON u.id = ph.user_id
-        GROUP BY u.id, u.name, u.email, p.id, p.name, pp.practice_hours_available, pp.observation_hours_available
-        HAVING (COALESCE(pp.practice_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) > 0)
-          OR (COALESCE(pp.observation_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) > 0)
-        ORDER BY u.name
+          u.phone as "studentPhone",
+          u.plan_key as "planKey",
+          COALESCE(u.clinical_practice_hours, 0) as "practiceHoursPending",
+          COALESCE(u.clinical_observation_hours, 0) as "observationHoursPending",
+          u.mentorship_start_date as "mentorshipStartDate",
+          u.mentorship_end_date as "mentorshipEndDate",
+          (
+            SELECT COALESCE(JSON_AGG(
+              JSON_BUILD_OBJECT(
+                'id', ph.id,
+                'hours', ph.hours,
+                'type', ph.activity_type,
+                'description', ph.description,
+                'date', ph.created_at,
+                'status', ph.status
+              ) ORDER BY ph.created_at DESC
+            ), '[]'::json)
+            FROM practice_hours ph 
+            WHERE ph.user_id = u.id
+          ) as "history"
+        FROM users u
+        WHERE u.plan_key = 'vip_completo'
+          AND u.clinical_practice_access = true
+          AND (
+            COALESCE(u.clinical_practice_hours, 0) > 0 
+            OR COALESCE(u.clinical_observation_hours, 0) > 0
+          )
+          AND (
+            u.mentorship_end_date IS NULL 
+            OR u.mentorship_end_date::date >= CURRENT_DATE
+          )
+        ORDER BY u.clinical_practice_hours DESC, u.name
       `);
+      
       const students = result.rows.map((row: any) => ({
         studentId: row.studentId,
         studentName: row.studentName,
         studentEmail: row.studentEmail,
-        planName: row.planName,
-        planId: row.planId,
-        practiceHoursAvailable: parseInt(row.practiceHoursAvailable || 0),
-        practiceHoursCompleted: parseInt(row.practiceHoursCompleted || 0),
-        practiceHoursPending: Math.max(0, parseInt(row.practiceHoursAvailable || 0) - parseInt(row.practiceHoursCompleted || 0)),
-        observationHoursAvailable: parseInt(row.observationHoursAvailable || 0),
-        observationHoursCompleted: parseInt(row.observationHoursCompleted || 0),
-        observationHoursPending: Math.max(0, parseInt(row.observationHoursAvailable || 0) - parseInt(row.observationHoursCompleted || 0)),
+        studentPhone: row.studentPhone,
+        planName: 'VIP Completo',
+        planKey: row.planKey,
+        practiceHoursPending: parseInt(row.practiceHoursPending || 0),
+        observationHoursPending: parseInt(row.observationHoursPending || 0),
+        mentorshipStartDate: row.mentorshipStartDate,
+        mentorshipEndDate: row.mentorshipEndDate,
+        // Compatibilidade com o componente atual
+        practiceHoursAvailable: parseInt(row.practiceHoursPending || 0),
+        practiceHoursCompleted: 0,
+        observationHoursAvailable: parseInt(row.observationHoursPending || 0),
+        observationHoursCompleted: 0,
         history: row.history || []
       }));
       res.json(students);
