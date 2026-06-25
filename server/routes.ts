@@ -7862,6 +7862,79 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
     }
   });
 
+  // Create code — cupom ou convite (usado pelo CouponsTab)
+  app.post("/api/invite-codes", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db } = await import("./db");
+      const {
+        campaign,
+        durationDays,
+        maxUses,
+        code: customCode,
+        type = 'invite',
+        discountPercent = 0,
+        description = null,
+      } = req.body;
+
+      if (!campaign?.trim()) return res.status(400).json({ message: "Nome da campanha é obrigatório" });
+
+      const code = customCode?.trim() || (type === 'discount' ? 'CUPOM-' : 'CONV-') + crypto.randomBytes(3).toString("hex").toUpperCase();
+      const duration = parseInt(durationDays) || 7;
+      const max = parseInt(maxUses) || 0;
+      const now = new Date().toISOString();
+
+      const existing = await db.execute(sql`SELECT id FROM invite_codes WHERE code = ${code}`);
+      if ((existing as any).rows?.length > 0) {
+        return res.status(409).json({ message: "Este código já existe. Escolha outro." });
+      }
+
+      await db.execute(sql`
+        INSERT INTO invite_codes
+        (code, type, access_type, discount_percent, duration_days, campaign, max_uses, used_count, used_by, active, description, created_by, created_at)
+        VALUES (${code}, ${type}, 'full', ${discountPercent}, ${duration}, ${campaign.trim()}, ${max}, 0, '[]', true, ${description}, ${auth.userId}, ${now})
+      `);
+
+      const admin = await storage.getUser(auth.userId);
+      await logAction(auth.userId, admin?.name || "Admin", `create_${type}_code`, type, 0, code, { campaign: campaign.trim(), durationDays: duration, discount: discountPercent });
+
+      return res.json({ code, campaign: campaign.trim(), durationDays: duration, maxUses: max, type, discountPercent });
+    } catch (e: any) {
+      console.error('Erro ao criar código:', e);
+      return res.status(500).json({ message: "Erro ao criar código: " + e.message });
+    }
+  });
+
+  // Update code (active/inactive) — usado pelo CouponsTab para revogar
+  app.patch("/api/invite-codes/:id", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db } = await import("./db");
+      const id = parseInt(req.params.id);
+      const { active } = req.body;
+      await db.execute(sql`UPDATE invite_codes SET active = ${active} WHERE id = ${id}`);
+      return res.json({ success: true });
+    } catch (e: any) {
+      return res.status(500).json({ message: "Erro ao atualizar código" });
+    }
+  });
+
+  // Delete code — usado pelo CouponsTab
+  app.delete("/api/invite-codes/:id", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db } = await import("./db");
+      const id = parseInt(req.params.id);
+      await db.execute(sql`DELETE FROM invite_codes WHERE id = ${id}`);
+      return res.json({ success: true });
+    } catch (e: any) {
+      return res.status(500).json({ message: "Erro ao remover código" });
+    }
+  });
+
   // Validate invite code (public — used during registration)
   app.get("/api/invite/:code", async (req, res) => {
     try {
