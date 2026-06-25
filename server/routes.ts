@@ -430,6 +430,61 @@ export async function registerRoutes(server: Server, app: Express) {
     }
   });
 
+  // INVESTIGAR FELIPE, JÉSSICA E OUTROS ALUNOS COM PLANOS PREMIUM
+  app.get('/api/investigar-alunos', async (req, res) => {
+    try {
+      const { db } = await import('./db');
+      
+      // 1. Listar todos os planos disponíveis
+      const planos = await db.execute(`SELECT id, name FROM plans ORDER BY id`);
+      
+      // 2. Ver como o vínculo de usuário com plano é feito
+      const tables = await db.execute(`
+        SELECT table_name FROM information_schema.tables 
+        WHERE table_schema = 'public' AND (
+          table_name LIKE '%plan%' OR table_name LIKE '%enrollment%' 
+          OR table_name LIKE '%user_module%' OR table_name LIKE '%subscription%'
+        )
+        ORDER BY table_name
+      `);
+      
+      // 3. Buscar Felipe e Jéssica
+      const felipe = await db.execute(`
+        SELECT id, name, email FROM users 
+        WHERE name ILIKE '%felipe%' OR name ILIKE '%panz%'
+        LIMIT 5
+      `);
+      const jessica = await db.execute(`
+        SELECT id, name, email FROM users 
+        WHERE name ILIKE '%jéssica%' OR name ILIKE '%jessica%'
+        LIMIT 5
+      `);
+      
+      // 4. Ver histórico de practice_hours de TODOS os alunos
+      const todas_horas = await db.execute(`
+        SELECT 
+          u.id, u.name, u.email,
+          COUNT(*) as registros,
+          SUM(CASE WHEN ph.activity_type = 'practical' THEN ph.hours ELSE 0 END) as pratica_total,
+          SUM(CASE WHEN ph.activity_type = 'observational' THEN ph.hours ELSE 0 END) as observacao_total
+        FROM practice_hours ph
+        JOIN users u ON ph.user_id = u.id
+        GROUP BY u.id, u.name, u.email
+        ORDER BY u.name
+      `);
+      
+      res.json({
+        planos: planos.rows,
+        tabelas_relacionadas: tables.rows,
+        felipe: felipe.rows,
+        jessica: jessica.rows,
+        alunos_com_horas_lancadas: todas_horas.rows,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get('/api/pratica-list', async (req, res) => {
     try {
       const { db } = await import('./db');
