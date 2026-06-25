@@ -409,6 +409,51 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json({ msg: 'Teste funcionando!' });
   });
 
+  // INVESTIGAR ONDE FICA O "Xh prática" do card de aluno
+  app.get('/api/investigar-fonte-horas', async (req, res) => {
+    try {
+      const { db } = await import('./db');
+      
+      // 1. Listar TODAS as tabelas do banco
+      const tables = await db.execute(`
+        SELECT table_name FROM information_schema.tables 
+        WHERE table_schema = 'public'
+        ORDER BY table_name
+      `);
+      
+      // 2. Procurar colunas que tenham "hour", "pratica", "practice"
+      const cols = await db.execute(`
+        SELECT table_name, column_name, data_type 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+          AND (
+            column_name ILIKE '%hour%' 
+            OR column_name ILIKE '%pratic%'
+            OR column_name ILIKE '%practice%'
+            OR column_name ILIKE '%mentor%'
+          )
+        ORDER BY table_name, ordinal_position
+      `);
+      
+      // 3. Ver Felipe (id=8) em todas as tabelas relevantes
+      const felipe_users = await db.execute(`SELECT * FROM users WHERE id = 8`);
+      const felipe_user_modules = await db.execute(`SELECT * FROM user_modules WHERE user_id = 8`);
+      
+      // 4. Ver Carolina (id=12) em user_modules
+      const carolina_user_modules = await db.execute(`SELECT * FROM user_modules WHERE user_id = 12`);
+      
+      res.json({
+        all_tables: tables.rows,
+        hours_columns: cols.rows,
+        felipe_user: felipe_users.rows[0],
+        felipe_user_modules: felipe_user_modules.rows,
+        carolina_user_modules: carolina_user_modules.rows,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // INSPECAO DO SCHEMA REAL
   app.get('/api/schema-info', async (req, res) => {
     try {
