@@ -409,6 +409,60 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json({ msg: 'Teste funcionando!' });
   });
 
+  // AUDITORIA COMPLETA - SÓ DADOS REAIS
+  app.get('/api/auditoria-horas', async (req, res) => {
+    try {
+      const { db } = await import('./db');
+      
+      // 1. TODOS os alunos com horas de prática OU observação > 0 em users
+      const alunos_com_horas = await db.execute(`
+        SELECT 
+          id, name, email, plan_key,
+          clinical_practice_access,
+          clinical_practice_hours,
+          clinical_observation_hours,
+          mentorship_start_date,
+          mentorship_end_date
+        FROM users
+        WHERE clinical_practice_hours > 0 
+           OR clinical_observation_hours > 0
+           OR clinical_practice_access = true
+        ORDER BY name
+      `);
+      
+      // 2. Registros de practice_hours por aluno
+      const horas_realizadas = await db.execute(`
+        SELECT 
+          ph.user_id,
+          u.name,
+          ph.hours,
+          ph.activity_type,
+          ph.description,
+          ph.status,
+          ph.created_at
+        FROM practice_hours ph
+        JOIN users u ON ph.user_id = u.id
+        ORDER BY u.name, ph.created_at
+      `);
+      
+      // 3. Dados de practice_plan_hours (tabela que CRIAMOS)
+      const plan_hours = await db.execute(`
+        SELECT pph.*, u.name 
+        FROM practice_plan_hours pph
+        JOIN users u ON pph.user_id = u.id
+      `);
+      
+      res.json({
+        alunos_com_horas_em_users: alunos_com_horas.rows,
+        registros_practice_hours: horas_realizadas.rows,
+        practice_plan_hours_table: plan_hours.rows,
+        nota: "Esta é a FONTE DE VERDADE: users.clinical_practice_hours e users.clinical_observation_hours"
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // INVESTIGAR ONDE FICA O "Xh prática" do card de aluno
   app.get('/api/investigar-fonte-horas', async (req, res) => {
     try {
