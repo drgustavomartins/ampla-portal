@@ -7657,6 +7657,27 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
 
   // ==================== INVITE CODES (Workshop Access) ====================
 
+  // List invite codes (admin only) - filtro por tipo
+  app.get("/api/invite-codes", async (req, res) => {
+    const auth = requireAdmin(req, res);
+    if (!auth) return;
+    try {
+      const { db } = await import("./db");
+      const type = req.query.type as string | undefined;
+      
+      let query = `SELECT * FROM invite_codes`;
+      if (type) {
+        query += ` WHERE type = '${type}'`;
+      }
+      query += ` ORDER BY created_at DESC`;
+      
+      const result = await db.execute(sql.raw(query));
+      return res.json({ codes: (result as any).rows || [] });
+    } catch (e: any) {
+      return res.status(500).json({ message: "Erro ao listar códigos" });
+    }
+  });
+
   // Validate invite code (public — used during registration)
   app.get("/api/invite/:code", async (req, res) => {
     try {
@@ -7700,16 +7721,25 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
     }
   });
 
-  // Admin: Create invite code
+  // Admin: Create invite code (suporta tanto convites quanto cupons)
   app.post("/api/admin/invite-codes", async (req, res) => {
     const auth = requireAdmin(req, res);
     if (!auth) return;
     try {
       const { db } = await import("./db");
-      const { campaign, durationDays, maxUses, code: customCode } = req.body;
+      const { 
+        campaign, 
+        durationDays, 
+        maxUses, 
+        code: customCode,
+        type = 'invite', // 'invite' ou 'discount'
+        discountPercent = 0,
+        description = null
+      } = req.body;
+      
       if (!campaign?.trim()) return res.status(400).json({ message: "Nome da campanha é obrigatório" });
 
-      const code = customCode?.trim() || crypto.randomBytes(4).toString("hex").toUpperCase();
+      const code = customCode?.trim() || (type === 'discount' ? 'CUPOM-' : 'CONV-') + crypto.randomBytes(3).toString("hex").toUpperCase();
       const duration = parseInt(durationDays) || 7;
       const max = parseInt(maxUses) || 0;
       const now = new Date().toISOString();
@@ -7720,16 +7750,20 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
         return res.status(409).json({ message: "Este código já existe. Escolha outro." });
       }
 
-      await db.execute(sql`INSERT INTO invite_codes (code, access_type, duration_days, campaign, max_uses, used_count, used_by, active, created_by, created_at)
-        VALUES (${code}, 'full', ${duration}, ${campaign.trim()}, ${max}, 0, '[]', true, ${auth.userId}, ${now})`);
+      await db.execute(sql`
+        INSERT INTO invite_codes 
+        (code, type, access_type, discount_percent, duration_days, campaign, max_uses, used_count, used_by, active, description, created_by, created_at)
+        VALUES (${code}, ${type}, 'full', ${discountPercent}, ${duration}, ${campaign.trim()}, ${max}, 0, '[]', true, ${description}, ${auth.userId}, ${now})
+      `);
 
       // Audit log
       const admin = await storage.getUser(auth.userId);
-      await logAction(auth.userId, admin?.name || "Admin", "create_invite_code", "invite_code", 0, code, { campaign: campaign.trim(), durationDays: duration, maxUses: max });
+      await logAction(auth.userId, admin?.name || "Admin", `create_${type}_code`, type, 0, code, { campaign: campaign.trim(), durationDays: duration, discount: discountPercent });
 
-      return res.json({ code, campaign: campaign.trim(), durationDays: duration, maxUses: max });
+      return res.json({ code, campaign: campaign.trim(), durationDays: duration, maxUses: max, type, discountPercent });
     } catch (e: any) {
-      return res.status(500).json({ message: "Erro ao criar código de convite" });
+      console.error('Erro ao criar código:', e);
+      return res.status(500).json({ message: "Erro ao criar código: " + e.message });
     }
   });
 

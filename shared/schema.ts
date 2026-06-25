@@ -228,13 +228,16 @@ export const leadEvents = pgTable("lead_events", {
 export const inviteCodes = pgTable("invite_codes", {
   id: serial("id").primaryKey(),
   code: text("code").notNull().unique(),
-  accessType: text("access_type").notNull().default("full"), // "full" = all modules/lessons
+  type: text("type").notNull().default("invite"), // "invite" ou "discount"
+  accessType: text("access_type").notNull().default("full"), // para "invite": "full" = all modules/lessons
+  discountPercent: integer("discount_percent").default(0), // para "discount": percentual de desconto
   durationDays: integer("duration_days").notNull().default(7),
   campaign: text("campaign").notNull(), // e.g. "workshop_merz_abril2026"
   maxUses: integer("max_uses").notNull().default(0), // 0 = unlimited
   usedCount: integer("used_count").notNull().default(0),
-  usedBy: text("used_by").notNull().default("[]"), // JSON array of { email, usedAt }
+  usedBy: text("used_by").notNull().default("[]"), // JSON array de { email, usedAt }
   active: boolean("active").notNull().default(true),
+  description: text("description"), // descrição ou observação
   createdBy: integer("created_by").notNull(),
   createdAt: text("created_at").notNull(),
 });
@@ -407,22 +410,6 @@ export type InviteCode = typeof inviteCodes.$inferSelect;
 export type InsertInviteCode = z.infer<typeof insertInviteCodeSchema>;
 
 // Discount Coupons - for scarcity-based sales (48h, 10% off, etc)
-export const discountCoupons = pgTable("discount_coupons", {
-  id: serial("id").primaryKey(),
-  code: text("code").notNull().unique(), // e.g., 'NATURAL48-XK7M9P'
-  discountPercent: integer("discount_percent").notNull().default(10),
-  validUntil: text("valid_until").notNull(), // ISO date string
-  productType: text("product_type").notNull().default("all"), // 'mentorship'|'immersion'|'hours_package'|'all'
-  maxUses: integer("max_uses").default(-1), // -1 = unlimited
-  usedCount: integer("used_count").notNull().default(0),
-  createdBy: integer("created_by").notNull(), // admin user id
-  createdAt: text("created_at").notNull(),
-  status: text("status").notNull().default("active"), // 'active'|'expired'|'revoked'
-  description: text("description"), // optional note like "Aluno João Silva"
-});
-
-export const insertDiscountCouponSchema = createInsertSchema(discountCoupons);
-
 export type SiteVisitor = typeof siteVisitors.$inferSelect;
 export type InsertSiteVisitor = z.infer<typeof insertSiteVisitorSchema>;
 export type PageVisit = typeof pageVisits.$inferSelect;
@@ -433,5 +420,3 @@ export type Certificate = typeof certificates.$inferSelect;
 export type InsertCertificate = z.infer<typeof insertCertificateSchema>;
 export type UserVideoProgress = typeof userVideoProgress.$inferSelect;
 export type InsertUserVideoProgress = z.infer<typeof insertUserVideoProgressSchema>;
-export type DiscountCoupon = typeof discountCoupons.$inferSelect;
-export type InsertDiscountCoupon = z.infer<typeof insertDiscountCouponSchema>;
