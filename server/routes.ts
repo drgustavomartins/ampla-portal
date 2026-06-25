@@ -409,6 +409,28 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json({ msg: 'Teste funcionando!' });
   });
 
+  // INSPECAO DO SCHEMA REAL
+  app.get('/api/schema-info', async (req, res) => {
+    try {
+      const [cols_practice_hours, cols_practice_plan_hours, cols_users, sample_ph, sample_pph] = await Promise.all([
+        sql.query(`SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'practice_hours' ORDER BY ordinal_position`),
+        sql.query(`SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'practice_plan_hours' ORDER BY ordinal_position`),
+        sql.query(`SELECT id, name, email FROM users WHERE id = 12`),
+        sql.query(`SELECT * FROM practice_hours WHERE user_id = 12 LIMIT 10`),
+        sql.query(`SELECT * FROM practice_plan_hours WHERE user_id = 12 LIMIT 10`),
+      ]);
+      res.json({
+        practice_hours_columns: cols_practice_hours.rows,
+        practice_plan_hours_columns: cols_practice_plan_hours.rows,
+        carolina: cols_users.rows[0],
+        carolina_practice_hours: sample_ph.rows,
+        carolina_practice_plan_hours: sample_pph.rows,
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get('/api/pratica-list', (req, res) => {
     // Query REAL do banco com histórico
     const query = `
