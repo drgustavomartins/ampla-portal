@@ -331,6 +331,31 @@ export default function HorasPraticaObservacaoTab() {
                 <p className="text-sm text-gray-700 text-center font-semibold">
                   📊 TOTAL PENDENTE: {student.totalPending}h
                 </p>
+
+                {/* HISTÓRICO DE HORAS */}
+                {student.history && student.history.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-300">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-3">📜 Histórico de Horas Compradas/Alocadas</h4>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {student.history.map((entry: any, idx: number) => (
+                        <div key={idx} className="text-xs bg-white p-2 rounded border border-gray-200">
+                          <div className="flex justify-between items-start">
+                            <span className="font-medium">
+                              {entry.type === 'practical' ? '💪 Prática' : '👁️ Observação'}: {entry.hours}h
+                            </span>
+                            <span className="text-gray-500">
+                              {entry.date ? new Date(entry.date).toLocaleDateString('pt-BR') : '—'}
+                            </span>
+                          </div>
+                          {entry.description && (
+                            <div className="text-gray-600 mt-1">{entry.description}</div>
+                          )}
+                          <div className="text-gray-500 mt-1">Status: {entry.status}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

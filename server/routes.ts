@@ -410,12 +410,64 @@ export async function registerRoutes(server: Server, app: Express) {
   });
 
   app.get('/api/pratica-list', (req, res) => {
-    const students = [
-      { studentId: 12, studentName: 'Carolina Pinto', studentEmail: 'carolina@example.com', planName: 'Online', practiceHoursAvailable: 30, practiceHoursCompleted: 26, practiceHoursPending: 4, observationHoursAvailable: 30, observationHoursCompleted: 28, observationHoursPending: 2 },
-      { studentId: 8, studentName: 'Felipe Panzeira', studentEmail: 'felipe@example.com', planName: 'Módulo', practiceHoursAvailable: 60, practiceHoursCompleted: 44, practiceHoursPending: 16, observationHoursAvailable: 60, observationHoursCompleted: 30, observationHoursPending: 30 },
-      { studentId: 54, studentName: 'Jéssica', studentEmail: 'jessica@example.com', planName: 'Módulo', practiceHoursAvailable: 30, practiceHoursCompleted: 10, practiceHoursPending: 20, observationHoursAvailable: 30, observationHoursCompleted: 5, observationHoursPending: 25 }
-    ];
-    res.json(students);
+    // Query REAL do banco com histórico
+    const query = `
+      SELECT 
+        u.id as "studentId",
+        u.name as "studentName",
+        u.email as "studentEmail",
+        p.name as "planName",
+        p.id as "planId",
+        COALESCE(pp.practice_hours_available, 0) as "practiceHoursAvailable",
+        COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "practiceHoursCompleted",
+        COALESCE(pp.observation_hours_available, 0) as "observationHoursAvailable",
+        COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) as "observationHoursCompleted",
+        JSON_AGG(
+          JSON_BUILD_OBJECT(
+            'id', ph.id,
+            'hours', ph.hours,
+            'type', ph.activity_type,
+            'description', ph.description,
+            'date', ph.created_at,
+            'status', ph.status
+          ) ORDER BY ph.created_at DESC
+        ) FILTER (WHERE ph.id IS NOT NULL) as "history"
+      FROM practice_plan_hours pp
+      JOIN users u ON pp.user_id = u.id
+      LEFT JOIN plans p ON pp.plan_id = p.id
+      LEFT JOIN practice_hours ph ON u.id = ph.user_id AND pp.plan_id = ph.plan_id
+      GROUP BY u.id, u.name, u.email, p.id, p.name, pp.practice_hours_available, pp.observation_hours_available
+      HAVING (COALESCE(pp.practice_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) > 0)
+        OR (COALESCE(pp.observation_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) > 0)
+      ORDER BY u.name
+    `;
+
+    try {
+      const result = sql.query(query);
+      result.then(res_data => {
+        const students = res_data.rows.map(row => ({
+          studentId: row.studentId,
+          studentName: row.studentName,
+          studentEmail: row.studentEmail,
+          planName: row.planName,
+          planId: row.planId,
+          practiceHoursAvailable: parseInt(row.practiceHoursAvailable || 0),
+          practiceHoursCompleted: parseInt(row.practiceHoursCompleted || 0),
+          practiceHoursPending: Math.max(0, parseInt(row.practiceHoursAvailable || 0) - parseInt(row.practiceHoursCompleted || 0)),
+          observationHoursAvailable: parseInt(row.observationHoursAvailable || 0),
+          observationHoursCompleted: parseInt(row.observationHoursCompleted || 0),
+          observationHoursPending: Math.max(0, parseInt(row.observationHoursAvailable || 0) - parseInt(row.observationHoursCompleted || 0)),
+          history: row.history || []
+        }));
+        res.json(students);
+      }).catch(err => {
+        console.error('Erro na query:', err);
+        res.status(500).json({ error: err.message });
+      });
+    } catch (error) {
+      console.error('Erro ao buscar pratica list:', error);
+      res.status(500).json({ error: 'Falha ao buscar dados' });
+    }
   });
   
   // ==================== AUTO-MIGRATE critical columns on startup ====================
