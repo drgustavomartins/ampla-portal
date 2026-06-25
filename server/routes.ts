@@ -457,7 +457,7 @@ export async function registerRoutes(server: Server, app: Express) {
         FROM practice_plan_hours pp
         JOIN users u ON pp.user_id = u.id
         LEFT JOIN plans p ON pp.plan_id = p.id
-        LEFT JOIN practice_hours ph ON u.id = ph.user_id AND pp.plan_id = ph.plan_id
+        LEFT JOIN practice_hours ph ON u.id = ph.user_id
         GROUP BY u.id, u.name, u.email, p.id, p.name, pp.practice_hours_available, pp.observation_hours_available
         HAVING (COALESCE(pp.practice_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'practical' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) > 0)
           OR (COALESCE(pp.observation_hours_available, 0) - COALESCE(SUM(CASE WHEN ph.activity_type = 'observational' AND ph.status = 'completed' THEN ph.hours ELSE 0 END), 0) > 0)
