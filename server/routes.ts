@@ -409,6 +409,63 @@ export async function registerRoutes(server: Server, app: Express) {
     res.json({ msg: 'Teste funcionando!' });
   });
 
+  // ENCONTRAR TABELA REAL DE SESSÕES CLÍNICAS
+  app.get('/api/encontrar-sessoes-reais', async (req, res) => {
+    try {
+      const { db } = await import('./db');
+      
+      // 1. Listar TODAS as tabelas
+      const all_tables = await db.execute(`
+        SELECT table_name FROM information_schema.tables 
+        WHERE table_schema = 'public'
+        ORDER BY table_name
+      `);
+      
+      // 2. Procurar tabelas com colunas tipo "session", "appointment", "practica"
+      const session_tables = await db.execute(`
+        SELECT DISTINCT table_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+          AND (
+            table_name ILIKE '%session%' 
+            OR table_name ILIKE '%pratica%'
+            OR table_name ILIKE '%practice%'
+            OR table_name ILIKE '%appointment%'
+            OR table_name ILIKE '%clinical%'
+          )
+        ORDER BY table_name
+      `);
+      
+      // 3. Para cada tabela suspeita, mostrar colunas
+      const suspect_tables = session_tables.rows.map((r: any) => r.table_name);
+      const tables_detail: any = {};
+      
+      for (const t of suspect_tables) {
+        const cols = await db.execute(`
+          SELECT column_name, data_type 
+          FROM information_schema.columns 
+          WHERE table_name = '${t}' 
+          ORDER BY ordinal_position
+        `);
+        const sample = await db.execute(`SELECT * FROM ${t} LIMIT 3`);
+        tables_detail[t] = {
+          columns: cols.rows,
+          sample_data: sample.rows,
+          row_count: sample.rows.length
+        };
+      }
+      
+      res.json({
+        all_tables_count: all_tables.rows.length,
+        all_tables_list: all_tables.rows.map((r: any) => r.table_name),
+        suspect_tables: suspect_tables,
+        tables_detail: tables_detail,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // AUDITORIA COMPLETA - SÓ DADOS REAIS
   app.get('/api/auditoria-horas', async (req, res) => {
     try {
