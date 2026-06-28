@@ -24,7 +24,7 @@ import {
   BookOpen, Play, CheckCircle2, Circle, Clock, LogOut,
   ChevronLeft, ChevronRight, Calendar, Layers, Settings, Loader2, AlertTriangle, Star,
   Users, MessageCircle, Lock, ShoppingCart, ExternalLink, Paperclip, DollarSign,
-  Search, Bell, Camera, Instagram, Phone, Sparkles
+  Search, Bell, Camera, Instagram, Phone, Sparkles, X
 } from "lucide-react";
 import { stripPhone } from "@/lib/phone";
 import { SelectThemeModal } from "@/components/SelectThemeModal";
@@ -92,6 +92,9 @@ export default function StudentDashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "", avatarUrl: "", username: "", instagram: "" });
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [bioestAnnDismissed, setBioestAnnDismissed] = useState(() => {
+    try { return localStorage.getItem("ampla_ann_bioest_v1") === "1"; } catch { return false; }
+  });
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const materiaisRef = useRef<HTMLDivElement>(null);
   const shelfRef = useRef<HTMLDivElement>(null);
@@ -1117,6 +1120,50 @@ export default function StudentDashboard() {
 
       <main className="flex-1">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 lg:py-10 space-y-10">
+
+          {/* ===== ANÚNCIO: Lançamento Módulo Bioestimuladores ===== */}
+          {!bioestAnnDismissed && (
+            <div className="relative overflow-hidden rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/15 via-gold/5 to-transparent p-5 sm:p-6">
+              <div className="pointer-events-none absolute -top-16 -right-10 h-48 w-48 rounded-full bg-gold/10 blur-3xl" />
+              <button
+                onClick={() => {
+                  try { localStorage.setItem("ampla_ann_bioest_v1", "1"); } catch {}
+                  setBioestAnnDismissed(true);
+                }}
+                aria-label="Dispensar aviso"
+                className="absolute top-3 right-3 rounded-full p-1.5 text-white/40 hover:text-white/80 hover:bg-white/5 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="relative flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="shrink-0 w-12 h-12 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-gold" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 border border-gold/30 px-2.5 py-0.5 text-[10px] font-bold text-gold uppercase tracking-wider">
+                    Em breve
+                  </span>
+                  <h3 className="mt-2 text-lg sm:text-xl font-bold text-foreground leading-tight">
+                    Módulo Bioestimuladores &amp; Biorregeneradores
+                  </h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Estamos preparando o lançamento. Fique de olho: vamos realizar um evento exclusivo, e quem participar
+                    ganha <span className="text-gold font-semibold">créditos na plataforma</span> para usar como quiser.
+                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground/80">
+                    Dica: indique um colega com o seu código e ganhe 10% do valor em créditos. Seu código fica na página de Créditos.
+                  </p>
+                </div>
+                <Link
+                  href="/creditos"
+                  className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-xl bg-gold hover:opacity-90 px-5 py-2.5 text-sm font-semibold text-[#0A0D14] transition-opacity"
+                >
+                  Ver meu código
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Access expiry banner — unified for ALL plan types */}
           {isAccessExpired && (
