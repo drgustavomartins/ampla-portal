@@ -378,6 +378,8 @@ export default function StudentDashboard() {
     if (title.includes("fios") || title.includes("pdo")) return "/images/covers/cover_fios_pdo_v2026.png";
     if (title.includes("ia para clínica") || title.includes("ia para clinica") || title.startsWith("ia ") || title.includes("inteligência artificial") || title.includes("inteligencia artificial")) return "/images/covers/cover_ia_clinica_v2026.png";
     if (title.includes("naturalup") || title.includes("natural up") || title.includes("método") || title.includes("metodo")) return "/images/covers/cover_metodo_naturalup_v2026.png";
+    if (title.includes("intercorrência") || title.includes("intercorrencia")) return "/images/covers/cover_intercorrencias_v2026.png";
+    if (title.includes("aulas quinzenais")) return "/images/covers/cover_aulas_quinzenais_v2026.png";
     if (title.includes("encontros") || title.includes("quinzena")) return "/images/covers/cover_encontros_quinzenais_v2026.png";
     return null;
   };
@@ -1132,7 +1134,7 @@ export default function StudentDashboard() {
                 href={whatsappRenewUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="shrink-0 rounded-xl bg-gold/90 hover:bg-gold px-5 py-2.5 text-sm font-semibold text-[#0A0D14] transition-colors"
+                className="shrink-0 rounded-xl bg-gold hover:opacity-90 px-5 py-2.5 text-sm font-semibold text-[#0A0D14] transition-opacity"
               >
                 Quero Continuar Aprendendo
               </a>
@@ -2038,7 +2040,7 @@ export default function StudentDashboard() {
                 href={isAccessExpired ? whatsappRenewUrl : "/#/planos-publicos"}
                 target={isAccessExpired ? "_blank" : undefined}
                 rel={isAccessExpired ? "noopener noreferrer" : undefined}
-                className="inline-flex items-center gap-2 rounded-xl bg-gold/90 hover:bg-gold text-[#0A0D14] font-semibold px-6 py-3 text-sm transition-colors"
+                className="inline-flex items-center gap-2 rounded-xl bg-gold hover:opacity-90 text-[#0A0D14] font-semibold px-6 py-3 text-sm transition-opacity"
               >
                 {isAccessExpired ? (
                   <><ExternalLink className="w-4 h-4" /> Quero Continuar Aprendendo</>

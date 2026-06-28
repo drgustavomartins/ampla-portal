@@ -9,6 +9,7 @@ import { registerSchema, trialRegisterSchema, loginSchema, insertModuleSchema, i
 import {
   isLifetimePlan,
   hasActiveAccess,
+  hasFullAccess,
   isTrialLimited,
   canAccessMaterials,
   getAccessType,
@@ -3472,6 +3473,10 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
           const accessExpired = !hasActiveAccess(user);
           if (accessExpired || (user as any).planKey === "workshop" || (user as any).inviteCode) {
             myModules = { accessAll: true, moduleIds: [] };
+          } else if (hasFullAccess(user as any)) {
+            // Planos de Acesso Completo (FULL_ACCESS_PLAN_KEYS) liberam TODOS os
+            // módulos mesmo sem plan_id ou linhas em user_modules.
+            myModules = { accessAll: true, moduleIds: [] };
           } else {
             const userMods = await storage.getUserModules(auth.userId);
             if (userMods.length > 0) {
@@ -3649,6 +3654,12 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
 
     // Workshop invite users get full access to all modules
     if ((user as any).planKey === "workshop" || (user as any).inviteCode) {
+      return res.json({ accessAll: true, moduleIds: [] });
+    }
+
+    // Planos de Acesso Completo (FULL_ACCESS_PLAN_KEYS) liberam TODOS os módulos,
+    // mesmo sem plan_id ou linhas em user_modules.
+    if (hasFullAccess(user as any)) {
       return res.json({ accessAll: true, moduleIds: [] });
     }
 
