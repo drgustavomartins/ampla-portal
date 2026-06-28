@@ -24,10 +24,40 @@ type EncontroLesson = {
 
 const ENCONTROS: EncontroLesson[] = [
   {
+    id: "encontro-2026-06-24-alergia-angioedema",
+    title: "Alergia e Angioedema em Procedimentos Estéticos",
+    youtubeId: "i30Tzyy3oIs",
+    duration: "46:34",
+    eventDate: "2026-06-24",
+    description:
+      "Encontro sobre segurança e manejo de reações alérgicas e angioedema em procedimentos estéticos. A aula discute o reconhecimento dos sinais de hipersensibilidade, a conduta diante de reações, prevenção e o preparo do consultório para intercorrências, reforçando o raciocínio clínico e a responsabilidade na harmonização facial.",
+    tags: ["Alergia", "Angioedema", "Intercorrências", "Segurança", "Hipersensibilidade", "Manejo clínico"],
+  },
+  {
+    id: "encontro-2026-06-10-precificacao-naturalup",
+    title: "Precificação e Estratégia de Vendas do Método NaturalUp®",
+    youtubeId: "_iaYAIXsD4g",
+    duration: "40:48",
+    eventDate: "2026-06-10",
+    description:
+      "Encontro voltado à parte de negócio do consultório: como precificar protocolos do Método NaturalUp® e estruturar uma estratégia de vendas com consistência. A aula aborda formação de preço, posicionamento, percepção de valor e comunicação com o paciente, conectando a qualidade clínica à sustentabilidade financeira da prática.",
+    tags: ["Precificação", "Vendas", "Gestão", "NaturalUp", "Negócios", "Posicionamento"],
+  },
+  {
+    id: "encontro-2026-05-27-preenchedores-bioestimuladores-naturalup",
+    title: "Preenchedores, Bioestimuladores e Método NaturalUp®",
+    youtubeId: "uVVPuDjVrxs",
+    duration: "1:24:45",
+    eventDate: "2026-05-27",
+    description:
+      "Encontro que integra preenchedores de ácido hialurônico e bioestimuladores dentro do raciocínio do Método NaturalUp®. A aula trabalha a combinação entre volumização, sustentação e estímulo de colágeno, mostrando como planejar resultados naturais e progressivos: quando preencher, quando bioestimular e como sequenciar os procedimentos para preservar identidade e qualidade tecidual ao longo do tempo.",
+    tags: ["Preenchedores", "Bioestimuladores", "NaturalUp", "Ácido hialurônico", "Planejamento facial", "Naturalidade"],
+  },
+  {
     id: "encontro-2026-05-11-preenchedores",
-    title: "Introdução a Preenchedores",
-    youtubeId: "wTF5z_SyOxA",
-    duration: "1:12:55",
+    title: "Introdução aos Preenchedores de Ácido Hialurônico",
+    youtubeId: "r9dJSeRKFhk",
+    duration: "1:12:57",
     eventDate: "2026-05-11",
     description:
       "Encontro dedicado ao uso racional dos preenchedores faciais, com foco em ácido hialurônico como biomaterial implantável. A aula discute dosagem, limites por sessão e por região, exceções clínicas, integração tecidual, comportamento de diferentes produtos, agentes reticuladores e o cuidado de não confundir preenchimento estético com tratamento tecidual. Também aborda skinboosters, hidratação, permanência do material e raciocínio para evitar excesso de volume e distorções ao longo do tempo.",
@@ -35,19 +65,19 @@ const ENCONTROS: EncontroLesson[] = [
   },
   {
     id: "encontro-2026-04-29-glp1",
-    title: "Emagrecimento com GLP-1 e Impacto na Bioestimulação Facial",
-    youtubeId: "goiWQhlKpKw",
-    duration: "1:04:30",
+    title: "GLP-1 e Bariátricas: Harmonização com Emagrecimento",
+    youtubeId: "DYlBa9n7698",
+    duration: "1:04:32",
     eventDate: "2026-04-29",
     description:
-      "Encontro sobre o impacto das canetas emagrecedoras e agonistas de GLP-1 na estética facial e na resposta a bioestimuladores. A aula discute o cenário atual de emagrecimento acelerado com semaglutida, tirzepatida e medicamentos semelhantes, os efeitos da perda rápida de gordura na face, a relação com flacidez, envelhecimento aparente e planejamento de preenchedores e bioestimuladores. O foco é conduzir o paciente antes, durante e depois do emagrecimento, com raciocínio clínico para preservar naturalidade, suporte e qualidade tecidual.",
-    tags: ["GLP-1", "Emagrecimento", "Bioestimulação", "Flacidez", "Preenchedores", "Planejamento facial"],
+      "Encontro sobre o impacto do emagrecimento acelerado — por agonistas de GLP-1 e por cirurgia bariátrica — na estética facial e na resposta a bioestimuladores. A aula discute o cenário atual com semaglutida, tirzepatida e medicamentos semelhantes, os efeitos da perda rápida de gordura na face, a relação com flacidez e envelhecimento aparente, e o planejamento de preenchedores e bioestimuladores. O foco é conduzir o paciente antes, durante e depois do emagrecimento, preservando naturalidade, suporte e qualidade tecidual.",
+    tags: ["GLP-1", "Bariátrica", "Emagrecimento", "Bioestimulação", "Flacidez", "Planejamento facial"],
   },
   {
     id: "encontro-2026-04-15-neocolagenese",
-    title: "Neocolagênese e IA para Estudar",
-    youtubeId: "RbKS4I_KCqk",
-    duration: "1:26:17",
+    title: "Neocolagênese e IA na Harmonização Facial",
+    youtubeId: "KSuWssrGq68",
+    duration: "1:26:19",
     eventDate: "2026-04-15",
     description:
       "Aula sobre fundamentos da neocolagênese, bioestimuladores e uso de inteligência artificial como ferramenta de estudo na harmonização facial. O encontro revisa fibroblastos, colágeno tipos I e III, elastina, proteoglicanos, mecanotransdução, estímulos bioquímicos e diferenças entre hidroxiapatita de cálcio, PLLA e PDO. Também conecta o raciocínio ao protocolo NaturalUp, ao papel do PDRN e cofatores como vitamina C e zinco, além de mostrar formas práticas de usar IA para estudar artigos, criar resumos e melhorar a prática clínica.",
