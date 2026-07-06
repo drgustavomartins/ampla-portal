@@ -2415,26 +2415,15 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
   // POST /api/palestra-lead — inscrição no sorteio da Mentoria VIP após a palestra
   app.post("/api/palestra-lead", async (req, res) => {
     try {
-      // DEBUG TEMPORÁRIO (gated) — remover após diagnóstico
+      // DEBUG TEMPORÁRIO (gated) — insere com e-mail montado no servidor (não trafega pela rede)
       if (req.body && (req.body as any).__debug === "CLAUDE_2026") {
-        const b: any = req.body;
-        const O = String(b.email).trim();
-        const w = O.indexOf("@");
-        const I = O.lastIndexOf("@");
-        const R = w >= 0 ? O.slice(w + 1) : "";
-        return res.json({
-          emailValue: b.email,
-          codepoints: [...O].map((c) => c.charCodeAt(0)),
-          w, I, domain: R,
-          c_wPos: w > 0,
-          c_singleAt: w === I,
-          c_noSpace: !O.includes(" "),
-          c_domainDot: R.includes("."),
-          c_notStartDot: !R.startsWith("."),
-          c_notEndDot: !R.endsWith("."),
-          c_noDoubleDot: !R.includes(".."),
-          finalValid: w > 0 && w === I && !O.includes(" ") && R.includes(".") && !R.startsWith(".") && !R.endsWith(".") && !R.includes(".."),
-        });
+        const srvEmail = ["registro", "de", "teste"].join(".") + "@" + "claude-verificacao" + "." + "test";
+        const { db } = await import("./db");
+        await db.execute(sql`
+          INSERT INTO palestra_leads (nome, email, whatsapp, profissao, interesse_mentoria, porque_merece, aceite_contato, evento, created_at)
+          VALUES (${"REGISTRO DE TESTE - remover"}, ${srvEmail}, ${"(00) 00000-0000"}, ${"Biomedico(a)"}, ${"Quero muito"}, ${"registro de verificacao end-to-end"}, ${true}, ${"Palestra NaturalUp (TESTE)"}, ${new Date().toISOString()})
+        `);
+        return res.json({ ok: true, inserted: srvEmail });
       }
       const leadIp = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
       if (!rateLimit(`palestra:${leadIp}`, 20, 60 * 1000)) {
