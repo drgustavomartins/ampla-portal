@@ -38,6 +38,7 @@ const ComunidadePage = lazy(() => import("./pages/comunidade"));
 const AcompanhamentoPage = lazy(() => import("./pages/acompanhamento"));
 const EncontrosQuinzenaisPage = lazy(() => import("./pages/encontros-quinzenais"));
 const LandingPage = lazy(() => import("./pages/lp"));
+const PalestraPage = lazy(() => import("./pages/palestra"));
 
 // ─── Loading spinner for lazy chunks ──────────────────────────────────────
 function PageLoader() {
@@ -149,6 +150,7 @@ function App() {
             <Route path="/comecar" component={() => <LazyRoute component={PlanosPublicos} />} />
             <Route path="/planos-publicos" component={() => <LazyRoute component={PlanosPublicos} />} />
             <Route path="/lp" component={() => <LazyRoute component={LandingPage} />} />
+            <Route path="/palestra" component={() => <LazyRoute component={PalestraPage} />} />
             <Route path="/quiz" component={() => <LazyRoute component={QuizPage} />} />
             <Route path="/creditos" component={() => <ProtectedPage component={CreditsPage} />} />
             <Route path="/creditos/regras" component={() => <ProtectedPage component={CreditsRulesPage} />} />

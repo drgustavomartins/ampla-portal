@@ -2411,6 +2411,58 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
     }
   });
 
+  // ─── Palestra NaturalUp: captura de leads (público) ───────────────────────
+  // POST /api/palestra-lead — inscrição no sorteio da Mentoria VIP após a palestra
+  app.post("/api/palestra-lead", async (req, res) => {
+    try {
+      const leadIp = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
+      if (!rateLimit(`palestra:${leadIp}`, 20, 60 * 1000)) {
+        return res.status(429).json({ message: "Muitas tentativas. Aguarde um instante e tente novamente." });
+      }
+      const {
+        nome, email, whatsapp, profissao, cidade_estado, tempo_atuacao,
+        realiza_procedimentos, maior_desafio, destaque_palestra,
+        interesse_mentoria, porque_merece, aceite_contato,
+      } = req.body || {};
+
+      if (!nome || !email || !whatsapp) {
+        return res.status(400).json({ message: "Nome, e-mail e WhatsApp são obrigatórios." });
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) {
+        return res.status(400).json({ message: "E-mail inválido." });
+      }
+      if (aceite_contato !== true) {
+        return res.status(400).json({ message: "É necessário autorizar o contato para participar do sorteio." });
+      }
+
+      const clip = (v: any, n: number) => (v ? String(v).trim().slice(0, n) : null);
+      const ua = req.headers["user-agent"]?.toString().slice(0, 500) || null;
+      const { db } = await import("./db");
+      await db.execute(sql`
+        INSERT INTO palestra_leads
+          (nome, email, whatsapp, profissao, cidade_estado, tempo_atuacao, realiza_procedimentos, maior_desafio, destaque_palestra, interesse_mentoria, porque_merece, aceite_contato, evento, user_agent, ip, created_at)
+        VALUES
+          (${clip(nome, 200)}, ${String(email).trim().toLowerCase().slice(0, 200)}, ${clip(whatsapp, 50)}, ${clip(profissao, 120)}, ${clip(cidade_estado, 160)}, ${clip(tempo_atuacao, 60)}, ${clip(realiza_procedimentos, 60)}, ${clip(maior_desafio, 1200)}, ${clip(destaque_palestra, 1200)}, ${clip(interesse_mentoria, 120)}, ${clip(porque_merece, 1200)}, ${true}, ${'Palestra NaturalUp'}, ${ua}, ${leadIp}, ${new Date().toISOString()})
+      `);
+      res.json({ ok: true });
+    } catch (e: any) {
+      console.error("palestra-lead error:", e?.message || e);
+      res.status(500).json({ message: "Não foi possível registrar sua inscrição. Tente novamente." });
+    }
+  });
+
+  // GET /api/palestra-leads — lista de inscritos (admin) para exportação/marketing
+  app.get("/api/palestra-leads", async (req: Request, res: Response) => {
+    if (!requireAdmin(req, res)) return;
+    try {
+      const { db } = await import("./db");
+      const result = await db.execute(sql`SELECT * FROM palestra_leads ORDER BY created_at DESC`);
+      res.json({ total: result.rows.length, leads: result.rows });
+    } catch (e: any) {
+      res.status(500).json({ message: "Erro ao carregar inscritos." });
+    }
+  });
+
   // GET /api/admin/funnel — listar funil por sessão
   app.get("/api/admin/funnel", async (req: Request, res: Response) => {
     if (!requireAdmin(req, res)) return;
