@@ -2428,7 +2428,20 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       if (!nome || !email || !whatsapp) {
         return res.status(400).json({ message: "Nome, e-mail e WhatsApp são obrigatórios." });
       }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) {
+      // Validação de e-mail sem regex literal (imune a problemas de escape no build).
+      const emailStr = String(email).trim();
+      const atIndex = emailStr.indexOf("@");
+      const lastAt = emailStr.lastIndexOf("@");
+      const domain = atIndex >= 0 ? emailStr.slice(atIndex + 1) : "";
+      const emailValido =
+        atIndex > 0 &&                                   // tem "@" e não é o primeiro caractere
+        atIndex === lastAt &&                            // exatamente um "@"
+        !emailStr.includes(" ") &&                       // sem espaços
+        domain.includes(".") &&                          // domínio tem ponto
+        !domain.startsWith(".") &&                       // não começa com ponto
+        !domain.endsWith(".") &&                         // não termina com ponto
+        !domain.includes("..");                          // sem pontos duplicados
+      if (!emailValido) {
         return res.status(400).json({ message: "E-mail inválido." });
       }
       if (aceite_contato !== true) {
