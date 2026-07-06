@@ -2415,6 +2415,20 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
   // POST /api/palestra-lead — inscrição no sorteio da Mentoria VIP após a palestra
   app.post("/api/palestra-lead", async (req, res) => {
     try {
+      // DEBUG TEMPORÁRIO (gated) — remover após diagnóstico
+      if (req.body && (req.body as any).__debug === "CLAUDE_2026") {
+        const b: any = req.body;
+        return res.json({
+          bodyType: typeof req.body,
+          isNull: req.body === null,
+          keys: req.body && typeof req.body === "object" ? Object.keys(req.body) : null,
+          emailType: typeof b.email,
+          emailValue: b.email,
+          emailStringified: String(b.email),
+          contentType: req.headers["content-type"] || null,
+          rawPreview: JSON.stringify(req.body).slice(0, 400),
+        });
+      }
       const leadIp = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
       if (!rateLimit(`palestra:${leadIp}`, 20, 60 * 1000)) {
         return res.status(429).json({ message: "Muitas tentativas. Aguarde um instante e tente novamente." });
