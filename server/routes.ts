@@ -2418,15 +2418,22 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       // DEBUG TEMPORÁRIO (gated) — remover após diagnóstico
       if (req.body && (req.body as any).__debug === "CLAUDE_2026") {
         const b: any = req.body;
+        const O = String(b.email).trim();
+        const w = O.indexOf("@");
+        const I = O.lastIndexOf("@");
+        const R = w >= 0 ? O.slice(w + 1) : "";
         return res.json({
-          bodyType: typeof req.body,
-          isNull: req.body === null,
-          keys: req.body && typeof req.body === "object" ? Object.keys(req.body) : null,
-          emailType: typeof b.email,
           emailValue: b.email,
-          emailStringified: String(b.email),
-          contentType: req.headers["content-type"] || null,
-          rawPreview: JSON.stringify(req.body).slice(0, 400),
+          codepoints: [...O].map((c) => c.charCodeAt(0)),
+          w, I, domain: R,
+          c_wPos: w > 0,
+          c_singleAt: w === I,
+          c_noSpace: !O.includes(" "),
+          c_domainDot: R.includes("."),
+          c_notStartDot: !R.startsWith("."),
+          c_notEndDot: !R.endsWith("."),
+          c_noDoubleDot: !R.includes(".."),
+          finalValid: w > 0 && w === I && !O.includes(" ") && R.includes(".") && !R.startsWith(".") && !R.endsWith(".") && !R.includes(".."),
         });
       }
       const leadIp = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
