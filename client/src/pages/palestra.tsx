@@ -9,6 +9,9 @@ const GOLD = "#D4A843";
 const GOLD_DEEP = "#b8892f";
 const CREAM = "#F8F7F4";
 
+// WhatsApp acadêmico (formato internacional p/ wa.me): +55 (21) 97626-3881
+const WHATSAPP_NUMERO = "5521976263881";
+
 const PROFISSOES = [
   "Cirurgião(ã)-dentista",
   "Biomédico(a)",
@@ -45,6 +48,7 @@ type Estado = "form" | "enviando" | "sucesso";
 export default function PalestraPage() {
   const [estado, setEstado] = useState<Estado>("form");
   const [erro, setErro] = useState<string | null>(null);
+  const [waLink, setWaLink] = useState<string>("");
 
   const [form, setForm] = useState({
     nome: "",
@@ -91,13 +95,29 @@ export default function PalestraPage() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.message || "Falha ao enviar. Tente novamente.");
       }
+
+      // Monta a mensagem já preenchida para o WhatsApp acadêmico.
+      const linhas = [
+        "Olá! 👋 Vim pelo formulário da palestra e quero concorrer à Mentoria VIP NaturalUp®.",
+        "",
+        `*Nome:* ${form.nome.trim()}`,
+      ];
+      if (form.profissao) linhas.push(`*Profissão:* ${form.profissao}`);
+      if (form.porque_merece.trim()) {
+        linhas.push("");
+        linhas.push("*Por que a Mentoria NaturalUp faz sentido pra mim neste momento:*");
+        linhas.push(form.porque_merece.trim());
+      }
+      const wa = `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(linhas.join("\n"))}`;
+      setWaLink(wa);
+
       // Envia também ao Web3Forms (e-mail de aviso na hora + painel do Web3Forms).
-      // Feito direto do navegador do aluno, que passa pela proteção Cloudflare de forma
-      // transparente. Fire-and-forget: nunca bloqueia nem quebra a confirmação da inscrição.
+      // keepalive:true garante que a requisição termine mesmo com o redirecionamento pro WhatsApp.
       try {
         fetch("https://api.web3forms.com/submit", {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
+          keepalive: true,
           body: JSON.stringify({
             access_key: "4a79d409-1ffb-480f-a20d-a7fd4d934ade",
             subject: "🎯 Nova inscrição — Sorteio Mentoria VIP NaturalUp",
@@ -123,6 +143,8 @@ export default function PalestraPage() {
       } catch {}
       setEstado("sucesso");
       window.scrollTo({ top: 0, behavior: "smooth" });
+      // Leva o aluno direto pra conversa no WhatsApp (após ver a confirmação por um instante).
+      setTimeout(() => { try { window.location.href = wa; } catch {} }, 1400);
     } catch (e: any) {
       setErro(e?.message || "Não foi possível enviar. Tente novamente.");
       setEstado("form");
@@ -131,34 +153,47 @@ export default function PalestraPage() {
 
   // ─── Tela de sucesso ────────────────────────────────────────────────────────
   if (estado === "sucesso") {
+    const WA_ICON = (
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+    );
     return (
       <div style={{ minHeight: "100vh", background: NAVY, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
         <div style={{ maxWidth: 520, width: "100%", textAlign: "center", color: CREAM }}>
           <div style={{ width: 76, height: 76, borderRadius: "50%", background: `${GOLD}22`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 24px", border: `1.5px solid ${GOLD}` }}>
             <CheckCircle2 size={40} color={GOLD} />
           </div>
-          <h1 style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontSize: 30, lineHeight: 1.2, marginBottom: 14, color: "#fff" }}>
+          <h1 style={{ fontFamily: "var(--font-serif, Georgia, serif)", fontSize: "clamp(26px, 7vw, 30px)", lineHeight: 1.2, marginBottom: 14, color: "#fff" }}>
             Inscrição confirmada!
           </h1>
           <p style={{ fontSize: 16, lineHeight: 1.6, color: "#d7dce6", marginBottom: 8 }}>
             Você está concorrendo à <strong style={{ color: GOLD }}>Mentoria VIP NaturalUp® individual</strong>.
           </p>
-          <p style={{ fontSize: 15, lineHeight: 1.6, color: "#aab4c6", marginBottom: 32 }}>
-            O resultado e as próximas oportunidades chegam pelo seu WhatsApp e e-mail. Fique de olho. 👀
+          <p style={{ fontSize: 15, lineHeight: 1.6, color: "#aab4c6", marginBottom: 26 }}>
+            Falta <strong style={{ color: "#e7ecf5" }}>1 passo</strong>: confirme sua participação no nosso WhatsApp acadêmico. Estamos te levando para lá agora...
           </p>
 
-          <div style={{ borderTop: `1px solid ${NAVY_SOFT}`, paddingTop: 26 }}>
-            <p style={{ fontSize: 13, letterSpacing: 0.5, textTransform: "uppercase", color: GOLD, marginBottom: 16 }}>
+          <a href={waLink || `https://wa.me/${WHATSAPP_NUMERO}`} target="_blank" rel="noreferrer"
+             style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, background: "#25D366", color: "#0b3d2c", padding: "16px 22px", borderRadius: 14, fontWeight: 800, fontSize: 16.5, textDecoration: "none", boxShadow: "0 10px 26px rgba(37,211,102,0.35)", maxWidth: 380, margin: "0 auto" }}>
+            {WA_ICON} Abrir conversa no WhatsApp
+          </a>
+          <p style={{ fontSize: 12.5, color: "#8b96a8", marginTop: 12, marginBottom: 30 }}>
+            Se o WhatsApp não abrir sozinho, toque no botão acima.
+          </p>
+
+          <div style={{ borderTop: `1px solid ${NAVY_SOFT}`, paddingTop: 24 }}>
+            <p style={{ fontSize: 12.5, letterSpacing: 0.5, textTransform: "uppercase", color: "#8b96a8", marginBottom: 14 }}>
               Continue por perto
             </p>
             <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
               <a href="https://instagram.com/dr.gustavomartins" target="_blank" rel="noreferrer"
-                 style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#fff", color: NAVY, padding: "11px 18px", borderRadius: 10, fontWeight: 600, fontSize: 14, textDecoration: "none" }}>
-                <Instagram size={17} /> @dr.gustavomartins
+                 style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", color: "#cdd4e0", border: `1px solid ${NAVY_SOFT}`, padding: "10px 16px", borderRadius: 10, fontWeight: 600, fontSize: 13.5, textDecoration: "none" }}>
+                <Instagram size={16} /> @dr.gustavomartins
               </a>
               <a href="https://instagram.com/amplafacial" target="_blank" rel="noreferrer"
-                 style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", color: "#fff", border: `1px solid ${GOLD}`, padding: "11px 18px", borderRadius: 10, fontWeight: 600, fontSize: 14, textDecoration: "none" }}>
-                <Instagram size={17} /> @amplafacial
+                 style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", color: "#cdd4e0", border: `1px solid ${NAVY_SOFT}`, padding: "10px 16px", borderRadius: 10, fontWeight: 600, fontSize: 13.5, textDecoration: "none" }}>
+                <Instagram size={16} /> @amplafacial
               </a>
             </div>
           </div>
