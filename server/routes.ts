@@ -2418,31 +2418,30 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       // TESTE TEMPORÁRIO (gated) — envia um lead de exemplo montado no servidor ao Web3Forms
       if (req.body && (req.body as any).__w3test === "CLAUDE_2026") {
         const testEmail = ["teste", "claude"].join(".") + "@" + "amplafacial" + "." + "com" + ".br";
-        let w3resp: any = null, w3status = 0;
-        try {
-          const r = await fetch("https://api.web3forms.com/submit", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Accept: "application/json" },
-            body: JSON.stringify({
-              access_key: "4a79d409-1ffb-480f-a20d-a7fd4d934ade",
-              subject: "✅ TESTE — integração da Palestra NaturalUp (pode ignorar)",
-              from_name: "Portal Ampla Facial",
-              name: "REGISTRO DE TESTE (Claude)",
-              email: testEmail,
-              WhatsApp: "(21) 90000-0000",
-              "Profissão": "Biomédico(a)",
-              "Cidade/Estado": "Rio de Janeiro / RJ",
-              "Interesse na mentoria": "Quero muito",
-              "Por que merece a vaga": "Registro de teste da integração — pode ignorar este e-mail.",
-              Evento: "Palestra NaturalUp (TESTE)",
-            }),
-          });
-          w3status = r.status;
-          w3resp = await r.json().catch(() => null);
-        } catch (e: any) {
-          w3resp = { error: e?.message || String(e) };
+        const payload = {
+          access_key: "4a79d409-1ffb-480f-a20d-a7fd4d934ade",
+          subject: "✅ TESTE — integração da Palestra NaturalUp (pode ignorar)",
+          from_name: "Portal Ampla Facial",
+          name: "REGISTRO DE TESTE (Claude)",
+          email: testEmail,
+          "Por que merece a vaga": "Registro de teste da integração — pode ignorar.",
+          Evento: "Palestra NaturalUp (TESTE)",
+        };
+        const attempts: any[] = [];
+        const headerSets: any[] = [
+          { "Content-Type": "application/json", Accept: "application/json" },
+          { "Content-Type": "application/json", Accept: "application/json", Origin: "https://portal.amplafacial.com.br", Referer: "https://portal.amplafacial.com.br/" },
+        ];
+        for (const hs of headerSets) {
+          try {
+            const r = await fetch("https://api.web3forms.com/submit", { method: "POST", headers: hs, body: JSON.stringify(payload) });
+            const txt = await r.text();
+            attempts.push({ withOrigin: !!(hs as any).Origin, status: r.status, body: txt.slice(0, 300) });
+          } catch (e: any) {
+            attempts.push({ withOrigin: !!(hs as any).Origin, error: e?.message || String(e) });
+          }
         }
-        return res.json({ w3status, w3resp });
+        return res.json({ attempts });
       }
 
       const leadIp = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
