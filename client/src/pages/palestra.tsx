@@ -91,6 +91,33 @@ export default function PalestraPage() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.message || "Falha ao enviar. Tente novamente.");
       }
+      // Envia também ao Web3Forms (e-mail de aviso na hora + painel do Web3Forms).
+      // Feito direto do navegador do aluno, que passa pela proteção Cloudflare de forma
+      // transparente. Fire-and-forget: nunca bloqueia nem quebra a confirmação da inscrição.
+      try {
+        fetch("https://api.web3forms.com/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            access_key: "4a79d409-1ffb-480f-a20d-a7fd4d934ade",
+            subject: "🎯 Nova inscrição — Sorteio Mentoria VIP NaturalUp",
+            from_name: "Portal Ampla Facial",
+            name: form.nome.trim(),
+            email: form.email.trim().toLowerCase(),
+            WhatsApp: form.whatsapp.trim(),
+            "Profissão": form.profissao || "—",
+            "Cidade/Estado": form.cidade_estado || "—",
+            "Tempo de atuação": form.tempo_atuacao || "—",
+            "Realiza procedimentos": form.realiza_procedimentos || "—",
+            "Maior desafio": form.maior_desafio || "—",
+            "O que mais marcou na palestra": form.destaque_palestra || "—",
+            "Interesse na mentoria": form.interesse_mentoria || "—",
+            "Por que merece a vaga": form.porque_merece || "—",
+            Evento: "Palestra NaturalUp",
+          }),
+        }).catch(() => {});
+      } catch {}
+
       try {
         trackEvent("palestra_lead", { profissao: form.profissao }, form.email.trim().toLowerCase());
       } catch {}
