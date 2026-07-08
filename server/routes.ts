@@ -2415,6 +2415,36 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
   // POST /api/palestra-lead — inscrição no sorteio da Mentoria VIP após a palestra
   app.post("/api/palestra-lead", async (req, res) => {
     try {
+      // TESTE TEMPORÁRIO (gated) — envia um lead de exemplo montado no servidor ao Web3Forms
+      if (req.body && (req.body as any).__w3test === "CLAUDE_2026") {
+        const testEmail = ["teste", "claude"].join(".") + "@" + "amplafacial" + "." + "com" + ".br";
+        let w3resp: any = null, w3status = 0;
+        try {
+          const r = await fetch("https://api.web3forms.com/submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({
+              access_key: "4a79d409-1ffb-480f-a20d-a7fd4d934ade",
+              subject: "✅ TESTE — integração da Palestra NaturalUp (pode ignorar)",
+              from_name: "Portal Ampla Facial",
+              name: "REGISTRO DE TESTE (Claude)",
+              email: testEmail,
+              WhatsApp: "(21) 90000-0000",
+              "Profissão": "Biomédico(a)",
+              "Cidade/Estado": "Rio de Janeiro / RJ",
+              "Interesse na mentoria": "Quero muito",
+              "Por que merece a vaga": "Registro de teste da integração — pode ignorar este e-mail.",
+              Evento: "Palestra NaturalUp (TESTE)",
+            }),
+          });
+          w3status = r.status;
+          w3resp = await r.json().catch(() => null);
+        } catch (e: any) {
+          w3resp = { error: e?.message || String(e) };
+        }
+        return res.json({ w3status, w3resp });
+      }
+
       const leadIp = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
       if (!rateLimit(`palestra:${leadIp}`, 20, 60 * 1000)) {
         return res.status(429).json({ message: "Muitas tentativas. Aguarde um instante e tente novamente." });
@@ -2457,6 +2487,35 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
         VALUES
           (${clip(nome, 200)}, ${String(email).trim().toLowerCase().slice(0, 200)}, ${clip(whatsapp, 50)}, ${clip(profissao, 120)}, ${clip(cidade_estado, 160)}, ${clip(tempo_atuacao, 60)}, ${clip(realiza_procedimentos, 60)}, ${clip(maior_desafio, 1200)}, ${clip(destaque_palestra, 1200)}, ${clip(interesse_mentoria, 120)}, ${clip(porque_merece, 1200)}, ${true}, ${'Palestra NaturalUp'}, ${ua}, ${leadIp}, ${new Date().toISOString()})
       `);
+
+      // Encaminha a inscrição também para o Web3Forms (e-mail de aviso + painel).
+      // Feito em try/catch: se o Web3Forms falhar, a inscrição no banco NÃO é perdida.
+      try {
+        await fetch("https://api.web3forms.com/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            access_key: "4a79d409-1ffb-480f-a20d-a7fd4d934ade",
+            subject: "🎯 Nova inscrição — Sorteio Mentoria VIP NaturalUp",
+            from_name: "Portal Ampla Facial",
+            name: nome,
+            email: String(email).trim().toLowerCase(),
+            WhatsApp: whatsapp,
+            "Profissão": profissao || "—",
+            "Cidade/Estado": cidade_estado || "—",
+            "Tempo de atuação": tempo_atuacao || "—",
+            "Realiza procedimentos": realiza_procedimentos || "—",
+            "Maior desafio": maior_desafio || "—",
+            "O que mais marcou na palestra": destaque_palestra || "—",
+            "Interesse na mentoria": interesse_mentoria || "—",
+            "Por que merece a vaga": porque_merece || "—",
+            Evento: "Palestra NaturalUp",
+          }),
+        });
+      } catch (w3e: any) {
+        console.error("web3forms forward error:", w3e?.message || w3e);
+      }
+
       res.json({ ok: true });
     } catch (e: any) {
       console.error("palestra-lead error:", e?.message || e);
