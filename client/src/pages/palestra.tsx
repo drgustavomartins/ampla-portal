@@ -181,15 +181,15 @@ export default function PalestraPage() {
   return (
     <div style={{ minHeight: "100vh", background: CREAM, paddingBottom: 48 }}>
       {/* Cabeçalho */}
-      <div style={{ background: NAVY, padding: "34px 24px 40px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: NAVY, padding: "42px 24px 46px", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, background: `radial-gradient(circle at 50% -20%, ${GOLD}22, transparent 60%)` }} />
         <div style={{ position: "relative" }}>
-          <img src="/logo-transparent.png" alt="Ampla Facial" style={{ height: 46, margin: "0 auto 20px", display: "block" }}
-               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+          <img src="/logo-palestra.png" alt="Ampla Facial" style={{ height: "clamp(76px, 20vw, 100px)", width: "auto", margin: "0 auto 22px", display: "block", filter: "drop-shadow(0 3px 12px rgba(0,0,0,0.28))" }}
+               onError={(e) => { const t = e.currentTarget as HTMLImageElement; if (!t.dataset.fb) { t.dataset.fb = "1"; t.src = "/logo-transparent.png"; } else { t.style.display = "none"; } }} />
           <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: `${GOLD}1f`, border: `1px solid ${GOLD}55`, color: GOLD, padding: "6px 14px", borderRadius: 999, fontSize: 12, fontWeight: 600, letterSpacing: 0.4, marginBottom: 18 }}>
             <Trophy size={14} /> SORTEIO EXCLUSIVO PARA PRESENTES
           </div>
-          <h1 style={{ fontFamily: "var(--font-serif, Georgia, serif)", color: "#fff", fontSize: 27, lineHeight: 1.25, margin: "0 auto 12px", maxWidth: 440 }}>
+          <h1 style={{ fontFamily: "var(--font-serif, Georgia, serif)", color: "#fff", fontSize: "clamp(24px, 6.4vw, 31px)", lineHeight: 1.25, margin: "0 auto 12px", maxWidth: 440 }}>
             Concorra a uma <span style={{ color: GOLD }}>Mentoria VIP NaturalUp®</span> individual
           </h1>
           <p style={{ color: "#b9c2d4", fontSize: 14.5, lineHeight: 1.6, maxWidth: 400, margin: "0 auto" }}>
