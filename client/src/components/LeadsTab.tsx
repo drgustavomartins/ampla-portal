@@ -9,7 +9,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
-import { Users, Zap, Trophy, TrendingUp, Pencil, Trash2, Clock, Loader2, AlertTriangle } from "lucide-react";
+import { Users, Zap, Trophy, TrendingUp, Pencil, Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { FunnelTab } from "./FunnelTab";
 import { QuizLeadsTab } from "./QuizLeadsTab";
 
@@ -28,20 +28,6 @@ function TrialLeadsSection({ trialStudents, onConvert, onEdit }: {
     if (!expiresAt) return null;
     return Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000));
   };
-
-  const extendMutation = useMutation({
-    mutationFn: async ({ id, days }: { id: number; days: number }) => {
-      await apiRequest("PUT", `/api/admin/students/${id}/extend-trial`, { days });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/students/trial"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/students"] });
-      toast({ title: "Trial estendido com sucesso" });
-    },
-    onError: () => {
-      toast({ title: "Erro ao estender trial", variant: "destructive" });
-    },
-  });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -191,22 +177,16 @@ function TrialLeadsSection({ trialStudents, onConvert, onEdit }: {
                 </span>
               </div>
 
-              {/* Row 2: Extend pills + Action buttons */}
+              {/* Row 2: Action buttons */}
               <div className="flex items-center justify-between flex-wrap gap-2">
-                {/* Extend trial pills */}
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-3 h-3 text-muted-foreground" />
-                  {[7, 15, 30].map((days) => (
-                    <button
-                      key={days}
-                      onClick={() => extendMutation.mutate({ id: student.id, days })}
-                      disabled={extendMutation.isPending}
-                      className="rounded-full border border-gold/30 bg-gold/5 px-2.5 py-0.5 text-[11px] font-medium text-gold hover:bg-gold/15 transition-colors disabled:opacity-50"
-                    >
-                      +{days}d
-                    </button>
-                  ))}
-                </div>
+                {/* ATENCAO — Pills de "estender trial" removidas intencionalmente (jul/2026).
+                    O trial hoje e VITALICIO: access_expires_at fica NULL.
+                    O endpoint PUT /api/admin/students/:id/extend-trial SETA
+                    access_expires_at = hoje + N dias. Ou seja, clicar em "+7d" pegava um
+                    acesso permanente e o transformava num acesso que EXPIRA em 7 dias —
+                    o oposto do que o botao prometia. Nao rehabilitar sem antes corrigir
+                    o endpoint ou redefinir a regra de negocio do trial. */}
+                <div />
 
                 {/* Action buttons */}
                 <div className="flex items-center gap-1.5">
