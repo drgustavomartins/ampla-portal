@@ -3341,11 +3341,12 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       if (user.role === "student" && !user.approved) {
         return res.status(403).json({ message: "Sua conta ainda não foi aprovada. Aguarde o administrador." });
       }
-      if (user.role === "student" && !hasActiveAccess(user)) {
-        return res.status(403).json({ message: "Seu acesso expirou. Entre em contato com o administrador." });
-      }
-      // Trial users: allow login even if expired (they keep portal access for credits)
-      // The frontend will show locked modules and CTA to buy a plan
+      // Acesso expirado NAO bloqueia o login — de proposito.
+      // O aluno entra, navega o portal, ve o conteudo trancado e consegue
+      // clicar em Planos para renovar. O bloqueio acontece nas rotas de
+      // conteudo, que ja devolvem expired / accessType:"expired" /
+      // canSeeVideo:false, e o frontend mostra o cadeado com CTA.
+      // Bloquear aqui tirava do aluno justamente o botao de voltar a pagar.
 
       const { password, lockedUntil: _l, loginAttempts: _a, ...safeUser } = user;
       const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
