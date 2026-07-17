@@ -123,8 +123,10 @@ function SourceBadge({ source }: { source: string }) {
 function QuizBadge({ resultado }: { resultado: string }) {
   const labels: Record<string, string> = {
     vip: "VIP",
-    observador: "Observador",
-    digital: "Digital",
+    elite: "Elite",
+    pratica: "Módulo c/ Prática",
+    observador: "Observacional",
+    digital: "Plataforma",
     parcial: "Parcial",
   };
   return (

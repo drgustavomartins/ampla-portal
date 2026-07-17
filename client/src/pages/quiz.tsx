@@ -4,16 +4,20 @@ import { ArrowRight, CheckCircle2, Check, Loader2, Star, Trophy } from "lucide-r
 import { trackEvent } from "@/lib/funnel";
 
 // ─── Perguntas ────────────────────────────────────────────────────────────────
+// peso: quanto cada opção empurra o perfil para cada plano do checkout.
+// Chaves = planKey real em server/stripe-plans.ts:
+//   digital -> plataforma_anual | observador -> observador_essencial
+//   pratica -> modulo_pratica   | vip -> vip_completo | elite -> imersao_elite
 const PERGUNTAS = [
   {
     id: 1,
     pergunta: "Qual é a sua formação atual?",
     emoji: "🎓",
     opcoes: [
-      { id: "a", texto: "Ainda estou na graduação", peso: { observador: 1, digital: 2, vip: 0 } },
-      { id: "b", texto: "Recém-formado (menos de 2 anos)", peso: { observador: 2, digital: 1, vip: 1 } },
-      { id: "c", texto: "Formado há mais de 2 anos", peso: { observador: 1, digital: 1, vip: 2 } },
-      { id: "d", texto: "Já atuo com HOF regularmente", peso: { observador: 0, digital: 1, vip: 3 } },
+      { id: "a", texto: "Ainda estou na graduação", peso: { observador: 2, digital: 3, pratica: 0, vip: 0, elite: 0 } },
+      { id: "b", texto: "Recém-formado (menos de 2 anos)", peso: { observador: 2, digital: 2, pratica: 2, vip: 1, elite: 0 } },
+      { id: "c", texto: "Formado há mais de 2 anos", peso: { observador: 1, digital: 1, pratica: 2, vip: 2, elite: 1 } },
+      { id: "d", texto: "Já atuo com HOF regularmente", peso: { observador: 0, digital: 0, pratica: 1, vip: 2, elite: 3 } },
     ],
   },
   {
@@ -21,10 +25,10 @@ const PERGUNTAS = [
     pergunta: "Quantos procedimentos de HOF você realiza por mês?",
     emoji: "💉",
     opcoes: [
-      { id: "a", texto: "Nenhum ainda", peso: { observador: 2, digital: 2, vip: 0 } },
-      { id: "b", texto: "1 a 5 procedimentos", peso: { observador: 2, digital: 1, vip: 1 } },
-      { id: "c", texto: "6 a 15 procedimentos", peso: { observador: 1, digital: 1, vip: 2 } },
-      { id: "d", texto: "Mais de 15 procedimentos", peso: { observador: 0, digital: 0, vip: 3 } },
+      { id: "a", texto: "Nenhum ainda", peso: { observador: 3, digital: 3, pratica: 0, vip: 0, elite: 0 } },
+      { id: "b", texto: "1 a 5 procedimentos", peso: { observador: 2, digital: 1, pratica: 3, vip: 1, elite: 0 } },
+      { id: "c", texto: "6 a 15 procedimentos", peso: { observador: 1, digital: 0, pratica: 2, vip: 2, elite: 1 } },
+      { id: "d", texto: "Mais de 15 procedimentos", peso: { observador: 0, digital: 0, pratica: 0, vip: 2, elite: 3 } },
     ],
   },
   {
@@ -32,10 +36,10 @@ const PERGUNTAS = [
     pergunta: "O que você mais precisa para evoluir agora?",
     emoji: "🎯",
     opcoes: [
-      { id: "a", texto: "Base teórica sólida com evidências científicas", peso: { observador: 0, digital: 3, vip: 1 } },
-      { id: "b", texto: "Ver como funciona na prática clínica real", peso: { observador: 3, digital: 0, vip: 1 } },
-      { id: "c", texto: "Praticar com supervisão em pacientes reais", peso: { observador: 1, digital: 0, vip: 3 } },
-      { id: "d", texto: "Mentoria individual e acompanhamento contínuo", peso: { observador: 0, digital: 0, vip: 3 } },
+      { id: "a", texto: "Base teórica sólida com evidências científicas", peso: { observador: 1, digital: 4, pratica: 0, vip: 0, elite: 0 } },
+      { id: "b", texto: "Ver como funciona na prática clínica real", peso: { observador: 4, digital: 0, pratica: 1, vip: 0, elite: 0 } },
+      { id: "c", texto: "Praticar com supervisão em pacientes reais", peso: { observador: 1, digital: 0, pratica: 3, vip: 2, elite: 1 } },
+      { id: "d", texto: "Mentoria individual e acompanhamento contínuo", peso: { observador: 0, digital: 0, pratica: 0, vip: 3, elite: 2 } },
     ],
   },
   {
@@ -43,10 +47,10 @@ const PERGUNTAS = [
     pergunta: "Qual é o seu maior obstáculo hoje?",
     emoji: "🔑",
     opcoes: [
-      { id: "a", texto: "Insegurança técnica nos protocolos", peso: { observador: 2, digital: 2, vip: 1 } },
-      { id: "b", texto: "Falta de prática supervisionada", peso: { observador: 2, digital: 0, vip: 2 } },
-      { id: "c", texto: "Dificuldade em captar e fidelizar pacientes", peso: { observador: 0, digital: 1, vip: 3 } },
-      { id: "d", texto: "Quero um protocolo próprio e diferenciado", peso: { observador: 0, digital: 1, vip: 3 } },
+      { id: "a", texto: "Insegurança técnica nos protocolos", peso: { observador: 2, digital: 3, pratica: 2, vip: 0, elite: 0 } },
+      { id: "b", texto: "Falta de prática supervisionada", peso: { observador: 1, digital: 0, pratica: 3, vip: 2, elite: 0 } },
+      { id: "c", texto: "Dificuldade em captar e fidelizar pacientes", peso: { observador: 0, digital: 0, pratica: 0, vip: 1, elite: 3 } },
+      { id: "d", texto: "Quero um protocolo próprio e diferenciado", peso: { observador: 0, digital: 0, pratica: 0, vip: 2, elite: 3 } },
     ],
   },
   {
@@ -54,61 +58,109 @@ const PERGUNTAS = [
     pergunta: "Como você aprende melhor?",
     emoji: "🧠",
     opcoes: [
-      { id: "a", texto: "Assistindo aulas gravadas no meu ritmo", peso: { observador: 0, digital: 3, vip: 0 } },
-      { id: "b", texto: "Observando casos reais ao vivo", peso: { observador: 3, digital: 0, vip: 1 } },
-      { id: "c", texto: "Praticando com feedback imediato", peso: { observador: 1, digital: 0, vip: 3 } },
-      { id: "d", texto: "Com acompanhamento personalizado contínuo", peso: { observador: 0, digital: 0, vip: 3 } },
+      { id: "a", texto: "Assistindo aulas gravadas no meu ritmo", peso: { observador: 0, digital: 4, pratica: 0, vip: 0, elite: 0 } },
+      { id: "b", texto: "Observando casos reais ao vivo", peso: { observador: 4, digital: 0, pratica: 0, vip: 0, elite: 0 } },
+      { id: "c", texto: "Praticando com feedback imediato", peso: { observador: 0, digital: 0, pratica: 3, vip: 2, elite: 1 } },
+      { id: "d", texto: "Com acompanhamento personalizado contínuo", peso: { observador: 0, digital: 0, pratica: 0, vip: 3, elite: 2 } },
+    ],
+  },
+  {
+    id: 6,
+    pergunta: "Qual é o seu objetivo com a prática agora?",
+    emoji: "🖐️",
+    opcoes: [
+      { id: "a", texto: "Ainda não quero prática — quero construir a base teórica primeiro", peso: { observador: 1, digital: 5, pratica: 0, vip: 0, elite: 0 } },
+      { id: "b", texto: "Quero dominar um tema específico antes de expandir", peso: { observador: 0, digital: 0, pratica: 5, vip: 0, elite: 0 } },
+      { id: "c", texto: "Quero formação completa em todas as técnicas", peso: { observador: 1, digital: 0, pratica: 0, vip: 5, elite: 1 } },
+      { id: "d", texto: "Quero a formação completa + a rotina de clínica, gestão e marca própria", peso: { observador: 0, digital: 0, pratica: 0, vip: 1, elite: 5 } },
     ],
   },
 ];
 
 // ─── Resultados por plano ─────────────────────────────────────────────────────
+// Nomes e benefícios espelham server/stripe-plans.ts — se divergirem, o lead
+// chega no checkout procurando um plano que não existe.
 const RESULTADOS = {
   digital: {
-    plano: "Acesso Digital",
-    tag: "Perfeito para iniciantes",
+    plano: "Plataforma Online",
+    tag: "Perfeito para começar",
     cor: "#3b82f6",
     emoji: "📚",
-    descricao: "Você está no momento certo para construir uma base científica sólida. O acesso digital vai te dar todo o conteúdo teórico com os protocolos mais atuais em HOF, no seu ritmo, com materiais que você pode consultar sempre que precisar.",
+    descricao: "Você está no momento certo para construir uma base científica sólida. A Plataforma Online te dá todo o conteúdo teórico com os protocolos mais atuais em HOF, no seu ritmo, com materiais que você pode consultar sempre que precisar.",
     beneficios: [
-      "4 módulos completos com evidências científicas",
+      "Todos os módulos do portal com evidências científicas",
       "Materiais complementares em PDF e áudio",
-      "Acesso por 1 ano — estude no seu ritmo",
-      "Certificado de participação",
+      "12 meses de acesso — estude no seu ritmo",
+      "Método NaturalUp® incluído",
+      "Até 7 dias para desistência",
     ],
-    cta: "Conhecer o Acesso Digital",
-    whatsapp: "Olá! Fiz o quiz da Ampla Facial e meu perfil indicou o Acesso Digital. Gostaria de saber mais!",
+    cta: "Conhecer a Plataforma Online",
+    whatsapp: "Olá! Fiz o quiz da Ampla Facial e meu perfil indicou a Plataforma Online. Gostaria de saber mais!",
   },
   observador: {
-    plano: "Plano Observador",
+    plano: "Acompanhamento Observacional",
     tag: "Ideal para o seu perfil",
     cor: "#D4A843",
     emoji: "👁️",
-    descricao: "Você precisa ver para aprender — e isso é exatamente o que o Plano Observador oferece. Você vai acompanhar a rotina clínica real do Dr. Gustavo presencialmente, entendendo como os protocolos funcionam na prática com pacientes reais.",
+    descricao: "Você precisa ver para aprender — e é exatamente isso que o Acompanhamento Observacional oferece. Você vai acompanhar a rotina clínica real do Dr. Gustavo presencialmente, entendendo como os protocolos funcionam na prática com pacientes reais.",
     beneficios: [
-      "Observação clínica presencial na clínica do Dr. Gustavo",
-      "4 módulos gravados inclusos",
-      "Dimensão comercial e gestão de pacientes",
+      "24h de observação clínica presencial (~6 turnos de 4h)",
+      "Todos os módulos gravados inclusos",
+      "Acompanhamento quinzenal ao vivo",
+      "3 meses de canal direto com o Dr. Gustavo",
       "Certificado de participação",
     ],
-    cta: "Conhecer o Plano Observador",
-    whatsapp: "Olá! Fiz o quiz da Ampla Facial e meu perfil indicou o Plano Observador. Gostaria de saber mais!",
+    cta: "Conhecer o Acompanhamento Observacional",
+    whatsapp: "Olá! Fiz o quiz da Ampla Facial e meu perfil indicou o Acompanhamento Observacional. Gostaria de saber mais!",
+  },
+  pratica: {
+    plano: "Módulo Avulso com Prática",
+    tag: "Foco em um tema",
+    cor: "#D4A843",
+    emoji: "🖐️",
+    descricao: "Seu perfil mostra que você quer colocar a mão em um tema específico antes de expandir. O Módulo Avulso com Prática te dá 8h de prática hands-on em pacientes modelo no tema que você escolher, com supervisão direta do Dr. Gustavo, mais 8h de observação clínica.",
+    beneficios: [
+      "Escolha 1 tema: Toxina, Preenchedores, Bioestimuladores ou Biorregeneradores",
+      "8h de prática hands-on com pacientes modelo (2 períodos de 4h)",
+      "8h de observação clínica ao lado do Dr. Gustavo",
+      "3 meses de canal direto para tirar dúvidas",
+      "Certificado do tema com carga horária",
+    ],
+    cta: "Conhecer o Módulo com Prática",
+    whatsapp: "Olá! Fiz o quiz da Ampla Facial e meu perfil indicou o Módulo Avulso com Prática. Gostaria de saber mais!",
   },
   vip: {
-    plano: "Mentoria VIP",
+    plano: "Acompanhamento VIP",
     tag: "Você está pronto para o próximo nível",
     cor: "#D4A843",
     emoji: "⭐",
-    descricao: "Seu perfil mostra que você está pronto para uma transformação real. A Mentoria VIP oferece acompanhamento individual, prática supervisionada com pacientes modelo e acesso direto ao Dr. Gustavo — tudo para você construir seu próprio protocolo diferenciado.",
+    descricao: "Seu perfil mostra que você está pronto para uma transformação real. O Acompanhamento VIP oferece prática supervisionada com pacientes modelo, mentoria individual por 6 meses e acesso direto ao Dr. Gustavo — tudo para você construir seu próprio protocolo diferenciado.",
     beneficios: [
-      "Acompanhamento individual por 6 meses",
-      "Canal direto com o Dr. Gustavo",
-      "Prática com pacientes modelo (planos presenciais)",
-      "Método NaturalUp® completo",
+      "16h de prática hands-on com pacientes modelo",
+      "Supervisão direta do Dr. Gustavo em todos os atendimentos",
+      "Mentoria individual e canal direto por 6 meses",
+      "Método NaturalUp® completo — o 5º módulo",
       "Acompanhamento quinzenal ao vivo",
     ],
     cta: "Agendar entrevista com o Dr. Gustavo",
-    whatsapp: "Olá! Fiz o quiz da Ampla Facial e meu perfil indicou a Mentoria VIP. Gostaria de agendar uma conversa!",
+    whatsapp: "Olá! Fiz o quiz da Ampla Facial e meu perfil indicou o Acompanhamento VIP. Gostaria de agendar uma conversa!",
+  },
+  elite: {
+    plano: "Acompanhamento Elite",
+    tag: "O mais alto nível",
+    cor: "#D4A843",
+    emoji: "👑",
+    descricao: "Seu perfil mostra que você não busca só técnica — busca a operação inteira. O Acompanhamento Elite é um ano ao lado do Dr. Gustavo: 32h de prática, 7 dias clínicos completos, os bastidores da clínica e a licença exclusiva de uso da marca NaturalUp®.",
+    beneficios: [
+      "Tudo do Acompanhamento VIP, acumulativo",
+      "32h de prática hands-on — o dobro da VIP",
+      "7 dias clínicos completos ao lado do Dr. Gustavo",
+      "12 meses de mentoria individual e canal direto prioritário",
+      "Licença oficial de uso da marca NaturalUp® — exclusiva deste plano",
+      "Acesso vitalício ao portal",
+    ],
+    cta: "Agendar entrevista com o Dr. Gustavo",
+    whatsapp: "Olá! Fiz o quiz da Ampla Facial e meu perfil indicou o Acompanhamento Elite. Gostaria de agendar uma conversa!",
   },
 };
 
@@ -117,7 +169,7 @@ type PlanoKey = keyof typeof RESULTADOS;
 type Respostas = Record<number, string[]>;
 
 function calcularResultado(respostas: Respostas): PlanoKey {
-  const pontos = { digital: 0, observador: 0, vip: 0 };
+  const pontos = { digital: 0, observador: 0, pratica: 0, vip: 0, elite: 0 };
 
   PERGUNTAS.forEach((q) => {
     const selecionadas = respostas[q.id] || [];
@@ -126,15 +178,22 @@ function calcularResultado(respostas: Respostas): PlanoKey {
       if (opc) {
         pontos.digital += opc.peso.digital;
         pontos.observador += opc.peso.observador;
+        pontos.pratica += opc.peso.pratica;
         pontos.vip += opc.peso.vip;
+        pontos.elite += opc.peso.elite;
       }
     });
   });
 
-  const max = Math.max(pontos.digital, pontos.observador, pontos.vip);
-  if (pontos.vip === max) return "vip";
+  const max = Math.max(pontos.digital, pontos.observador, pontos.pratica, pontos.vip, pontos.elite);
+  // Desempate conservador: em caso de empate vence o MENOR ticket. Um plano caro
+  // só é recomendado quando vence com folga. Antes o VIP vencia todo empate e
+  // acabava recomendado em 77% dos caminhos possíveis, o que anulava a triagem.
+  if (pontos.digital === max) return "digital";
   if (pontos.observador === max) return "observador";
-  return "digital";
+  if (pontos.pratica === max) return "pratica";
+  if (pontos.vip === max) return "vip";
+  return "elite";
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
