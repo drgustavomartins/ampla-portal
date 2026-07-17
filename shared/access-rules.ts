@@ -100,6 +100,26 @@ export const MENTORIA_ATIVA_PLAN_KEYS = new Set<string>([
   "workshop",
 ]);
 
+/**
+ * Planos com canal direto com o Dr. Gustavo ("Tire Dúvidas").
+ * Espelha hasDirectChannel em server/stripe-plans.ts. O canal começa a partir
+ * do Acompanhamento Observacional e do Módulo Avulso com Prática (tema único).
+ * A Plataforma Online (plataforma_anual) NÃO tem canal direto — é o plano
+ * "online", sem contato com o mentor.
+ */
+export const DIRECT_CHANNEL_PLAN_KEYS = new Set<string>([
+  "observador_essencial",
+  // observador_avancado e observador_intensivo tem hasDirectChannel: false no
+  // catalogo (ambos deprecated). Espelhado de proposito, nao e esquecimento.
+  "modulo_pratica",
+  "imersao",
+  "vip_online",
+  "vip_presencial",
+  "vip_completo",
+  "imersao_elite",
+  "extensao_acompanhamento",
+]);
+
 /** Mapa: tema → IDs dos módulos liberados pelo plano `modulo_pratica`. */
 export const THEME_TO_MODULE_IDS: Record<string, number[]> = {
   toxina: [6, 2],
@@ -224,6 +244,19 @@ export function hasMentoriaAtiva(user: AccessUser | null | undefined): boolean {
   if (user.role === "admin" || user.role === "super_admin") return true;
   if (!user.planKey) return false;
   return MENTORIA_ATIVA_PLAN_KEYS.has(user.planKey);
+}
+
+/**
+ * True se o plano do aluno dá direito ao canal direto com o Dr. Gustavo.
+ * Atenção: é só a regra DO PLANO. O toggle manual `supportAccess` e o prazo
+ * `supportExpiresAt` são checados separadamente no call site — um aluno pode
+ * ter o plano certo e mesmo assim estar com o canal desligado ou expirado.
+ */
+export function planHasDirectChannel(user: AccessUser | null | undefined): boolean {
+  if (!user) return false;
+  if (user.role === "admin" || user.role === "super_admin") return true;
+  if (!user.planKey) return false;
+  return DIRECT_CHANNEL_PLAN_KEYS.has(user.planKey);
 }
 
 /**

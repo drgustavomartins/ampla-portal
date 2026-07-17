@@ -30,7 +30,7 @@ import { stripPhone } from "@/lib/phone";
 import { SelectThemeModal } from "@/components/SelectThemeModal";
 import { PhoneInput } from "@/components/PhoneInput";
 import type { Module, Lesson, LessonProgress, Plan } from "@shared/schema";
-import { isLifetimePlan, hasMentoriaAtiva } from "@shared/access-rules";
+import { isLifetimePlan, hasMentoriaAtiva, planHasDirectChannel } from "@shared/access-rules";
 import { CreditsDashboardCard } from "@/components/CreditsDashboardCard";
 import { CreditsFullSection } from "@/components/CreditsFullSection";
 import { HeroContinue, type HeroMode } from "@/components/netflix/HeroContinue";
@@ -322,7 +322,11 @@ export default function StudentDashboard() {
   const isExpiringSoon = !isLifetime && rawDaysLeft !== null && rawDaysLeft > 0 && rawDaysLeft <= 3;
   // Granular access control
   const communityEnabled = (user as any)?.communityAccess !== false;
-  const supportEnabled = (user as any)?.supportAccess !== false;
+  // O canal direto comeca no Acompanhamento Observacional e no Modulo Avulso
+  // com Pratica. A Plataforma Online e o trial nao tem — antes tinham, porque
+  // o unico portao era supportAccess, que vem .default(true) no schema.
+  const planoTemCanal = planHasDirectChannel(user as any);
+  const supportEnabled = planoTemCanal && (user as any)?.supportAccess !== false;
   const supportExpiry = (user as any)?.supportExpiresAt || user?.accessExpiresAt;
   const rawSupportDaysLeft = supportExpiry
     ? Math.ceil((new Date(supportExpiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
@@ -1765,11 +1769,11 @@ export default function StudentDashboard() {
                   <p className="text-xs text-muted-foreground leading-relaxed">Envie suas perguntas diretamente e receba orientações personalizadas do mentor.</p>
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center rounded-full bg-destructive/15 border border-destructive/30 px-2 py-0.5 text-[10px] font-semibold text-destructive uppercase tracking-wider">
-                      {!supportEnabled ? "Acesso Desabilitado" : "Acesso Expirado"}
+                      {!planoTemCanal ? "A partir do Acompanhamento Observacional" : !supportEnabled ? "Acesso Desabilitado" : "Acesso Expirado"}
                     </span>
                   </div>
                   <span className="inline-flex items-center min-h-[44px] py-2 text-xs font-medium text-muted-foreground">
-                    Enviar dúvida <ChevronRight className="w-3 h-3 ml-1" />
+                    {!planoTemCanal ? "Ver planos" : "Enviar dúvida"} <ChevronRight className="w-3 h-3 ml-1" />
                   </span>
                 </div>
               ) : (
