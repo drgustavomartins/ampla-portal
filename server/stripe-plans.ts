@@ -135,6 +135,9 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
   },
   modulo_avulso: {
     key: "modulo_avulso",
+    deprecated: true,  // LEGADO: fora de venda desde 17/07/2026. Substituído pelo
+                       // modulo_pratica (Módulo Avulso com Prática). Mantido só
+                       // para compatibilidade com alunos que já compraram.
     name: "Módulo Avulso",
     description: "Escolha 1 módulo e domine aquela técnica com profundidade",
     price: 249000,
@@ -165,6 +168,9 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
 
   pacote_completo: {
     key: "pacote_completo",
+    deprecated: true,  // LEGADO: fora de venda desde 17/07/2026. O único plano
+                       // digital à venda passa a ser plataforma_anual (R$479/ano).
+                       // Mantido só para compatibilidade com alunos que já compraram.
     name: "Curso Online",
     description: "Todos os módulos online — estude no seu ritmo",
     price: 597000,
@@ -879,6 +885,46 @@ export const CASHBACK_RATES: Record<PlanKey, number> = {
   observacao_extra_3: 0.05,
   workshop: 0,
 };
+
+// ─── Comissão de vendas ──────────────────────────────────────────────────────
+/**
+ * Percentual de comissão POR VENDEDOR, definido pelo `group` do plano.
+ * Vigente desde 17/07/2026. Beneficiários atuais: Joice e Felipe Panzera.
+ *
+ * Os dois recebem na MESMA venda, independente de quem fechou — portanto o
+ * custo real por venda é o dobro da taxa abaixo (ex.: digital = 30% no total).
+ *
+ * Regras que acompanham (ver documento de proposta de comissionamento):
+ *   • Base de cálculo = valor LÍQUIDO efetivamente pago (pós-cupom).
+ *   • Em upgrade, a base é a DIFERENÇA paga, não o valor cheio do plano destino.
+ *   • Pagamento acompanha o RECEBIMENTO (parcela a parcela), não a venda.
+ *   • Estorno/chargeback reverte a comissão proporcional.
+ *   • Renovação anual da plataforma paga comissão cheia de novo.
+ *
+ * NÃO usar practiceHours para classificar: os planos `observador` têm
+ * practiceHours = 0 (o aluno observa, não executa) mas são entrega presencial.
+ */
+export const COMMISSION_RATES: Record<PlanConfig["group"], number> = {
+  digital: 0.15,           // Plataforma Online — sem custo de entrega
+  observador: 0.05,        // Observação clínica presencial
+  vip: 0.05,               // VIP, Elite, Módulo c/ Prática, Extensão
+  horas: 0,                // Recompra de aluno já ativo — não comissiona
+  observacao_extra: 0,     // Recompra de aluno já ativo — não comissiona
+};
+
+/**
+ * Comissão de UM vendedor sobre um valor líquido recebido.
+ * @param planKey     plano vendido
+ * @param netAmount   valor líquido em centavos que efetivamente entrou
+ *                    (pós-cupom; em upgrade, apenas a diferença paga;
+ *                     negativo em caso de estorno → comissão negativa)
+ * @returns centavos devidos a CADA vendedor (arredondado)
+ */
+export function commissionPerSeller(planKey: PlanKey, netAmount: number): number {
+  const plan = PLANS[planKey];
+  if (!plan) return 0;
+  return Math.round(netAmount * COMMISSION_RATES[plan.group]);
+}
 
 // ─── Formatar preço em BRL ───────────────────────────────────────────────────
 export function formatBRL(centavos: number): string {
