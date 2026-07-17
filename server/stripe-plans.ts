@@ -71,7 +71,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     hasLiveEvents: false,
     hasNaturalUp: false,
     naturalUpLicense: false,
-    canUpgradeTo: ["acesso_vitalicio", "modulo_avulso", "pacote_completo", "observador_essencial", "observador_avancado", "observador_intensivo", "imersao", "vip_online", "vip_presencial", "vip_completo"],
+    canUpgradeTo: ["plataforma_anual", "modulo_avulso", "pacote_completo", "observador_essencial", "observador_avancado", "observador_intensivo", "imersao", "vip_online", "vip_presencial", "vip_completo"],
   },
   plataforma_anual: {
     key: "plataforma_anual",
@@ -104,7 +104,8 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
   },
   acesso_vitalicio: {
     key: "acesso_vitalicio",
-    hidden: true, // LEGADO: fora de venda. Mantido para os 3 alunos que compraram vitalício.
+    hidden: true,      // LEGADO: fora de venda desde 16/07/2026.
+    deprecated: true,  // Mantido só para os alunos que compraram vitalício na época.
     name: "Plataforma Online (vitalício — legado)",
     description: "Acesso vitalício às aulas e materiais — estude no seu ritmo, sem interações ao vivo",
     price: 47900,

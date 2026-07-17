@@ -191,6 +191,12 @@ export function registerStripeRoutes(app: Express) {
 
     const { planKey, isUpgrade, creditsToUse, referralCode } = req.body as { planKey: PlanKey; isUpgrade?: boolean; creditsToUse?: number; referralCode?: string };
     const plan = PLANS[planKey];
+      // Planos deprecated (ex.: acesso_vitalicio) nao podem mais ser comprados.
+      // Quem ja comprou mantem o plano; ninguem novo entra — nem por POST direto.
+      if ((plan as any)?.deprecated) {
+        return res.status(410).json({ message: "Este plano não está mais disponível para compra." });
+      }
+
     if (!plan) return res.status(400).json({ message: "Plano inválido" });
 
     const [user] = await db.select().from(users).where(eq(users.id, auth.userId));
@@ -427,6 +433,12 @@ export function registerStripeRoutes(app: Express) {
 
     const { planKey } = req.body as { planKey: PlanKey };
     const plan = PLANS[planKey];
+      // Planos deprecated (ex.: acesso_vitalicio) nao podem mais ser comprados.
+      // Quem ja comprou mantem o plano; ninguem novo entra — nem por POST direto.
+      if ((plan as any)?.deprecated) {
+        return res.status(410).json({ message: "Este plano não está mais disponível para compra." });
+      }
+
     if (!plan) return res.status(400).json({ message: "Plano inválido" });
 
     const [user] = await db.select().from(users).where(eq(users.id, auth.userId));
@@ -1051,6 +1063,12 @@ export function registerPublicStripeRoutes(app: Express) {
 
     const { planKey, referralCode, email } = req.body as { planKey: PlanKey; referralCode?: string; email?: string };
     const plan = PLANS[planKey];
+      // Planos deprecated (ex.: acesso_vitalicio) nao podem mais ser comprados.
+      // Quem ja comprou mantem o plano; ninguem novo entra — nem por POST direto.
+      if ((plan as any)?.deprecated) {
+        return res.status(410).json({ message: "Este plano não está mais disponível para compra." });
+      }
+
     if (!plan) return res.status(400).json({ message: "Plano inválido" });
 
     // Bloqueia compra da Plataforma Online quando as 200 vagas esgotarem
@@ -1178,6 +1196,12 @@ export function registerPublicStripeRoutes(app: Express) {
         email?: string;
       };
       const plan = PLANS[planKey];
+      // Planos deprecated (ex.: acesso_vitalicio) nao podem mais ser comprados.
+      // Quem ja comprou mantem o plano; ninguem novo entra — nem por POST direto.
+      if ((plan as any)?.deprecated) {
+        return res.status(410).json({ message: "Este plano não está mais disponível para compra." });
+      }
+
       if (!plan) return res.status(400).json({ message: "Plano inválido" });
 
       // Bloqueia compra da Plataforma Online quando as 200 vagas esgotarem
