@@ -14,10 +14,10 @@ type PaidPlanKey =
 
 const WHATSAPP_MESSAGES: Record<PaidPlanKey, string> = {
   plataforma_anual: "Olá Dr. Gustavo, tenho interesse na Plataforma Online da Ampla Facial.",
-  modulo_pratica: "Olá Dr. Gustavo, tenho interesse no Módulo Avulso com Prática. Quero saber mais sobre qual tema escolher.",
-  observador_essencial: "Olá Dr. Gustavo, tenho interesse no Acompanhamento Observacional da Ampla Facial.",
-  vip_completo: "Olá Dr. Gustavo, tenho interesse no Acompanhamento VIP da Ampla Facial.",
-  imersao_elite: "Olá Dr. Gustavo, tenho interesse no Acompanhamento Elite (bastidores + 32h prática + 7 dias clínicos + licença NaturalUp). Podemos conversar?",
+  modulo_pratica: "Olá Dr. Gustavo, tenho interesse no Módulo Avulso com Prática e gostaria de parcelar. Pode me enviar o link de pagamento parcelado? Também quero saber sobre qual tema escolher.",
+  observador_essencial: "Olá Dr. Gustavo, tenho interesse no Acompanhamento Observacional e gostaria de parcelar. Pode me enviar o link de pagamento parcelado?",
+  vip_completo: "Olá Dr. Gustavo, tenho interesse no Acompanhamento VIP e gostaria de parcelar. Pode me enviar o link de pagamento parcelado?",
+  imersao_elite: "Olá Dr. Gustavo, tenho interesse no Acompanhamento Elite (bastidores + 32h prática + 7 dias clínicos + licença NaturalUp) e gostaria de parcelar. Podemos conversar?",
 };
 
 const whatsappUrl = (key: PaidPlanKey) => `${WHATSAPP_URL}?text=${encodeURIComponent(WHATSAPP_MESSAGES[key])}`;
@@ -293,11 +293,17 @@ export default function PlanosPublicos() {
                   )}
                 </button>
                 <a
+
                   href={whatsappUrl("plataforma_anual")}
+
                   target="_blank" rel="noopener noreferrer"
+
                   className="block text-center text-[11px] text-white/40 hover:text-white/70 transition-colors py-1"
+
                 >
+
                   Prefiro conversar antes
+
                 </a>
               </div>
             </div>
@@ -374,15 +380,21 @@ export default function PlanosPublicos() {
                   {loadingPlan === "modulo_pratica" ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> Aguarde...</>
                   ) : (
-                    <><span className="whitespace-nowrap">Pagar Agora</span> <ArrowRight className="h-4 w-4" /></>
+                    <><span className="whitespace-nowrap">Pagar à vista</span> <ArrowRight className="h-4 w-4" /></>
                   )}
                 </button>
                 <a
+
                   href={whatsappUrl("modulo_pratica")}
+
                   target="_blank" rel="noopener noreferrer"
-                  className="block text-center text-[11px] text-white/40 hover:text-white/70 transition-colors py-1"
+
+                  className="flex items-center justify-center gap-1.5 text-center text-[12px] font-semibold text-emerald-400/90 hover:text-emerald-300 transition-colors py-1.5"
+
                 >
-                  Prefiro conversar antes
+
+                  Quero parcelar em 12x — falar no WhatsApp
+
                 </a>
               </div>
             </div>
@@ -457,15 +469,21 @@ export default function PlanosPublicos() {
                   {loadingPlan === "observador_essencial" ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> Aguarde...</>
                   ) : (
-                    <><span className="whitespace-nowrap">Pagar Agora</span> <ArrowRight className="h-4 w-4" /></>
+                    <><span className="whitespace-nowrap">Pagar à vista</span> <ArrowRight className="h-4 w-4" /></>
                   )}
                 </button>
                 <a
+
                   href={whatsappUrl("observador_essencial")}
+
                   target="_blank" rel="noopener noreferrer"
-                  className="block text-center text-[11px] text-white/40 hover:text-white/70 transition-colors py-1"
+
+                  className="flex items-center justify-center gap-1.5 text-center text-[12px] font-semibold text-emerald-400/90 hover:text-emerald-300 transition-colors py-1.5"
+
                 >
-                  Prefiro conversar antes
+
+                  Quero parcelar em 12x — falar no WhatsApp
+
                 </a>
               </div>
             </div>
@@ -554,15 +572,21 @@ export default function PlanosPublicos() {
                   {loadingPlan === "vip_completo" ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> Aguarde...</>
                   ) : (
-                    <><span className="whitespace-nowrap">Pagar Agora</span> <ArrowRight className="h-4 w-4" /></>
+                    <><span className="whitespace-nowrap">Pagar à vista</span> <ArrowRight className="h-4 w-4" /></>
                   )}
                 </button>
                 <a
+
                   href={whatsappUrl("vip_completo")}
+
                   target="_blank" rel="noopener noreferrer"
-                  className="block text-center text-[11px] text-white/40 hover:text-white/70 transition-colors py-1"
+
+                  className="flex items-center justify-center gap-1.5 text-center text-[12px] font-semibold text-emerald-400/90 hover:text-emerald-300 transition-colors py-1.5"
+
                 >
-                  Prefiro conversar antes
+
+                  Quero parcelar em 12x — falar no WhatsApp
+
                 </a>
               </div>
             </div>
@@ -633,15 +657,21 @@ export default function PlanosPublicos() {
                   {loadingPlan === "imersao_elite" ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> Aguarde...</>
                   ) : (
-                    <><span className="whitespace-nowrap">Pagar Agora</span> <ArrowRight className="h-4 w-4" /></>
+                    <><span className="whitespace-nowrap">Pagar à vista</span> <ArrowRight className="h-4 w-4" /></>
                   )}
                 </button>
                 <a
+
                   href={whatsappUrl("imersao_elite")}
+
                   target="_blank" rel="noopener noreferrer"
-                  className="block text-center text-[11px] text-white/40 hover:text-white/70 transition-colors py-1"
+
+                  className="flex items-center justify-center gap-1.5 text-center text-[12px] font-semibold text-emerald-400/90 hover:text-emerald-300 transition-colors py-1.5"
+
                 >
-                  Prefiro conversar antes
+
+                  Quero parcelar em 12x — falar no WhatsApp
+
                 </a>
               </div>
             </div>
