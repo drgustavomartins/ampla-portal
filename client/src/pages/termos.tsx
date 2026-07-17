@@ -66,7 +66,7 @@ export default function TermosPage() {
         <section>
           <h2 className="text-white text-base font-semibold mb-2">6. Cancelamento e rescisão</h2>
           <p>
-            O acesso pode ser cancelado a qualquer momento mediante solicitação pelo WhatsApp (21) 97631-0365 ou por
+            O acesso pode ser cancelado a qualquer momento mediante solicitação pelo WhatsApp (21) 97626-3881 ou por
             e-mail. Planos pagos estão sujeitos à política de reembolso vigente na data da contratação.
           </p>
         </section>
@@ -77,7 +77,7 @@ export default function TermosPage() {
             Dúvidas sobre estes termos podem ser enviadas para{" "}
             <a href="mailto:contato@amplafacial.com.br" className="text-gold underline">contato@amplafacial.com.br</a>{" "}
             ou pelo WhatsApp{" "}
-            <a href="https://wa.me/5521976263881" className="text-gold underline" target="_blank">(21) 97631-0365</a>.
+            <a href="https://wa.me/5521976263881" className="text-gold underline" target="_blank">(21) 97626-3881</a>.
           </p>
         </section>
 

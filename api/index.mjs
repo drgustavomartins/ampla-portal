@@ -358,7 +358,7 @@ Voce tem R$ ${(h/100).toFixed(2).replace(".",",")} em creditos que serao aplicad
             <a href="https://portal.amplafacial.com.br" style="display:inline-block;background:#D4A843;color:#0A1628;padding:14px 32px;border-radius:10px;font-weight:bold;font-size:15px;text-decoration:none">Acessar a plataforma</a>
           </div>
           <p style="color:#666;font-size:12px;text-align:center;margin:0">
-            D\xFAvidas? Fale comigo pelo WhatsApp: <a href="https://wa.me/5521976310365" style="color:#D4A843">(21) 97631-0365</a>
+            D\xFAvidas? Fale comigo pelo WhatsApp: <a href="https://wa.me/5521976263881" style="color:#D4A843">(21) 97626-3881</a>
           </p>
         </div>
       `})}catch(i){console.error("[email] Erro ao enviar email de boas-vindas:",i)}}async function Sre(t,e){if(!Ji)return console.error("[password-reset] RESEND_API_KEY ausente \u2014 n\xE3o foi poss\xEDvel enviar email",{email:t.email,userName:t.name}),{ok:!1,error:"resend_not_configured"};let i=t.name.split(" ")[0],n=`https://portal.amplafacial.com.br/#/reset-password/${e}`;try{let a=await Ji.emails.send({from:"Dr. Gustavo Martins <gustavo@clinicagustavomartins.com.br>",to:t.email,subject:"Redefini\xE7\xE3o de senha \u2014 Ampla Facial",html:`

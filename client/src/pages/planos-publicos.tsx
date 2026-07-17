@@ -334,7 +334,7 @@ export default function PlanosPublicos() {
 
               <div className="mt-6 min-h-[100px] text-center">
                 <p className="text-[10px] uppercase tracking-wider text-white/40 whitespace-nowrap">12x de</p>
-                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-orange-400 whitespace-nowrap leading-none">R$ 500</span>
+                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-orange-400 whitespace-nowrap leading-none">R$ 560</span>
                 <p className="text-xs text-white/40 mt-1 whitespace-nowrap">ou R$ 5.997 à vista</p>
               </div>
 
@@ -425,7 +425,7 @@ export default function PlanosPublicos() {
               {/* Price */}
               <div className="mt-6 min-h-[100px] text-center">
                 <p className="text-[10px] uppercase tracking-wider text-white/40 whitespace-nowrap">12x de</p>
-                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-emerald-400 whitespace-nowrap leading-none">R$ 416</span>
+                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-emerald-400 whitespace-nowrap leading-none">R$ 467</span>
                 <p className="text-xs text-white/40 mt-1 whitespace-nowrap">ou R$ 4.997 à vista</p>
               </div>
 
@@ -523,9 +523,9 @@ export default function PlanosPublicos() {
 
               {/* Price */}
               <div className="mt-6 min-h-[100px] text-center">
-                <p className="text-[10px] uppercase tracking-wider text-white/40 whitespace-nowrap">12x de</p>
-                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-purple-400 whitespace-nowrap leading-none">R$ 1.446</span>
-                <p className="text-xs text-white/40 mt-1 whitespace-nowrap">ou R$ 17.350 à vista</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/40 whitespace-nowrap">à vista</p>
+                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-purple-400 whitespace-nowrap leading-none">R$ 17.350</span>
+                <p className="text-xs text-white/40 mt-1 whitespace-nowrap">em até 12x — consulte no WhatsApp</p>
               </div>
 
               <div className="mt-3 flex justify-center">

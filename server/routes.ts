@@ -65,7 +65,7 @@ async function sendWelcomeEmail(user: { name: string; email: string }) {
             <a href="https://portal.amplafacial.com.br" style="display:inline-block;background:#D4A843;color:#0A1628;padding:14px 32px;border-radius:10px;font-weight:bold;font-size:15px;text-decoration:none">Acessar a plataforma</a>
           </div>
           <p style="color:#666;font-size:12px;text-align:center;margin:0">
-            Dúvidas? Fale comigo pelo WhatsApp: <a href="https://wa.me/5521976310365" style="color:#D4A843">(21) 97631-0365</a>
+            Dúvidas? Fale comigo pelo WhatsApp: <a href="https://wa.me/5521976263881" style="color:#D4A843">(21) 97626-3881</a>
           </p>
         </div>
       `,

@@ -19,7 +19,7 @@ import type { z } from "zod";
 function humanizeError(error: any): string {
   const msg: string = error?.message || "";
   if (msg.includes("não foi aprovada") || msg.includes("Aguarde o administrador")) {
-    return "Seu acesso está sendo ativado. Entre em contato via WhatsApp: (21) 97631-0365";
+    return "Seu acesso está sendo ativado. Entre em contato via WhatsApp: (21) 97626-3881";
   }
   if (msg.includes("expirou") || msg.includes("encerrou")) {
     return msg; // já são mensagens amigáveis do backend
