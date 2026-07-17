@@ -13,9 +13,11 @@ interface QuizLead {
 }
 
 const RESULTADO_LABEL: Record<string, { label: string; cor: string }> = {
-  digital:    { label: "Acesso Digital",   cor: "text-blue-400" },
-  observador: { label: "Observador",        cor: "text-yellow-400" },
-  vip:        { label: "Mentoria VIP",      cor: "text-[#D4A843]" },
+  digital:    { label: "Plataforma Online",         cor: "text-blue-400" },
+  observador: { label: "Observacional",             cor: "text-yellow-400" },
+  pratica:    { label: "Módulo c/ Prática",         cor: "text-orange-400" },
+  vip:        { label: "Acompanhamento VIP",        cor: "text-[#D4A843]" },
+  elite:      { label: "Acompanhamento Elite",      cor: "text-violet-400" },
 };
 
 function exportCSV(leads: QuizLead[]) {
@@ -66,7 +68,9 @@ export function QuizLeadsTab() {
     total: leads.length,
     digital: leads.filter((l) => l.resultado === "digital").length,
     observador: leads.filter((l) => l.resultado === "observador").length,
+    pratica: leads.filter((l) => l.resultado === "pratica").length,
     vip: leads.filter((l) => l.resultado === "vip").length,
+    elite: leads.filter((l) => l.resultado === "elite").length,
   };
   const stats = statsData;
   const conversao = stats?.totalClicks
@@ -136,11 +140,13 @@ export function QuizLeadsTab() {
       )}
 
       {/* Stats por plano */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
-          { label: "Acesso Digital", count: leadStats.digital, cor: "border-blue-500/20 bg-blue-500/5 text-blue-400" },
-          { label: "Observador", count: leadStats.observador, cor: "border-yellow-500/20 bg-yellow-500/5 text-yellow-400" },
-          { label: "Mentoria VIP", count: leadStats.vip, cor: "border-[#D4A843]/20 bg-[#D4A843]/5 text-[#D4A843]" },
+          { label: "Plataforma", count: leadStats.digital, cor: "border-blue-500/20 bg-blue-500/5 text-blue-400" },
+          { label: "Observacional", count: leadStats.observador, cor: "border-yellow-500/20 bg-yellow-500/5 text-yellow-400" },
+          { label: "Módulo c/ Prática", count: leadStats.pratica, cor: "border-orange-500/20 bg-orange-500/5 text-orange-400" },
+          { label: "VIP", count: leadStats.vip, cor: "border-[#D4A843]/20 bg-[#D4A843]/5 text-[#D4A843]" },
+          { label: "Elite", count: leadStats.elite, cor: "border-violet-500/20 bg-violet-500/5 text-violet-400" },
         ].map(({ label, count, cor }) => (
           <div key={label} className={`rounded-xl border p-3 text-center ${cor}`}>
             <p className="text-2xl font-bold">{count}</p>

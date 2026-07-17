@@ -443,7 +443,7 @@ export default function QuizPage() {
             <div className="text-4xl mb-3">🏆</div>
             <h2 className="text-2xl font-bold text-white mb-2">Antes de começar</h2>
             <p className="text-gray-400 text-sm">
-              Deixe seus dados para participar do sorteio de <strong className="text-[#D4A843]">1 mês de Mentoria VIP grátis</strong> e receber seu resultado personalizado.
+              Deixe seus dados para participar do sorteio de <strong className="text-[#D4A843]">um Acompanhamento VIP completo</strong> — 6 meses de mentoria individual com o Dr. Gustavo, 16h de prática hands-on e o Método NaturalUp® — e receber seu resultado personalizado.
             </p>
           </div>
 
@@ -566,7 +566,7 @@ export default function QuizPage() {
             <div>
               <p className="text-sm font-semibold text-white">Você está no sorteio!</p>
               <p className="text-xs text-gray-400 mt-0.5">
-                Ao fim da palestra, o Dr. Gustavo sorteará <strong className="text-[#D4A843]">1 mês de Mentoria VIP grátis</strong> entre os participantes que responderam o quiz.
+                Ao fim da palestra, o Dr. Gustavo sorteará <strong className="text-[#D4A843]">um Acompanhamento VIP completo</strong> — os 6 meses inteiros, R$ 17.350 — entre os participantes que responderam o quiz.
               </p>
             </div>
           </div>

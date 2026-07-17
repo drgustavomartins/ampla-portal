@@ -98,7 +98,7 @@ export default function PalestraPage() {
 
       // Monta a mensagem já preenchida para o WhatsApp acadêmico.
       const linhas = [
-        "Olá! 👋 Vim pelo formulário da palestra e quero concorrer à Mentoria VIP NaturalUp®.",
+        "Olá! 👋 Vim pelo formulário da palestra e quero concorrer ao Acompanhamento VIP completo.",
         "",
         `*Nome:* ${form.nome.trim()}`,
       ];
@@ -120,7 +120,7 @@ export default function PalestraPage() {
           keepalive: true,
           body: JSON.stringify({
             access_key: "4a79d409-1ffb-480f-a20d-a7fd4d934ade",
-            subject: "🎯 Nova inscrição — Sorteio Mentoria VIP NaturalUp",
+            subject: "🎯 Nova inscrição — Sorteio Acompanhamento VIP",
             from_name: "Portal Ampla Facial",
             name: form.nome.trim(),
             email: form.email.trim().toLowerCase(),
@@ -168,7 +168,7 @@ export default function PalestraPage() {
             Inscrição confirmada!
           </h1>
           <p style={{ fontSize: 16, lineHeight: 1.6, color: "#d7dce6", marginBottom: 8 }}>
-            Você está concorrendo à <strong style={{ color: GOLD }}>Mentoria VIP NaturalUp® individual</strong>.
+            Você está concorrendo ao <strong style={{ color: GOLD }}>Acompanhamento VIP completo</strong> — 6 meses de mentoria individual.
           </p>
           <p style={{ fontSize: 15, lineHeight: 1.6, color: "#aab4c6", marginBottom: 26 }}>
             Falta <strong style={{ color: "#e7ecf5" }}>1 passo</strong>: confirme sua participação no nosso WhatsApp acadêmico. Estamos te levando para lá agora...
@@ -225,10 +225,10 @@ export default function PalestraPage() {
             <Trophy size={14} /> SORTEIO EXCLUSIVO PARA PRESENTES
           </div>
           <h1 style={{ fontFamily: "var(--font-serif, Georgia, serif)", color: "#fff", fontSize: "clamp(24px, 6.4vw, 31px)", lineHeight: 1.25, margin: "0 auto 12px", maxWidth: 440 }}>
-            Concorra a uma <span style={{ color: GOLD }}>Mentoria VIP NaturalUp®</span> individual
+            Concorra ao <span style={{ color: GOLD }}>Acompanhamento VIP</span> completo
           </h1>
           <p style={{ color: "#b9c2d4", fontSize: 14.5, lineHeight: 1.6, maxWidth: 400, margin: "0 auto" }}>
-            Você acabou de assistir à palestra <strong style={{ color: "#e7ecf5" }}>NaturalUp®</strong>. Preencha em 1 minuto para participar do sorteio e receber conteúdos exclusivos do Dr. Gustavo Martins.
+            Você acabou de assistir à palestra <strong style={{ color: "#e7ecf5" }}>NaturalUp®</strong>. O prêmio é o Acompanhamento VIP inteiro: 6 meses de mentoria individual, 16h de prática hands-on em pacientes modelo e o Método NaturalUp® completo. Preencha em 1 minuto para participar.
           </p>
         </div>
       </div>
@@ -296,7 +296,7 @@ export default function PalestraPage() {
             </div>
 
             <div>
-              <label style={labelStyle}>Qual o seu interesse na Mentoria VIP NaturalUp®?</label>
+              <label style={labelStyle}>Qual o seu interesse no Acompanhamento VIP?</label>
               <select style={inputStyle} value={form.interesse_mentoria} onChange={(e) => set("interesse_mentoria", e.target.value)}>
                 <option value="">Selecione...</option>
                 {INTERESSE.map((i) => <option key={i} value={i}>{i}</option>)}
@@ -305,7 +305,7 @@ export default function PalestraPage() {
 
             <div style={{ background: `${GOLD}12`, border: `1px solid ${GOLD}40`, borderRadius: 12, padding: "14px 15px" }}>
               <label style={{ ...labelStyle, display: "flex", alignItems: "center", gap: 7 }}>
-                <Sparkles size={15} color={GOLD_DEEP} /> Em uma frase, por que você merece a Mentoria VIP?
+                <Sparkles size={15} color={GOLD_DEEP} /> Em uma frase, por que você merece o Acompanhamento VIP?
               </label>
               <textarea style={{ ...inputStyle, minHeight: 62, resize: "vertical", borderColor: `${GOLD}66` }} value={form.porque_merece} onChange={(e) => set("porque_merece", e.target.value)} placeholder="Conte pro Dr. Gustavo por que essa mentoria é pra você." />
             </div>
@@ -334,7 +334,7 @@ export default function PalestraPage() {
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
                 boxShadow: `0 8px 22px ${GOLD}55`, opacity: enviando ? 0.85 : 1, fontFamily: "inherit",
               }}>
-              {enviando ? <><Loader2 size={18} className="animate-spin" /> Enviando...</> : <><Trophy size={18} /> Quero concorrer à Mentoria VIP</>}
+              {enviando ? <><Loader2 size={18} className="animate-spin" /> Enviando...</> : <><Trophy size={18} /> Quero concorrer ao Acompanhamento VIP</>}
             </button>
 
             <p style={{ fontSize: 11.5, color: "#9aa", textAlign: "center", lineHeight: 1.5, margin: 0 }}>

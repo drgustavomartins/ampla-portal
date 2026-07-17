@@ -25,9 +25,11 @@ const ETAPAS = [
 ];
 
 const RESULTADO_LABEL: Record<string, string> = {
-  digital:    "Acesso Digital",
-  observador: "Observador",
-  vip:        "Mentoria VIP",
+  digital:    "Plataforma Online",
+  observador: "Observacional",
+  pratica:    "Módulo c/ Prática",
+  vip:        "Acompanhamento VIP",
+  elite:      "Acompanhamento Elite",
 };
 
 function SessionRow({ session }: { session: FunnelSession }) {

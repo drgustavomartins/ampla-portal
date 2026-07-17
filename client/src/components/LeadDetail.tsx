@@ -120,9 +120,11 @@ function QuizAnswers({ respostas, resultado }: { respostas: any; resultado: stri
   if (!respostas) return null;
 
   const labels: Record<string, string> = {
-    vip: "Mentoria VIP",
-    observador: "Plano Observador",
-    digital: "Acesso Digital",
+    elite: "Acompanhamento Elite",
+    vip: "Acompanhamento VIP",
+    pratica: "Módulo Avulso com Prática",
+    observador: "Acompanhamento Observacional",
+    digital: "Plataforma Online",
     parcial: "Incompleto",
   };
 

@@ -43,9 +43,9 @@ interface PlanData {
 }
 
 const GROUP_LABELS: Record<string, string> = {
-  digital: "Acesso Digital",
+  digital: "Plataforma Online",
   observador: "Observação Clínica",
-  vip: "Mentoria VIP",
+  vip: "Acompanhamento e Prática",
   horas: "Horas Clínicas Extras",
   observacao_extra: "Turnos de Observação",
   cursos: "Cursos Individuais",
@@ -311,7 +311,7 @@ export default function PlanosPage() {
   const handlePagar = async (planKey: string) => {
     // Bloquear horas clínicas e observação extra se não tem mentoria ativa
     if ((planKey.startsWith("horas_clinicas") || planKey.startsWith("observacao_extra")) && !MENTORIA_PLANS.includes(user?.planKey || "")) {
-      alert("Para adquirir este pacote, você precisa ter um plano de Mentoria VIP ou Observação Clínica ativo.");
+      alert("Para adquirir este pacote, você precisa ter um Acompanhamento VIP ou Observacional ativo.");
       return;
     }
     if (!user) {
@@ -655,7 +655,7 @@ export default function PlanosPage() {
               <Clock className="mx-auto mb-3 h-6 w-6 text-amber-400" />
               <h3 className="text-lg font-semibold text-[#1a1a1a]">Mentoria ativa necessária</h3>
               <p className="mt-2 text-sm text-gray-500">
-                Para adquirir pacotes de horas clínicas ou turnos de observação extras, você precisa ter um plano de Mentoria VIP ou Observação Clínica ativo.
+                Para adquirir pacotes de horas clínicas ou turnos de observação extras, você precisa ter um Acompanhamento VIP ou Observacional ativo.
               </p>
             </div>
           )}
