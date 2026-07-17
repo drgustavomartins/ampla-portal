@@ -237,7 +237,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     canUpgradeTo: ["observador_essencial", "vip_online", "vip_presencial", "vip_completo", "imersao_elite"],
   },
 
-  // ─── ACOMPANHAMENTO OBSERVACIONAL ─ Econômico (hidden, Amanda negocia) ───────────
+  // ─── ACOMPANHAMENTO OBSERVACIONAL ─ Econômico (hidden, negociado no WhatsApp) ───────────
   observacional_economico: {
     key: "observacional_economico",
     hidden: true,
@@ -443,7 +443,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     canUpgradeTo: ["vip_completo", "imersao_elite"],
   },
 
-  // ─── ACOMPANHAMENTO VIP ─ Econômico (hidden, Amanda negocia) ──────────────────
+  // ─── ACOMPANHAMENTO VIP ─ Econômico (hidden, negociado no WhatsApp) ──────────────────
   // Repurposed from antigo vip_online (mantém a chave para compatibilidade).
   vip_online: {
     key: "vip_online",
@@ -480,7 +480,7 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     canUpgradeTo: ["vip_presencial", "vip_completo", "imersao_elite"],
   },
 
-  // ─── ACOMPANHAMENTO VIP ─ Moderado (hidden, Amanda negocia) ─────────────────
+  // ─── ACOMPANHAMENTO VIP ─ Moderado (hidden, negociado no WhatsApp) ─────────────────
   // Repurposed from antigo vip_presencial.
   vip_presencial: {
     key: "vip_presencial",
