@@ -3414,7 +3414,12 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
   });
 
   // ==================== PLANS ====================
-  app.get("/api/plans", async (_req, res) => {
+  // Tabela legada `plans`, usada apenas pelo admin-dashboard para atribuir
+  // planId a alunos. Os precos aqui NAO sao o catalogo de venda — o catalogo
+  // real vive em server/stripe-plans.ts. Esta rota era publica e servia precos
+  // desatualizados (Presencial R$12.390, Online R$7.430) a qualquer visitante.
+  app.get("/api/plans", async (req, res) => {
+    if (!requireAdmin(req, res)) return;
     try {
       const p = await storage.getPlans();
       res.json(p);
