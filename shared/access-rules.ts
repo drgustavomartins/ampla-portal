@@ -47,7 +47,6 @@ export interface AccessUser {
 
 /** Planos que dão "Completo Vitalício" (acesso a tudo). */
 export const FULL_ACCESS_PLAN_KEYS = new Set<string>([
-  "plataforma_anual",
   "acesso_vitalicio",
   "pacote_completo",
   "vip_online",
@@ -62,18 +61,6 @@ export const FULL_ACCESS_PLAN_KEYS = new Set<string>([
   "observacional_moderado",
   "extensao_acompanhamento",
   "workshop",
-]);
-
-/**
- * Planos em que o acesso REALMENTE expira em access_expires_at.
- * Tudo que não está aqui mantém o comportamento histórico (nunca expira),
- * porque os alunos pagos atuais têm access_expires_at NULO — ligar a
- * expiração para eles os trancaria para fora do portal.
- * Para migrar outro plano para cá: primeiro preencha access_expires_at
- * de todos os alunos daquele plano, depois adicione a chave.
- */
-export const EXPIRING_PLAN_KEYS = new Set<string>([
-  "plataforma_anual",
 ]);
 
 /** Planos legados que liberam apenas um módulo específico. */
@@ -243,8 +230,6 @@ export function canAccessLiveRecordings(user: AccessUser | null | undefined): bo
  */
 export function isLifetimePlan(planKey: string | null | undefined): boolean {
   if (!planKey || planKey === "tester") return false;
-  // Planos com prazo real não recebem o bypass de expiração.
-  if (EXPIRING_PLAN_KEYS.has(planKey)) return false;
   return FULL_ACCESS_PLAN_KEYS.has(planKey) || MODULE_ACCESS_PLAN_KEYS.has(planKey)
     // planos com sufixo numérico (horas_clinicas_*, observacao_extra_*) — pagos avulsos
     || /^(horas_clinicas|observacao_extra)_/.test(planKey);

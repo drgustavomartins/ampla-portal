@@ -13,8 +13,7 @@ export default function PagamentoSucesso() {
   const planKey = params.get("plan") || "";
 
   const PLAN_NAMES: Record<string, string> = {
-    plataforma_anual: "Plataforma Online",
-    acesso_vitalicio: "Plataforma Online (vitalício)",
+    acesso_vitalicio: "Plataforma Online",
     modulo_pratica: "Módulo Avulso com Prática",
     observador_essencial: "Acompanhamento Observacional",
     vip_completo: "Acompanhamento VIP",

@@ -6,14 +6,14 @@ import { useQuery } from "@tanstack/react-query";
 const WHATSAPP_URL = "https://wa.me/5521976263881";
 
 type PaidPlanKey =
-  | "plataforma_anual"
+  | "acesso_vitalicio"
   | "modulo_pratica"
   | "observador_essencial"
   | "vip_completo"
   | "imersao_elite";
 
 const WHATSAPP_MESSAGES: Record<PaidPlanKey, string> = {
-  plataforma_anual: "Olá Dr. Gustavo, tenho interesse na Plataforma Online da Ampla Facial.",
+  acesso_vitalicio: "Olá Dr. Gustavo, tenho interesse na Plataforma Online da Ampla Facial.",
   modulo_pratica: "Olá Dr. Gustavo, tenho interesse no Módulo Avulso com Prática. Quero saber mais sobre qual tema escolher.",
   observador_essencial: "Olá Dr. Gustavo, tenho interesse no Acompanhamento Observacional da Ampla Facial.",
   vip_completo: "Olá Dr. Gustavo, tenho interesse no Acompanhamento VIP da Ampla Facial.",
@@ -212,7 +212,7 @@ export default function PlanosPublicos() {
       <main className="mx-auto max-w-7xl px-5 sm:px-6 xl:px-4 pb-24">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 xl:gap-3 items-stretch">
 
-          {/* ── Card 1: Plataforma Online (acesso anual) ── */}
+          {/* ── Card 1: Acesso Vitalício (Plataforma Online) ── */}
           <div ref={cardRef} className="relative rounded-[28px] overflow-hidden flex flex-col"
             style={{
               background: "linear-gradient(145deg, #12244A 0%, #0F2040 50%, #0A1628 100%)",
@@ -231,7 +231,7 @@ export default function PlanosPublicos() {
             <div className="relative p-7 sm:p-8 xl:p-5 xl:pt-9 flex flex-col flex-1">
               {/* Header */}
               <div className="xl:min-h-[210px] text-center">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A843] mb-2">Acesso por 12 meses</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A843] mb-2">Acesso Vitalício</p>
                 <h3 className="text-2xl xl:text-xl font-bold text-white leading-tight">Plataforma Online</h3>
                 <p className="mt-2 text-sm text-white/60 leading-relaxed">Todo o conteúdo gravado do método para estudar no seu ritmo. Ideal antes de entrar em um acompanhamento.</p>
               </div>
@@ -257,8 +257,8 @@ export default function PlanosPublicos() {
                   "Todas as aulas gravadas",
                   "Vídeos de casos clínicos reais",
                   "Materiais e artigos científicos",
-                  "12 meses de acesso a todo o portal",
-                  "Atualizações incluídas durante os 12 meses",
+                  "Acesso vitalício",
+                  "Atualizações futuras incluídas",
                   "Até 7 dias para desistência",
                 ].map((f) => (
                   <li key={f} className="flex items-start gap-3">
@@ -273,7 +273,7 @@ export default function PlanosPublicos() {
               {/* CTA */}
               <div className="mt-auto pt-5 space-y-2">
                 <button
-                  onClick={() => handleCheckout("plataforma_anual")}
+                  onClick={() => handleCheckout("acesso_vitalicio")}
                   disabled={loadingPlan !== null || slots?.soldOut}
                   className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[13px] font-semibold tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110"
                   style={{
@@ -286,14 +286,14 @@ export default function PlanosPublicos() {
                 >
                   {slots?.soldOut ? (
                     "Vagas esgotadas"
-                  ) : loadingPlan === "plataforma_anual" ? (
+                  ) : loadingPlan === "acesso_vitalicio" ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> Aguarde...</>
                   ) : (
                     <>Pagar Agora <ArrowRight className="h-4 w-4" /></>
                   )}
                 </button>
                 <a
-                  href={whatsappUrl("plataforma_anual")}
+                  href={whatsappUrl("acesso_vitalicio")}
                   target="_blank" rel="noopener noreferrer"
                   className="block text-center text-[11px] text-white/40 hover:text-white/70 transition-colors py-1"
                 >
