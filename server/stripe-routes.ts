@@ -191,6 +191,12 @@ export function registerStripeRoutes(app: Express) {
 
     const { planKey, isUpgrade, creditsToUse, referralCode } = req.body as { planKey: PlanKey; isUpgrade?: boolean; creditsToUse?: number; referralCode?: string };
     const plan = PLANS[planKey];
+      // Planos deprecated (ex.: acesso_vitalicio) nao podem mais ser comprados.
+      // Quem ja comprou mantem o plano; ninguem novo entra — nem por POST direto.
+      if ((plan as any)?.deprecated) {
+        return res.status(410).json({ message: "Este plano não está mais disponível para compra." });
+      }
+
     if (!plan) return res.status(400).json({ message: "Plano inválido" });
 
     const [user] = await db.select().from(users).where(eq(users.id, auth.userId));
@@ -234,6 +240,40 @@ export function registerStripeRoutes(app: Express) {
           console.log(`[checkout] Desconto indicacao 10% = ${referralDiscount} centavos para userId ${auth.userId} (referrer: ${referrerId})`);
         } else if (referrerId === auth.userId) {
           console.log(`[checkout] Self-referral bloqueado para userId ${auth.userId}`);
+        }
+      }
+
+      // ─── Cupom de desconto (invite_codes, type='discount') ─────────────
+      // Só entra se o código não for indicação. Valida prazo, usos e plano.
+      let couponApplied: { code: string; percent: number } | null = null;
+      {
+        const cupCode = (referralCode || "").trim().toUpperCase();
+        if (cupCode && referralDiscount === 0) {
+          const cup = await db.execute(sql`
+            SELECT code, discount_percent, expires_at, plan_keys, max_uses, used_count
+            FROM invite_codes
+            WHERE UPPER(code) = ${cupCode} AND type = 'discount' AND active = true
+          `);
+          const c: any = (cup as any).rows?.[0];
+          if (c) {
+            const expirou = c.expires_at ? new Date(c.expires_at) <= new Date() : false;
+            const esgotou = c.max_uses > 0 && c.used_count >= c.max_uses;
+            let planoOk = true;
+            if (c.plan_keys) {
+              try { planoOk = (JSON.parse(c.plan_keys) as string[]).includes(planKey); }
+              catch { planoOk = true; }
+            }
+            if (!expirou && !esgotou && planoOk && c.discount_percent > 0) {
+              const desc = Math.floor(amountToPay * (c.discount_percent / 100));
+              amountToPay -= desc;
+              couponApplied = { code: c.code, percent: c.discount_percent };
+              console.log(`[create-checkout] Cupom ${c.code} -${c.discount_percent}% = ${desc} centavos (plano ${planKey})`);
+            } else {
+              console.log(`[create-checkout] Cupom ${cupCode} RECUSADO: expirou=${expirou} esgotou=${esgotou} planoOk=${planoOk}`);
+            }
+          } else {
+            console.log(`[create-checkout] Cupom ${cupCode} inexistente`);
+          }
         }
       }
     }
@@ -393,6 +433,12 @@ export function registerStripeRoutes(app: Express) {
 
     const { planKey } = req.body as { planKey: PlanKey };
     const plan = PLANS[planKey];
+      // Planos deprecated (ex.: acesso_vitalicio) nao podem mais ser comprados.
+      // Quem ja comprou mantem o plano; ninguem novo entra — nem por POST direto.
+      if ((plan as any)?.deprecated) {
+        return res.status(410).json({ message: "Este plano não está mais disponível para compra." });
+      }
+
     if (!plan) return res.status(400).json({ message: "Plano inválido" });
 
     const [user] = await db.select().from(users).where(eq(users.id, auth.userId));
@@ -1017,6 +1063,12 @@ export function registerPublicStripeRoutes(app: Express) {
 
     const { planKey, referralCode, email } = req.body as { planKey: PlanKey; referralCode?: string; email?: string };
     const plan = PLANS[planKey];
+      // Planos deprecated (ex.: acesso_vitalicio) nao podem mais ser comprados.
+      // Quem ja comprou mantem o plano; ninguem novo entra — nem por POST direto.
+      if ((plan as any)?.deprecated) {
+        return res.status(410).json({ message: "Este plano não está mais disponível para compra." });
+      }
+
     if (!plan) return res.status(400).json({ message: "Plano inválido" });
 
     // Bloqueia compra da Plataforma Online quando as 200 vagas esgotarem
@@ -1044,6 +1096,40 @@ export function registerPublicStripeRoutes(app: Express) {
         referralDiscount = Math.floor(finalPrice * 0.10);
         finalPrice -= referralDiscount;
         console.log(`[public-checkout] Desconto indicacao 10% = ${referralDiscount} centavos`);
+      }
+
+      // ─── Cupom de desconto (invite_codes, type='discount') ─────────────
+      // Só entra se o código não for indicação. Valida prazo, usos e plano.
+      let couponApplied: { code: string; percent: number } | null = null;
+      {
+        const cupCode = (referralCode || "").trim().toUpperCase();
+        if (cupCode && referralDiscount === 0) {
+          const cup = await db.execute(sql`
+            SELECT code, discount_percent, expires_at, plan_keys, max_uses, used_count
+            FROM invite_codes
+            WHERE UPPER(code) = ${cupCode} AND type = 'discount' AND active = true
+          `);
+          const c: any = (cup as any).rows?.[0];
+          if (c) {
+            const expirou = c.expires_at ? new Date(c.expires_at) <= new Date() : false;
+            const esgotou = c.max_uses > 0 && c.used_count >= c.max_uses;
+            let planoOk = true;
+            if (c.plan_keys) {
+              try { planoOk = (JSON.parse(c.plan_keys) as string[]).includes(planKey); }
+              catch { planoOk = true; }
+            }
+            if (!expirou && !esgotou && planoOk && c.discount_percent > 0) {
+              const desc = Math.floor(finalPrice * (c.discount_percent / 100));
+              finalPrice -= desc;
+              couponApplied = { code: c.code, percent: c.discount_percent };
+              console.log(`[public-checkout] Cupom ${c.code} -${c.discount_percent}% = ${desc} centavos (plano ${planKey})`);
+            } else {
+              console.log(`[public-checkout] Cupom ${cupCode} RECUSADO: expirou=${expirou} esgotou=${esgotou} planoOk=${planoOk}`);
+            }
+          } else {
+            console.log(`[public-checkout] Cupom ${cupCode} inexistente`);
+          }
+        }
       }
     }
 
@@ -1110,6 +1196,12 @@ export function registerPublicStripeRoutes(app: Express) {
         email?: string;
       };
       const plan = PLANS[planKey];
+      // Planos deprecated (ex.: acesso_vitalicio) nao podem mais ser comprados.
+      // Quem ja comprou mantem o plano; ninguem novo entra — nem por POST direto.
+      if ((plan as any)?.deprecated) {
+        return res.status(410).json({ message: "Este plano não está mais disponível para compra." });
+      }
+
       if (!plan) return res.status(400).json({ message: "Plano inválido" });
 
       // Bloqueia compra da Plataforma Online quando as 200 vagas esgotarem
@@ -1138,6 +1230,40 @@ export function registerPublicStripeRoutes(app: Express) {
           referralDiscount = Math.floor(finalPrice * 0.10);
           finalPrice -= referralDiscount;
           console.log(`[create-public-checkout] Desconto indicacao 10% = ${referralDiscount} centavos (plano ${planKey})`);
+        }
+      }
+
+      // ─── Cupom de desconto (invite_codes, type='discount') ─────────────
+      // Só entra se o código não for indicação. Valida prazo, usos e plano.
+      let couponApplied: { code: string; percent: number } | null = null;
+      {
+        const cupCode = (couponCode || "").trim().toUpperCase();
+        if (cupCode && referralDiscount === 0) {
+          const cup = await db.execute(sql`
+            SELECT code, discount_percent, expires_at, plan_keys, max_uses, used_count
+            FROM invite_codes
+            WHERE UPPER(code) = ${cupCode} AND type = 'discount' AND active = true
+          `);
+          const c: any = (cup as any).rows?.[0];
+          if (c) {
+            const expirou = c.expires_at ? new Date(c.expires_at) <= new Date() : false;
+            const esgotou = c.max_uses > 0 && c.used_count >= c.max_uses;
+            let planoOk = true;
+            if (c.plan_keys) {
+              try { planoOk = (JSON.parse(c.plan_keys) as string[]).includes(planKey); }
+              catch { planoOk = true; }
+            }
+            if (!expirou && !esgotou && planoOk && c.discount_percent > 0) {
+              const desc = Math.floor(finalPrice * (c.discount_percent / 100));
+              finalPrice -= desc;
+              couponApplied = { code: c.code, percent: c.discount_percent };
+              console.log(`[create-public-checkout] Cupom ${c.code} -${c.discount_percent}% = ${desc} centavos (plano ${planKey})`);
+            } else {
+              console.log(`[create-public-checkout] Cupom ${cupCode} RECUSADO: expirou=${expirou} esgotou=${esgotou} planoOk=${planoOk}`);
+            }
+          } else {
+            console.log(`[create-public-checkout] Cupom ${cupCode} inexistente`);
+          }
         }
       }
 
