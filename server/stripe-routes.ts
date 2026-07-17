@@ -236,6 +236,40 @@ export function registerStripeRoutes(app: Express) {
           console.log(`[checkout] Self-referral bloqueado para userId ${auth.userId}`);
         }
       }
+
+      // ─── Cupom de desconto (invite_codes, type='discount') ─────────────
+      // Só entra se o código não for indicação. Valida prazo, usos e plano.
+      let couponApplied: { code: string; percent: number } | null = null;
+      {
+        const cupCode = (referralCode || "").trim().toUpperCase();
+        if (cupCode && referralDiscount === 0) {
+          const cup = await db.execute(sql`
+            SELECT code, discount_percent, expires_at, plan_keys, max_uses, used_count
+            FROM invite_codes
+            WHERE UPPER(code) = ${cupCode} AND type = 'discount' AND active = true
+          `);
+          const c: any = (cup as any).rows?.[0];
+          if (c) {
+            const expirou = c.expires_at ? new Date(c.expires_at) <= new Date() : false;
+            const esgotou = c.max_uses > 0 && c.used_count >= c.max_uses;
+            let planoOk = true;
+            if (c.plan_keys) {
+              try { planoOk = (JSON.parse(c.plan_keys) as string[]).includes(planKey); }
+              catch { planoOk = true; }
+            }
+            if (!expirou && !esgotou && planoOk && c.discount_percent > 0) {
+              const desc = Math.floor(amountToPay * (c.discount_percent / 100));
+              amountToPay -= desc;
+              couponApplied = { code: c.code, percent: c.discount_percent };
+              console.log(`[create-checkout] Cupom ${c.code} -${c.discount_percent}% = ${desc} centavos (plano ${planKey})`);
+            } else {
+              console.log(`[create-checkout] Cupom ${cupCode} RECUSADO: expirou=${expirou} esgotou=${esgotou} planoOk=${planoOk}`);
+            }
+          } else {
+            console.log(`[create-checkout] Cupom ${cupCode} inexistente`);
+          }
+        }
+      }
     }
 
     // Validar extensao: só para VIP atuais ou passados
@@ -1045,6 +1079,40 @@ export function registerPublicStripeRoutes(app: Express) {
         finalPrice -= referralDiscount;
         console.log(`[public-checkout] Desconto indicacao 10% = ${referralDiscount} centavos`);
       }
+
+      // ─── Cupom de desconto (invite_codes, type='discount') ─────────────
+      // Só entra se o código não for indicação. Valida prazo, usos e plano.
+      let couponApplied: { code: string; percent: number } | null = null;
+      {
+        const cupCode = (referralCode || "").trim().toUpperCase();
+        if (cupCode && referralDiscount === 0) {
+          const cup = await db.execute(sql`
+            SELECT code, discount_percent, expires_at, plan_keys, max_uses, used_count
+            FROM invite_codes
+            WHERE UPPER(code) = ${cupCode} AND type = 'discount' AND active = true
+          `);
+          const c: any = (cup as any).rows?.[0];
+          if (c) {
+            const expirou = c.expires_at ? new Date(c.expires_at) <= new Date() : false;
+            const esgotou = c.max_uses > 0 && c.used_count >= c.max_uses;
+            let planoOk = true;
+            if (c.plan_keys) {
+              try { planoOk = (JSON.parse(c.plan_keys) as string[]).includes(planKey); }
+              catch { planoOk = true; }
+            }
+            if (!expirou && !esgotou && planoOk && c.discount_percent > 0) {
+              const desc = Math.floor(finalPrice * (c.discount_percent / 100));
+              finalPrice -= desc;
+              couponApplied = { code: c.code, percent: c.discount_percent };
+              console.log(`[public-checkout] Cupom ${c.code} -${c.discount_percent}% = ${desc} centavos (plano ${planKey})`);
+            } else {
+              console.log(`[public-checkout] Cupom ${cupCode} RECUSADO: expirou=${expirou} esgotou=${esgotou} planoOk=${planoOk}`);
+            }
+          } else {
+            console.log(`[public-checkout] Cupom ${cupCode} inexistente`);
+          }
+        }
+      }
     }
 
     const baseUrl = process.env.APP_URL || "https://portal.amplafacial.com.br";
@@ -1138,6 +1206,40 @@ export function registerPublicStripeRoutes(app: Express) {
           referralDiscount = Math.floor(finalPrice * 0.10);
           finalPrice -= referralDiscount;
           console.log(`[create-public-checkout] Desconto indicacao 10% = ${referralDiscount} centavos (plano ${planKey})`);
+        }
+      }
+
+      // ─── Cupom de desconto (invite_codes, type='discount') ─────────────
+      // Só entra se o código não for indicação. Valida prazo, usos e plano.
+      let couponApplied: { code: string; percent: number } | null = null;
+      {
+        const cupCode = (couponCode || "").trim().toUpperCase();
+        if (cupCode && referralDiscount === 0) {
+          const cup = await db.execute(sql`
+            SELECT code, discount_percent, expires_at, plan_keys, max_uses, used_count
+            FROM invite_codes
+            WHERE UPPER(code) = ${cupCode} AND type = 'discount' AND active = true
+          `);
+          const c: any = (cup as any).rows?.[0];
+          if (c) {
+            const expirou = c.expires_at ? new Date(c.expires_at) <= new Date() : false;
+            const esgotou = c.max_uses > 0 && c.used_count >= c.max_uses;
+            let planoOk = true;
+            if (c.plan_keys) {
+              try { planoOk = (JSON.parse(c.plan_keys) as string[]).includes(planKey); }
+              catch { planoOk = true; }
+            }
+            if (!expirou && !esgotou && planoOk && c.discount_percent > 0) {
+              const desc = Math.floor(finalPrice * (c.discount_percent / 100));
+              finalPrice -= desc;
+              couponApplied = { code: c.code, percent: c.discount_percent };
+              console.log(`[create-public-checkout] Cupom ${c.code} -${c.discount_percent}% = ${desc} centavos (plano ${planKey})`);
+            } else {
+              console.log(`[create-public-checkout] Cupom ${cupCode} RECUSADO: expirou=${expirou} esgotou=${esgotou} planoOk=${planoOk}`);
+            }
+          } else {
+            console.log(`[create-public-checkout] Cupom ${cupCode} inexistente`);
+          }
         }
       }
 
