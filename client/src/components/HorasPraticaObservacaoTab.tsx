@@ -36,7 +36,10 @@ export default function HorasPraticaObservacaoTab() {
     const fetchStudents = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/pratica-list');
+        const token = localStorage.getItem('ampla_token');
+        const response = await fetch('/api/pratica-list', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
 
         if (!response.ok) throw new Error('Falha ao carregar');
 
