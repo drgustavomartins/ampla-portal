@@ -1,5 +1,6 @@
 // ─── Per-plan contract templates for Ampla Facial portal ─────────────────────
-import { PLANS } from "./stripe-plans";
+import { PLANS, getInstallments12x, maxInstallmentsFor } from "./stripe-plans";
+import { installmentValueCents, MAX_INSTALLMENTS_NO_INTEREST } from "./asaas";
 
 const COMPANY = {
   name: "Instituto Medeiros Martins LTDA",
@@ -154,9 +155,15 @@ export function getContractHTML(planKey: string, data: ContractData): string {
   // ─── Cláusula 3 — Valor e Pagamento ────────────────────────────────────────
   const c3 = nextClause();
   body += `<h2>Cláusula ${c3} — Do Valor e Pagamento</h2>`;
-  body += `<p>O(A) ALUNO(A) pagará à AMPLA FACIAL o valor de <strong>${fmtBRL(plan.price)}</strong> (${plan.name}), mediante pagamento via plataforma digital (cartão de crédito, PIX ou boleto bancário) processado pelo sistema Stripe.</p>`;
-  if (plan.installments12x) {
-    body += `<p>Opção de parcelamento: até 12x de ${fmtBRL(plan.installments12x)}.</p>`;
+  body += `<p>O(A) ALUNO(A) pagará à AMPLA FACIAL o valor de <strong>${fmtBRL(plan.price)}</strong> (${plan.name}), mediante pagamento via plataforma digital (cartão de crédito, PIX ou boleto bancário) processado pelo sistema Asaas.</p>`;
+  const parcela12 = getInstallments12x(plan);
+  if (parcela12) {
+    body += `<p>Opção de parcelamento: até ${MAX_INSTALLMENTS_NO_INTEREST}x de ${fmtBRL(parcela12)} <strong>sem juros</strong>.</p>`;
+    const maxN = maxInstallmentsFor(plan);
+    if (maxN > MAX_INSTALLMENTS_NO_INTEREST) {
+      const parcelaMax = installmentValueCents(plan.price, maxN);
+      body += `<p>Parcelamentos acima de ${MAX_INSTALLMENTS_NO_INTEREST}x estão sujeitos a juros de parcelamento assumidos pelo(a) ALUNO(A), chegando a até ${maxN}x de ${fmtBRL(parcelaMax)} (total de ${fmtBRL(parcelaMax * maxN)}). Disponível apenas para cartões das bandeiras Visa e Mastercard.</p>`;
+    }
   }
   body += `<p>O pagamento integral é condição para a liberação do acesso ao conteúdo e serviços contratados.</p>`;
 

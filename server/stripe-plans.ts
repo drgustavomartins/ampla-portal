@@ -18,7 +18,7 @@ export interface PlanConfig {
   name: string;
   description: string;
   price: number; // centavos à vista
-  installments12x: number | null; // valor de cada parcela em centavos (null = não disponível)
+  noInstallments?: boolean; // true = vendido só à vista (Pix/boleto/cartão 1x), sem parcelamento
   group: "digital" | "observador" | "vip" | "horas" | "observacao_extra";
   features: string[];
   highlight?: string; // ex: "Mais popular"
@@ -49,10 +49,10 @@ export interface PlanConfig {
 export const PLANS: Record<PlanKey, PlanConfig> = {
   tester: {
     key: "tester",
+    noInstallments: true,
     name: "Trial",
     description: "Acesso trial de 7 dias ao portal com as 2 primeiras aulas de cada módulo",
     price: 0,
-    installments12x: null,
     group: "digital",
     hidden: true,
     features: [
@@ -78,7 +78,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     name: "Plataforma Online",
     description: "12 meses de acesso a todo o conteúdo do portal — estude no seu ritmo, sem interações ao vivo",
     price: 47900,
-    installments12x: 3992,
     group: "digital",
     billingPeriod: "annual",
     valorMercado: 593790,
@@ -109,7 +108,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     name: "Plataforma Online (vitalício — legado)",
     description: "Acesso vitalício às aulas e materiais — estude no seu ritmo, sem interações ao vivo",
     price: 47900,
-    installments12x: 3992,
     group: "digital",
     billingPeriod: "one-time",
             valorMercado: 593790,
@@ -141,7 +139,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     name: "Módulo Avulso",
     description: "Escolha 1 módulo e domine aquela técnica com profundidade",
     price: 249000,
-    installments12x: null,
     group: "digital",
     billingPeriod: "one-time",
     hidden: true,
@@ -174,7 +171,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     name: "Curso Online",
     description: "Todos os módulos online — estude no seu ritmo",
     price: 597000,
-    installments12x: 54700,
     group: "digital",
     billingPeriod: "one-time",
     hidden: true,
@@ -210,7 +206,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     name: "Módulo Avulso com Prática",
     description: "Foco em 1 tema à escolha — 8h prática hands-on + 8h observação + aulas e materiais do tema",
     price: 599700,
-    installments12x: 56000,
     group: "vip",
     billingPeriod: "one-time",
     highlight: "Tema único",
@@ -250,7 +245,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     name: "Acompanhamento Observacional (Econômico)",
     description: "Versão enxuta para negociação — 8h de observação + acompanhamento ao vivo",
     price: 299700,
-    installments12x: 27970,
     group: "observador",
     billingPeriod: "one-time",
     features: [
@@ -284,7 +278,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     name: "Acompanhamento Observacional (Moderado)",
     description: "Versão intermediária — 16h de observação + acompanhamento ao vivo",
     price: 399700,
-    installments12x: 37320,
     group: "observador",
     billingPeriod: "one-time",
     features: [
@@ -316,7 +309,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     name: "Acompanhamento Observacional",
     description: "Aulas + 24h de observação clínica ao lado do Dr. Gustavo + acompanhamento quinzenal ao vivo",
     price: 499700,
-    installments12x: 46700,
     group: "observador",
     billingPeriod: "one-time",
     features: [
@@ -356,7 +348,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
 
     description: "48h de observação clínica presencial + 4 módulos",
     price: 699700,
-    installments12x: 64700,
     group: "observador",
     features: [
       "4 módulos gravados",
@@ -389,7 +380,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
 
     description: "96h de observação clínica presencial + 4 módulos",
     price: 999700,
-    installments12x: 91700,
     group: "observador",
     features: [
       "4 módulos gravados",
@@ -417,7 +407,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     name: "Imersão",
     description: "Observe E pratique com supervisão — ideal para recém-formados",
     price: 1199700,
-    installments12x: null,
     group: "observador",
     hidden: true,
     billingPeriod: "one-time",
@@ -456,7 +445,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     name: "Acompanhamento VIP (Econômico)",
     description: "Versão enxuta para negociação — 10h de prática hands-on + mentoria 6 meses",
     price: 1399700,
-    installments12x: null,
     group: "vip",
     billingPeriod: "one-time",
     hidden: true,
@@ -493,7 +481,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     name: "Acompanhamento VIP (Moderado)",
     description: "Versão intermediária — 13h de prática hands-on + mentoria 6 meses",
     price: 1549700,
-    installments12x: null,
     group: "vip",
     billingPeriod: "one-time",
     hidden: true,
@@ -530,7 +517,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     name: "Acompanhamento VIP",
     description: "A formação completa — prática hands-on + mentoria individual + método NaturalUp®",
     price: 1735000,
-    installments12x: null,
     group: "vip",
     billingPeriod: "one-time",
     highlight: "Formação completa",
@@ -573,7 +559,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     name: "Acompanhamento Elite",
     description: "O mais alto nível — bastidores da Clínica + licença exclusiva da marca NaturalUp®",
     price: 3500000,
-    installments12x: 291667,
     group: "vip",
     billingPeriod: "one-time",
     highlight: "Experiência definitiva",
@@ -615,7 +600,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     name: "Extensão de Acompanhamento",
     description: "Mais 3 meses de mentoria, canal direto e suporte com o Dr. Gustavo",
     price: 200000,
-    installments12x: null,
     group: "vip",
     billingPeriod: "one-time",
     features: [
@@ -641,10 +625,10 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
 
   horas_clinicas_1: {
     key: "horas_clinicas_1",
+    noInstallments: true,
     name: "1 Encontro Clínico",
     description: "4 horas de atendimento a pacientes modelo com supervisão do Dr. Gustavo",
     price: 100000,
-    installments12x: null,
     group: "horas",
     features: [
       "1 encontro de 4 horas",
@@ -667,10 +651,10 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
   },
   horas_clinicas_2: {
     key: "horas_clinicas_2",
+    noInstallments: true,
     name: "2 Encontros Clínicos",
     description: "8 horas de atendimento a pacientes modelo com supervisão do Dr. Gustavo",
     price: 180000,
-    installments12x: null,
     group: "horas",
     features: [
       "2 encontros de 4 horas (8h total)",
@@ -694,10 +678,10 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
   },
   horas_clinicas_3: {
     key: "horas_clinicas_3",
+    noInstallments: true,
     name: "3 Encontros Clínicos",
     description: "12 horas de atendimento a pacientes modelo com supervisão do Dr. Gustavo",
     price: 240000,
-    installments12x: null,
     group: "horas",
     features: [
       "3 encontros de 4 horas (12h total)",
@@ -723,10 +707,10 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
   // ─── EXTENSÃO DE OBSERVAÇÃO CLÍNICA ──────────────────────────────────────────
   observacao_extra_1: {
     key: "observacao_extra_1",
+    noInstallments: true,
     name: "1 Turno de Observação",
     description: "4 horas de observação clínica presencial com o Dr. Gustavo",
     price: 80000,
-    installments12x: null,
     group: "observacao_extra",
     features: [
       "1 turno de 4 horas",
@@ -749,10 +733,10 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
   },
   observacao_extra_2: {
     key: "observacao_extra_2",
+    noInstallments: true,
     name: "2 Turnos de Observação",
     description: "8 horas de observação clínica presencial com o Dr. Gustavo",
     price: 150000,
-    installments12x: null,
     group: "observacao_extra",
     features: [
       "2 turnos de 4 horas (8h total)",
@@ -776,10 +760,10 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
   },
   observacao_extra_3: {
     key: "observacao_extra_3",
+    noInstallments: true,
     name: "4 Turnos de Observação",
     description: "16 horas de observação clínica presencial com o Dr. Gustavo",
     price: 280000,
-    installments12x: null,
     group: "observacao_extra",
     features: [
       "4 turnos de 4 horas (16h total)",
@@ -804,10 +788,10 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
   },
   workshop: {
     key: "workshop",
+    noInstallments: true,
     name: "Workshop",
     description: "Acesso completo via convite de workshop",
     price: 0,
-    installments12x: null,
     group: "digital",
     billingPeriod: "one-time",
     hidden: true,
@@ -1066,4 +1050,35 @@ export function getPurchaseStatus(
 
   // Demais planos: se passou pela visibilidade, pode comprar.
   return { purchasable: true, lockReason: null };
+}
+
+// ─── Parcelamento ─────────────────────────────────────────────────────────────
+// Derivado do preço, nunca cravado à mão. Antes de 23/07/2026 cada plano tinha
+// um `installments12x` digitado manualmente, e eles tinham desalinhado: o
+// Módulo com Prática cobrava +12% escondido no 12x, o Curso Online +9,9%, o
+// Acompanhamento Observacional +12,1%. Agora 12x é 12x.
+
+import {
+  buildInstallmentOptions,
+  installmentValueCents,
+  MAX_INSTALLMENTS,
+  MAX_INSTALLMENTS_NO_INTEREST,
+  type InstallmentOption,
+} from "./asaas";
+
+/** Máximo de parcelas que este plano aceita. */
+export function maxInstallmentsFor(plan: PlanConfig): number {
+  if (plan.noInstallments || plan.price <= 0) return 1;
+  return MAX_INSTALLMENTS;
+}
+
+/** Valor da parcela em 12x sem juros, em centavos. Null = não parcela. */
+export function getInstallments12x(plan: PlanConfig): number | null {
+  if (plan.noInstallments || plan.price <= 0) return null;
+  return installmentValueCents(plan.price, MAX_INSTALLMENTS_NO_INTEREST);
+}
+
+/** Todas as opções de parcelamento do plano, de 1x até o teto. */
+export function getInstallmentOptions(plan: PlanConfig): InstallmentOption[] {
+  return buildInstallmentOptions(plan.price, maxInstallmentsFor(plan));
 }

@@ -28,6 +28,8 @@ interface PlanData {
   priceFormatted: string;
   installments12x: number | null;
   installments12xFormatted: string | null;
+  maxInstallments: number;
+  installmentOptions: Array<{ count: number; valueCents: number; totalCents: number; hasInterest: boolean; label: string }>;
   features: string[];
   clinicalHours: number;
   practiceHours: number;
@@ -181,7 +183,10 @@ function PlanCard({ plan, onPagar, isLoading }: { plan: PlanData; onPagar: (key:
         <div className="mb-4">
           <div className={`text-2xl font-bold ${isDestaque ? "text-[#B8860B]" : "text-[#1a1a1a]"}`}>{plan.priceFormatted}</div>
           {plan.installments12xFormatted && (
-            <div className="text-xs text-gray-500">ou 12x de {plan.installments12xFormatted}</div>
+            <div className="text-xs text-gray-500">
+              ou 12x de {plan.installments12xFormatted} sem juros
+              {plan.maxInstallments > 12 && <> · até {plan.maxInstallments}x com juros</>}
+            </div>
           )}
         </div>
       )}

@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
-import { PLANS, calculateUpgradePrice, formatBRL, isPlanVisibleForStudent, getPurchaseStatus, getCheckoutDescription } from "./stripe-plans";
+import { PLANS, calculateUpgradePrice, formatBRL, isPlanVisibleForStudent, getPurchaseStatus, getCheckoutDescription, getInstallments12x, getInstallmentOptions, maxInstallmentsFor } from "./stripe-plans";
 import { EXTERNAL_PRODUCTS, type ExternalProductKey, type ExternalVariant } from "./external-products";
 import type { PlanKey } from "@shared/schema";
 import jwt from "jsonwebtoken";
@@ -90,8 +90,10 @@ export function registerStripeRoutes(app: Express) {
           highlight: p.highlight,
           price: p.price,
           priceFormatted: formatBRL(p.price),
-          installments12x: p.installments12x,
-          installments12xFormatted: p.installments12x ? formatBRL(p.installments12x) : null,
+          installments12x: getInstallments12x(p),
+          installments12xFormatted: getInstallments12x(p) ? formatBRL(getInstallments12x(p)!) : null,
+          maxInstallments: maxInstallmentsFor(p),
+          installmentOptions: getInstallmentOptions(p),
           features: p.features,
           clinicalHours: p.clinicalHours,
           practiceHours: p.practiceHours,
