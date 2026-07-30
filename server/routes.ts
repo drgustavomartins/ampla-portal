@@ -19,6 +19,7 @@ import {
 import { Resend } from "resend";
 import multer from "multer";
 import { registerStripeRoutes, registerPublicStripeRoutes } from "./stripe-routes";
+import { registerAsaasRoutes } from "./asaas-routes";
 import { registerLiveEventsRoutes } from "./live-events-routes";
 
 const avatarUpload = multer({
@@ -7996,6 +7997,7 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
 
   // ─── Rotas de pagamento Stripe ──────────────────────────────────────────────
   registerStripeRoutes(app);
+  registerAsaasRoutes(app);
   registerPublicStripeRoutes(app);
 
   // ─── Rotas de Acompanhamento (encontros ao vivo em grupo) ──────────────

@@ -52,10 +52,15 @@ export const ASAAS_API_URL =
     ? "https://api-sandbox.asaas.com/v3"
     : "https://api.asaas.com/v3";
 
-/** URL pública do checkout hospedado, montada a partir do id retornado. */
+/**
+ * URL pública do checkout hospedado. A API já devolve o campo `link` pronto no
+ * POST /v3/checkouts — prefira usá-lo. Esta função é só o fallback caso o link
+ * não venha. Formato confirmado em produção 30/07/2026:
+ *   https://www.asaas.com/checkoutSession/show/{id}
+ */
 export function checkoutUrl(checkoutId: string): string {
-  const host = ASAAS_ENV === "sandbox" ? "sandbox.asaas.com" : "asaas.com";
-  return `https://${host}/checkoutSession/show?id=${checkoutId}`;
+  const host = ASAAS_ENV === "sandbox" ? "sandbox.asaas.com" : "www.asaas.com";
+  return `https://${host}/checkoutSession/show/${checkoutId}`;
 }
 
 function getApiKey(): string | null {
