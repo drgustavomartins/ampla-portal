@@ -280,22 +280,33 @@ export async function fulfillPurchase(ctx: PurchaseContext): Promise<void> {
   // ─── 8. Contrato (pós-pagamento, só em compra nova) ──────────────────────────
   try {
     if (!isUpgrade) {
-      const { getContractGroup, getContractHTML } = await import("./contract-templates");
-      const group = getContractGroup(planKey);
-      const contractNow = new Date().toISOString();
-      const studentResult = await db.execute(sql`SELECT name, email, phone FROM users WHERE id = ${userId}`);
-      const student = (studentResult as any).rows?.[0];
-      const contractHtml = getContractHTML(planKey, {
-        studentName: student?.name || "N/A",
-        studentEmail: student?.email || "N/A",
-        studentPhone: student?.phone || "",
-        startDate: new Date().toLocaleDateString("pt-BR"),
-      });
-      await db.execute(
-        sql`INSERT INTO contracts (user_id, plan_key, plan_name, amount_paid, status, contract_group, contract_html, accepted_at, stripe_session_id, created_at)
-          VALUES (${userId}, ${planKey}, ${plan.name}, ${amountPaid}, 'accepted', ${group}, ${contractHtml}, ${contractNow}, ${paymentRef}, ${contractNow})`,
+      // Idempotência: parcelamento e retries do webhook chamam fulfill várias
+      // vezes com o mesmo paymentRef. Sem esta checagem, cada chamada inseria um
+      // contrato novo (bug herdado do fluxo Stripe, onde nunca disparava porque
+      // o Stripe não reenvia o mesmo session.id).
+      const existingContract = await db.execute(
+        sql`SELECT id FROM contracts WHERE stripe_session_id = ${paymentRef} LIMIT 1`,
       );
-      console.log(`[fulfill] Contrato aceito automaticamente para userId ${userId} plano ${planKey} grupo ${group} (ref: ${paymentRef})`);
+      if ((existingContract as any).rows?.length > 0) {
+        console.log(`[fulfill] Contrato ja existe para ref ${paymentRef} — pulando`);
+      } else {
+        const { getContractGroup, getContractHTML } = await import("./contract-templates");
+        const group = getContractGroup(planKey);
+        const contractNow = new Date().toISOString();
+        const studentResult = await db.execute(sql`SELECT name, email, phone FROM users WHERE id = ${userId}`);
+        const student = (studentResult as any).rows?.[0];
+        const contractHtml = getContractHTML(planKey, {
+          studentName: student?.name || "N/A",
+          studentEmail: student?.email || "N/A",
+          studentPhone: student?.phone || "",
+          startDate: new Date().toLocaleDateString("pt-BR"),
+        });
+        await db.execute(
+          sql`INSERT INTO contracts (user_id, plan_key, plan_name, amount_paid, status, contract_group, contract_html, accepted_at, stripe_session_id, created_at)
+            VALUES (${userId}, ${planKey}, ${plan.name}, ${amountPaid}, 'accepted', ${group}, ${contractHtml}, ${contractNow}, ${paymentRef}, ${contractNow})`,
+        );
+        console.log(`[fulfill] Contrato aceito automaticamente para userId ${userId} plano ${planKey} grupo ${group} (ref: ${paymentRef})`);
+      }
     }
   } catch (e: any) {
     console.error("[fulfill] Contract generation error:", e.message);
