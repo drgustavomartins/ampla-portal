@@ -13,7 +13,31 @@ export interface ContractData {
   studentEmail: string;
   studentPhone: string;
   startDate: string;
+  /** Qualificação completa — opcionais. Quando informados, entram nas PARTES. */
+  studentCpf?: string;
+  studentRg?: string;
+  studentAddress?: string;
+  /** Registro profissional, ex.: "CRO-MG 43.198". */
+  studentCouncil?: string;
+  /**
+   * Quando presente, o plano foi concedido gratuitamente (premiação, cortesia
+   * ou bolsa). Substitui a cláusula de pagamento por uma de gratuidade, remove
+   * a obrigação de pagar e ajusta o cancelamento — não há valor a reembolsar.
+   */
+  grant?: {
+    kind: "premiacao" | "cortesia" | "bolsa";
+    /** Ex.: "sorteio promocional realizado no perfil @amplafacial". */
+    origin: string;
+    /** Data da apuração/concessão, formato pt-BR. */
+    date?: string;
+  };
 }
+
+const GRANT_LABELS: Record<NonNullable<ContractData["grant"]>["kind"], string> = {
+  premiacao: "premiação",
+  cortesia: "cortesia",
+  bolsa: "bolsa de estudos integral",
+};
 
 // ─── Security helpers ───────────────────────────────────────────────────────
 function escapeHtml(str: string): string {
@@ -88,7 +112,7 @@ export function getContractHTML(planKey: string, data: ContractData): string {
   body += `
 <h2>DAS PARTES</h2>
 <p><strong>CONTRATANTE:</strong> ${COMPANY.name}, inscrita no CNPJ sob nº ${COMPANY.cnpj}, com sede em ${COMPANY.address}, doravante denominada <strong>AMPLA FACIAL</strong>, representada pelo ${COMPANY.responsible}.</p>
-<p><strong>CONTRATADO(A):</strong> ${escapeHtml(data.studentName)}, e-mail ${escapeHtml(data.studentEmail)}${data.studentPhone ? `, telefone ${escapeHtml(data.studentPhone)}` : ""}, doravante denominado(a) <strong>ALUNO(A)</strong>.</p>
+<p><strong>CONTRATADO(A):</strong> ${escapeHtml(data.studentName)}${data.studentCpf ? `, inscrito(a) no CPF sob nº ${escapeHtml(data.studentCpf)}` : ""}${data.studentRg ? `, portador(a) do RG nº ${escapeHtml(data.studentRg)}` : ""}${data.studentCouncil ? `, registro profissional ${escapeHtml(data.studentCouncil)}` : ""}${data.studentAddress ? `, residente e domiciliado(a) em ${escapeHtml(data.studentAddress)}` : ""}, e-mail ${escapeHtml(data.studentEmail)}${data.studentPhone ? `, telefone ${escapeHtml(data.studentPhone)}` : ""}, doravante denominado(a) <strong>ALUNO(A)</strong>.</p>
 `;
 
   // ─── Cláusula 1 — Objeto ────────────────────────────────────────────────────
@@ -101,8 +125,13 @@ export function getContractHTML(planKey: string, data: ContractData): string {
     body += `<p>O presente contrato tem por objeto a prestação de serviços educacionais na área de Harmonização Orofacial, consistindo no plano <strong>${plan.name}</strong> da plataforma Ampla Facial, com os seguintes entregáveis:</p>`;
   }
 
-  // Features from plan
-  body += `<ul>${plan.features.map(f => `<li>${f}</li>`).join("")}</ul>`;
+  // Features from plan. Em concessão gratuita, itens sobre desistência/reembolso
+  // não se aplicam (não houve pagamento) e são omitidos para não conflitar com a
+  // cláusula de cancelamento.
+  const featureList = data.grant
+    ? plan.features.filter(f => !/desist|reembols|arrepend/i.test(f))
+    : plan.features;
+  body += `<ul>${featureList.map(f => `<li>${f}</li>`).join("")}</ul>`;
 
   // Derived deliverables from plan config (only those not already obvious from features)
   const extras: string[] = [];
@@ -153,12 +182,22 @@ export function getContractHTML(planKey: string, data: ContractData): string {
 
   // ─── Cláusula 3 — Valor e Pagamento ────────────────────────────────────────
   const c3 = nextClause();
-  body += `<h2>Cláusula ${c3} — Do Valor e Pagamento</h2>`;
-  body += `<p>O(A) ALUNO(A) pagará à AMPLA FACIAL o valor de <strong>${fmtBRL(plan.price)}</strong> (${plan.name}), mediante pagamento via plataforma digital (cartão de crédito, PIX ou boleto bancário) processado pelo sistema Stripe.</p>`;
-  if (plan.installments12x) {
-    body += `<p>Opção de parcelamento: até 12x de ${fmtBRL(plan.installments12x)}.</p>`;
+  if (data.grant) {
+    const label = GRANT_LABELS[data.grant.kind];
+    body += `<h2>Cláusula ${c3} — Da Gratuidade</h2>`;
+    body += `<p>O plano descrito na Cláusula ${c1} é concedido ao(à) ALUNO(A) a título de <strong>${label}</strong>, de forma inteiramente gratuita, em razão de ${escapeHtml(data.grant.origin)}${data.grant.date ? `, apurado(a) em ${escapeHtml(data.grant.date)}` : ""}.</p>`;
+    body += `<p>O(A) ALUNO(A) <strong>nada pagará</strong> à AMPLA FACIAL pelos serviços objeto deste contrato. O valor de referência do plano, informado exclusivamente para fins declaratórios e fiscais, é de <strong>${fmtBRL(plan.price)}</strong>.</p>`;
+    body += `<p>A ${label} é <strong>pessoal e intransferível</strong>, não podendo ser cedida, vendida, doada ou trocada por terceiros, tampouco convertida em dinheiro ou em qualquer outro produto ou serviço, total ou parcialmente.</p>`;
+    body += `<p>Eventuais tributos incidentes sobre a concessão do prêmio, quando devidos, são de responsabilidade da AMPLA FACIAL, na forma da legislação aplicável.</p>`;
+    body += `<p>Despesas pessoais do(a) ALUNO(A) não descritas na Cláusula ${c1} — incluindo deslocamento, hospedagem, alimentação, materiais de uso individual e equipamentos de proteção — não estão incluídas na ${label} e correm por conta exclusiva do(a) ALUNO(A).</p>`;
+  } else {
+    body += `<h2>Cláusula ${c3} — Do Valor e Pagamento</h2>`;
+    body += `<p>O(A) ALUNO(A) pagará à AMPLA FACIAL o valor de <strong>${fmtBRL(plan.price)}</strong> (${plan.name}), mediante pagamento via plataforma digital (cartão de crédito, PIX ou boleto bancário) processado pelo sistema Stripe.</p>`;
+    if (plan.installments12x) {
+      body += `<p>Opção de parcelamento: até 12x de ${fmtBRL(plan.installments12x)}.</p>`;
+    }
+    body += `<p>O pagamento integral é condição para a liberação do acesso ao conteúdo e serviços contratados.</p>`;
   }
-  body += `<p>O pagamento integral é condição para a liberação do acesso ao conteúdo e serviços contratados.</p>`;
 
   // ─── Cláusula 4 — Obrigações do Contratante ───────────────────────────────
   const c4 = nextClause();
@@ -182,9 +221,11 @@ export function getContractHTML(planKey: string, data: ContractData): string {
   // ─── Cláusula 5 — Obrigações do Contratado ────────────────────────────────
   const c5 = nextClause();
   body += `<h2>Cláusula ${c5} — Das Obrigações do(a) ALUNO(A)</h2>`;
-  body += `<p>a) Efetuar o pagamento integral na forma estipulada.</p>`;
+  body += data.grant
+    ? `<p>a) Utilizar efetivamente a ${GRANT_LABELS[data.grant.kind]} concedida, comparecendo às atividades agendadas e comunicando com antecedência eventual impossibilidade.</p>`
+    : `<p>a) Efetuar o pagamento integral na forma estipulada.</p>`;
   body += `<p>b) Utilizar o conteúdo exclusivamente para fins pessoais e de aprendizado profissional.</p>`;
-  body += `<p>c) Não compartilhar credenciais de acesso com terceiros, sob pena de cancelamento imediato sem reembolso.</p>`;
+  body += `<p>c) Não compartilhar credenciais de acesso com terceiros, sob pena de cancelamento imediato ${data.grant ? "e sem qualquer compensação" : "sem reembolso"}.</p>`;
   body += `<p>d) Não reproduzir, copiar, distribuir ou comercializar o conteúdo do curso, total ou parcialmente, em qualquer meio ou formato.</p>`;
   body += `<p>e) Manter seus dados cadastrais atualizados na plataforma.</p>`;
 
@@ -217,6 +258,14 @@ export function getContractHTML(planKey: string, data: ContractData): string {
 
   // ─── Cláusula 7 — Cancelamento ─────────────────────────────────────────────
   const c7 = nextClause();
+  if (data.grant) {
+    const label = GRANT_LABELS[data.grant.kind];
+    body += `<h2>Cláusula ${c7} — Do Cancelamento</h2>`;
+    body += `<p>a) Por não ter havido desembolso de qualquer valor pelo(a) ALUNO(A), não há reembolso a ser realizado em nenhuma hipótese.</p>`;
+    body += `<p>b) O(A) ALUNO(A) poderá renunciar à ${label} a qualquer momento, mediante comunicação por escrito, hipótese em que o acesso será encerrado sem qualquer ônus ou contrapartida para ambas as partes.</p>`;
+    body += `<p>c) A AMPLA FACIAL reserva-se o direito de cancelar o acesso em caso de violação das obrigações contratuais pelo(a) ALUNO(A), sem direito a qualquer compensação.</p>`;
+    body += `<p>d) O não comparecimento reiterado e injustificado às atividades presenciais ou de acompanhamento, sem comunicação prévia, faculta à AMPLA FACIAL o encerramento da ${label}, preservado o acesso ao conteúdo gravado já liberado.</p>`;
+  } else {
   body += `<h2>Cláusula ${c7} — Do Cancelamento e Reembolso</h2>`;
   body += `<p>a) O(A) ALUNO(A) poderá solicitar o cancelamento e reembolso integral no prazo de <strong>7 (sete) dias corridos</strong> após a ativação do acesso, nos termos do art. 49 do Código de Defesa do Consumidor.</p>`;
   if (isHorasGroup) {
@@ -228,12 +277,20 @@ export function getContractHTML(planKey: string, data: ContractData): string {
   if (isHorasGroup) {
     body += `<p>d) O cancelamento de sessões agendadas deve ser comunicado com no mínimo 48 horas de antecedência. Cancelamentos com menos de 48 horas resultarão na perda das horas correspondentes, salvo motivo de força maior devidamente comprovado.</p>`;
   }
+  }
 
   // ─── Cláusula 8 — LGPD ─────────────────────────────────────────────────────
   const c8 = nextClause();
   body += `<h2>Cláusula ${c8} — Da Proteção de Dados (LGPD)</h2>`;
   body += `<p>A AMPLA FACIAL se compromete a tratar os dados pessoais do(a) ALUNO(A) em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018), utilizando-os exclusivamente para as finalidades previstas neste contrato e na prestação dos serviços educacionais.</p>`;
-  body += `<p>Os dados coletados incluem: nome, e-mail, telefone e dados de pagamento, sendo armazenados com medidas técnicas e organizacionais de segurança adequadas. O(A) ALUNO(A) pode solicitar acesso, correção ou exclusão de seus dados a qualquer momento pelo e-mail contato@amplafacial.com.br.</p>`;
+  const dadosColetados = [
+    "nome", "e-mail", "telefone",
+    ...(data.studentCpf || data.studentRg ? ["documentos de identificação (CPF/RG)"] : []),
+    ...(data.studentAddress ? ["endereço"] : []),
+    ...(data.studentCouncil ? ["registro profissional"] : []),
+    ...(data.grant ? [] : ["dados de pagamento"]),
+  ].join(", ");
+  body += `<p>Os dados coletados incluem: ${dadosColetados}, sendo armazenados com medidas técnicas e organizacionais de segurança adequadas. O(A) ALUNO(A) pode solicitar acesso, correção ou exclusão de seus dados a qualquer momento pelo e-mail contato@amplafacial.com.br.</p>`;
   body += `<p>O(A) ALUNO(A) consente com o tratamento de seus dados pessoais para fins de execução deste contrato, comunicação sobre o curso e emissão de certificados.</p>`;
 
   // ─── Cláusula 9 — Disposições Gerais ───────────────────────────────────────
