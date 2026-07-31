@@ -271,7 +271,7 @@ export default function PlanosPage() {
       const token = localStorage.getItem("ampla_token");
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
-      const res = await fetch("/api/stripe/create-checkout", {
+      const res = await fetch("/api/asaas/create-checkout", {
         method: "POST",
         headers,
         credentials: "include",
