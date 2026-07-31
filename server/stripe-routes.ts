@@ -3,7 +3,8 @@ import Stripe from "stripe";
 import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
-import { PLANS, calculateUpgradePrice, formatBRL, isPlanVisibleForStudent, getPurchaseStatus, getCheckoutDescription } from "./stripe-plans";
+import { fulfillPurchase } from "./fulfill-purchase";
+import { PLANS, calculateUpgradePrice, formatBRL, isPlanVisibleForStudent, getPurchaseStatus, getCheckoutDescription, getInstallments12x, getInstallmentOptions, maxInstallmentsFor } from "./stripe-plans";
 import { EXTERNAL_PRODUCTS, type ExternalProductKey, type ExternalVariant } from "./external-products";
 import type { PlanKey } from "@shared/schema";
 import jwt from "jsonwebtoken";
@@ -90,8 +91,10 @@ export function registerStripeRoutes(app: Express) {
           highlight: p.highlight,
           price: p.price,
           priceFormatted: formatBRL(p.price),
-          installments12x: p.installments12x,
-          installments12xFormatted: p.installments12x ? formatBRL(p.installments12x) : null,
+          installments12x: getInstallments12x(p),
+          installments12xFormatted: getInstallments12x(p) ? formatBRL(getInstallments12x(p)!) : null,
+          maxInstallments: maxInstallmentsFor(p),
+          installmentOptions: getInstallmentOptions(p),
           features: p.features,
           clinicalHours: p.clinicalHours,
           practiceHours: p.practiceHours,
@@ -551,237 +554,17 @@ export function registerStripeRoutes(app: Express) {
           WHERE id = ${userId}
         `);
       } else if (session.payment_status === "paid") {
-        // Pagamento confirmado — liberar acesso completo
-        const paymentIntentId = session.payment_intent as string;
-        // Lifetime plans get a far-future expiry instead of computed days
-        const accessExpiry = planKey === "acesso_vitalicio"
-          ? "2099-12-31T23:59:59.000Z"
-          : new Date(Date.now() + plan.accessDays * 86400000).toISOString();
-        const now = new Date().toISOString();
-
-        // Buscar valor pago e plano anterior (para detectar renovação)
-        let amountPaid = plan.price;
-        if (session.amount_total) amountPaid = session.amount_total;
-        const prevUser = await db.execute(sql`SELECT plan_key FROM users WHERE id = ${userId}`);
-        const previousPlanKey = (prevUser as any).rows?.[0]?.plan_key || null;
-        const isRenewal = previousPlanKey === planKey;
-
-        // ─── Provisioning map (shared with admin provision route) ──────────
-        const { PLAN_PROVISIONING } = await import("./plan-provisioning");
-
-        const provisioning = PLAN_PROVISIONING[planKey];
-
-        // ─── Calcular datas de mentoria e suporte ─────────────────────────────
-        const mentorshipEndDate = provisioning.mentorshipMonths > 0
-          ? new Date(Date.now() + provisioning.mentorshipMonths * 30 * 86400000).toISOString().slice(0, 10)
-          : null;
-        const supportExpiresAt = provisioning.supportMonths > 0
-          ? new Date(Date.now() + provisioning.supportMonths * 30 * 86400000).toISOString()
-          : accessExpiry;
-
-        // ─── 1. Atualizar campos do usuário ───────────────────────────────────
-        const totalHours = plan.clinicalHours + plan.practiceHours;
-        const isHorasExtra = plan.group === "horas";
-
-        const isExtensao = planKey === "extensao_acompanhamento";
-
-        if (isHorasExtra) {
-          // Horas extras: SOMA ao banco existente, não altera plano/acesso
-          await db.execute(sql`
-            UPDATE users SET
-              stripe_payment_intent_id = ${paymentIntentId},
-              plan_amount_paid = COALESCE(plan_amount_paid, 0) + ${amountPaid},
-              clinical_practice_access = true,
-              clinical_practice_hours = clinical_practice_hours + ${totalHours}
-            WHERE id = ${userId}
-          `);
-        } else if (isExtensao) {
-          // Extensão: SOMA meses de mentoria/suporte ao existente
-          const extMonths = plan.mentorshipMonths;
-          const extMs = extMonths * 30 * 86400000;
-          // Buscar datas atuais do aluno
-          const currentUser = await db.execute(sql`SELECT support_expires_at, mentorship_end_date FROM users WHERE id = ${userId}`);
-          const cu = (currentUser as any).rows?.[0];
-          const currentSupport = cu?.support_expires_at ? new Date(cu.support_expires_at).getTime() : 0;
-          const currentMentorship = cu?.mentorship_end_date ? new Date(cu.mentorship_end_date).getTime() : 0;
-          const nowMs = Date.now();
-          // Se já expirou, começa de hoje; se não, soma a partir da data atual
-          const newSupportExpiry = new Date(Math.max(currentSupport, nowMs) + extMs).toISOString();
-          const newMentorshipEnd = new Date(Math.max(currentMentorship, nowMs) + extMs).toISOString().slice(0, 10);
-          await db.execute(sql`
-            UPDATE users SET
-              stripe_payment_intent_id = ${paymentIntentId},
-              plan_amount_paid = COALESCE(plan_amount_paid, 0) + ${amountPaid},
-              support_access = true,
-              support_expires_at = ${newSupportExpiry},
-              mentorship_end_date = ${newMentorshipEnd}
-            WHERE id = ${userId}
-          `);
-          console.log(`[stripe webhook] Extensão de ${extMonths} meses para userId ${userId} | suporte até ${newSupportExpiry} | mentoria até ${newMentorshipEnd}`);
-        } else {
-          // Plano normal: define tudo do zero (sai do trial)
-          await db.execute(sql`
-            UPDATE users SET
-              plan_key = ${planKey},
-              role = 'student',
-              trial_started_at = NULL,
-              stripe_payment_intent_id = ${paymentIntentId},
-              plan_paid_at = ${now},
-              plan_amount_paid = ${amountPaid},
-              approved = true,
-              access_expires_at = ${accessExpiry},
-              module_content_expires_at = ${accessExpiry},
-              materials_access = true,
-              community_access = true,
-              support_access = true,
-              support_expires_at = ${supportExpiresAt},
-              clinical_practice_access = ${totalHours > 0},
-              clinical_practice_hours = ${totalHours},
-              mentorship_start_date = ${provisioning.mentorshipMonths > 0 ? now.slice(0, 10) : null},
-              mentorship_end_date = ${mentorshipEndDate}
-            WHERE id = ${userId}
-          `);
-        }
-
-        // ─── 2. Provisionar módulos ───────────────────────────────────────────
-        if (provisioning.modules.length > 0) {
-          await db.execute(sql`DELETE FROM user_modules WHERE user_id = ${userId}`);
-          for (const m of provisioning.modules) {
-            await db.execute(sql`
-              INSERT INTO user_modules (user_id, module_id, enabled, start_date, end_date)
-              VALUES (${userId}, ${m.moduleId}, ${m.enabled}, ${now.slice(0, 10)}, ${accessExpiry.slice(0, 10)})
-              ON CONFLICT (user_id, module_id) DO UPDATE SET enabled = ${m.enabled}
-            `);
-          }
-        }
-
-        // ─── 3. Provisionar materiais ─────────────────────────────────────────
-        await db.execute(sql`DELETE FROM user_material_categories WHERE user_id = ${userId}`);
-        for (const cat of provisioning.materials) {
-          await db.execute(sql`
-            INSERT INTO user_material_categories (user_id, category_name, enabled)
-            VALUES (${userId}, ${cat}, true)
-            ON CONFLICT (user_id, category_name) DO UPDATE SET enabled = true
-          `);
-        }
-
-        console.log(`[stripe webhook] Aluno ${userId} provisionado no plano ${planKey} até ${accessExpiry} | módulos: ${provisioning.modules.length} | materiais: ${provisioning.materials.length} | mentoria: ${provisioning.mentorshipMonths}m`);
-
-        // ─── Debitar creditos usados (so apos pagamento confirmado) ──────
-        try {
-          const creditsUsed = Number(session.metadata?.creditsUsed || 0);
-          if (creditsUsed > 0) {
-            const uniqueRef = `webhook_credit_${userId}_${session.id}`;
-            // Verificar se ja foi debitado (idempotencia)
-            const existing = await db.execute(sql`SELECT id FROM credit_transactions WHERE reference_id = ${uniqueRef} LIMIT 1`);
-            if ((existing as any).rows?.length === 0) {
-              await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at) VALUES (${userId}, 'usage', ${-creditsUsed}, ${'Creditos aplicados: ' + plan.name}, ${uniqueRef}, ${new Date().toISOString()})`);
-              console.log(`[stripe webhook] Creditos debitados: ${creditsUsed} centavos para userId ${userId} (${plan.name})`);
-            } else {
-              console.log(`[stripe webhook] Creditos ja debitados anteriormente para ${uniqueRef}`);
-            }
-          }
-        } catch (e: any) {
-          console.error("[stripe webhook] Credit debit error:", e.message);
-        }
-
-        // Registrar no audit log
-        try {
-          const buyerResult = await db.execute(sql`SELECT name FROM users WHERE id = ${userId}`);
-          const buyer = (buyerResult as any).rows?.[0];
-          const actionType = isRenewal ? "plan_renewed" : isUpgrade ? "plan_upgraded" : "plan_purchased";
-          const details = JSON.stringify({
-            planKey,
-            planName: plan.name,
-            amountPaid: amountPaid,
-            amountFormatted: (amountPaid / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
-            isRenewal,
-            isUpgrade,
-            stripeSession: session.id,
-          });
-          await db.execute(sql`INSERT INTO audit_logs (admin_id, admin_name, action, target_type, target_id, target_name, details, created_at)
-            VALUES (${0}, ${'Sistema Stripe'}, ${actionType}, ${'payment'}, ${userId}, ${buyer?.name || 'Aluno ' + userId}, ${details}, ${new Date().toISOString()})`);
-        } catch (logErr: any) {
-          console.error("[stripe webhook] Audit log error:", logErr.message);
-        }
-
-        // ─── Auto-cashback ──────────────────────────────────────────────
-        // Renovação = 10% fixo | Nova compra = % variável por plano
-        try {
-          const { CASHBACK_RATES } = await import("./stripe-plans");
-          const RENEWAL_CASHBACK = 0.10;
-          const cashbackRate = isRenewal ? RENEWAL_CASHBACK : (CASHBACK_RATES[planKey as PlanKey] || 0);
-          if (cashbackRate > 0 && amountPaid > 0) {
-            const cashbackRef = 'cashback_' + session.id;
-            const existingCashback = await db.execute(sql`SELECT id FROM credit_transactions WHERE reference_id = ${cashbackRef} LIMIT 1`);
-            if ((existingCashback as any).rows?.length === 0) {
-            const cashbackAmount = Math.floor(amountPaid * cashbackRate);
-            const label = isRenewal
-              ? `Cashback 10% renovação ${plan.name}`
-              : `Cashback ${Math.round(cashbackRate * 100)}% ${plan.name}`;
-            const expiresAt = new Date(Date.now() + 180 * 86400000).toISOString(); // 6 meses
-            await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at, expires_at)
-              VALUES (${userId}, 'cashback', ${cashbackAmount}, ${label}, ${cashbackRef}, ${new Date().toISOString()}, ${expiresAt})`);
-            console.log(`[stripe webhook] ${isRenewal ? 'RENOVAÇÃO ' : ''}Cashback ${Math.round(cashbackRate * 100)}% = ${cashbackAmount} centavos para userId ${userId} (expira ${expiresAt})`);
-            } else {
-              console.log(`[stripe webhook] Cashback ja processado para ${cashbackRef}`);
-            }
-          }
-        } catch (e: any) {
-          console.error("[stripe webhook] Cashback error:", e.message);
-        }
-
-        // ─── Referral credit ────────────────────────────────────────────
-        try {
-          const referralCode = session.metadata?.referralCode;
-          if (referralCode && amountPaid > 0) {
-            const ref = await db.execute(sql`SELECT user_id FROM referral_codes WHERE code = ${referralCode}`);
-            if ((ref as any).rows?.length > 0) {
-              const referrerId = (ref as any).rows[0].user_id;
-              // Bloquear self-referral
-              if (referrerId === userId) {
-                console.log(`[stripe webhook] Self-referral bloqueado para userId ${userId}`);
-              } else {
-              const referralRef = 'referral_' + session.id;
-              const existingReferral = await db.execute(sql`SELECT id FROM credit_transactions WHERE reference_id = ${referralRef} LIMIT 1`);
-              if ((existingReferral as any).rows?.length === 0) {
-              const referralCredit = Math.floor(amountPaid * 0.10);
-              const refExpiresAt = new Date(Date.now() + 180 * 86400000).toISOString(); // 6 meses
-              await db.execute(sql`INSERT INTO credit_transactions (user_id, type, amount, description, reference_id, created_at, expires_at)
-                VALUES (${referrerId}, 'referral', ${referralCredit}, ${'Indicação: ' + planKey}, ${referralRef}, ${new Date().toISOString()}, ${refExpiresAt})`);
-              console.log(`[stripe webhook] Referral credit ${referralCredit} centavos para referrer userId ${referrerId} (expira ${refExpiresAt})`);
-              } else {
-                console.log(`[stripe webhook] Referral credit ja processado para ${referralRef}`);
-              }
-              }
-            }
-          }
-        } catch (e: any) {
-          console.error("[stripe webhook] Referral credit error:", e.message);
-        }
-
-        // ─── Auto-generate contract with full HTML (post-payment) ────────
-        try {
-          if (!isUpgrade) {
-            const { getContractGroup, getContractHTML } = await import("./contract-templates");
-            const group = getContractGroup(planKey);
-            const contractNow = new Date().toISOString();
-            // Fetch student data for contract HTML
-            const studentResult = await db.execute(sql`SELECT name, email, phone FROM users WHERE id = ${userId}`);
-            const student = (studentResult as any).rows?.[0];
-            const contractHtml = getContractHTML(planKey, {
-              studentName: student?.name || "N/A",
-              studentEmail: student?.email || "N/A",
-              studentPhone: student?.phone || "",
-              startDate: new Date().toLocaleDateString("pt-BR"),
-            });
-            await db.execute(sql`INSERT INTO contracts (user_id, plan_key, plan_name, amount_paid, status, contract_group, contract_html, accepted_at, stripe_session_id, created_at)
-              VALUES (${userId}, ${planKey}, ${plan.name}, ${amountPaid}, 'accepted', ${group}, ${contractHtml}, ${contractNow}, ${session.id}, ${contractNow})`);
-            console.log(`[stripe webhook] Contrato aceito automaticamente para userId ${userId} plano ${planKey} grupo ${group} (stripe session: ${session.id})`);
-          }
-        } catch (e: any) {
-          console.error("[stripe webhook] Contract generation error:", e.message);
-        }
+        await fulfillPurchase({
+          userId,
+          planKey,
+          amountPaidCents: session.amount_total ?? PLANS[planKey].price,
+          isUpgrade,
+          creditsUsedCents: Number(session.metadata?.creditsUsed || 0),
+          referralCode: session.metadata?.referralCode || null,
+          paymentRef: session.id,
+          paymentIntentRef: String(session.payment_intent ?? session.id),
+          providerLabel: "Sistema Stripe",
+        });
       }
     }
 

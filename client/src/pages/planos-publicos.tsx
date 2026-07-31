@@ -69,7 +69,7 @@ export default function PlanosPublicos() {
 
   const checkoutMutation = useMutation({
     mutationFn: async (planKey: PaidPlanKey) => {
-      const res = await fetch("/api/stripe/create-public-checkout", {
+      const res = await fetch("/api/asaas/create-public-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planKey, couponCode: couponCode || undefined, qualificacaoFlag: "padrao" }),
