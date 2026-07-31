@@ -214,14 +214,11 @@ export function registerAsaasRoutes(app: Express) {
         ],
       };
 
-      // Pré-preenche dados do cliente quando temos
-      if (user.name || user.email) {
-        body.customerData = {
-          name: user.name || undefined,
-          email: user.email || undefined,
-          phone: (user as any).phone || undefined,
-        };
-      }
+      // NÃO pré-preencher customerData: ao enviar name/email, o Asaas passa a
+      // exigir TODOS os campos do cliente (cpfCnpj, phone, address, postalCode,
+      // province) e rejeita o checkout com 500 se algum faltar — o que quebrava
+      // o botão "comprar" para todo mundo. Deixando de fora, o cliente informa
+      // os próprios dados na tela de pagamento hospedada do Asaas.
 
       if (maxInstallments > 1) {
         body.installment = { maxInstallmentCount: maxInstallments };
