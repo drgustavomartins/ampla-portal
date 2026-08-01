@@ -24,6 +24,7 @@ const whatsappUrl = (key: PaidPlanKey) => `${WHATSAPP_URL}?text=${encodeURICompo
 
 export default function PlanosPublicos() {
   const [loadingPlan, setLoadingPlan] = useState<PaidPlanKey | null>(null);
+  const [triagemPlan, setTriagemPlan] = useState<PaidPlanKey | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: slots } = useQuery<{ sold: number; remaining: number; limit: number; soldOut: boolean }>({
@@ -75,10 +76,18 @@ export default function PlanosPublicos() {
         body: JSON.stringify({ planKey, couponCode: couponCode || undefined, qualificacaoFlag: "padrao" }),
       });
       const json = await res.json();
+      // Plano exige triagem de habilitação profissional → abre aviso + WhatsApp.
+      if (res.status === 403 && json.requiresTriagem) {
+        return { triagem: true, planKey };
+      }
       if (!res.ok) throw new Error(json.message || "Erro");
       return json;
     },
-    onSuccess: (res) => { if (res.url) window.location.href = res.url; },
+    onSuccess: (res: any) => {
+      setLoadingPlan(null);
+      if (res?.triagem) { setTriagemPlan(res.planKey); return; }
+      if (res?.url) window.location.href = res.url;
+    },
     onError: () => { setLoadingPlan(null); alert("Erro ao gerar link de pagamento. Tente novamente."); },
   });
 
@@ -97,6 +106,55 @@ export default function PlanosPublicos() {
 
   return (
     <div className="min-h-screen" style={{ background: "#0A1628", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif" }}>
+
+      {/* ═══ MODAL DE TRIAGEM (habilitação profissional) ═══ */}
+      {triagemPlan && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
+          onClick={() => setTriagemPlan(null)}
+        >
+          <div
+            className="relative w-full max-w-md rounded-2xl p-6 sm:p-8 text-center"
+            style={{ background: "#0F1E36", border: "1px solid rgba(212,168,67,0.25)", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setTriagemPlan(null)}
+              className="absolute top-4 right-4 text-white/40 hover:text-white/80 transition-colors"
+              aria-label="Fechar"
+            >✕</button>
+
+            <div className="text-4xl mb-4">🩺</div>
+            <h3 className="text-xl font-bold text-white mb-3">Verificação de habilitação</h3>
+            <p className="text-sm text-white/70 leading-relaxed mb-2">
+              Este plano inclui <strong className="text-white/90">prática clínica em pacientes</strong>.
+              Por responsabilidade profissional, a Harmonização Orofacial é restrita a profissionais
+              legalmente habilitados.
+            </p>
+            <p className="text-sm text-white/70 leading-relaxed mb-6">
+              Antes de concluir a matrícula, nossa equipe confirma sua habilitação com você — é rápido
+              e garante que você aproveite a formação com segurança.
+            </p>
+
+            <a
+              href={whatsappUrl(triagemPlan)}
+              target="_blank" rel="noopener noreferrer"
+              onClick={() => setTriagemPlan(null)}
+              className="flex items-center justify-center gap-2 w-full rounded-xl py-3.5 font-semibold transition-transform hover:scale-[1.02]"
+              style={{ background: "linear-gradient(135deg, #25D366, #1EBE57)", color: "#04240F" }}
+            >
+              Falar com a equipe no WhatsApp
+            </a>
+            <button
+              onClick={() => setTriagemPlan(null)}
+              className="mt-3 text-xs text-white/40 hover:text-white/60 transition-colors"
+            >
+              Voltar aos planos
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ═══ HEADER ═══ */}
       <header
@@ -393,7 +451,7 @@ export default function PlanosPublicos() {
 
                 >
 
-                  Quero parcelar em 12x — falar no WhatsApp
+                  Parcelar em até 21x no cartão
 
                 </a>
               </div>
@@ -482,7 +540,7 @@ export default function PlanosPublicos() {
 
                 >
 
-                  Quero parcelar em 12x — falar no WhatsApp
+                  Parcelar em até 21x no cartão
 
                 </a>
               </div>
@@ -525,7 +583,7 @@ export default function PlanosPublicos() {
               <div className="mt-6 min-h-[100px] text-center">
                 <p className="text-[10px] uppercase tracking-wider text-white/40 whitespace-nowrap">à vista</p>
                 <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-purple-400 whitespace-nowrap leading-none">R$ 17.350</span>
-                <p className="text-xs text-white/40 mt-1 whitespace-nowrap">em até 12x — consulte no WhatsApp</p>
+                <p className="text-xs text-white/40 mt-1 whitespace-nowrap">ou até 21x no cartão</p>
               </div>
 
               <div className="mt-3 flex justify-center">
@@ -585,7 +643,7 @@ export default function PlanosPublicos() {
 
                 >
 
-                  Quero parcelar em 12x — falar no WhatsApp
+                  Parcelar em até 21x no cartão
 
                 </a>
               </div>
@@ -670,7 +728,7 @@ export default function PlanosPublicos() {
 
                 >
 
-                  Quero parcelar em 12x — falar no WhatsApp
+                  Parcelar em até 21x no cartão
 
                 </a>
               </div>

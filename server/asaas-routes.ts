@@ -14,6 +14,7 @@ import {
   maxInstallmentsFor,
 } from "./stripe-plans";
 import type { PlanKey } from "@shared/schema";
+import { requiresTriagem } from "@shared/access-rules";
 import jwt from "jsonwebtoken";
 import {
   asaasRequest,
@@ -164,6 +165,19 @@ export function registerAsaasRoutes(app: Express) {
         return res.status(410).json({ message: "Este plano não está mais disponível para compra." });
       }
 
+      // TRAVA DE QUALIFICAÇÃO PROFISSIONAL:
+      // Planos com prática clínica exigem triagem de habilitação antes da compra.
+      // Não geramos checkout direto — o interessado (mesmo já sendo aluno, mesmo em
+      // upgrade) é direcionado ao WhatsApp para a equipe verificar a habilitação.
+      // Aplicada aqui no servidor de propósito: é a barreira real, não o botão.
+      if (requiresTriagem(planKey)) {
+        return res.status(403).json({
+          requiresTriagem: true,
+          message:
+            "Este plano inclui prática clínica e exige verificação de habilitação profissional. Fale com nossa equipe para seguir com a matrícula.",
+        });
+      }
+
       // Extensão: exclusiva para VIP atuais/passados
       if (planKey === "extensao_acompanhamento") {
         const userCheck = await db.execute(sql`SELECT plan_key FROM users WHERE id = ${auth.userId}`);
@@ -179,6 +193,32 @@ export function registerAsaasRoutes(app: Express) {
 
       const calc = await computeAmountToPay(auth.userId, planKey, !!isUpgrade, creditsToUse, referralCode);
       if (!calc.ok) return res.status(calc.status).json({ message: calc.message });
+
+      // Crédito cobre 100% do valor → não há o que cobrar. O Asaas recusa
+      // cobranças de R$0 ("não pode ser menor que R$ 5,00"), então provisionamos
+      // direto aqui, chamando o MESMO fulfillPurchase que o webhook usaria.
+      // paymentRef exclusivo por usuário+plano+dia garante idempotência.
+      if (calc.amountCents === 0) {
+        const paymentRef = `credit_full_${auth.userId}_${planKey}_${Date.now()}`;
+        await fulfillPurchase({
+          userId: auth.userId,
+          planKey,
+          amountPaidCents: 0,
+          isUpgrade: !!isUpgrade,
+          creditsUsedCents: calc.creditsUsedCents,
+          referralCode: calc.referralCode,
+          paymentRef,
+          paymentIntentRef: paymentRef,
+          providerLabel: "Crédito integral",
+        });
+        return res.json({
+          url: `${BASE_URL}/#/pagamento/sucesso?plan=${planKey}`,
+          fullyPaidByCredit: true,
+          amountCents: 0,
+          amountFormatted: formatBRL(0),
+          message: "Acesso liberado — valor coberto integralmente por créditos.",
+        });
+      }
 
       const amountReais = calc.amountCents / 100;
       const maxInstallments = maxInstallmentsFor(plan);
@@ -247,6 +287,118 @@ export function registerAsaasRoutes(app: Express) {
       return res.status(500).json({ message: "Erro ao criar checkout: " + e.message });
     }
   });
+
+  // ─── POST /api/asaas/create-public-checkout ───────────────────────────────────
+  // Checkout público (SEM login) para a landing page.
+  //
+  // DESLIGADO TEMPORARIAMENTE (até o onboarding de comprador anônimo existir):
+  // o fluxo público exige criar conta + senha + e-mail de boas-vindas a partir do
+  // e-mail informado no checkout, e o webhook ainda não faz isso. Habilitar sem
+  // esse onboarding faria o comprador pagar e NÃO receber acesso. Por segurança,
+  // todos os pedidos públicos são direcionados à triagem por WhatsApp até a
+  // próxima rodada. A lógica de checkout já está escrita abaixo (após o guard),
+  // pronta para ser religada quando o onboarding público estiver implementado.
+  app.post("/api/asaas/create-public-checkout", async (req: Request, res: Response) => {
+    const { planKey } = req.body as { planKey?: PlanKey };
+    return res.status(403).json({
+      requiresTriagem: true,
+      message:
+        "Para garantir sua matrícula com segurança, finalize com nossa equipe pelo WhatsApp.",
+      planKey: planKey || null,
+    });
+  });
+
+  // ─── (desativado) implementação do checkout público — religar na próxima rodada
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async function _publicCheckoutImpl(req: Request, res: Response) {
+    try {
+      if (!isAsaasConfigured()) {
+        return res.status(503).json({ message: "Pagamentos não configurados ainda" });
+      }
+      const { planKey, couponCode, qualificacaoFlag } = req.body as {
+        planKey: PlanKey;
+        couponCode?: string;
+        qualificacaoFlag?: string;
+      };
+      const plan = PLANS[planKey];
+      if (!plan) return res.status(400).json({ message: "Plano inválido" });
+      if ((plan as any).deprecated) {
+        return res.status(410).json({ message: "Este plano não está mais disponível para compra." });
+      }
+
+      if (requiresTriagem(planKey)) {
+        return res.status(403).json({
+          requiresTriagem: true,
+          message:
+            "Este plano inclui prática clínica e exige verificação de habilitação profissional. Fale com nossa equipe para seguir com a matrícula.",
+        });
+      }
+
+      let finalPrice = plan.price;
+      let referralDiscount = 0;
+      const code = (couponCode || "").trim().toUpperCase();
+      if (code) {
+        const refCheck = await db.execute(sql`SELECT user_id FROM referral_codes WHERE UPPER(code) = ${code}`);
+        if ((refCheck as any).rows?.length > 0) {
+          referralDiscount = Math.floor(finalPrice * 0.1);
+          finalPrice -= referralDiscount;
+        }
+        if (referralDiscount === 0) {
+          const cup = await db.execute(sql`
+            SELECT code, discount_percent, expires_at, plan_keys, max_uses, used_count
+            FROM invite_codes WHERE UPPER(code) = ${code} AND type = 'discount' AND active = true
+          `);
+          const c: any = (cup as any).rows?.[0];
+          if (c) {
+            const expirou = c.expires_at ? new Date(c.expires_at) <= new Date() : false;
+            const esgotou = c.max_uses > 0 && c.used_count >= c.max_uses;
+            let planoOk = true;
+            if (c.plan_keys) {
+              try { planoOk = (JSON.parse(c.plan_keys) as string[]).includes(planKey); } catch { planoOk = true; }
+            }
+            if (!expirou && !esgotou && planoOk && c.discount_percent > 0) {
+              finalPrice -= Math.floor(finalPrice * (c.discount_percent / 100));
+            }
+          }
+        }
+      }
+
+      const maxInstallments = maxInstallmentsFor(plan);
+      const chargeTypes = maxInstallments > 1 ? ["INSTALLMENT", "DETACHED"] : ["DETACHED"];
+      const externalReference = JSON.stringify({
+        planKey,
+        isPublic: true,
+        source: "publico",
+        qualificacaoFlag: qualificacaoFlag || "padrao",
+        referralCode: code || null,
+      });
+      const body: any = {
+        billingTypes: ["PIX", "CREDIT_CARD"],
+        chargeTypes,
+        minutesToExpire: 60,
+        externalReference,
+        callback: {
+          successUrl: `${BASE_URL}/#/pagamento/sucesso?plan=${planKey}`,
+          cancelUrl: `${BASE_URL}/#/comecar`,
+          expiredUrl: `${BASE_URL}/#/comecar`,
+        },
+        items: [{ name: plan.name, description: plan.name, quantity: 1, value: finalPrice / 100 }],
+      };
+      if (maxInstallments > 1) body.installment = { maxInstallmentCount: maxInstallments };
+      const checkout = await asaasRequest<{ id: string; link?: string }>("/checkouts", {
+        method: "POST",
+        body,
+      });
+      return res.json({
+        url: checkout.link || checkoutUrl(checkout.id),
+        checkoutId: checkout.id,
+        maxInstallments,
+      });
+    } catch (e: any) {
+      console.error("[POST /api/asaas/create-public-checkout]", e.message);
+      return res.status(500).json({ message: "Erro ao criar checkout: " + e.message });
+    }
+  }
 
   // ─── POST /api/asaas/webhook ──────────────────────────────────────────────────
   // Casca fina: valida token, resolve o pagamento e chama fulfillPurchase.

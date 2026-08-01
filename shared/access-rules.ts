@@ -120,6 +120,42 @@ export const DIRECT_CHANNEL_PLAN_KEYS = new Set<string>([
   "extensao_acompanhamento",
 ]);
 
+/**
+ * Planos que EXIGEM triagem de qualificação profissional antes da compra.
+ *
+ * Harmonização Orofacial com prática em paciente é ato restrito a profissionais
+ * legalmente habilitados. Todo plano que inclui observação clínica ou prática
+ * hands-on NÃO pode ser comprado direto no checkout — o interessado é enviado ao
+ * WhatsApp para a equipe verificar a habilitação antes de liberar a compra.
+ *
+ * Critério: qualquer plano com clinicalHours > 0 OU practiceHours > 0.
+ * Só o plano puramente digital (plataforma_anual, 0h de prática) compra direto.
+ *
+ * Esta trava vale nos DOIS fluxos (LP pública e upgrade dentro da plataforma) e
+ * é aplicada no SERVIDOR — esconder o botão no frontend não basta, pois a rota
+ * poderia ser chamada diretamente.
+ */
+export const REQUIRES_TRIAGEM_PLAN_KEYS = new Set<string>([
+  "observador_essencial",
+  "modulo_pratica",
+  "vip_completo",
+  "imersao_elite",
+  "extensao_acompanhamento",
+  // Legados com prática, mantidos por segurança caso algum registro antigo exista:
+  "observador_avancado",
+  "observador_intensivo",
+  "imersao",
+  "vip_online",
+  "vip_presencial",
+  "pacote_completo",
+  "modulo_avulso",
+]);
+
+/** true = este plano exige triagem por WhatsApp e não pode ser comprado direto. */
+export function requiresTriagem(planKey: string | null | undefined): boolean {
+  return !!planKey && REQUIRES_TRIAGEM_PLAN_KEYS.has(planKey);
+}
+
 /** Mapa: tema → IDs dos módulos liberados pelo plano `modulo_pratica`. */
 export const THEME_TO_MODULE_IDS: Record<string, number[]> = {
   toxina: [6, 2],
