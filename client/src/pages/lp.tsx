@@ -162,7 +162,13 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0A0D14] text-white antialiased">
+    <div className="min-h-screen text-white antialiased relative overflow-x-hidden">
+      {/* Ambient orbs LP */}
+      <div aria-hidden="true" className="pointer-events-none select-none fixed inset-0 z-0 overflow-hidden">
+        <div style={{ position:'absolute', top:'-5%', right:'-5%', width:'55vw', height:'60vh', background:'radial-gradient(ellipse at center, rgba(30,65,160,0.20) 0%, transparent 65%)', filter:'blur(60px)' }} />
+        <div style={{ position:'absolute', top:'40%', left:'-8%', width:'40vw', height:'50vh', background:'radial-gradient(ellipse at center, rgba(212,168,67,0.065) 0%, transparent 65%)', filter:'blur(50px)' }} />
+        <div style={{ position:'absolute', bottom:'-5%', right:'20%', width:'45vw', height:'45vh', background:'radial-gradient(ellipse at center, rgba(15,35,90,0.35) 0%, transparent 70%)', filter:'blur(55px)' }} />
+      </div>
       {/* ═══ BANNER ACESSO VITALÍCIO (links to /planos-publicos) ═══ */}
       {!countdown.expired && (
         <a

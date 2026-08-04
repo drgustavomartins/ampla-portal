@@ -174,12 +174,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ background: "radial-gradient(ellipse at 50% 10%, hsl(216 60% 14%) 0%, hsl(216 60% 7%) 70%)" }}
-    >
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      {/* Ambient orbs — profundidade premium */}
+      <div aria-hidden="true" className="pointer-events-none select-none absolute inset-0 z-0 overflow-hidden">
+        {/* Orb dourado inferior */}
+        <div style={{ position:'absolute', bottom:'-10%', left:'50%', transform:'translateX(-50%)', width:'70vw', height:'50vh', background:'radial-gradient(ellipse at center, rgba(212,168,67,0.10) 0%, transparent 70%)', filter:'blur(48px)' }} />
+        {/* Orb azul superior-direito */}
+        <div style={{ position:'absolute', top:'-8%', right:'-10%', width:'50vw', height:'55vh', background:'radial-gradient(ellipse at center, rgba(30,65,160,0.22) 0%, transparent 65%)', filter:'blur(56px)' }} />
+        {/* Orb sutil centro-esquerdo */}
+        <div style={{ position:'absolute', top:'35%', left:'-5%', width:'35vw', height:'40vh', background:'radial-gradient(ellipse at center, rgba(15,35,90,0.30) 0%, transparent 70%)', filter:'blur(40px)' }} />
+        {/* Linha de brilho horizontal sutil */}
+        <div style={{ position:'absolute', top:'48%', left:0, right:0, height:'1px', background:'linear-gradient(90deg, transparent 0%, rgba(212,168,67,0.07) 30%, rgba(212,168,67,0.12) 50%, rgba(212,168,67,0.07) 70%, transparent 100%)' }} />
+      </div>
+
       {/* ===== DUAS COLUNAS ===== */}
-      <div className="flex flex-col lg:flex-row flex-1">
+      <div className="flex flex-col lg:flex-row flex-1 relative z-10">
 
       {/* ===== COLUNA ESQUERDA — Formulário ===== */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 pt-8 lg:pt-4 lg:border-r lg:border-white/5">
