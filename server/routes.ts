@@ -8312,7 +8312,24 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
     }
   });
 
-
+  // ─── Redirect de artigo: /artigo/:id → external_url do material_file ────────
+  // Os QR codes nos slides das aulas apontam para esta rota estável.
+  // Ao atualizar external_url no DB o link já muda sem regerar o QR code.
+  app.get("/artigo/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).send("ID inválido");
+      const rows = await db.execute(sql`SELECT external_url, drive_id FROM material_files WHERE id = ${id}`);
+      const row = (rows as any).rows?.[0];
+      const url = row?.external_url || row?.drive_id;
+      if (!url || !url.startsWith("http")) {
+        return res.status(404).send("Artigo não encontrado");
+      }
+      return res.redirect(302, url);
+    } catch (e: any) {
+      return res.status(500).send("Erro interno");
+    }
+  });
 
 }
 
