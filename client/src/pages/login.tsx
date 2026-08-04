@@ -177,14 +177,16 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col relative overflow-hidden">
       {/* Ambient orbs — profundidade premium */}
       <div aria-hidden="true" className="pointer-events-none select-none absolute inset-0 z-0 overflow-hidden">
-        {/* Orb dourado inferior */}
-        <div style={{ position:'absolute', bottom:'-10%', left:'50%', transform:'translateX(-50%)', width:'70vw', height:'50vh', background:'radial-gradient(ellipse at center, rgba(212,168,67,0.10) 0%, transparent 70%)', filter:'blur(48px)' }} />
-        {/* Orb azul superior-direito */}
-        <div style={{ position:'absolute', top:'-8%', right:'-10%', width:'50vw', height:'55vh', background:'radial-gradient(ellipse at center, rgba(30,65,160,0.22) 0%, transparent 65%)', filter:'blur(56px)' }} />
-        {/* Orb sutil centro-esquerdo */}
-        <div style={{ position:'absolute', top:'35%', left:'-5%', width:'35vw', height:'40vh', background:'radial-gradient(ellipse at center, rgba(15,35,90,0.30) 0%, transparent 70%)', filter:'blur(40px)' }} />
-        {/* Linha de brilho horizontal sutil */}
-        <div style={{ position:'absolute', top:'48%', left:0, right:0, height:'1px', background:'linear-gradient(90deg, transparent 0%, rgba(212,168,67,0.07) 30%, rgba(212,168,67,0.12) 50%, rgba(212,168,67,0.07) 70%, transparent 100%)' }} />
+        {/* Orb dourado inferior — calor premium */}
+        <div style={{ position:'absolute', bottom:'-15%', left:'50%', transform:'translateX(-50%)', width:'90vw', height:'55vh', background:'radial-gradient(ellipse at center, rgba(212,168,67,0.13) 0%, transparent 65%)', filter:'blur(60px)' }} />
+        {/* Orb azul superior-direito — profundidade */}
+        <div style={{ position:'absolute', top:'-10%', right:'-12%', width:'55vw', height:'60vh', background:'radial-gradient(ellipse at center, rgba(20,60,180,0.30) 0%, transparent 60%)', filter:'blur(64px)' }} />
+        {/* Orb sutil esquerdo — balanço */}
+        <div style={{ position:'absolute', top:'30%', left:'-8%', width:'40vw', height:'45vh', background:'radial-gradient(ellipse at center, rgba(10,30,100,0.28) 0%, transparent 70%)', filter:'blur(48px)' }} />
+        {/* Linha dourada — divisão elegante */}
+        <div style={{ position:'absolute', top:'47%', left:0, right:0, height:'1px', background:'linear-gradient(90deg, transparent 5%, rgba(212,168,67,0.08) 25%, rgba(212,168,67,0.18) 50%, rgba(212,168,67,0.08) 75%, transparent 95%)' }} />
+        {/* Brilho topo central sutil */}
+        <div style={{ position:'absolute', top:'-5%', left:'50%', transform:'translateX(-50%)', width:'60vw', height:'30vh', background:'radial-gradient(ellipse at center, rgba(25,55,140,0.20) 0%, transparent 70%)', filter:'blur(40px)' }} />
       </div>
 
       {/* ===== DUAS COLUNAS ===== */}
