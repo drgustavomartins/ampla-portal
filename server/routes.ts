@@ -8319,7 +8319,8 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
     try {
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) return res.status(400).send("ID inválido");
-      const rows = await db.execute(sql`SELECT external_url, drive_id FROM material_files WHERE id = ${id}`);
+      const { db: artDb } = await import("./db");
+      const rows = await artDb.execute(sql`SELECT external_url, drive_id FROM material_files WHERE id = ${id}`);
       const row = (rows as any).rows?.[0];
       const url = row?.external_url || row?.drive_id;
       if (!url || !url.startsWith("http")) {
