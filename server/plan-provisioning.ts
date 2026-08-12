@@ -128,4 +128,14 @@ export const PLAN_PROVISIONING: Record<string, PlanProvisioning> = {
     mentorshipMonths: 12,
     supportMonths: 12,
   },
+  // Equipe interna (estagiários, assistentes, colaboradores da Ampla Facial).
+  // NÃO é um plano de venda — não aparece no catálogo público nem gera
+  // comissão. Dá acesso a todo o conteúdo gravado + Encontros Quinzenais,
+  // com prazo real de 12 meses (renovável manualmente pelo admin).
+  equipe_interna: {
+    modules: MODULES_COMPLETO.map(id => ({ moduleId: id, enabled: true })),
+    materials: MATS_COMPLETO,
+    mentorshipMonths: 12,
+    supportMonths: 0,
+  },
 };

@@ -62,6 +62,7 @@ export const FULL_ACCESS_PLAN_KEYS = new Set<string>([
   "observacional_moderado",
   "extensao_acompanhamento",
   "workshop",
+  "equipe_interna",
 ]);
 
 /**
@@ -74,6 +75,10 @@ export const FULL_ACCESS_PLAN_KEYS = new Set<string>([
  */
 export const EXPIRING_PLAN_KEYS = new Set<string>([
   "plataforma_anual",
+  // equipe_interna: chave nova, criada já com access_expires_at preenchido.
+  // Nenhum usuário histórico usa esta chave, então ligar a expiração aqui
+  // não tranca ninguém para fora.
+  "equipe_interna",
 ]);
 
 /** Planos legados que liberam apenas um módulo específico. */
@@ -98,6 +103,7 @@ export const MENTORIA_ATIVA_PLAN_KEYS = new Set<string>([
   "imersao_elite",
   "extensao_acompanhamento",
   "workshop",
+  "equipe_interna",
 ]);
 
 /**

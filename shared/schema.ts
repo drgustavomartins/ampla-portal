@@ -38,6 +38,11 @@ export const PLAN_KEYS = [
   "observacao_extra_2",
   "observacao_extra_3",
   "workshop",
+  // NOTA: "equipe_interna" NÃO entra aqui de propósito. PLAN_KEYS alimenta
+  // Record<PlanKey, PlanConfig> em server/stripe-plans.ts, que é o catálogo
+  // de VENDA — incluí-la criaria um produto comprável. A chave interna vive
+  // apenas nos Sets de shared/access-rules.ts (Set<string>) e no mapa de
+  // provisionamento. Ver PLAN_PROVISIONING.equipe_interna.
 ] as const;
 export type PlanKey = typeof PLAN_KEYS[number];
 
