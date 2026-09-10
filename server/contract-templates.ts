@@ -14,6 +14,12 @@ export interface ContractData {
   studentEmail: string;
   studentPhone: string;
   startDate: string;
+  // Campos opcionais — usados em contratos emitidos pelo admin (assinatura no 1º login)
+  studentCpf?: string;
+  studentAddress?: string;
+  studentGraduation?: string;
+  /** Substitui a cláusula de valor/pagamento padrão. HTML confiável (gerado no servidor/admin), NÃO escapado. */
+  paymentClauseHtml?: string;
 }
 
 // ─── Security helpers ───────────────────────────────────────────────────────
@@ -85,11 +91,19 @@ export function getContractHTML(planKey: string, data: ContractData): string {
 <p style="text-align:center;color:#999;margin-bottom:24px;font-size:12px;">Ampla Facial — Harmonização Orofacial</p>
 `;
 
-  // Parties
+  // Parties — AMPLA FACIAL presta o serviço (CONTRATADA); o(a) aluno(a) contrata (CONTRATANTE)
+  const studentQualif = [
+    escapeHtml(data.studentName),
+    data.studentCpf ? `inscrito(a) no CPF sob nº ${escapeHtml(data.studentCpf)}` : "",
+    data.studentGraduation ? `graduado(a) em ${escapeHtml(data.studentGraduation)}` : "",
+    data.studentAddress ? `residente e domiciliado(a) em ${escapeHtml(data.studentAddress)}` : "",
+    `e-mail ${escapeHtml(data.studentEmail)}`,
+    data.studentPhone ? `telefone ${escapeHtml(data.studentPhone)}` : "",
+  ].filter(Boolean).join(", ");
   body += `
 <h2>DAS PARTES</h2>
-<p><strong>CONTRATANTE:</strong> ${COMPANY.name}, inscrita no CNPJ sob nº ${COMPANY.cnpj}, com sede em ${COMPANY.address}, doravante denominada <strong>AMPLA FACIAL</strong>, representada pelo ${COMPANY.responsible}.</p>
-<p><strong>CONTRATADO(A):</strong> ${escapeHtml(data.studentName)}, e-mail ${escapeHtml(data.studentEmail)}${data.studentPhone ? `, telefone ${escapeHtml(data.studentPhone)}` : ""}, doravante denominado(a) <strong>ALUNO(A)</strong>.</p>
+<p><strong>CONTRATADA:</strong> ${COMPANY.name}, inscrita no CNPJ sob nº ${COMPANY.cnpj}, com sede em ${COMPANY.address}, doravante denominada <strong>AMPLA FACIAL</strong>, representada pelo ${COMPANY.responsible}.</p>
+<p><strong>CONTRATANTE:</strong> ${studentQualif}, doravante denominado(a) <strong>ALUNO(A)</strong>.</p>
 `;
 
   // ─── Cláusula 1 — Objeto ────────────────────────────────────────────────────
@@ -155,17 +169,21 @@ export function getContractHTML(planKey: string, data: ContractData): string {
   // ─── Cláusula 3 — Valor e Pagamento ────────────────────────────────────────
   const c3 = nextClause();
   body += `<h2>Cláusula ${c3} — Do Valor e Pagamento</h2>`;
-  body += `<p>O(A) ALUNO(A) pagará à AMPLA FACIAL o valor de <strong>${fmtBRL(plan.price)}</strong> (${plan.name}), mediante pagamento via plataforma digital (cartão de crédito, PIX ou boleto bancário) processado pelo sistema Asaas.</p>`;
-  const parcela12 = getInstallments12x(plan);
-  if (parcela12) {
-    body += `<p>Opção de parcelamento: até ${MAX_INSTALLMENTS_NO_INTEREST}x de ${fmtBRL(parcela12)} <strong>sem juros</strong>.</p>`;
-    const maxN = maxInstallmentsFor(plan);
-    if (maxN > MAX_INSTALLMENTS_NO_INTEREST) {
-      const parcelaMax = installmentValueCents(plan.price, maxN);
-      body += `<p>Parcelamentos acima de ${MAX_INSTALLMENTS_NO_INTEREST}x estão sujeitos a juros de parcelamento assumidos pelo(a) ALUNO(A), chegando a até ${maxN}x de ${fmtBRL(parcelaMax)} (total de ${fmtBRL(parcelaMax * maxN)}). Disponível apenas para cartões das bandeiras Visa e Mastercard.</p>`;
+  if (data.paymentClauseHtml) {
+    body += data.paymentClauseHtml;
+  } else {
+    body += `<p>O(A) ALUNO(A) pagará à AMPLA FACIAL o valor de <strong>${fmtBRL(plan.price)}</strong> (${plan.name}), mediante pagamento via plataforma digital (cartão de crédito, PIX ou boleto bancário) processado pelo sistema Asaas.</p>`;
+    const parcela12 = getInstallments12x(plan);
+    if (parcela12) {
+      body += `<p>Opção de parcelamento: até ${MAX_INSTALLMENTS_NO_INTEREST}x de ${fmtBRL(parcela12)} <strong>sem juros</strong>.</p>`;
+      const maxN = maxInstallmentsFor(plan);
+      if (maxN > MAX_INSTALLMENTS_NO_INTEREST) {
+        const parcelaMax = installmentValueCents(plan.price, maxN);
+        body += `<p>Parcelamentos acima de ${MAX_INSTALLMENTS_NO_INTEREST}x estão sujeitos a juros de parcelamento assumidos pelo(a) ALUNO(A), chegando a até ${maxN}x de ${fmtBRL(parcelaMax)} (total de ${fmtBRL(parcelaMax * maxN)}). Disponível apenas para cartões das bandeiras Visa e Mastercard.</p>`;
+      }
     }
+    body += `<p>O pagamento integral é condição para a liberação do acesso ao conteúdo e serviços contratados.</p>`;
   }
-  body += `<p>O pagamento integral é condição para a liberação do acesso ao conteúdo e serviços contratados.</p>`;
 
   // ─── Cláusula 4 — Obrigações do Contratante ───────────────────────────────
   const c4 = nextClause();
@@ -240,7 +258,7 @@ export function getContractHTML(planKey: string, data: ContractData): string {
   const c8 = nextClause();
   body += `<h2>Cláusula ${c8} — Da Proteção de Dados (LGPD)</h2>`;
   body += `<p>A AMPLA FACIAL se compromete a tratar os dados pessoais do(a) ALUNO(A) em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018), utilizando-os exclusivamente para as finalidades previstas neste contrato e na prestação dos serviços educacionais.</p>`;
-  body += `<p>Os dados coletados incluem: nome, e-mail, telefone e dados de pagamento, sendo armazenados com medidas técnicas e organizacionais de segurança adequadas. O(A) ALUNO(A) pode solicitar acesso, correção ou exclusão de seus dados a qualquer momento pelo e-mail contato@amplafacial.com.br.</p>`;
+  body += `<p>Os dados coletados incluem: nome, e-mail, telefone${data.studentCpf ? ", CPF" : ""}${data.studentAddress ? ", endereço" : ""} e dados de pagamento, sendo armazenados com medidas técnicas e organizacionais de segurança adequadas. O(A) ALUNO(A) pode solicitar acesso, correção ou exclusão de seus dados a qualquer momento pelo e-mail contato@amplafacial.com.br.</p>`;
   body += `<p>O(A) ALUNO(A) consente com o tratamento de seus dados pessoais para fins de execução deste contrato, comunicação sobre o curso e emissão de certificados.</p>`;
 
   // ─── Cláusula 9 — Disposições Gerais ───────────────────────────────────────
@@ -274,7 +292,7 @@ export function getContractHTML(planKey: string, data: ContractData): string {
 </div>
 <div style="text-align:center;">
 <div style="border-bottom:1px solid #333;width:260px;margin-bottom:4px;">&nbsp;</div>
-<small><strong>${escapeHtml(data.studentName)}</strong><br/>${escapeHtml(data.studentEmail)}</small>
+<small><strong>${escapeHtml(data.studentName)}</strong><br/>${data.studentCpf ? `CPF: ${escapeHtml(data.studentCpf)}<br/>` : ""}${escapeHtml(data.studentEmail)}</small>
 </div>
 </div>
 </div>

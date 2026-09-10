@@ -6097,6 +6097,99 @@ ${row.notes ? '<div class="section"><h3>Observacoes</h3><p style="font-size:13px
     }
   });
 
+  // ==================== CONTRATO PENDENTE (assinatura no 1º login) ====================
+  // Contratos emitidos pelo admin nascem com status 'pending'. Enquanto houver um
+  // pendente, o ContractGate do cliente bloqueia o portal até a assinatura.
+
+  // GET /api/contracts/pending — contrato aguardando assinatura do próprio aluno
+  app.get("/api/contracts/pending", async (req: Request, res: Response) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const { db } = await import("./db");
+      const result = await db.execute(sql`SELECT id, plan_key, plan_name, contract_html, created_at FROM contracts WHERE user_id = ${auth.userId} AND status = 'pending' ORDER BY created_at ASC LIMIT 1`);
+      const r = (result as any).rows?.[0];
+      if (!r) return res.json({ contract: null });
+      res.json({ contract: { id: r.id, planKey: r.plan_key, planName: r.plan_name, html: r.contract_html, createdAt: r.created_at } });
+    } catch (e: any) {
+      console.error("[contracts/pending] Error:", e.message);
+      res.status(500).json({ message: "Erro ao buscar contrato pendente" });
+    }
+  });
+
+  // POST /api/contracts/:id/sign — aluno assina eletronicamente o contrato pendente
+  app.post("/api/contracts/:id/sign", async (req: Request, res: Response) => {
+    const auth = authenticateRequest(req);
+    if (!auth) return res.status(401).json({ message: "Não autorizado" });
+    try {
+      const { db } = await import("./db");
+      const crypto = await import("crypto");
+      const contractId = safeParseInt(req.params.id as string);
+      if (!contractId) return res.status(400).json({ message: "ID inválido" });
+      const { agree, typedName } = (req.body || {}) as { agree?: boolean; typedName?: string };
+      const cleanName = String(typedName || "").trim().replace(/\s+/g, " ");
+      if (agree !== true) return res.status(400).json({ message: "É necessário concordar com os termos." });
+      if (cleanName.length < 5 || cleanName.split(" ").length < 2) {
+        return res.status(400).json({ message: "Digite seu nome completo para assinar." });
+      }
+
+      const cRes = await db.execute(sql`SELECT c.id, c.user_id, c.status, c.plan_name, c.contract_html, u.name, u.email FROM contracts c JOIN users u ON u.id = c.user_id WHERE c.id = ${contractId} LIMIT 1`);
+      const c = (cRes as any).rows?.[0];
+      if (!c || c.user_id !== auth.userId) return res.status(404).json({ message: "Contrato não encontrado" });
+      if (c.status !== "pending") return res.status(409).json({ message: "Este contrato já foi assinado." });
+
+      const now = new Date();
+      const nowIso = now.toISOString();
+      const nowBr = now.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+      const ip = req.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() || req.ip || "unknown";
+      const userAgent = String(req.headers["user-agent"] || "unknown").slice(0, 500);
+      const originalHtml: string = c.contract_html || "";
+      const hash = crypto.createHash("sha256").update(originalHtml, "utf8").digest("hex");
+      const esc = (v: string) => v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      const stamp = `
+<div style="margin-top:32px;padding:16px 20px;border:1px solid #D4A843;border-radius:8px;background:#FBF8F1;font-family:Arial,sans-serif;font-size:12px;line-height:1.6;color:#333;">
+<p style="margin:0 0 6px;font-weight:bold;color:#0A1628;">REGISTRO DE ASSINATURA ELETRÔNICA</p>
+<p style="margin:0;">Assinado por: <strong>${esc(cleanName)}</strong> (usuário #${c.user_id} — ${esc(c.email || "")})</p>
+<p style="margin:0;">Data/hora: ${esc(nowBr)} (horário de Brasília) — ${nowIso}</p>
+<p style="margin:0;">IP: ${esc(ip)}</p>
+<p style="margin:0;">Dispositivo: ${esc(userAgent)}</p>
+<p style="margin:0;">Hash SHA-256 do documento aceito: <code>${hash}</code></p>
+<p style="margin:6px 0 0;color:#666;">Aceite realizado mediante login pessoal com senha, leitura do contrato, digitação do nome completo e confirmação expressa ("Li e concordo"), nos termos da MP nº 2.200-2/2001, art. 10, §2º.</p>
+</div>`;
+      const signedHtml = originalHtml.includes("</body>") ? originalHtml.replace("</body>", `${stamp}\n</body>`) : originalHtml + stamp;
+
+      const upd = await db.execute(sql`UPDATE contracts SET status = 'accepted', accepted_at = ${nowIso}, signed_at = ${nowIso}, accepted_ip = ${ip}, accepted_user_agent = ${userAgent}, contract_html = ${signedHtml}
+        WHERE id = ${contractId} AND user_id = ${auth.userId} AND status = 'pending' RETURNING id`);
+      if (!(upd as any).rows?.[0]) return res.status(409).json({ message: "Este contrato já foi assinado." });
+
+      await logAction(auth.userId, c.name || cleanName, "contract_signed", "contract", contractId, c.plan_name, { typedName: cleanName, ip, hash }).catch(() => {});
+
+      // Cópia do contrato assinado por e-mail (aluno + cópia para o Dr. Gustavo)
+      if (resend && c.email) {
+        const firstName = String(c.name || cleanName).split(" ")[0];
+        resend.emails.send({
+          from: "Ampla Facial <noreply@amplafacial.com.br>",
+          to: [c.email],
+          bcc: ["gustavo.m.martins@outlook.com"],
+          replyTo: "gustavo.m.martins@outlook.com",
+          subject: `Seu contrato Ampla Facial — ${c.plan_name}`,
+          html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;color:#222;line-height:1.6">
+            <p>Olá, ${esc(firstName)}!</p>
+            <p>Seu contrato <strong>${esc(c.plan_name)}</strong> foi assinado eletronicamente em ${esc(nowBr)}.</p>
+            <p>Segue em anexo uma cópia para os seus arquivos. Ela também fica registrada no portal.</p>
+            <p>Bons estudos!<br/>Dr. Gustavo Martins — Ampla Facial</p></div>`,
+          attachments: [{ filename: `contrato-ampla-facial-${contractId}.html`, content: Buffer.from(signedHtml, "utf8").toString("base64") }],
+        } as any).catch((err: any) => console.error("[contracts/sign] email error:", err?.message));
+      }
+
+      console.log(`[contracts/sign] contrato #${contractId} assinado por user ${auth.userId} (${ip})`);
+      res.json({ signed: true, contractId, signedAt: nowIso });
+    } catch (e: any) {
+      console.error("[contracts/sign] Error:", e.message);
+      res.status(500).json({ message: "Erro ao assinar contrato" });
+    }
+  });
+
   // GET /api/contracts/check/:planKey — check if user already accepted contract
   app.get("/api/contracts/check/:planKey", async (req: Request, res: Response) => {
     const auth = authenticateRequest(req);

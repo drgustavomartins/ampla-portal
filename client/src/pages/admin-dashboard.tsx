@@ -3322,7 +3322,7 @@ export default function AdminDashboard() {
                               </Badge>
                             )}
                             <Badge variant="outline" className={contract.status === "accepted" ? "border-emerald-500/30 text-emerald-400" : contract.status === "active" ? "border-green-500/30 text-green-400" : contract.status === "cancelled" ? "border-red-500/30 text-red-400" : "border-yellow-500/30 text-yellow-400"}>
-                              {contract.status === "accepted" ? "Aceito" : contract.status === "active" ? "Ativo" : contract.status === "cancelled" ? "Cancelado" : contract.status}
+                              {contract.status === "accepted" ? "Aceito" : contract.status === "active" ? "Ativo" : contract.status === "cancelled" ? "Cancelado" : contract.status === "pending" ? "Aguardando assinatura" : contract.status}
                             </Badge>
                             <span className="text-xs text-muted-foreground">R$ {(contract.amountPaid / 100).toFixed(2)}</span>
                             <span className="text-xs text-muted-foreground">{new Date(contract.createdAt).toLocaleDateString("pt-BR")}</span>

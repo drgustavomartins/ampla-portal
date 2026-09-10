@@ -6,6 +6,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider, useAuth } from "./lib/auth";
 import { VisitorTracker } from "./components/VisitorTracker";
+import { ContractGate } from "./components/ContractGate";
 
 // Custom hash-location hook that strips query string before matching routes,
 // so that Stripe redirects like /#/pagamento/sucesso?plan=xxx&session_id=yyy
@@ -162,6 +163,7 @@ function App() {
             <Route component={NotFound} />
           </Switch>
         </Router>
+        <ContractGate />
         <Toaster />
       </AuthProvider>
     </QueryClientProvider>
