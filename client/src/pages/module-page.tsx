@@ -24,6 +24,20 @@ import { NextUpOverlay } from "@/components/netflix/NextUpOverlay";
 import { TheaterMode } from "@/components/netflix/TheaterMode";
 import LessonComments from "@/components/lesson-comments";
 
+// Avisos temporários por módulo (teoria em gravação)
+const MODULE_NOTICES: Record<number, { titulo: string; texto: string }> = {
+  5: {
+    titulo: "Aulas teóricas no ar até segunda-feira (14/09) à noite",
+    texto:
+      "A parte prática deste módulo já está liberada. As aulas teóricas de bioestimuladores estão em gravação e entram no ar até segunda-feira à noite — elas fecham o protocolo NaturalUp®. Enquanto isso, os podcasts de Bioestimuladores em Materiais Complementares já cobrem boa parte da base teórica.",
+  },
+  7: {
+    titulo: "Aulas teóricas no ar até segunda-feira (14/09) à noite",
+    texto:
+      "A estrutura completa do módulo (i-PRF, PDRN, Exossomos, Mesclas e Intradermoterapia) já está publicada abaixo para você se organizar. As gravações entram no ar até segunda-feira à noite. Os podcasts de Biorreguladores em Materiais Complementares já estão disponíveis.",
+  },
+};
+
 function linkifyText(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
@@ -1448,6 +1462,21 @@ export default function ModulePage() {
 
       {/* Episode-style Lesson List */}
       <div className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-8">
+        {hasAccess && MODULE_NOTICES[currentModule.id] && (
+          <div className="mb-6 rounded-xl border border-[#D4AF37]/30 bg-[#D4AF37]/[0.07] p-4 sm:p-5">
+            <div className="flex items-start gap-3">
+              <Clock className="w-5 h-5 text-[#D4AF37] shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[#D4AF37] leading-snug">
+                  {MODULE_NOTICES[currentModule.id].titulo}
+                </p>
+                <p className="mt-1.5 text-sm text-[#b3b3b3] leading-relaxed">
+                  {MODULE_NOTICES[currentModule.id].texto}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <h2 className="text-lg font-semibold text-white mb-6">
           Aulas do Módulo
         </h2>

@@ -93,7 +93,7 @@ export default function StudentDashboard() {
   const [profileForm, setProfileForm] = useState({ name: "", email: "", phone: "", currentPassword: "", newPassword: "", confirmNewPassword: "", avatarUrl: "", username: "", instagram: "" });
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [bioestAnnDismissed, setBioestAnnDismissed] = useState(() => {
-    try { return localStorage.getItem("ampla_ann_bioest_v1") === "1"; } catch { return false; }
+    try { return localStorage.getItem("ampla_ann_bioest_v2") === "1"; } catch { return false; }
   });
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const materiaisRef = useRef<HTMLDivElement>(null);
@@ -1131,7 +1131,7 @@ export default function StudentDashboard() {
               <div className="pointer-events-none absolute -top-16 -right-10 h-48 w-48 rounded-full bg-gold/10 blur-3xl" />
               <button
                 onClick={() => {
-                  try { localStorage.setItem("ampla_ann_bioest_v1", "1"); } catch {}
+                  try { localStorage.setItem("ampla_ann_bioest_v2", "1"); } catch {}
                   setBioestAnnDismissed(true);
                 }}
                 aria-label="Dispensar aviso"
@@ -1145,24 +1145,27 @@ export default function StudentDashboard() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 border border-gold/30 px-2.5 py-0.5 text-[10px] font-bold text-gold uppercase tracking-wider">
-                    Em breve
+                    No ar até segunda-feira à noite
                   </span>
                   <h3 className="mt-2 text-lg sm:text-xl font-bold text-foreground leading-tight">
-                    Módulo Bioestimuladores &amp; Biorregeneradores
+                    Teoria de Bioestimuladores &amp; Biorregeneradores
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Estamos preparando o lançamento. Fique de olho: vamos realizar um evento exclusivo, e quem participar
-                    ganha <span className="text-gold font-semibold">créditos na plataforma</span> para usar como quiser.
+                    As <span className="text-gold font-semibold">aulas práticas já estão liberadas</span> nos módulos de
+                    Bioestimuladores de Colágeno e Biorregeneradores. A parte teórica está em gravação e entra no ar
+                    <span className="text-gold font-semibold"> até segunda-feira, 14/09, à noite</span> — é ela que fecha o
+                    protocolo NaturalUp® (preenchedores + bioestimuladores + biorregeneradores).
                   </p>
                   <p className="mt-2 text-xs text-muted-foreground/80">
-                    Dica: indique um colega com o seu código e ganhe 10% do valor em créditos. Seu código fica na página de Créditos.
+                    Enquanto isso: os podcasts de Bioestimuladores e Biorreguladores já estão disponíveis em Materiais
+                    Complementares e cobrem boa parte da base teórica.
                   </p>
                 </div>
                 <Link
-                  href="/creditos"
+                  href="/module/5"
                   className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-xl bg-gold hover:opacity-90 px-5 py-2.5 text-sm font-semibold text-[#0A0D14] transition-opacity"
                 >
-                  Ver meu código
+                  Ver o módulo
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>
