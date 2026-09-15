@@ -5,7 +5,7 @@ import { installmentValueCents, MAX_INSTALLMENTS_NO_INTEREST } from "./asaas";
 const COMPANY = {
   name: "Instituto Medeiros Martins LTDA",
   cnpj: "50.421.964/0001-81",
-  address: "Avenida das Americas 1155, sala 1610, Rio de Janeiro/RJ",
+  address: "Rua Lopes de Moura 80, Santa Cruz, Rio de Janeiro/RJ, CEP 23515-020",
   responsible: "Dr. Gustavo Martins",
 };
 
