@@ -950,7 +950,7 @@ export default function LandingPage() {
                   {[
                     "Speaker Merz Aesthetics",
                     "Membro da Academia Brasileira de HOF",
-                    "3 clínicas no Rio de Janeiro (Barra, Copacabana, Santa Cruz)",
+                    "Clínicas no Rio de Janeiro, em Copacabana e Santa Cruz",
                     "Criador do Protocolo NaturalUp®",
                     "Já formou dezenas de profissionais que hoje atendem full face com confiança",
                   ].map((c, i) => (
