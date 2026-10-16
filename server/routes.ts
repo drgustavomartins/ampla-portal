@@ -315,8 +315,13 @@ function authenticateRequest(req: Request): { userId: number; role: string } | n
 // Require any admin (admin or super_admin)
 function requireAdmin(req: Request, res: Response): { userId: number; role: string } | null {
   const auth = authenticateRequest(req);
-  if (!auth || (auth.role !== "admin" && auth.role !== "super_admin")) {
+  if (!auth || (auth.role !== "admin" && auth.role !== "super_admin" && auth.role !== "admin_viewer")) {
     res.status(401).json({ message: "Não autorizado" });
+    return null;
+  }
+  // Administrador visualizador: só leitura.
+  if (auth.role === "admin_viewer" && req.method !== "GET" && req.method !== "HEAD") {
+    res.status(403).json({ message: "Conta de visualização: esta ação não é permitida." });
     return null;
   }
   return auth;
@@ -405,6 +410,22 @@ function computeLeadSource(utmSource?: string | null): string {
 
 export async function registerRoutes(server: Server, app: Express) {
   console.log('🔥 registerRoutes chamado!');
+
+  // Rede de segurança: administrador visualizador (admin_viewer) não pode
+  // fazer NENHUMA escrita, exceto login/logout, o próprio perfil/senha e
+  // marcar o próprio progresso de aula.
+  app.use((req, res, next) => {
+    if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return next();
+    if (!req.path.startsWith("/api/")) return next();
+    const a = authenticateRequest(req);
+    if (!a || a.role !== "admin_viewer") return next();
+    const allowed =
+      /^\/api\/auth\/(login|logout|profile)$/.test(req.path) ||
+      req.path === "/api/profile" ||
+      new RegExp(`^/api/(progress|supplementary-progress)/${a.userId}/`).test(req.path);
+    if (allowed) return next();
+    return res.status(403).json({ message: "Conta de visualização: esta ação não é permitida." });
+  });
   
   // ============================================================
   // ENDPOINT REAL - usa users.clinical_practice_hours como fonte de verdade
@@ -3086,7 +3107,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       }
 
       // Log admin login
-      if (user.role === "admin" || user.role === "super_admin") {
+      if (user.role === "admin" || user.role === "super_admin" || user.role === "admin_viewer") {
         await logAction(user.id, user.name, "admin_login");
       }
 
@@ -3263,7 +3284,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
 
       // Compute my-modules access (inlined from /api/my-modules logic)
       let myModules: { accessAll: boolean; moduleIds: number[] } = { accessAll: false, moduleIds: [] };
-      if (auth.role === "admin" || auth.role === "super_admin" || auth.role === "trial") {
+      if (auth.role === "admin" || auth.role === "super_admin" || auth.role === "admin_viewer" || auth.role === "trial") {
         myModules = { accessAll: true, moduleIds: [] };
       } else {
         const user = await storage.getUser(auth.userId);
@@ -3429,7 +3450,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
     const auth = authenticateRequest(req);
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
     // Admins see all modules
-    if (auth.role === "admin" || auth.role === "super_admin") {
+    if (auth.role === "admin" || auth.role === "super_admin" || auth.role === "admin_viewer") {
       return res.json({ accessAll: true, moduleIds: [] });
     }
     // Trial users see all modules (lesson restriction handled on frontend)
@@ -3505,7 +3526,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       const auth = authenticateRequest(req);
       if (!auth) return res.status(401).json({ message: "Não autorizado" });
       // Admins see all material topics
-      if (auth.role === "admin" || auth.role === "super_admin") {
+      if (auth.role === "admin" || auth.role === "super_admin" || auth.role === "admin_viewer") {
         return res.json({ accessAll: true, topics: [] });
       }
       const user = await storage.getUser(auth.userId);
@@ -3561,7 +3582,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
   // allowedLessonIds = null means full access; number[] means only those IDs get videoUrl
   async function getVideoAccessInfo(auth: { userId: number; role: string } | null): Promise<{ canSeeVideo: boolean; allowedLessonIds: number[] | null }> {
     if (!auth) return { canSeeVideo: false, allowedLessonIds: null };
-    if (auth.role === "admin" || auth.role === "super_admin") return { canSeeVideo: true, allowedLessonIds: null };
+    if (auth.role === "admin" || auth.role === "super_admin" || auth.role === "admin_viewer") return { canSeeVideo: true, allowedLessonIds: null };
     try {
       const { db } = await import("./db");
       const userRow = await db.execute(sql`SELECT role, approved, access_expires_at, plan_key, selected_theme FROM users WHERE id = ${auth.userId}`);
@@ -3744,7 +3765,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
     const auth = authenticateRequest(req);
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
     const targetUserId = parseInt(req.params.userId);
-    if (auth.role !== "admin" && auth.role !== "super_admin" && auth.userId !== targetUserId) {
+    if (auth.role !== "admin" && auth.role !== "super_admin" && auth.role !== "admin_viewer" && auth.userId !== targetUserId) {
       return res.status(403).json({ message: "Acesso negado" });
     }
     const progress = await storage.getProgress(targetUserId);
@@ -3809,7 +3830,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
     const auth = authenticateRequest(req);
     if (!auth) return res.status(401).json({ message: "Não autorizado" });
     const targetUserId = parseInt(req.params.userId);
-    if (auth.role !== "admin" && auth.role !== "super_admin" && auth.userId !== targetUserId) {
+    if (auth.role !== "admin" && auth.role !== "super_admin" && auth.role !== "admin_viewer" && auth.userId !== targetUserId) {
       return res.status(403).json({ message: "Acesso negado" });
     }
     const progress = await storage.getSupplementaryProgress(targetUserId);
@@ -4774,7 +4795,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
     try {
       const auth = authenticateRequest(req);
       if (!auth) return res.status(401).json({ message: "Não autorizado" });
-      const isAdmin = auth.role === "admin" || auth.role === "super_admin";
+      const isAdmin = auth.role === "admin" || auth.role === "super_admin" || auth.role === "admin_viewer";
 
       // Determine if this user has active materials access (approved + non-expired)
       // Regra: trial limitado (planKey null/tester ou role 'trial') NUNCA tem acesso a materiais,
@@ -5759,7 +5780,7 @@ Este conteúdo é de caráter educativo e destinado a profissionais de saúde ha
       const row = (result as any).rows?.[0];
       if (!row) return res.status(404).json({ message: "Sessao nao encontrada" });
       // Only admin or the student themselves can view
-      if (auth.role !== "admin" && auth.role !== "super_admin" && row.student_id !== auth.userId) {
+      if (auth.role !== "admin" && auth.role !== "super_admin" && auth.role !== "admin_viewer" && row.student_id !== auth.userId) {
         return res.status(403).json({ message: "Sem permissao" });
       }
       const procedures = (() => { try { return JSON.parse(row.procedures); } catch { return []; } })();

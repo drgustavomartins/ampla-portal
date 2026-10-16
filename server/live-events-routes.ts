@@ -31,8 +31,12 @@ async function requireAdmin(req: Request, res: Response): Promise<{ userId: numb
   const db = await getDb();
   const r: any = await db.execute(sql`SELECT role FROM users WHERE id = ${auth.userId}`);
   const role = r.rows?.[0]?.role;
-  if (role !== "admin" && role !== "super_admin") {
+  if (role !== "admin" && role !== "super_admin" && role !== "admin_viewer") {
     res.status(403).json({ message: "Apenas administradores" });
+    return null;
+  }
+  if (role === "admin_viewer" && req.method !== "GET" && req.method !== "HEAD") {
+    res.status(403).json({ message: "Conta de visualização: esta ação não é permitida." });
     return null;
   }
   return { userId: auth.userId };

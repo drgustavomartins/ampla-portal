@@ -95,7 +95,7 @@ export const storage = {
   async getAllAdmins(): Promise<User[]> {
     // Returns both admin and super_admin
     const all = await db.select().from(users);
-    return all.filter(u => u.role === "admin" || u.role === "super_admin");
+    return all.filter(u => u.role === "admin" || u.role === "super_admin" || u.role === "admin_viewer");
   },
 
   // ===== PLAN MODULES =====

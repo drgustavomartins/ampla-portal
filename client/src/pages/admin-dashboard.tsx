@@ -742,7 +742,7 @@ function SupplementaryAdminTab() {
 }
 
 export default function AdminDashboard() {
-  const { user, logout, isSuperAdmin } = useAuth();
+  const { user, logout, isSuperAdmin, isReadOnlyAdmin } = useAuth();
   const { toast } = useToast();
 
   const { data: students = [] } = useQuery<SafeUser[]>({ queryKey: ["/api/admin/students"] });
@@ -1643,6 +1643,11 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
+      {isReadOnlyAdmin && (
+        <div className="bg-gold/15 text-gold text-xs sm:text-sm text-center px-4 py-2 border-b border-gold/30">
+          Modo visualização — você pode consultar tudo, mas alterações estão desativadas para esta conta.
+        </div>
+      )}
       {/* ─── Top bar ─── */}
       <header className="border-b border-border/40 bg-card/80 backdrop-blur-md sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -4705,7 +4710,7 @@ export default function AdminDashboard() {
                           <div className="flex items-center gap-2">
                             <p className="font-medium text-foreground truncate">{admin.name}</p>
                             <Badge variant="secondary" className={`text-[11px] border-0 shrink-0 ${admin.role === "super_admin" ? "bg-gold/15 text-gold" : "bg-blue-500/10 text-blue-400"}`}>
-                              {admin.role === "super_admin" ? "Super Admin" : "Admin"}
+                              {admin.role === "super_admin" ? "Super Admin" : admin.role === "admin_viewer" ? "Visualizador" : "Admin"}
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground truncate mt-0.5">{admin.email}</p>

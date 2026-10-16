@@ -31,6 +31,24 @@
  * hasActiveAccess, isTrialLimited, canAccessMaterials, hasMentoriaAtiva).
  */
 
+/**
+ * Papéis de administração.
+ *  • super_admin  — tudo.
+ *  • admin        — gestão do dia a dia.
+ *  • admin_viewer — Administrador VISUALIZADOR: vê todo o painel, alunos,
+ *                   CRM e conteúdo, mas NÃO executa nenhuma ação de escrita
+ *                   (bloqueado no servidor; qualquer POST/PUT/PATCH/DELETE
+ *                   administrativo retorna 403).
+ */
+export const ADMIN_VIEWER_ROLE = "admin_viewer";
+export function isAdminRole(role: string | null | undefined): boolean {
+  return role === "admin" || role === "super_admin" || role === ADMIN_VIEWER_ROLE;
+}
+export function isReadOnlyAdmin(role: string | null | undefined): boolean {
+  return role === ADMIN_VIEWER_ROLE;
+}
+
+
 export type AccessType = "admin" | "full" | "trial" | "module";
 
 /** Argumento "user" mínimo aceito pelos helpers. */
@@ -191,7 +209,7 @@ export const TRIAL_FREE_LESSONS_PER_MODULE = 2;
  */
 export function getAccessType(user: AccessUser | null | undefined): AccessType {
   if (!user) return "trial";
-  if (user.role === "admin" || user.role === "super_admin") return "admin";
+  if (isAdminRole(user.role)) return "admin";
   const pk = user.planKey;
   if (pk && FULL_ACCESS_PLAN_KEYS.has(pk)) return "full";
   if (pk && MODULE_ACCESS_PLAN_KEYS.has(pk)) return "module";
@@ -283,7 +301,7 @@ export function canAccessMaterials(user: AccessUser | null | undefined): boolean
  */
 export function hasMentoriaAtiva(user: AccessUser | null | undefined): boolean {
   if (!user) return false;
-  if (user.role === "admin" || user.role === "super_admin") return true;
+  if (isAdminRole(user.role)) return true;
   if (!user.planKey) return false;
   return MENTORIA_ATIVA_PLAN_KEYS.has(user.planKey);
 }
@@ -296,7 +314,7 @@ export function hasMentoriaAtiva(user: AccessUser | null | undefined): boolean {
  */
 export function planHasDirectChannel(user: AccessUser | null | undefined): boolean {
   if (!user) return false;
-  if (user.role === "admin" || user.role === "super_admin") return true;
+  if (isAdminRole(user.role)) return true;
   if (!user.planKey) return false;
   return DIRECT_CHANNEL_PLAN_KEYS.has(user.planKey);
 }
@@ -333,7 +351,7 @@ export function isLifetimePlan(planKey: string | null | undefined): boolean {
  * - acessExpiresAt no passado: false.
  */
 export function hasActiveAccess(user: AccessUser): boolean {
-  if (user.role === "admin" || user.role === "super_admin") return true;
+  if (isAdminRole(user.role)) return true;
   if (isLifetimePlan(user.planKey)) return true;
   if (!user.accessExpiresAt) {
     // trial vitalício: planKey null/tester sem expiração → nav permanente.

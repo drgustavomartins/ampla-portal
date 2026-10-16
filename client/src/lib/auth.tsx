@@ -11,6 +11,7 @@ interface AuthContextType {
   logout: () => void;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  isReadOnlyAdmin: boolean;
   isStudent: boolean;
   isTrial: boolean;
   isTrialExpired: boolean;
@@ -124,7 +125,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isSuperAdmin = user?.role === "super_admin";
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin" || user?.role === "admin_viewer";
+  const isReadOnlyAdmin = user?.role === "admin_viewer";
   const isStudent = user?.role === "student";
   // Trial flag: role 'trial' OU student rebaixado (planKey null/tester).
   // Trial é vitalício para navegação; conteúdo continua gated (2 aulas/módulo).
@@ -155,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin, isSuperAdmin, isStudent, isTrial, isTrialExpired, trialDaysLeft, isAccessExpired, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isAdmin, isSuperAdmin, isReadOnlyAdmin, isStudent, isTrial, isTrialExpired, trialDaysLeft, isAccessExpired, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
