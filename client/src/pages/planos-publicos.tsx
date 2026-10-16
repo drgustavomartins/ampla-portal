@@ -98,6 +98,18 @@ export default function PlanosPublicos() {
     checkoutMutation.mutate(planKey);
   };
 
+  // Checkout direto: ?checkout=plataforma_anual (usado pela página /online do site).
+  // Pula a escolha de plano e abre o pagamento do Asaas assim que a página carrega.
+  const directCheckout = urlParams.get("checkout") as PaidPlanKey | null;
+  const [directFailed, setDirectFailed] = useState(false);
+  const directStarted = useRef(false);
+  useEffect(() => {
+    if (!directCheckout || directStarted.current) return;
+    directStarted.current = true;
+    setLoadingPlan(directCheckout);
+    checkoutMutation.mutate(directCheckout, { onError: () => setDirectFailed(true) });
+  }, [directCheckout]);
+
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", fn, { passive: true });
@@ -108,6 +120,15 @@ export default function PlanosPublicos() {
 
   return (
     <div className="min-h-screen" style={{ background: "#0A1628", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif" }}>
+
+      {/* ═══ ABRINDO PAGAMENTO (checkout direto) ═══ */}
+      {directCheckout && !directFailed && !triagemPlan && (
+        <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center gap-4 px-6 text-center" style={{ background: "#060F1D" }}>
+          <Loader2 className="h-8 w-8 animate-spin text-[#D4A843]" />
+          <p className="text-lg font-semibold text-white">Abrindo seu pagamento seguro…</p>
+          <p className="text-sm text-white/50">Pix, boleto ou cartão em até 12x sem juros</p>
+        </div>
+      )}
 
       {/* ═══ MODAL DE TRIAGEM (habilitação profissional) ═══ */}
       {triagemPlan && (
