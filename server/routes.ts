@@ -20,6 +20,7 @@ import { Resend } from "resend";
 import multer from "multer";
 import { registerStripeRoutes, registerPublicStripeRoutes } from "./stripe-routes";
 import { registerAsaasRoutes } from "./asaas-routes";
+import { registerOnlineLote } from "./online-lote";
 import { registerLiveEventsRoutes } from "./live-events-routes";
 
 const avatarUpload = multer({
@@ -410,6 +411,9 @@ function computeLeadSource(utmSource?: string | null): string {
 
 export async function registerRoutes(server: Server, app: Express) {
   console.log('🔥 registerRoutes chamado!');
+
+  // Lote promocional da Plataforma Online (preço real por lote).
+  registerOnlineLote(app);
 
   // Rede de segurança: administrador visualizador (admin_viewer) não pode
   // fazer NENHUMA escrita, exceto login/logout, o próprio perfil/senha e

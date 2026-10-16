@@ -22,13 +22,15 @@ const WHATSAPP_MESSAGES: Record<PaidPlanKey, string> = {
 
 const whatsappUrl = (key: PaidPlanKey) => `${WHATSAPP_URL}?text=${encodeURIComponent(WHATSAPP_MESSAGES[key])}`;
 
+const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: cents % 100 ? 2 : 0 });
+
 export default function PlanosPublicos() {
   const [loadingPlan, setLoadingPlan] = useState<PaidPlanKey | null>(null);
   const [triagemPlan, setTriagemPlan] = useState<PaidPlanKey | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { data: slots } = useQuery<{ sold: number; remaining: number; limit: number; soldOut: boolean }>({
-    queryKey: ["/api/vitalicio-slots"],
+  const { data: lote } = useQuery<{ enabled: boolean; remaining: number; limit: number; soldOut: boolean; price: number; lotePrice: number; fullPrice: number }>({
+    queryKey: ["/api/online-lote"],
     refetchInterval: 30000, // atualiza a cada 30s
   });
   const cardRef = useRef<HTMLDivElement>(null);
@@ -296,9 +298,17 @@ export default function PlanosPublicos() {
 
               {/* Price */}
               <div className="mt-6 min-h-[100px] text-center">
-                <p className="text-[10px] uppercase tracking-wider text-white/40 whitespace-nowrap">à vista</p>
-                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#D4A843] whitespace-nowrap leading-none">R$ 479</span>
-                <p className="text-xs text-white/40 mt-1 whitespace-nowrap">Pagamento único</p>
+                {lote?.enabled && !lote.soldOut ? (
+                  <p className="text-[11px] text-white/45 whitespace-nowrap">de <span className="line-through">{brl(lote.fullPrice)}</span> por</p>
+                ) : (
+                  <p className="text-[10px] uppercase tracking-wider text-white/40 whitespace-nowrap">à vista</p>
+                )}
+                <span className="text-[34px] sm:text-[38px] font-bold tabular-nums text-[#D4A843] whitespace-nowrap leading-none">{brl(lote?.price ?? 47900)}</span>
+                {lote?.enabled && !lote.soldOut ? (
+                  <p className="text-xs text-[#F0D78C] mt-1 whitespace-nowrap">Lote promocional · restam {lote.remaining} vagas</p>
+                ) : (
+                  <p className="text-xs text-white/40 mt-1 whitespace-nowrap">Pagamento único</p>
+                )}
               </div>
 
               <div className="mt-3 flex justify-center">
@@ -332,19 +342,15 @@ export default function PlanosPublicos() {
               <div className="mt-auto pt-5 space-y-2">
                 <button
                   onClick={() => handleCheckout("plataforma_anual")}
-                  disabled={loadingPlan !== null || slots?.soldOut}
+                  disabled={loadingPlan !== null}
                   className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[13px] font-semibold tracking-wide transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110"
                   style={{
-                    background: slots?.soldOut
-                      ? "rgba(255,255,255,0.08)"
-                      : "linear-gradient(135deg, #D4A843, #F0D78C)",
-                    color: slots?.soldOut ? "rgba(255,255,255,0.4)" : "#0A0D14",
-                    boxShadow: slots?.soldOut ? "none" : "0 4px 20px rgba(212,168,67,0.25)",
+                    background: "linear-gradient(135deg, #D4A843, #F0D78C)",
+                    color: "#0A0D14",
+                    boxShadow: "0 4px 20px rgba(212,168,67,0.25)",
                   }}
                 >
-                  {slots?.soldOut ? (
-                    "Vagas esgotadas"
-                  ) : loadingPlan === "plataforma_anual" ? (
+                  {loadingPlan === "plataforma_anual" ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> Aguarde...</>
                   ) : (
                     <>Pagar Agora <ArrowRight className="h-4 w-4" /></>
