@@ -99,17 +99,10 @@ export default function PlanosPublicos() {
   };
 
   // Checkout direto: ?checkout=plataforma_anual (usado pela página /online do site).
-  // Pula a escolha de plano e abre o pagamento do Asaas assim que a página carrega.
+  // O checkout público (sem conta) segue desligado: quem pagasse sem conta não
+  // receberia acesso. Aqui o comprador cria a conta (ou entra) numa tela só e o
+  // pagamento do Asaas abre em seguida, já vinculado à conta dele.
   const directCheckout = urlParams.get("checkout") as PaidPlanKey | null;
-  const [directFailed, setDirectFailed] = useState(false);
-  const directStarted = useRef(false);
-  useEffect(() => {
-    if (!directCheckout || directStarted.current) return;
-    directStarted.current = true;
-    setLoadingPlan(directCheckout);
-    checkoutMutation.mutate(directCheckout, { onError: () => setDirectFailed(true) });
-  }, [directCheckout]);
-
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", fn, { passive: true });
@@ -118,17 +111,13 @@ export default function PlanosPublicos() {
 
   const HEADER_H = 72;
 
+  if (directCheckout) {
+    return <DirectCheckout planKey={directCheckout} lote={lote} refCode={urlRef} onTriagem={() => { window.location.hash = "/planos-publicos"; }} />;
+  }
+
+
   return (
     <div className="min-h-screen" style={{ background: "#0A1628", fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif" }}>
-
-      {/* ═══ ABRINDO PAGAMENTO (checkout direto) ═══ */}
-      {directCheckout && !directFailed && !triagemPlan && (
-        <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center gap-4 px-6 text-center" style={{ background: "#060F1D" }}>
-          <Loader2 className="h-8 w-8 animate-spin text-[#D4A843]" />
-          <p className="text-lg font-semibold text-white">Abrindo seu pagamento seguro…</p>
-          <p className="text-sm text-white/50">Pix, boleto ou cartão em até 12x sem juros</p>
-        </div>
-      )}
 
       {/* ═══ MODAL DE TRIAGEM (habilitação profissional) ═══ */}
       {triagemPlan && (
@@ -881,6 +870,143 @@ export default function PlanosPublicos() {
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+   CHECKOUT DIRETO — cadastro/login + pagamento numa tela só
+   ────────────────────────────────────────────────────────────────────────── */
+function DirectCheckout({ planKey, lote, refCode, onTriagem }: {
+  planKey: PaidPlanKey;
+  lote?: { enabled: boolean; remaining: number; soldOut: boolean; price: number; fullPrice: number };
+  refCode?: string;
+  onTriagem: () => void;
+}) {
+  const [mode, setMode] = useState<"loading" | "signup" | "login">(() => (localStorage.getItem("ampla_token") ? "loading" : "signup"));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", lgpd: false });
+  const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
+  const started = useRef(false);
+
+  const utm = (() => {
+    const q = new URLSearchParams(window.location.search);
+    const o: Record<string, string> = {};
+    ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"].forEach((k) => { const v = q.get(k); if (v) o[k] = v; });
+    return o;
+  })();
+
+  const pay = async () => {
+    setBusy(true); setError("");
+    const token = localStorage.getItem("ampla_token");
+    try {
+      const res = await fetch("/api/asaas/create-checkout", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ planKey, referralCode: refCode || undefined }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.status === 401) { localStorage.removeItem("ampla_token"); setMode("login"); setBusy(false); return; }
+      if (res.status === 403 && json.requiresTriagem) { onTriagem(); return; }
+      if (!res.ok) throw new Error(json.message || "Não foi possível abrir o pagamento.");
+      if (json.paidWithCredits) { window.location.hash = "/"; return; }
+      if (json.url) { window.location.href = json.url; return; }
+      throw new Error("Não foi possível abrir o pagamento.");
+    } catch (e: any) {
+      setError(e.message || "Erro ao abrir o pagamento. Tente novamente.");
+      setMode((m) => (m === "loading" ? "login" : m));
+      setBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (mode === "loading" && !started.current) { started.current = true; pay(); }
+  }, [mode]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true); setError("");
+    try {
+      const url = mode === "signup" ? "/api/auth/register-trial" : "/api/auth/login";
+      const body = mode === "signup"
+        ? { name: form.name.trim(), email: form.email.trim(), phone: form.phone.replace(/\D/g, ""), password: form.password, lgpdAccepted: form.lgpd, ...utm }
+        : { email: form.email.trim(), password: form.password };
+      const res = await fetch(url, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.token) {
+        const msg = json.message || "Não foi possível continuar.";
+        if (mode === "signup" && /cadastrado/i.test(msg)) { setMode("login"); setError("Este e-mail já tem conta. Entre com sua senha para continuar."); }
+        else setError(msg);
+        setBusy(false);
+        return;
+      }
+      localStorage.setItem("ampla_token", json.token);
+      await pay();
+    } catch {
+      setError("Erro de conexão. Tente novamente."); setBusy(false);
+    }
+  };
+
+  const brlLocal = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: c % 100 ? 2 : 0 });
+  const price = lote?.price ?? 47900;
+  const inputCls = "w-full rounded-xl bg-white/[0.04] border border-white/10 px-4 py-3.5 text-[15px] text-white placeholder:text-white/30 outline-none focus:border-[#D4A843]/60";
+
+  return (
+    <div className="min-h-screen flex flex-col items-center px-5 py-8" style={{ background: "radial-gradient(120% 60% at 50% 0%, rgba(212,168,67,0.12), transparent 60%), #060F1D", fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
+      <img src="/logo-icon.png" alt="Ampla Facial" className="h-9 w-auto mb-6" onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
+      <div className="w-full max-w-md rounded-[24px] p-6 sm:p-7" style={{ background: "linear-gradient(170deg, #13284D, #0B1A30 60%)", border: "1px solid rgba(212,168,67,0.28)", boxShadow: "0 40px 90px -40px rgba(212,168,67,0.35)" }}>
+        <div className="flex items-start justify-between gap-3 pb-5 border-b border-white/[0.08]">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A843]">{lote?.enabled && !lote.soldOut ? "Lote promocional" : "Sua matrícula"}</p>
+            <h1 className="mt-1 text-xl font-bold text-white">Plataforma Online</h1>
+            <p className="text-xs text-white/50">12 meses de acesso ao portal</p>
+          </div>
+          <div className="text-right">
+            {lote?.enabled && !lote.soldOut && <p className="text-[11px] text-white/40 line-through">{brlLocal(lote.fullPrice)}</p>}
+            <p className="text-2xl font-bold text-[#D4A843] whitespace-nowrap">{brlLocal(price)}</p>
+            <p className="text-[11px] text-white/50">ou 12x sem juros</p>
+          </div>
+        </div>
+
+        {mode === "loading" ? (
+          <div className="py-12 flex flex-col items-center gap-3 text-center">
+            <Loader2 className="h-7 w-7 animate-spin text-[#D4A843]" />
+            <p className="text-white font-semibold">Abrindo seu pagamento seguro…</p>
+          </div>
+        ) : (
+          <form onSubmit={submit} className="pt-5 space-y-3">
+            <p className="text-[15px] font-semibold text-white">{mode === "signup" ? "Crie seu acesso para concluir" : "Entre na sua conta para concluir"}</p>
+            <p className="text-xs text-white/50 -mt-1 mb-1">{mode === "signup" ? "É com este e-mail e senha que você vai entrar no portal." : "Use o e-mail e a senha do portal."}</p>
+            {mode === "signup" && <input className={inputCls} placeholder="Nome completo" autoComplete="name" required minLength={2} value={form.name} onChange={(e) => set("name", e.target.value)} />}
+            <input className={inputCls} placeholder="E-mail" type="email" autoComplete="email" required value={form.email} onChange={(e) => set("email", e.target.value)} />
+            {mode === "signup" && <input className={inputCls} placeholder="WhatsApp com DDD" type="tel" inputMode="tel" autoComplete="tel" required minLength={10} value={form.phone} onChange={(e) => set("phone", e.target.value)} />}
+            <input className={inputCls} placeholder={mode === "signup" ? "Crie uma senha (mín. 6 caracteres)" : "Senha"} type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} required minLength={mode === "signup" ? 6 : 1} value={form.password} onChange={(e) => set("password", e.target.value)} />
+            {mode === "signup" && (
+              <label className="flex gap-2.5 items-start text-xs text-white/60 pt-1">
+                <input type="checkbox" className="mt-0.5 accent-[#D4A843]" checked={form.lgpd} onChange={(e) => set("lgpd", e.target.checked)} required />
+                <span>Li e aceito os <a href="/#/termos" target="_blank" className="text-[#F0D78C] underline">Termos de Uso</a> e a <a href="/#/privacidade" target="_blank" className="text-[#F0D78C] underline">Política de Privacidade</a>.</span>
+              </label>
+            )}
+            {error && <p className="text-sm text-red-300 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
+            <button type="submit" disabled={busy} className="w-full flex items-center justify-center gap-2 rounded-xl py-4 text-[15px] font-bold disabled:opacity-60" style={{ background: "linear-gradient(135deg, #F0D78C, #D4A843 45%, #B8892F)", color: "#0A0D14", boxShadow: "0 14px 36px -12px rgba(212,168,67,0.7)" }}>
+              {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> Abrindo pagamento…</> : <>Ir para o pagamento <ArrowRight className="h-4 w-4" /></>}
+            </button>
+            <p className="text-center text-xs text-white/50">
+              {mode === "signup"
+                ? <>Já tem conta no portal? <button type="button" className="text-[#F0D78C] underline" onClick={() => { setMode("login"); setError(""); }}>Entrar</button></>
+                : <>Ainda não tem conta? <button type="button" className="text-[#F0D78C] underline" onClick={() => { setMode("signup"); setError(""); }}>Criar acesso</button></>}
+            </p>
+          </form>
+        )}
+
+        <div className="mt-5 pt-4 border-t border-white/[0.08] flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-white/45">
+          <span className="flex items-center gap-1"><Shield className="h-3 w-3 text-[#D4A843]" /> Pagamento seguro Asaas</span>
+          <span>Pix · Boleto · Cartão</span>
+          <span>7 dias para desistir</span>
+        </div>
+      </div>
     </div>
   );
 }
