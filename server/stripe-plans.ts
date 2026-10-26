@@ -826,7 +826,6 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     group: "digital",
     billingPeriod: "one-time",
     hidden: true,
-    valorMercado: 99700,
     features: [
       "Módulo completo de Toxina Botulínica: 30 aulas gravadas",
       "Do mecanismo de ação à marcação e aplicação por região",
