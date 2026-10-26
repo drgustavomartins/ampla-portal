@@ -97,12 +97,15 @@ export const EXPIRING_PLAN_KEYS = new Set<string>([
   // Nenhum usuário histórico usa esta chave, então ligar a expiração aqui
   // não tranca ninguém para fora.
   "equipe_interna",
+  // curso_toxina: chave nova (out/2026), nasce com access_expires_at preenchido.
+  "curso_toxina",
 ]);
 
 /** Planos legados que liberam apenas um módulo específico. */
 export const MODULE_ACCESS_PLAN_KEYS = new Set<string>([
   "modulo_avulso",
   "modulo_pratica",
+  "curso_toxina",
 ]);
 
 /**

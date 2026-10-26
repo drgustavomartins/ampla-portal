@@ -19,6 +19,7 @@ export interface PlanConfig {
   description: string;
   price: number; // centavos à vista
   noInstallments?: boolean; // true = vendido só à vista (Pix/boleto/cartão 1x), sem parcelamento
+  maxInstallments?: number; // teto de parcelas deste plano (ex.: 10). Ausente = teto global do Asaas.
   group: "digital" | "observador" | "vip" | "horas" | "observacao_extra";
   features: string[];
   highlight?: string; // ex: "Mais popular"
@@ -813,6 +814,39 @@ export const PLANS: Record<PlanKey, PlanConfig> = {
     naturalUpLicense: false,
     canUpgradeTo: ["modulo_avulso", "pacote_completo", "observador_essencial", "observador_avancado", "observador_intensivo", "imersao", "vip_online", "vip_presencial", "vip_completo"],
   },
+  // Curso de Toxina Botulínica — produto de entrada (out/2026).
+  // Libera só o módulo de Toxina (id 2) + Boas-vindas por 12 meses.
+  // Página de venda: amplafacial.com.br/toxina → checkout direto ?checkout=curso_toxina
+  curso_toxina: {
+    key: "curso_toxina",
+    name: "Curso de Toxina Botulínica",
+    description: "Módulo completo de Toxina Botulínica do portal — 30 aulas gravadas, 12 meses de acesso",
+    price: 19700,
+    maxInstallments: 10,
+    group: "digital",
+    billingPeriod: "one-time",
+    hidden: true,
+    valorMercado: 99700,
+    features: [
+      "Módulo completo de Toxina Botulínica: 30 aulas gravadas",
+      "Do mecanismo de ação à marcação e aplicação por região",
+      "Casos clínicos reais e retoque com Xeomin",
+      "12 meses de acesso — assista quantas vezes quiser",
+      "Até 7 dias para desistência",
+    ],
+    accessDays: 365,
+    includesModules: false,
+    clinicalHours: 0,
+    practiceHours: 0,
+    hasDirectChannel: false,
+    channelMonths: 0,
+    hasMentorship: false,
+    mentorshipMonths: 0,
+    hasLiveEvents: false,
+    hasNaturalUp: false,
+    naturalUpLicense: false,
+    canUpgradeTo: ["plataforma_anual", "observador_essencial", "modulo_pratica", "vip_completo", "imersao_elite"],
+  },
 };
 
 // ─── Cálculo de crédito de upgrade ──────────────────────────────────────────
@@ -868,6 +902,7 @@ export const CASHBACK_RATES: Record<PlanKey, number> = {
   observacao_extra_2: 0.05,
   observacao_extra_3: 0.05,
   workshop: 0,
+  curso_toxina: 0.03,
 };
 
 // ─── Comissão de vendas ──────────────────────────────────────────────────────
@@ -1069,13 +1104,13 @@ import {
 /** Máximo de parcelas que este plano aceita. */
 export function maxInstallmentsFor(plan: PlanConfig): number {
   if (plan.noInstallments || plan.price <= 0) return 1;
-  return MAX_INSTALLMENTS;
+  return Math.min(plan.maxInstallments ?? MAX_INSTALLMENTS, MAX_INSTALLMENTS);
 }
 
 /** Valor da parcela em 12x sem juros, em centavos. Null = não parcela. */
 export function getInstallments12x(plan: PlanConfig): number | null {
   if (plan.noInstallments || plan.price <= 0) return null;
-  return installmentValueCents(plan.price, MAX_INSTALLMENTS_NO_INTEREST);
+  return installmentValueCents(plan.price, Math.min(MAX_INSTALLMENTS_NO_INTEREST, maxInstallmentsFor(plan)));
 }
 
 /** Todas as opções de parcelamento do plano, de 1x até o teto. */

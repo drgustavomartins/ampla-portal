@@ -14,6 +14,7 @@ export default function PagamentoSucesso() {
 
   const PLAN_NAMES: Record<string, string> = {
     plataforma_anual: "Plataforma Online",
+    curso_toxina: "Curso de Toxina Botulínica",
     acesso_vitalicio: "Plataforma Online (vitalício)",
     modulo_pratica: "Módulo Avulso com Prática",
     observador_essencial: "Acompanhamento Observacional",

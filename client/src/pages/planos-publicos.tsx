@@ -10,13 +10,15 @@ type PaidPlanKey =
   | "modulo_pratica"
   | "observador_essencial"
   | "vip_completo"
-  | "imersao_elite";
+  | "imersao_elite"
+  | "curso_toxina";
 
 const WHATSAPP_MESSAGES: Record<PaidPlanKey, string> = {
   plataforma_anual: "Olá Dr. Gustavo, tenho interesse na Plataforma Online da Ampla Facial.",
   modulo_pratica: "Olá Dr. Gustavo, tenho interesse no Módulo Avulso com Prática e gostaria de parcelar. Pode me enviar o link de pagamento parcelado? Também quero saber sobre qual tema escolher.",
   observador_essencial: "Olá Dr. Gustavo, tenho interesse no Acompanhamento Observacional e gostaria de parcelar. Pode me enviar o link de pagamento parcelado?",
   vip_completo: "Olá Dr. Gustavo, tenho interesse no Acompanhamento VIP e gostaria de parcelar. Pode me enviar o link de pagamento parcelado?",
+  curso_toxina: "Olá Dr. Gustavo, tenho interesse no Curso de Toxina Botulínica da Ampla Facial.",
   imersao_elite: "Olá Dr. Gustavo, tenho interesse no Acompanhamento Elite (bastidores + 32h prática + 7 dias clínicos + licença NaturalUp) e gostaria de parcelar. Podemos conversar?",
 };
 
@@ -950,7 +952,13 @@ function DirectCheckout({ planKey, lote, refCode, onTriagem }: {
   };
 
   const brlLocal = (c: number) => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: c % 100 ? 2 : 0 });
-  const price = lote?.price ?? 47900;
+  // Cabeçalho do resumo por produto (o checkout direto atende mais de um plano).
+  const isToxina = planKey === "curso_toxina";
+  const showLote = !isToxina && !!lote?.enabled && !lote.soldOut;
+  const price = isToxina ? 19700 : (lote?.price ?? 47900);
+  const title = isToxina ? "Curso de Toxina Botulínica" : "Plataforma Online";
+  const subtitle = isToxina ? "30 aulas · 12 meses de acesso" : "12 meses de acesso ao portal";
+  const parcelas = isToxina ? 10 : 12;
   const inputCls = "w-full rounded-xl bg-white/[0.04] border border-white/10 px-4 py-3.5 text-[15px] text-white placeholder:text-white/30 outline-none focus:border-[#D4A843]/60";
 
   return (
@@ -959,14 +967,14 @@ function DirectCheckout({ planKey, lote, refCode, onTriagem }: {
       <div className="w-full max-w-md rounded-[24px] p-6 sm:p-7" style={{ background: "linear-gradient(170deg, #13284D, #0B1A30 60%)", border: "1px solid rgba(212,168,67,0.28)", boxShadow: "0 40px 90px -40px rgba(212,168,67,0.35)" }}>
         <div className="flex items-start justify-between gap-3 pb-5 border-b border-white/[0.08]">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A843]">{lote?.enabled && !lote.soldOut ? "Lote promocional" : "Sua matrícula"}</p>
-            <h1 className="mt-1 text-xl font-bold text-white">Plataforma Online</h1>
-            <p className="text-xs text-white/50">12 meses de acesso ao portal</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#D4A843]">{showLote ? "Lote promocional" : "Sua matrícula"}</p>
+            <h1 className="mt-1 text-xl font-bold text-white">{title}</h1>
+            <p className="text-xs text-white/50">{subtitle}</p>
           </div>
           <div className="text-right">
-            {lote?.enabled && !lote.soldOut && <p className="text-[11px] text-white/40 line-through">{brlLocal(lote.fullPrice)}</p>}
+            {showLote && lote && <p className="text-[11px] text-white/40 line-through">{brlLocal(lote.fullPrice)}</p>}
             <p className="text-2xl font-bold text-[#D4A843] whitespace-nowrap">{brlLocal(price)}</p>
-            <p className="text-[11px] text-white/50">ou 12x sem juros</p>
+            <p className="text-[11px] text-white/50">ou {parcelas}x de {brlLocal(Math.round(price / parcelas))} sem juros</p>
           </div>
         </div>
 

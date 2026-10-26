@@ -14,7 +14,7 @@ import {
   maxInstallmentsFor,
 } from "./stripe-plans";
 import type { PlanKey } from "@shared/schema";
-import { requiresTriagem } from "@shared/access-rules";
+import { requiresTriagem, FULL_ACCESS_PLAN_KEYS } from "@shared/access-rules";
 import jwt from "jsonwebtoken";
 import {
   asaasRequest,
@@ -170,6 +170,17 @@ export function registerAsaasRoutes(app: Express) {
       // Não geramos checkout direto — o interessado (mesmo já sendo aluno, mesmo em
       // upgrade) é direcionado ao WhatsApp para a equipe verificar a habilitação.
       // Aplicada aqui no servidor de propósito: é a barreira real, não o botão.
+      // Curso de Toxina é produto de entrada: quem já tem acesso completo
+      // não pode comprá-lo (sobrescreveria o plano e rebaixaria o acesso).
+      if (planKey === "curso_toxina") {
+        const cur = await db.execute(sql`SELECT plan_key, access_expires_at FROM users WHERE id = ${auth.userId}`);
+        const row = (cur as any).rows?.[0];
+        const ativo = !row?.access_expires_at || new Date(row.access_expires_at) > new Date();
+        if (row?.plan_key && row.plan_key !== "curso_toxina" && FULL_ACCESS_PLAN_KEYS.has(row.plan_key) && ativo) {
+          return res.status(400).json({ message: "Seu plano atual já inclui o módulo de Toxina Botulínica completo. É só entrar no portal!" });
+        }
+      }
+
       if (requiresTriagem(planKey)) {
         return res.status(403).json({
           requiresTriagem: true,

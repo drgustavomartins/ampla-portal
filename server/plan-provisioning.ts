@@ -128,6 +128,13 @@ export const PLAN_PROVISIONING: Record<string, PlanProvisioning> = {
     mentorshipMonths: 12,
     supportMonths: 12,
   },
+  // Curso de Toxina (R$197): só Boas-vindas + Toxina, 12 meses.
+  curso_toxina: {
+    modules: [MODULE_BOAS_VINDAS, MODULE_TOXINA].map(id => ({ moduleId: id, enabled: true })),
+    materials: [MAT_TOXINA],
+    mentorshipMonths: 0,
+    supportMonths: 0,
+  },
   // Equipe interna (estagiários, assistentes, colaboradores da Ampla Facial).
   // NÃO é um plano de venda — não aparece no catálogo público nem gera
   // comissão. Dá acesso a todo o conteúdo gravado + Encontros Quinzenais,

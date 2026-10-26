@@ -175,7 +175,7 @@ export function getContractHTML(planKey: string, data: ContractData): string {
     body += `<p>O(A) ALUNO(A) pagará à AMPLA FACIAL o valor de <strong>${fmtBRL(plan.price)}</strong> (${plan.name}), mediante pagamento via plataforma digital (cartão de crédito, PIX ou boleto bancário) processado pelo sistema Asaas.</p>`;
     const parcela12 = getInstallments12x(plan);
     if (parcela12) {
-      body += `<p>Opção de parcelamento: até ${MAX_INSTALLMENTS_NO_INTEREST}x de ${fmtBRL(parcela12)} <strong>sem juros</strong>.</p>`;
+      body += `<p>Opção de parcelamento: até ${Math.min(MAX_INSTALLMENTS_NO_INTEREST, maxInstallmentsFor(plan))}x de ${fmtBRL(parcela12)} <strong>sem juros</strong>.</p>`;
       const maxN = maxInstallmentsFor(plan);
       if (maxN > MAX_INSTALLMENTS_NO_INTEREST) {
         const parcelaMax = installmentValueCents(plan.price, maxN);
